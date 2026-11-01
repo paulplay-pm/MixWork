@@ -11,11 +11,11 @@ import {
   normalizeBrowserHostnamePolicyList,
   normalizeBrowserWebAccessConfig,
 } from '../../shared/browserWebAccess/constants';
-import { MIXCWORK_TEMP_DIR_NAME } from '../../shared/mixcwork/constants';
-import { CoworkErrorModelSource } from '../../shared/mixcwork/errorDetail';
+import { MIXWORK_TEMP_DIR_NAME } from '../../shared/mixwork/constants';
+import { CoworkErrorModelSource } from '../../shared/mixwork/errorDetail';
 import {
   findAgentsManagedMarker,
-  MIXCWORK_AGENTS_MARKER,
+  MIXWORK_AGENTS_MARKER,
   stripAgentsManagedMarkers,
 } from '../../shared/openclaw/agentsManagedMarker';
 import { OPENCLAW_PLUGIN_INDEX_MANAGED_KEYS } from '../../shared/openclawEngine/constants';
@@ -27,16 +27,16 @@ import {
   ProviderName,
 } from '../../shared/providers';
 import {
-  MIXCWORK_REQUEST_OPTIONS_VERSION,
-  type MixCWorkRequestCapability,
-  supportsMixCWorkRequestOptionsV1,
-} from '../../shared/providers/mixcworkRequestOptions';
+  MIXWORK_REQUEST_OPTIONS_VERSION,
+  type MixWorkRequestCapability,
+  supportsMixWorkRequestOptionsV1,
+} from '../../shared/providers/mixworkRequestOptions';
 import type { ModelThinkingConfig } from '../../shared/providers/modelThinking';
 import { enterpriseModelCache } from '../auth/enterpriseModelCache';
 import { sessionStorage } from '../auth/sessionStorage';
 import type { DiscordInstanceConfig, IMSettings, TelegramInstanceConfig } from '../im/types';
 import type { DingTalkInstanceConfig, FeishuInstanceConfig, QQInstanceConfig, WecomInstanceConfig, WeixinOpenClawConfig } from '../im/types';
-import type { Agent, MixCWorkConfig, MixCWorkExecutionMode } from '../mixcworkStore';
+import type { Agent, MixWorkConfig, MixWorkExecutionMode } from '../mixworkStore';
 import { OpenClawSessionKeepAlive } from '../openclawSessionPolicy/constants';
 import { buildOpenClawSessionConfig } from '../openclawSessionPolicy/store';
 import { effectiveAgentModelRef } from './agentModelOverride';
@@ -51,7 +51,7 @@ import { getEnterpriseServerUrl } from './endpoints';
 import { buildConnectedSourcesPrompt } from './mcpAgentPolicyPrompt';
 import {
   getCoworkOpenAICompatProxyToken,
-} from './mixcworkOpenAICompatProxy';
+} from './mixworkOpenAICompatProxy';
 import {
   buildAgentEntry,
   buildManagedAgentEntries,
@@ -85,7 +85,7 @@ export type AskUserCallbackConfig = {
 };
 
 const mapExecutionModeToSandboxMode = (
-  mode: MixCWorkExecutionMode,
+  mode: MixWorkExecutionMode,
   isEnterprise: boolean,
 ): 'off' | 'non-main' | 'all' => {
   if (!isEnterprise) return 'off';
@@ -124,12 +124,12 @@ export function omitPluginIndexManagedKeys(plugins: unknown): Record<string, unk
  * Also used by the runtime adapter's client-side timeout watchdog.
  */
 export const OPENCLAW_AGENT_TIMEOUT_SECONDS = 3600;
-export const OPENCLAW_MIXCWORK_MODEL_TIMEOUT_SECONDS = 330;
+export const OPENCLAW_MIXWORK_MODEL_TIMEOUT_SECONDS = 330;
 export const OPENCLAW_HEARTBEAT_EVERY_ENABLED = '1h';
 export const OPENCLAW_HEARTBEAT_EVERY_DISABLED = '0m';
 const DINGTALK_OPENCLAW_CHANNEL = 'dingtalk-connector';
 const OPENCLAW_MEMORY_CORE_PLUGIN_ID = 'memory-core';
-const OPENCLAW_MODEL_COMPAT_PLUGIN_ID = 'mixcwork-model-compat';
+const OPENCLAW_MODEL_COMPAT_PLUGIN_ID = 'mixwork-model-compat';
 
 const asConfigRecord = (value: unknown): Record<string, unknown> | undefined => (
   value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -253,7 +253,7 @@ const normalizeModelName = (modelId: string): string => {
 };
 
 // Enterprise model identity is the catalog row's UUID (a v4 UUID). When a
-// mixcwork-server model is addressed by such a UUID, the OpenClaw `models[].id`
+// mixwork-server model is addressed by such a UUID, the OpenClaw `models[].id`
 // and the `primaryModel` ref portion carry the UUID so two same-named rows
 // under different provider keys resolve to distinct identities; the enterprise
 // proxy rewrites the wire `model` back to the upstream name. A non-UUID modelId
@@ -262,7 +262,7 @@ const normalizeModelName = (modelId: string): string => {
 // use a `builtin:<orgId>:<slug>:<modelId>` id instead of a UUID; the enterprise
 // proxy already accepts that prefix (`isCatalogId` in `routes/proxy.ts`), and
 // the desktop must mirror that branch here so the OpenClaw gateway does not
-// reply `Unknown model: mixcwork-server/builtin:<...>:<...>`.
+// reply `Unknown model: mixwork-server/builtin:<...>:<...>`.
 const CATALOG_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CATALOG_BUILTIN_PREFIX = 'builtin:';
@@ -331,10 +331,10 @@ const MANAGED_SKILL_ENTRY_OVERRIDES: Record<string, { enabled: boolean }> = {
   'feishu-cron-reminder': {
     enabled: false,
   },
-  // MixCWork configures MCP servers via openclaw.json mcp.servers field.
+  // MixWork configures MCP servers via openclaw.json mcp.servers field.
   // The bundled mcporter skill tries to discover MCP servers via its own CLI,
   // finds none, and produces confusing "no MCP servers" output. Disable it so
-  // users are routed through MixCWork's MCP layer instead.
+  // users are routed through MixWork's MCP layer instead.
   'mcporter': {
     enabled: false,
   },
@@ -354,10 +354,10 @@ const MANAGED_WEB_SEARCH_POLICY_PROMPT = [
   '- Do not use `web_fetch` to fetch Google/Bing search result pages as a search substitute; use `browser` or an available search skill instead.',
   '- If you need search discovery, dynamic pages, or interactive browsing, use the built-in `browser` tool.',
   '- For login-required, JavaScript-heavy, or anti-automation pages, use `browser` instead of `web_fetch`.',
-  '- Only use the MixCWork `web-search` skill when local command execution is available. Native channel sessions may deny `exec`, so prefer `browser` or `web_fetch` there.',
+  '- Only use the MixWork `web-search` skill when local command execution is available. Native channel sessions may deny `exec`, so prefer `browser` or `web_fetch` there.',
   '- Exception: the `imap-smtp-email` skill must always use `exec` to run its scripts, even in native channel sessions. Do not skip it because of exec restrictions.',
   '',
-  'Do not claim you searched the web unless you actually used `browser`, `web_fetch`, or the MixCWork `web-search` skill.',
+  'Do not claim you searched the web unless you actually used `browser`, `web_fetch`, or the MixWork `web-search` skill.',
 ].join('\n');
 
 const BUNDLED_BROWSER_PLUGIN_ID = 'browser';
@@ -365,9 +365,9 @@ const BUNDLED_BROWSER_PLUGIN_ID = 'browser';
 const MANAGED_BROWSER_POLICY_PROMPT = [
   '## Browser Policy',
   '',
-  'MixCWork does not support sandbox browser execution in this version.',
+  'MixWork does not support sandbox browser execution in this version.',
   '- For every `browser` tool call, set `target="host"` explicitly.',
-  '- Do not use `target="sandbox"` or `target="node"` unless a future MixCWork version explicitly enables it.',
+  '- Do not use `target="sandbox"` or `target="node"` unless a future MixWork version explicitly enables it.',
   '- If a browser call fails because the sandbox browser is unavailable, retry the same action with `target="host"`.',
 ].join('\n');
 
@@ -398,9 +398,9 @@ const MANAGED_EXEC_SAFETY_PROMPT = [
  * embedding in AGENTS.md so the model knows where to create new skills.
  *
  * Example outputs:
- *   macOS:   ~/Library/Application Support/MixCWork/SKILLs
- *   Windows: ~/AppData/Roaming/MixCWork/SKILLs
- *   Linux:   ~/.config/MixCWork/SKILLs
+ *   macOS:   ~/Library/Application Support/MixWork/SKILLs
+ *   Windows: ~/AppData/Roaming/MixWork/SKILLs
+ *   Linux:   ~/.config/MixWork/SKILLs
  */
 const resolveSkillCreationPath = (): string => {
   const skillsDir = path.join(app.getPath('userData'), 'SKILLs');
@@ -415,7 +415,7 @@ const resolveSkillCreationPath = (): string => {
 const buildManagedSkillCreationPrompt = (skillsDirPath: string): string => [
   '## Skill Creation',
   '',
-  'When the user asks you to create a new skill, you MUST place it under the MixCWork skills directory:',
+  'When the user asks you to create a new skill, you MUST place it under the MixWork skills directory:',
   '',
   `  ${skillsDirPath}/<skill-name>/SKILL.md`,
   '',
@@ -434,9 +434,9 @@ const MANAGED_DELIVERABLE_LINKS_PROMPT = [
   '- Both `[name](/absolute/path)` and `[name](file:///absolute/path)` are accepted.',
   '- This also applies when files are produced indirectly, e.g. by a Python/Node script or a',
   '  shell command you ran. Always link the final output files.',
-  `- Keep intermediate files (helper scripts, scratch data, drafts) inside the \`${MIXCWORK_TEMP_DIR_NAME}/\``,
+  `- Keep intermediate files (helper scripts, scratch data, drafts) inside the \`${MIXWORK_TEMP_DIR_NAME}/\``,
   '  directory under the session working directory, and do not link them in the final reply.',
-  `- The user can clean up \`${MIXCWORK_TEMP_DIR_NAME}/\` at any time;`,
+  `- The user can clean up \`${MIXWORK_TEMP_DIR_NAME}/\` at any time;`,
   '  anything the user should keep must be saved outside of it.',
   '- Only link files that exist on disk after your work. Never link files you merely read.',
 ].join('\n');
@@ -444,7 +444,7 @@ const MANAGED_DELIVERABLE_LINKS_PROMPT = [
 const MANAGED_MATH_FORMAT_PROMPT = [
   '## Math Formula Formatting',
   '',
-  'The MixCWork app chat renders TeX formulas with KaTeX.',
+  'The MixWork app chat renders TeX formulas with KaTeX.',
   '',
   '- In app chat sessions, write every mathematical formula or expression in TeX:',
   '  `$...$` inline, and `$$` on its own lines around display blocks.',
@@ -493,8 +493,8 @@ const MANAGED_HEARTBEAT_POLICY_PROMPT = [
 const MANAGED_IDENTITY_POLICY_PROMPT = [
   '## Identity & Branding Policy',
   '',
-  'You are **MixCWork** — a personal assistant. When you describe who you are — in `IDENTITY.md`, in a',
-  'self-introduction, or in answer to "who are you / 介绍下你自己" — refer to yourself only as a MixCWork',
+  'You are **MixWork** — a personal assistant. When you describe who you are — in `IDENTITY.md`, in a',
+  'self-introduction, or in answer to "who are you / 介绍下你自己" — refer to yourself only as a MixWork',
   'assistant. Do NOT name or describe the underlying runtime, engine, or framework you run on (e.g. do not',
   'write or say "运行在 OpenClaw 里" / "runs on OpenClaw" or any similar internal-engine reference).',
   '',
@@ -722,7 +722,7 @@ type OpenClawProviderSelection = {
       // (`${ENTERPRISE_SERVER_URL}/proxy/<provider>`), so each model routes
       // to the upstream that actually serves it. The OpenClaw runtime honours
       // this per-model override (`model.baseUrl ?? providerBaseUrl`), letting
-      // all enterprise models share a single `mixcwork-server` provider while
+      // all enterprise models share a single `mixwork-server` provider while
       // still hitting the correct upstream. Non-enterprise models omit it and
       // fall back to the provider-level `baseUrl`.
       baseUrl?: string;
@@ -773,7 +773,7 @@ export const buildProviderSelection = (options: {
   runtimeProfile?: unknown;
   thinkingConfig?: ModelThinkingConfig;
 }): OpenClawProviderSelection => {
-  // Desktop is now single-provider (mixcwork-server). All per-provider
+  // Desktop is now single-provider (mixwork-server). All per-provider
   // branches are removed; capabilities come from catalogResolver.
   const cap = catalogResolver.resolveCapability(
     options.providerName ?? '',
@@ -799,15 +799,15 @@ export const buildProviderSelection = (options: {
   const providerModelName = resolveModelDisplayName(sessionModelId, options.modelName);
   // The OpenClaw `models[].id` is sent verbatim upstream and is what the
   // gateway's `providers.<id>.models[].id` ref routing matches. For an
-  // enterprise mixcwork-server model addressed by its catalog row UUID, that id
+  // enterprise mixwork-server model addressed by its catalog row UUID, that id
   // IS the UUID, so two same-named rows bound to different provider keys
   // resolve to distinct, switchable identities; the enterprise proxy rewrites
   // the wire `model` back to the upstream name. `name` stays the display label.
-  // Legacy (non-UUID) mixcwork-server modelIds — the pre-UUID youdao path — and
-  // any non-mixcwork-server provider keep the display-name model id (their
+  // Legacy (non-UUID) mixwork-server modelIds — the pre-UUID youdao path — and
+  // any non-mixwork-server provider keep the display-name model id (their
   // upstream only recognises the name).
   const openClawModelId =
-    options.providerName === ProviderName.MixcworkServer && isCatalogUuid(sessionModelId)
+    options.providerName === ProviderName.MixWorkServer && isCatalogUuid(sessionModelId)
       ? sessionModelId.trim()
       : providerModelName;
   const thinkingRuntimeConfig = buildOpenClawThinkingRuntimeConfig(options.thinkingConfig);
@@ -819,21 +819,21 @@ export const buildProviderSelection = (options: {
   const auth = AuthType.ApiKey;
 
   return {
-    providerId: OpenClawProviderId.MixcworkServer,
+    providerId: OpenClawProviderId.MixWorkServer,
     legacyModelId: options.modelId,
     // `sessionModelId` keeps the desktop's own lookup identity (the catalog
     // UUID for enterprise models) for the run-gate and persistence; the
     // OpenClaw-side ref (`primaryModel`) and `models[].id` use
     // `openClawModelId` (UUID for enterprise, display name otherwise).
     sessionModelId: options.modelId,
-    primaryModel: `${OpenClawProviderId.MixcworkServer}/${openClawModelId}`,
+    primaryModel: `${OpenClawProviderId.MixWorkServer}/${openClawModelId}`,
     providerConfig: {
       baseUrl,
       api,
       ...(apiKey ? { apiKey } : {}),
       auth,
-      ...(OpenClawProviderId.MixcworkServer === OpenClawProviderId.MixcworkServer
-        ? { timeoutSeconds: OPENCLAW_MIXCWORK_MODEL_TIMEOUT_SECONDS }
+      ...(OpenClawProviderId.MixWorkServer === OpenClawProviderId.MixWorkServer
+        ? { timeoutSeconds: OPENCLAW_MIXWORK_MODEL_TIMEOUT_SECONDS }
         : {}),
       models: [
         {
@@ -871,8 +871,8 @@ export type OpenClawProviderModelSource = {
 
 /**
  * Classifies an OpenClaw provider id (as reported in gateway error metadata)
- * back to the MixCWork Settings entry it was generated from, so runtime
- * errors can tell the user whether the failing model is the MixCWork plan,
+ * back to the MixWork Settings entry it was generated from, so runtime
+ * errors can tell the user whether the failing model is the MixWork plan,
  * a vendor coding plan, or their own custom provider.
  */
 export function resolveModelSourceForOpenClawProvider(
@@ -881,10 +881,10 @@ export function resolveModelSourceForOpenClawProvider(
   const providerId = openclawProviderId?.trim();
   if (!providerId) return undefined;
 
-  if (providerId === OpenClawProviderId.MixcworkServer) {
+  if (providerId === OpenClawProviderId.MixWorkServer) {
     return {
-      source: CoworkErrorModelSource.MixCWorkPlan,
-      providerName: ProviderName.MixcworkServer,
+      source: CoworkErrorModelSource.MixWorkPlan,
+      providerName: ProviderName.MixWorkServer,
     };
   }
 
@@ -901,9 +901,9 @@ export function resolveModelSourceForOpenClawProvider(
       }
       continue;
     }
-    // Desktop is single-provider (mixcwork-server). Without the registry we
+    // Desktop is single-provider (mixwork-server). Without the registry we
     // cannot map OpenClaw provider ids back to built-in providers; the only
-    // id emitted today is mixcwork-server itself, handled above.
+    // id emitted today is mixwork-server itself, handled above.
     continue;
   }
 
@@ -1005,7 +1005,7 @@ export const finalizeModelCompatibilityOwners = (
   _providers: Record<string, OpenClawProviderSelection['providerConfig']>,
   _candidateProfiles: Record<string, string>,
 ): FinalizedModelCompatibilityOwners => {
-  // Desktop is single-provider (mixcwork-server); the runtime-profile
+  // Desktop is single-provider (mixwork-server); the runtime-profile
   // compat path was only relevant to non-server providers and is now a no-op.
   return {
     modelProfiles: {},
@@ -1017,7 +1017,7 @@ export const sanitizeModelCustomParams = (
   customParams: Record<string, unknown>,
   _runtimeProfile: string | undefined,
 ): { customParams: Record<string, unknown>; removedKeys: string[] } => {
-  // Desktop is single-provider (mixcwork-server); the Kimi K3 reserved-key
+  // Desktop is single-provider (mixwork-server); the Kimi K3 reserved-key
   // stripping path was only relevant to that profile and is now a pass-through.
   return { customParams: { ...customParams }, removedKeys: [] };
 };
@@ -1027,25 +1027,25 @@ const collectCompatibilityOwnerProfile = (
   _selection: OpenClawProviderSelection,
 ): void => {
   // no-op: compatibilityOwnerProfile was removed when the runtime profile
-  // codepath was collapsed to a single mixcwork-server provider.
+  // codepath was collapsed to a single mixwork-server provider.
 };
 
 type OpenClawThinkingProfile = ModelThinkingConfig & {
-  requestOptionsVersion?: typeof MIXCWORK_REQUEST_OPTIONS_VERSION;
+  requestOptionsVersion?: typeof MIXWORK_REQUEST_OPTIONS_VERSION;
 };
 
 const collectThinkingProfile = (
   profiles: Record<string, OpenClawThinkingProfile>,
   selection: OpenClawProviderSelection,
   thinkingConfig: ModelThinkingConfig | undefined,
-  requestCapabilities?: readonly MixCWorkRequestCapability[],
+  requestCapabilities?: readonly MixWorkRequestCapability[],
 ): void => {
   if (!thinkingConfig) return;
   profiles[selection.primaryModel] = {
     options: thinkingConfig.options.map(option => ({ ...option })),
     defaultLevel: thinkingConfig.defaultLevel,
-    ...(supportsMixCWorkRequestOptionsV1(requestCapabilities)
-      ? { requestOptionsVersion: MIXCWORK_REQUEST_OPTIONS_VERSION }
+    ...(supportsMixWorkRequestOptionsV1(requestCapabilities)
+      ? { requestOptionsVersion: MIXWORK_REQUEST_OPTIONS_VERSION }
       : {}),
   };
 };
@@ -1053,7 +1053,7 @@ const collectThinkingProfile = (
 export const findInvalidKimiK3ServerTransports = (
   _serverModels: Array<{ modelId: string; apiFormat?: string; runtimeProfile?: unknown }>,
 ): Array<{ modelId: string; apiFormat: string }> => {
-  // Desktop is single-provider (mixcwork-server); Kimi K3 server transports
+  // Desktop is single-provider (mixwork-server); Kimi K3 server transports
   // are no longer recognized as a special case.
   return [];
 };
@@ -1225,7 +1225,7 @@ const buildManagedBrowserProxyExtraArgs = (browserWebAccess: BrowserWebAccessCon
 
 type OpenClawConfigSyncDeps = {
   engineManager: OpenClawEngineManager;
-  getMixCWorkConfig: () => MixCWorkConfig;
+  getMixWorkConfig: () => MixWorkConfig;
   getBrowserWebAccessConfig?: () => Partial<BrowserWebAccessConfig> | null | undefined;
   isEnterprise: () => boolean;
   getOpenClawSessionPolicy?: () => { keepAlive: OpenClawSessionKeepAlive };
@@ -1249,7 +1249,7 @@ type OpenClawConfigSyncDeps = {
 
 export class OpenClawConfigSync {
   private readonly engineManager: OpenClawEngineManager;
-  private readonly getMixCWorkConfig: () => MixCWorkConfig;
+  private readonly getMixWorkConfig: () => MixWorkConfig;
   private readonly getBrowserWebAccessConfig: () => Partial<BrowserWebAccessConfig> | null | undefined;
   private readonly isEnterprise: () => boolean;
   private readonly getOpenClawSessionPolicy?: () => { keepAlive: OpenClawSessionKeepAlive };
@@ -1280,7 +1280,7 @@ export class OpenClawConfigSync {
 
   constructor(deps: OpenClawConfigSyncDeps) {
     this.engineManager = deps.engineManager;
-    this.getMixCWorkConfig = deps.getMixCWorkConfig;
+    this.getMixWorkConfig = deps.getMixWorkConfig;
     this.getBrowserWebAccessConfig = deps.getBrowserWebAccessConfig ?? (() => null);
     this.isEnterprise = deps.isEnterprise;
     this.getOpenClawSessionPolicy = deps.getOpenClawSessionPolicy;
@@ -1309,7 +1309,7 @@ export class OpenClawConfigSync {
    * read against a "last known good" fingerprint.  One of the checks is
    * `hasConfigMeta` — if the previous good config had `meta` but the current
    * one doesn't, an anomaly is logged and the file content is persisted as a
-   * `.clobbered.<timestamp>` snapshot.  Because MixCWork writes openclaw.json
+   * `.clobbered.<timestamp>` snapshot.  Because MixWork writes openclaw.json
    * directly (bypassing OpenClaw's own `writeConfigFile` which calls
    * `stampConfigVersion`), we need to stamp `meta` ourselves.
    */
@@ -1395,7 +1395,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
 
   sync(reason: string): OpenClawConfigSyncResult {
     const configPath = this.engineManager.getConfigPath();
-    const coworkConfig = this.getMixCWorkConfig();
+    const coworkConfig = this.getMixWorkConfig();
     const browserWebAccess = normalizeBrowserWebAccessConfig(this.getBrowserWebAccessConfig());
     const serverModels = getAllServerModelMetadata();
     const invalidKimiK3Transports = findInvalidKimiK3ServerTransports(serverModels);
@@ -1445,7 +1445,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       baseURL: '',
       modelId: '',
       apiType: 'openai',
-      providerName: 'mixcwork-server',
+      providerName: 'mixwork-server',
     });
 
     if (apiResolution.config) {
@@ -1485,7 +1485,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
         apiResolution.providerMetadata?.requestCapabilities,
       );
       primaryModel = providerSelection.primaryModel;
-      if (providerSelection.providerId === OpenClawProviderId.MixcworkServer) {
+      if (providerSelection.providerId === OpenClawProviderId.MixWorkServer) {
         addExplicitContextCacheDefault(perModelCustomDefaults, providerSelection, {
           modelId,
         });
@@ -1561,7 +1561,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       }
 
       // Enterprise (plan) models are materialised under a single
-      // `mixcwork-server` provider. The provider-level `baseUrl`/`apiKey`
+      // `mixwork-server` provider. The provider-level `baseUrl`/`apiKey`
       // already come from `providerSelection` (resolved above via
       // tryEnterpriseCatalogFallback to the enterprise `/proxy/<provider>`
       // endpoint + the user's JWT). Here we enumerate every enterprise model
@@ -1570,7 +1570,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       // collapse onto the provider-level base and a Qwen model forwarded to
       // /proxy/deepseek 404s with model_not_found.
       const enterpriseUserJwt = sessionStorage.load()?.jwt ?? '';
-      const providerId = OpenClawProviderId.MixcworkServer;
+      const providerId = OpenClawProviderId.MixWorkServer;
 
       if (serverModels.length > 0 || !allProvidersMap[providerId]) {
         const firstServerModelId = serverModels[0]?.modelId || modelId;
@@ -1579,7 +1579,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
           baseURL: providerSelection.providerConfig.baseUrl,
           modelId: firstServerModelId,
           apiType: normalizeServerApiType(serverModels[0]?.apiFormat),
-          providerName: ProviderName.MixcworkServer,
+          providerName: ProviderName.MixWorkServer,
           supportsImage: serverModels[0]?.supportsImage,
           supportsVideo: serverModels[0]?.supportsVideo,
           supportsThinking: serverModels[0]?.supportsThinking,
@@ -1596,15 +1596,15 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
           serverModels[0]?.thinkingConfig,
           serverModels[0]?.requestCapabilities,
         );
-        const mixcworkProviderConfig =
+        const mixworkProviderConfig =
           allProvidersMap[providerId] ?? {
             ...firstServerSel.providerConfig,
             models: [] as typeof firstServerSel.providerConfig.models,
           };
-        allProvidersMap[providerId] = mixcworkProviderConfig;
+        allProvidersMap[providerId] = mixworkProviderConfig;
 
         if (serverModels.length === 0) {
-          upsertProviderModel(mixcworkProviderConfig, firstServerSel.providerConfig.models[0]);
+          upsertProviderModel(mixworkProviderConfig, firstServerSel.providerConfig.models[0]);
         } else {
           // Resolve each enterprise model's own endpoint. The per-model
           // `baseUrl` is what OpenClaw honours over the provider-level base
@@ -1644,7 +1644,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
               baseURL: providerSelection.providerConfig.baseUrl,
               modelId: sm.modelId,
               apiType: serverApiType,
-              providerName: ProviderName.MixcworkServer,
+              providerName: ProviderName.MixWorkServer,
               supportsImage: sm.supportsImage,
               supportsVideo: sm.supportsVideo,
               supportsThinking: sm.supportsThinking,
@@ -1671,7 +1671,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
               modelProxyUrl
                 ? { ...serverSel.providerConfig.models[0], baseUrl: modelProxyUrl }
                 : serverSel.providerConfig.models[0];
-            upsertProviderModel(mixcworkProviderConfig, modelForUpsert);
+            upsertProviderModel(mixworkProviderConfig, modelForUpsert);
           }
         }
       }
@@ -1708,7 +1708,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       preinstalledPlugins.some((plugin) => pluginMatches(plugin, ...ids))
     );
     const hasAskUserPlugin = isBundledPluginAvailable('ask-user-question');
-    const hasMediaGenPlugin = isBundledPluginAvailable('mixcwork-media-generation');
+    const hasMediaGenPlugin = isBundledPluginAvailable('mixwork-media-generation');
     // Runtime-bundled xai extension (dist/extensions/xai): provides the Grok
     // model compat hooks (e.g. only grok-4.3 accepts reasoningEffort) plus the
     // OAuth refresh hook for credentials in the auth-profiles store. Declare
@@ -1942,7 +1942,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
             ? { feishu: { enabled: false } }
             : {}),
           ...(hasAskUserPlugin ? { 'ask-user-question': { enabled: true } } : {}),
-          ...(hasMediaGenPlugin ? { 'mixcwork-media-generation': { enabled: true } } : {}),
+          ...(hasMediaGenPlugin ? { 'mixwork-media-generation': { enabled: true } } : {}),
           ...(hasModelCompatConfig
             ? {
                 [OPENCLAW_MODEL_COMPAT_PLUGIN_ID]: {
@@ -1967,7 +1967,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
               ...(p.config && Object.keys(p.config).length > 0 ? { config: p.config } : {}),
             }]),
           ),
-          // Disable acpx (ACP agent runtime) — MixCWork does not use ACP and
+          // Disable acpx (ACP agent runtime) — MixWork does not use ACP and
           // the embedded probe adds ~11s to gateway startup while it waits for
           // a process that always fails.  See openclaw/openclaw#62588.
           'acpx': { enabled: false },
@@ -2047,21 +2047,21 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
         enabled: true,
         config: {
           callbackUrl: askUserCallbackUrl,
-          secret: '${MIXCWORK_MCP_BRIDGE_SECRET}',
+          secret: '${MIXWORK_MCP_BRIDGE_SECRET}',
         },
       };
     }
 
-    // Sync MixcworkMediaGeneration plugin config — uses media callback endpoint
+    // Sync MixWorkMediaGeneration plugin config — uses media callback endpoint
     const mediaCallbackUrl = this.getMediaCallbackUrl?.();
     if (hasMediaGenPlugin && mediaCallbackUrl && managedConfig.plugins) {
       const plugins = managedConfig.plugins as Record<string, unknown>;
       const entries = plugins.entries as Record<string, Record<string, unknown>>;
-      entries['mixcwork-media-generation'] = {
+      entries['mixwork-media-generation'] = {
         enabled: true,
         config: {
           callbackUrl: mediaCallbackUrl,
-          secret: '${MIXCWORK_MCP_BRIDGE_SECRET}',
+          secret: '${MIXWORK_MCP_BRIDGE_SECRET}',
           requestTimeoutMs: 150000,
         },
       };
@@ -2106,8 +2106,8 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       const accounts: Record<string, unknown> = {};
       for (let idx = 0; idx < enabledTelegramInstances.length; idx++) {
         const inst = enabledTelegramInstances[idx];
-        const tokenVar = idx === 0 ? 'MIXCWORK_TG_BOT_TOKEN' : `MIXCWORK_TG_BOT_TOKEN_${idx}`;
-        const webhookSecretVar = idx === 0 ? 'MIXCWORK_TG_WEBHOOK_SECRET' : `MIXCWORK_TG_WEBHOOK_SECRET_${idx}`;
+        const tokenVar = idx === 0 ? 'MIXWORK_TG_BOT_TOKEN' : `MIXWORK_TG_BOT_TOKEN_${idx}`;
+        const webhookSecretVar = idx === 0 ? 'MIXWORK_TG_WEBHOOK_SECRET' : `MIXWORK_TG_WEBHOOK_SECRET_${idx}`;
         const account: Record<string, unknown> = {
           enabled: true,
           name: inst.instanceName,
@@ -2158,7 +2158,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       const accounts: Record<string, unknown> = {};
       for (let idx = 0; idx < enabledDiscordInstances.length; idx++) {
         const inst = enabledDiscordInstances[idx];
-        const tokenVar = idx === 0 ? 'MIXCWORK_DC_BOT_TOKEN' : `MIXCWORK_DC_BOT_TOKEN_${idx}`;
+        const tokenVar = idx === 0 ? 'MIXWORK_DC_BOT_TOKEN' : `MIXWORK_DC_BOT_TOKEN_${idx}`;
         const account: Record<string, unknown> = {
           enabled: true,
           name: inst.instanceName,
@@ -2253,7 +2253,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       for (let idx = 0; idx < enabledFeishuInstances.length; idx++) {
         const inst = enabledFeishuInstances[idx];
         const secretVar =
-          idx === 0 ? 'MIXCWORK_FEISHU_APP_SECRET' : `MIXCWORK_FEISHU_APP_SECRET_${idx}`;
+          idx === 0 ? 'MIXWORK_FEISHU_APP_SECRET' : `MIXWORK_FEISHU_APP_SECRET_${idx}`;
         accounts[inst.instanceId.slice(0, 8)] = buildFeishuAccountConfig(inst, secretVar);
       }
 
@@ -2273,7 +2273,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
         clientSecret: `\${${secretEnvVar}}`,
         // v3.5.x schema: dmPolicy/groupPolicy/allowFrom are valid; sessionTimeout/
         // separateSessionByConversation/groupSessionScope/sharedMemoryAcrossConversations/
-        // gatewayBaseUrl were MixCWork-specific and are not in the plugin schema.
+        // gatewayBaseUrl were MixWork-specific and are not in the plugin schema.
         dmPolicy: inst.dmPolicy || 'open',
         allowFrom: (() => {
           const ids = inst.allowFrom?.length ? [...inst.allowFrom] : [];
@@ -2288,7 +2288,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       for (let idx = 0; idx < enabledDingTalkInstances.length; idx++) {
         const inst = enabledDingTalkInstances[idx];
         const secretVar =
-          idx === 0 ? 'MIXCWORK_DINGTALK_CLIENT_SECRET' : `MIXCWORK_DINGTALK_CLIENT_SECRET_${idx}`;
+          idx === 0 ? 'MIXWORK_DINGTALK_CLIENT_SECRET' : `MIXWORK_DINGTALK_CLIENT_SECRET_${idx}`;
         accounts[inst.instanceId.slice(0, 8)] = buildDingTalkAccountConfig(inst, secretVar);
       }
 
@@ -2332,7 +2332,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       for (let idx = 0; idx < enabledQQInstances.length; idx++) {
         const inst = enabledQQInstances[idx];
         const secretVar =
-          idx === 0 ? 'MIXCWORK_QQ_CLIENT_SECRET' : `MIXCWORK_QQ_CLIENT_SECRET_${idx}`;
+          idx === 0 ? 'MIXWORK_QQ_CLIENT_SECRET' : `MIXWORK_QQ_CLIENT_SECRET_${idx}`;
         accounts[inst.instanceId.slice(0, 8)] = buildQQAccountConfig(inst, secretVar);
       }
 
@@ -2345,7 +2345,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       const accounts: Record<string, unknown> = {};
       for (let idx = 0; idx < enabledWecomInstances.length; idx++) {
         const inst = enabledWecomInstances[idx];
-        const secretVar = idx === 0 ? 'MIXCWORK_WECOM_SECRET' : `MIXCWORK_WECOM_SECRET_${idx}`;
+        const secretVar = idx === 0 ? 'MIXWORK_WECOM_SECRET' : `MIXWORK_WECOM_SECRET_${idx}`;
         accounts[inst.instanceId.slice(0, 8)] = {
           enabled: true,
           name: inst.instanceName,
@@ -2529,22 +2529,22 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     // never changes env vars and avoids gateway process restarts.
     const allApiKeys = resolveAllProviderApiKeys();
     for (const [envSuffix, apiKey] of Object.entries(allApiKeys)) {
-      console.info(`[OpenClawConfigSync] set secret env var MIXCWORK_APIKEY_${envSuffix} for provider ${envSuffix}`);
-      env[`MIXCWORK_APIKEY_${envSuffix}`] = apiKey;
+      console.info(`[OpenClawConfigSync] set secret env var MIXWORK_APIKEY_${envSuffix} for provider ${envSuffix}`);
+      env[`MIXWORK_APIKEY_${envSuffix}`] = apiKey;
     }
-    // Legacy fallback: keep MIXCWORK_PROVIDER_API_KEY set to a stable value so stale
+    // Legacy fallback: keep MIXWORK_PROVIDER_API_KEY set to a stable value so stale
     // openclaw.json files with the old placeholder don't crash the gateway.
     // Use the active provider's key if available, but ONLY for the first sync —
     // after that, openclaw.json uses provider-specific placeholders and this var
     // is never resolved. Use a fixed value to avoid secretEnvVarsChanged on switch.
-    env.MIXCWORK_PROVIDER_API_KEY = 'legacy-unused';
+    env.MIXWORK_PROVIDER_API_KEY = 'legacy-unused';
 
-    env.MIXCWORK_PROXY_TOKEN = getCoworkOpenAICompatProxyToken() || 'unconfigured';
+    env.MIXWORK_PROXY_TOKEN = getCoworkOpenAICompatProxyToken() || 'unconfigured';
 
     // MCP Bridge Secret — always set so stale openclaw.json with
-    // ${MIXCWORK_MCP_BRIDGE_SECRET} placeholder doesn't crash the gateway.
+    // ${MIXWORK_MCP_BRIDGE_SECRET} placeholder doesn't crash the gateway.
     // Used by the ask-user-question plugin.
-    env.MIXCWORK_MCP_BRIDGE_SECRET = this.getMcpBridgeSecret?.() || 'unconfigured';
+    env.MIXWORK_MCP_BRIDGE_SECRET = this.getMcpBridgeSecret?.() || 'unconfigured';
 
     // Telegram — per-instance secrets (must match sync() indexing: enabled instances only)
     const tgInstances = this.getTelegramInstances();
@@ -2552,11 +2552,11 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     for (let idx = 0; idx < enabledTelegram.length; idx++) {
       const inst = enabledTelegram[idx];
       if (idx === 0) {
-        env.MIXCWORK_TG_BOT_TOKEN = inst.botToken;
-        if (inst.webhookSecret) env.MIXCWORK_TG_WEBHOOK_SECRET = inst.webhookSecret;
+        env.MIXWORK_TG_BOT_TOKEN = inst.botToken;
+        if (inst.webhookSecret) env.MIXWORK_TG_WEBHOOK_SECRET = inst.webhookSecret;
       } else {
-        env[`MIXCWORK_TG_BOT_TOKEN_${idx}`] = inst.botToken;
-        if (inst.webhookSecret) env[`MIXCWORK_TG_WEBHOOK_SECRET_${idx}`] = inst.webhookSecret;
+        env[`MIXWORK_TG_BOT_TOKEN_${idx}`] = inst.botToken;
+        if (inst.webhookSecret) env[`MIXWORK_TG_WEBHOOK_SECRET_${idx}`] = inst.webhookSecret;
       }
     }
 
@@ -2565,9 +2565,9 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     const enabledDiscord = dcInstances.filter(i => i.enabled && i.botToken);
     for (let idx = 0; idx < enabledDiscord.length; idx++) {
       if (idx === 0) {
-        env.MIXCWORK_DC_BOT_TOKEN = enabledDiscord[idx].botToken;
+        env.MIXWORK_DC_BOT_TOKEN = enabledDiscord[idx].botToken;
       } else {
-        env[`MIXCWORK_DC_BOT_TOKEN_${idx}`] = enabledDiscord[idx].botToken;
+        env[`MIXWORK_DC_BOT_TOKEN_${idx}`] = enabledDiscord[idx].botToken;
       }
     }
 
@@ -2576,9 +2576,9 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     const enabledFeishu = feishuInstances.filter(i => i.enabled && i.appSecret);
     for (let idx = 0; idx < enabledFeishu.length; idx++) {
       if (idx === 0) {
-        env.MIXCWORK_FEISHU_APP_SECRET = enabledFeishu[idx].appSecret;
+        env.MIXWORK_FEISHU_APP_SECRET = enabledFeishu[idx].appSecret;
       } else {
-        env[`MIXCWORK_FEISHU_APP_SECRET_${idx}`] = enabledFeishu[idx].appSecret;
+        env[`MIXWORK_FEISHU_APP_SECRET_${idx}`] = enabledFeishu[idx].appSecret;
       }
     }
 
@@ -2587,15 +2587,15 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     const enabledDingTalk = dingTalkInstances.filter(i => i.enabled && i.clientSecret);
     for (let idx = 0; idx < enabledDingTalk.length; idx++) {
       if (idx === 0) {
-        env.MIXCWORK_DINGTALK_CLIENT_SECRET = enabledDingTalk[idx].clientSecret;
+        env.MIXWORK_DINGTALK_CLIENT_SECRET = enabledDingTalk[idx].clientSecret;
       } else {
-        env[`MIXCWORK_DINGTALK_CLIENT_SECRET_${idx}`] = enabledDingTalk[idx].clientSecret;
+        env[`MIXWORK_DINGTALK_CLIENT_SECRET_${idx}`] = enabledDingTalk[idx].clientSecret;
       }
     }
     // Gateway token is shared (not per-instance)
     const gatewayToken = this.engineManager.getGatewayToken();
     if (gatewayToken) {
-      env.MIXCWORK_DINGTALK_GW_TOKEN = gatewayToken;
+      env.MIXWORK_DINGTALK_GW_TOKEN = gatewayToken;
     }
 
     // QQ — per-instance secrets (must match sync() indexing: enabled instances only)
@@ -2603,9 +2603,9 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     const enabledQQ = qqInstances.filter(i => i.enabled && i.appSecret);
     for (let idx = 0; idx < enabledQQ.length; idx++) {
       if (idx === 0) {
-        env.MIXCWORK_QQ_CLIENT_SECRET = enabledQQ[idx].appSecret;
+        env.MIXWORK_QQ_CLIENT_SECRET = enabledQQ[idx].appSecret;
       } else {
-        env[`MIXCWORK_QQ_CLIENT_SECRET_${idx}`] = enabledQQ[idx].appSecret;
+        env[`MIXWORK_QQ_CLIENT_SECRET_${idx}`] = enabledQQ[idx].appSecret;
       }
     }
 
@@ -2614,9 +2614,9 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     const enabledWecom = wecomInstances.filter(i => i.enabled && i.secret);
     for (let idx = 0; idx < enabledWecom.length; idx++) {
       if (idx === 0) {
-        env.MIXCWORK_WECOM_SECRET = enabledWecom[idx].secret;
+        env.MIXWORK_WECOM_SECRET = enabledWecom[idx].secret;
       } else {
-        env[`MIXCWORK_WECOM_SECRET_${idx}`] = enabledWecom[idx].secret;
+        env[`MIXWORK_WECOM_SECRET_${idx}`] = enabledWecom[idx].secret;
       }
     }
 
@@ -2631,7 +2631,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
   }
 
   /**
-   * Ensures exec-approvals.json under the MixCWork-managed openclaw home has
+   * Ensures exec-approvals.json under the MixWork-managed openclaw home has
    * security=full + ask=off so the gateway never triggers approval-pending
    * for any command. The path must match the OPENCLAW_HOME env var passed to
    * the gateway process so both sides read/write the same file.
@@ -2685,7 +2685,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     availableProviders: Record<string, OpenClawProviderSelection['providerConfig']>,
   ): boolean {
     const shouldMigrateManagedModelRefs = !(
-      selection.providerId === 'mixcwork' && selection.sessionModelId === selection.legacyModelId
+      selection.providerId === 'mixwork' && selection.sessionModelId === selection.legacyModelId
     );
     const fallbackTarget = parsePrimaryModelRef(selection.primaryModel) ?? {
       providerId: selection.providerId,
@@ -2780,7 +2780,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
           }
         }
 
-        if (!/^agent:[^:]+:mixcwork:/.test(sessionKey)) {
+        if (!/^agent:[^:]+:mixwork:/.test(sessionKey)) {
           continue;
         }
 
@@ -2843,13 +2843,13 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
   }
 
   /**
-   * Resolve the MixCWork SKILLs installation directory for OpenClaw's
+   * Resolve the MixWork SKILLs installation directory for OpenClaw's
    * `skills.load.extraDirs` configuration.
    *
    * Cross-platform paths (via Electron app.getPath('userData')):
-   *   macOS:   ~/Library/Application Support/MixCWork/SKILLs
-   *   Windows: %APPDATA%/MixCWork/SKILLs
-   *   Linux:   ~/.config/MixCWork/SKILLs
+   *   macOS:   ~/Library/Application Support/MixWork/SKILLs
+   *   Windows: %APPDATA%/MixWork/SKILLs
+   *   Linux:   ~/.config/MixWork/SKILLs
    */
   private resolveSkillsExtraDirs(): string[] {
     const userDataSkillsDir = path.join(app.getPath('userData'), 'SKILLs');
@@ -2872,8 +2872,8 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
   }
 
   /**
-   * Build per-skill `enabled` overrides from the MixCWork SkillManager state,
-   * so that skills disabled in the MixCWork UI are also hidden from OpenClaw.
+   * Build per-skill `enabled` overrides from the MixWork SkillManager state,
+   * so that skills disabled in the MixWork UI are also hidden from OpenClaw.
    *
    * Entries must be keyed by the skill's frontmatter `name`, not the
    * directory-derived `id`: OpenClaw resolves these overrides through
@@ -2923,9 +2923,9 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
    * Sync AGENTS.md to the OpenClaw workspace directory.
    * Embeds the skills routing prompt and system prompt so that OpenClaw's
    * native channel connectors (DingTalk, Feishu, etc.) can discover and
-   * invoke MixCWork skills.
+   * invoke MixWork skills.
    */
-  private syncAgentsMd(workspaceDir: string, coworkConfig: MixCWorkConfig): string | undefined {
+  private syncAgentsMd(workspaceDir: string, coworkConfig: MixWorkConfig): string | undefined {
     try {
       ensureDir(workspaceDir);
       const agentsMdPath = path.join(workspaceDir, 'AGENTS.md');
@@ -3003,7 +3003,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
         return;
       }
 
-      const managedContent = `${MIXCWORK_AGENTS_MARKER}\n\n${sections.join('\n\n')}`;
+      const managedContent = `${MIXWORK_AGENTS_MARKER}\n\n${sections.join('\n\n')}`;
       const nextContent = preservedUserContent
         ? `${preservedUserContent}\n\n${managedContent}\n`
         : `${managedContent}\n`;
@@ -3171,7 +3171,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
    * The main agent's workspace is synced by `syncAgentsMd`. Non-main agents
    * get their own workspace directories under the openclaw state directory.
    */
-  private syncPerAgentWorkspaces(mainWorkspaceDir: string, coworkConfig: MixCWorkConfig): void {
+  private syncPerAgentWorkspaces(mainWorkspaceDir: string, coworkConfig: MixWorkConfig): void {
     const agents = this.getAgents?.() ?? [];
     // Use the openclaw state directory as base, matching OpenClaw's own fallback
     // logic: {STATE_DIR}/workspace-{agentId}/
@@ -3283,7 +3283,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     // Build the config to write: start from the base minimal config, then
     // selectively preserve non-provider sections from the existing file.
     // Critically, we do NOT preserve existing.models — it may contain
-    // ${MIXCWORK_APIKEY_X} placeholders for providers that are no longer
+    // ${MIXWORK_APIKEY_X} placeholders for providers that are no longer
     // configured, causing the gateway to fail to start because those env
     // vars are no longer injected.
     let mergedConfig: Record<string, unknown> = { ...baseMinimalConfig };
@@ -3291,7 +3291,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       try {
         const existing = JSON.parse(currentContent);
         // Preserve IM channel plugin entries — these reference their own env
-        // vars (${MIXCWORK_TG_BOT_TOKEN} etc.) that are still injected when
+        // vars (${MIXWORK_TG_BOT_TOKEN} etc.) that are still injected when
         // the corresponding IM channels remain enabled. Plugin-index-managed
         // keys (`installs`) are filtered out — see omitPluginIndexManagedKeys.
         if (existing.plugins) {
@@ -3302,7 +3302,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
           mergedConfig.gateway = existing.gateway;
         }
         // existing.models is intentionally NOT preserved — it references
-        // ${MIXCWORK_APIKEY_*} env vars that may no longer be set.
+        // ${MIXWORK_APIKEY_*} env vars that may no longer be set.
       } catch {
         // Malformed JSON — overwrite with base minimal config.
       }

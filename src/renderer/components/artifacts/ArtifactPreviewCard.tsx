@@ -240,11 +240,11 @@ const OpenDropdown: React.FC<OpenDropdownProps> = ({
 
   const handleBrowserOpen = useCallback(() => {
     reportArtifactPreviewAction({
-      actionType: 'open_mixcwork_browser',
+      actionType: 'open_mixwork_browser',
       source: 'conversation_artifact_card',
       artifact,
       params: {
-        openTarget: 'mixcwork_browser',
+        openTarget: 'mixwork_browser',
       },
     });
     browserOpenAction?.onOpen();
@@ -268,7 +268,7 @@ const OpenDropdown: React.FC<OpenDropdownProps> = ({
           onClick={handleBrowserOpen}
           className={menuItemClassName}
         >
-          <img src="mixcwork-small.png" alt="" className={menuIconClassName} draggable={false} />
+          <img src="mixwork-small.png" alt="" className={menuIconClassName} draggable={false} />
           <span className="truncate">{browserOpenAction.label}</span>
         </button>
       )}
@@ -368,7 +368,7 @@ const ArtifactPreviewCard: React.FC<ArtifactPreviewCardProps> = ({
       artifact,
       params: {
         openTarget: artifact.type === ArtifactTypeValue.LocalService || artifact.type === ArtifactTypeValue.Html
-          ? 'mixcwork_browser'
+          ? 'mixwork_browser'
           : 'preview_panel',
       },
     });
@@ -442,7 +442,7 @@ const ArtifactPreviewCard: React.FC<ArtifactPreviewCardProps> = ({
     (artifact.type === ArtifactTypeValue.Html && artifact.filePath) ||
     (artifact.type === ArtifactTypeValue.LocalService && localServiceUrl)
   )
-    ? { label: t('artifactPreviewCardMixcworkBrowser'), onOpen: handleClick }
+    ? { label: t('artifactPreviewCardMixWorkBrowser'), onOpen: handleClick }
     : undefined;
   const subtitle = (
     <>

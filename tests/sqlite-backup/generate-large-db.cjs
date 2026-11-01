@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 
 const DEFAULTS = {
-  db: path.resolve(process.cwd(), 'mixcwork.sqlite'),
+  db: path.resolve(process.cwd(), 'mixwork.sqlite'),
   sessions: 20,
   messagesPerSession: 5000,
   payloadKb: 8,
@@ -34,8 +34,8 @@ Options:
   --help                        Show this help
 
 Examples:
-  node tests/sqlite-backup/generate-large-db.cjs --db ~/tmp/mixcwork.sqlite
-  node tests/sqlite-backup/generate-large-db.cjs --db ./tmp/mixcwork.sqlite --sessions 50 --messages-per-session 10000 --payload-kb 16
+  node tests/sqlite-backup/generate-large-db.cjs --db ~/tmp/mixwork.sqlite
+  node tests/sqlite-backup/generate-large-db.cjs --db ./tmp/mixwork.sqlite --sessions 50 --messages-per-session 10000 --payload-kb 16
 `);
 }
 
@@ -127,7 +127,7 @@ function sqlString(value) {
 }
 
 function createPayloadBytes(targetBytes) {
-  const line = 'The quick brown mixcwork benchmarks SQLite backup throughput with wide message payloads.\n';
+  const line = 'The quick brown mixwork benchmarks SQLite backup throughput with wide message payloads.\n';
   return line.repeat(Math.max(1, Math.ceil(targetBytes / Buffer.byteLength(line))));
 }
 
@@ -210,7 +210,7 @@ function main() {
   const startTime = Date.now();
   const tempSqlPath = path.join(
     os.tmpdir(),
-    `mixcwork-sqlite-backup-seed-${process.pid}-${Date.now()}.sql`,
+    `mixwork-sqlite-backup-seed-${process.pid}-${Date.now()}.sql`,
   );
 
   let insertedMessages = 0;

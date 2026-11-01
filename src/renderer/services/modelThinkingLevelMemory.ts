@@ -1,4 +1,4 @@
-import { supportsMixCWorkRequestOptionsV1 } from '@shared/providers/mixcworkRequestOptions';
+import { supportsMixWorkRequestOptionsV1 } from '@shared/providers/mixworkRequestOptions';
 import {
   getModelThinkingLevels,
   type ModelThinkingLevel,
@@ -16,7 +16,7 @@ import { getModelIdentityKey, type Model } from '../store/slices/modelSlice';
  * different levels at the same time. This map is picker-only state; the agent
  * and session records stay the source of truth for what actually runs.
  */
-const STORAGE_KEY = 'mixcwork.model-thinking-levels';
+const STORAGE_KEY = 'mixwork.model-thinking-levels';
 
 type ModelThinkingLevelMemory = Record<string, ModelThinkingLevel>;
 
@@ -79,7 +79,7 @@ export function resolveThinkingLevelForModel(
   > | null | undefined,
 ): ModelThinkingLevel | '' {
   const config = model?.thinkingConfig;
-  if (!config || !supportsMixCWorkRequestOptionsV1(model.requestCapabilities)) return '';
+  if (!config || !supportsMixWorkRequestOptionsV1(model.requestCapabilities)) return '';
 
   const remembered = readRememberedModelThinkingLevel(getModelIdentityKey(model));
   return remembered && getModelThinkingLevels(config).includes(remembered)

@@ -1,5 +1,5 @@
 import { type ApiFormat, type ProviderConfig, ProviderName } from '../../shared/providers';
-import { type MixCWorkRequestCapability } from '../../shared/providers/mixcworkRequestOptions';
+import { type MixWorkRequestCapability } from '../../shared/providers/mixworkRequestOptions';
 import { type ModelThinkingConfig } from '../../shared/providers/modelThinking';
 import {
   enterpriseModelCache,
@@ -8,14 +8,14 @@ import { enterpriseModelPrefs } from '../auth/enterpriseModelPrefs';
 import { sessionStorage } from '../auth/sessionStorage';
 import type { SqliteStore } from '../sqliteStore';
 import { catalogResolver } from './catalogResolver';
-import type { MixCWorkApiConfig } from './mixcworkConfigStore';
-import { type AnthropicApiFormat,normalizeProviderApiFormat } from './mixcworkFormatTransform';
+import type { MixWorkApiConfig } from './mixworkConfigStore';
+import { type AnthropicApiFormat,normalizeProviderApiFormat } from './mixworkFormatTransform';
 import {
   configureCoworkOpenAICompatProxy,
   getCoworkOpenAICompatProxyBaseURL,
   getCoworkOpenAICompatProxyStatus,
   type OpenAICompatProxyTarget,
-} from './mixcworkOpenAICompatProxy';
+} from './mixworkOpenAICompatProxy';
 import { readOpenAICodexAuthFile } from './openaiCodexAuth';
 import { hasXaiOAuthCredential } from './xaiAuth';
 
@@ -70,7 +70,7 @@ export type ServerModelMetadata = {
   supportsVideo?: boolean;
   supportsThinking?: boolean;
   thinkingConfig?: ModelThinkingConfig;
-  requestCapabilities?: MixCWorkRequestCapability[];
+  requestCapabilities?: MixWorkRequestCapability[];
   supportsToolCalling?: boolean;
   agenticReady?: boolean;
   contextWindow?: number;
@@ -122,7 +122,7 @@ const normalizeModelIdForComparison = (value: string): string =>
   value.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 export type ApiConfigResolution = {
-  config: MixCWorkApiConfig | null;
+  config: MixWorkApiConfig | null;
   error?: string;
   providerMetadata?: {
     providerName: string;
@@ -133,7 +133,7 @@ export type ApiConfigResolution = {
     supportsVideo?: boolean;
     supportsThinking?: boolean;
     thinkingConfig?: ModelThinkingConfig;
-    requestCapabilities?: MixCWorkRequestCapability[];
+    requestCapabilities?: MixWorkRequestCapability[];
     modelName?: string;
     contextWindow?: number;
     maxTokens?: number;
@@ -195,7 +195,7 @@ export function setServerModelMetadata(
     supportsVideo: metadata.supportsVideo ?? null,
     supportsThinking: metadata.supportsThinking ?? null,
     thinkingConfig: (metadata.thinkingConfig ?? null) as ModelThinkingConfig | null,
-    requestCapabilities: (metadata.requestCapabilities ?? null) as MixCWorkRequestCapability[] | null,
+    requestCapabilities: (metadata.requestCapabilities ?? null) as MixWorkRequestCapability[] | null,
     supportsToolCalling: metadata.supportsToolCalling ?? null,
     agenticReady: metadata.agenticReady ?? null,
     contextWindow: metadata.contextWindow ?? null,
@@ -360,7 +360,7 @@ type MatchedProvider = {
   supportsVideo?: boolean;
   supportsThinking?: boolean;
   thinkingConfig?: ModelThinkingConfig;
-  requestCapabilities?: MixCWorkRequestCapability[];
+  requestCapabilities?: MixWorkRequestCapability[];
   modelName?: string;
   contextWindow?: number;
   maxTokens?: number;
@@ -399,7 +399,7 @@ function shouldUseXaiOAuth(providerName: string, providerConfig: LocalProviderCo
   return providerName === ProviderName.Xai && providerConfig.authType === 'oauth';
 }
 
-function tryMixcworkServerFallback(modelId?: string): MatchedProvider | null {
+function tryMixWorkServerFallback(modelId?: string): MatchedProvider | null {
   const tokens = authTokensGetter?.();
   const serverBaseUrl = serverBaseUrlGetter?.();
   if (!tokens?.accessToken || !serverBaseUrl) return null;
@@ -410,7 +410,7 @@ function tryMixcworkServerFallback(modelId?: string): MatchedProvider | null {
   const effectiveApiFormat = cachedMeta?.apiFormat
     ? normalizeProviderApiFormat(cachedMeta.apiFormat)
     : 'openai';
-  console.debug('[ClaudeSettings] mixcwork-server provider resolved:', {
+  console.debug('[ClaudeSettings] mixwork-server provider resolved:', {
     baseURL,
     modelId: effectiveModelId,
     apiFormat: effectiveApiFormat,
@@ -419,7 +419,7 @@ function tryMixcworkServerFallback(modelId?: string): MatchedProvider | null {
     thinkingConfig: cachedMeta?.thinkingConfig,
   });
   return {
-    providerName: ProviderName.MixcworkServer,
+    providerName: ProviderName.MixWorkServer,
     providerConfig: { enabled: true, apiKey: tokens.accessToken, baseUrl: baseURL, apiFormat: effectiveApiFormat, models: buildServerFallbackModels(effectiveModelId) },
     modelId: effectiveModelId,
     apiFormat: effectiveApiFormat,
@@ -481,7 +481,7 @@ export function tryEnterpriseCatalogFallback(modelId?: string): MatchedProvider 
     supportsThinking: matchedEntry.capabilities.supports_thinking,
   });
   return {
-    providerName: ProviderName.MixcworkServer,
+    providerName: ProviderName.MixWorkServer,
     providerConfig: {
       enabled: true,
       apiKey: upstreamAuth,
@@ -539,7 +539,7 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
     if (!fallback) {
       const enterpriseMatch = tryEnterpriseCatalogFallback(configuredModelId);
       if (enterpriseMatch) return { matched: enterpriseMatch };
-      const serverFallback = tryMixcworkServerFallback(configuredModelId);
+      const serverFallback = tryMixWorkServerFallback(configuredModelId);
       if (serverFallback) return { matched: serverFallback };
       return { matched: null, error: 'No available model configured in enabled providers.' };
     }
@@ -549,11 +549,11 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
   let providerEntry: [string, LocalProviderConfig] | undefined;
   const preferredProviderName = appConfig.model?.defaultModelProvider?.trim();
 
-  // Handle mixcwork-server provider: dynamically construct from auth tokens
-  if (preferredProviderName === ProviderName.MixcworkServer) {
+  // Handle mixwork-server provider: dynamically construct from auth tokens
+  if (preferredProviderName === ProviderName.MixWorkServer) {
     const enterpriseMatch = tryEnterpriseCatalogFallback(modelId);
     if (enterpriseMatch) return { matched: enterpriseMatch };
-    const serverMatch = tryMixcworkServerFallback(modelId);
+    const serverMatch = tryMixWorkServerFallback(modelId);
     if (serverMatch) {
       return { matched: serverMatch };
     }
@@ -586,7 +586,7 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
     } else {
       const enterpriseMatch = tryEnterpriseCatalogFallback(modelId);
       if (enterpriseMatch) return { matched: enterpriseMatch };
-      const serverFallback = tryMixcworkServerFallback(modelId);
+      const serverFallback = tryMixWorkServerFallback(modelId);
       if (serverFallback) return { matched: serverFallback };
       return { matched: null, error: `No enabled provider found for model: ${modelId}` };
     }
@@ -603,7 +603,7 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
   if (providerName === ProviderName.Minimax && (providerConfig as any).authType === 'oauth' && !(providerConfig as any).oauthAccessToken) {
     const enterpriseMatch = tryEnterpriseCatalogFallback(modelId);
     if (enterpriseMatch) return { matched: enterpriseMatch };
-    const serverFallback = tryMixcworkServerFallback(modelId);
+    const serverFallback = tryMixWorkServerFallback(modelId);
     if (serverFallback) return { matched: serverFallback };
     return { matched: null, error: 'MiniMax OAuth mode selected but login not completed.' };
   }
@@ -613,7 +613,7 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
   if (shouldUseXaiOAuth(providerName, providerConfig) && !hasXaiOAuthCredential()) {
     const enterpriseMatch = tryEnterpriseCatalogFallback(modelId);
     if (enterpriseMatch) return { matched: enterpriseMatch };
-    const serverFallback = tryMixcworkServerFallback(modelId);
+    const serverFallback = tryMixWorkServerFallback(modelId);
     if (serverFallback) return { matched: serverFallback };
     return { matched: null, error: 'xAI OAuth mode selected but login not completed.' };
   }
@@ -622,13 +622,13 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
   let baseURL = providerConfig.baseUrl?.trim();
 
   // codingPlan is no longer used: the desktop is single-provider
-  // (mixcwork-server) and the dedicated coding-plan endpoints were a
+  // (mixwork-server) and the dedicated coding-plan endpoints were a
   // per-provider concept.
 
   if (!baseURL) {
     const enterpriseMatch = tryEnterpriseCatalogFallback(modelId);
     if (enterpriseMatch) return { matched: enterpriseMatch };
-    const serverFallback = tryMixcworkServerFallback(modelId);
+    const serverFallback = tryMixWorkServerFallback(modelId);
     if (serverFallback) return { matched: serverFallback };
     return { matched: null, error: `Provider ${providerName} is missing base URL.` };
   }
@@ -642,7 +642,7 @@ function resolveMatchedProvider(appConfig: AppConfig): { matched: MatchedProvide
   if (apiFormat === 'anthropic' && providerRequiresApiKey(providerName) && !providerConfig.apiKey?.trim() && !hasApiKey && !hasOAuthCreds) {
     const enterpriseMatch = tryEnterpriseCatalogFallback(modelId);
     if (enterpriseMatch) return { matched: enterpriseMatch };
-    const serverFallback = tryMixcworkServerFallback(modelId);
+    const serverFallback = tryMixWorkServerFallback(modelId);
     if (serverFallback) return { matched: serverFallback };
     return { matched: null, error: `Provider ${providerName} requires API key for Anthropic-compatible mode.` };
   }
@@ -701,7 +701,7 @@ export function resolveCurrentApiConfig(target: OpenAICompatProxyTarget = 'local
   // placeholder so downstream components (OpenClaw gateway, compat proxy)
   // don't reject the request with "No API key found for provider".
   const effectiveApiKey = resolvedApiKey
-    || (!providerRequiresApiKey(matched.providerName) ? 'sk-mixcwork-local' : '');
+    || (!providerRequiresApiKey(matched.providerName) ? 'sk-mixwork-local' : '');
 
   if (matched.apiFormat === 'anthropic') {
     return {
@@ -752,7 +752,7 @@ export function resolveCurrentApiConfig(target: OpenAICompatProxyTarget = 'local
 
   return {
     config: {
-      apiKey: resolvedApiKey || 'mixcwork-openai-compat',
+      apiKey: resolvedApiKey || 'mixwork-openai-compat',
       baseURL: proxyBaseURL,
       model: matched.modelId,
       apiType: 'openai',
@@ -773,7 +773,7 @@ export function resolveCurrentApiConfig(target: OpenAICompatProxyTarget = 'local
   };
 }
 
-export function getCurrentApiConfig(target: OpenAICompatProxyTarget = 'local'): MixCWorkApiConfig | null {
+export function getCurrentApiConfig(target: OpenAICompatProxyTarget = 'local'): MixWorkApiConfig | null {
   return resolveCurrentApiConfig(target).config;
 }
 
@@ -806,7 +806,7 @@ export function resolveRawApiConfig(): ApiConfigResolution {
     // (no ENTERPRISE_SERVER_URL, no session JWT, or empty catalog).
     //
     // We must NOT fall back to the catalog's raw upstream endpoint
-    // (enterpriseModelCache.getEndpoint) with a ${MIXCWORK_APIKEY_X} placeholder
+    // (enterpriseModelCache.getEndpoint) with a ${MIXWORK_APIKEY_X} placeholder
     // here: a direct upstream connection bypasses the proxy and the per-org
     // allowlist, and the upstream rejects a model it doesn't serve with
     // 404 "model_not_found" (e.g. a Qwen model forwarded to /proxy/deepseek's
@@ -859,7 +859,7 @@ export function resolveRawApiConfig(): ApiConfigResolution {
   // leaves the key blank we supply a placeholder so the gateway doesn't reject
   // the request with "No API key found for provider".
   const effectiveApiKey = apiKey
-    || (!providerRequiresApiKey(matched.providerName) ? 'sk-mixcwork-local' : '');
+    || (!providerRequiresApiKey(matched.providerName) ? 'sk-mixwork-local' : '');
   return {
     config: {
       apiKey: effectiveApiKey,
@@ -894,7 +894,7 @@ export function resolveRawApiConfig(): ApiConfigResolution {
 export function resolveAllProviderApiKeys(): Record<string, string> {
   const result: Record<string, string> = {};
 
-  // mixcwork-server token: the consumer backend's access token is injected as
+  // mixwork-server token: the consumer backend's access token is injected as
   // an env var for the personal (non-enterprise) path. The local token proxy
   // that previously managed this has been removed, so the token is always
   // injected here whenever a consumer token is available.
@@ -932,22 +932,22 @@ export function resolveAllProviderApiKeys(): Record<string, string> {
         continue;
       }
       const envName = providerName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
-      result[envName] = apiKey || 'sk-mixcwork-local';
+      result[envName] = apiKey || 'sk-mixwork-local';
     }
   }
 
   // Enterprise path: per spec §4.3 the desktop never persists API keys
   // locally. The enterprise server hands the desktop a per-org catalog
   // (kept in memory in enterpriseModelCache). The env-name derivation must
-  // match what openclaw.json expects so that the `${MIXCWORK_APIKEY_<NAME>}`
+  // match what openclaw.json expects so that the `${MIXWORK_APIKEY_<NAME>}`
   // placeholder resolves at gateway startup.
   //
   // This is collected IN ADDITION to the local providers above, not as an
   // `else` branch. After an enterprise login the config-sync round trip
-  // leaves a hollow `mixcwork-server` entry in app_config.providers (empty
+  // leaves a hollow `mixwork-server` entry in app_config.providers (empty
   // key, no models), which keeps the local branch above "active" while
   // resolveRawApiConfig falls through to the enterprise branch and writes a
-  // `${MIXCWORK_APIKEY_X}` placeholder. If we made the two branches mutually
+  // `${MIXWORK_APIKEY_X}` placeholder. If we made the two branches mutually
   // exclusive, the hollow local entry would shadow the real catalog and the
   // placeholder would have no matching env var → gateway SecretRefResolutionError
   // crash loop. In pure local mode the catalog is empty, so this is a no-op.
@@ -983,7 +983,7 @@ export function resolveAllProviderApiKeys(): Record<string, string> {
 }
 
 
-export function buildEnvForConfig(config: MixCWorkApiConfig): Record<string, string> {
+export function buildEnvForConfig(config: MixWorkApiConfig): Record<string, string> {
   const baseEnv = { ...process.env } as Record<string, string>;
 
   baseEnv.ANTHROPIC_AUTH_TOKEN = config.apiKey;
@@ -1042,7 +1042,7 @@ export function resolveAllEnabledProviderConfigs(): ProviderRawConfig[] {
 
   for (const [providerName, providerConfig] of Object.entries(appConfig.providers)) {
     if (!providerConfig?.enabled) continue;
-    if (providerName === ProviderName.MixcworkServer) continue;
+    if (providerName === ProviderName.MixWorkServer) continue;
 
     // When minimax is in OAuth mode, use oauthAccessToken and oauthBaseUrl
     // (independent from the user's manually entered apiKey/baseUrl).
@@ -1110,7 +1110,7 @@ export function resolveAllEnabledProviderConfigs(): ProviderRawConfig[] {
     let effectiveApiFormat = getEffectiveProviderApiFormat(providerName, providerConfig.apiFormat);
 
     // codingPlan is no longer used: the desktop is single-provider
-    // (mixcwork-server) and the dedicated coding-plan endpoints were a
+    // (mixwork-server) and the dedicated coding-plan endpoints were a
     // per-provider concept.
 
     if (!effectiveBaseURL) continue;
@@ -1121,7 +1121,7 @@ export function resolveAllEnabledProviderConfigs(): ProviderRawConfig[] {
     result.push({
       providerName,
       baseURL: effectiveBaseURL,
-      apiKey: apiKey || 'sk-mixcwork-local',
+      apiKey: apiKey || 'sk-mixwork-local',
       apiType: effectiveApiFormat === 'anthropic' ? 'anthropic' : 'openai',
       authType: providerConfig.authType,
       codingPlanEnabled: !!providerConfig.codingPlanEnabled,

@@ -72,7 +72,7 @@ Inputs the spec implies but no task's test explicitly exercises. Each has its te
 
 ### Task 1: CI workflow for enterprise_server
 
-The repo has **no CI configuration at all** — no `.github/`, no `.gitlab-ci.yml`. The remote is Gitea (`https://paulgitea.iepose.cn/paul/MixCWork`), so the platform is Gitea Actions, whose workflow syntax is GitHub-Actions-compatible. This task creates it, and fixes the `npm test` invocation that currently aborts.
+The repo has **no CI configuration at all** — no `.github/`, no `.gitlab-ci.yml`. The remote is Gitea (`https://paulgitea.iepose.cn/paul/MixWork`), so the platform is Gitea Actions, whose workflow syntax is GitHub-Actions-compatible. This task creates it, and fixes the `npm test` invocation that currently aborts.
 
 **Files:**
 - Create: `.gitea/workflows/enterprise-server.yml`
@@ -1869,7 +1869,7 @@ Expected: no errors.
 
 - [ ] **Step 4: Lint the changed files**
 
-Run: `cd /Users/paulwang/work/MixCWork && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 $(git diff --name-only main...HEAD | grep -E '\.tsx?$' | tr '\n' ' ')`
+Run: `cd /Users/paulwang/work/MixWork && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 $(git diff --name-only main...HEAD | grep -E '\.tsx?$' | tr '\n' ' ')`
 Expected: clean. Do not add broad `eslint-disable` comments to get there.
 
 - [ ] **Step 5: Review Focus sweep**

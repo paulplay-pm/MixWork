@@ -7,7 +7,7 @@ import {
   BrowserAnnotationLimit,
   type BrowserAnnotationRect,
   type BrowserAnnotationScreenshotRef,
-} from '../../shared/mixcwork/browserAnnotations';
+} from '../../shared/mixwork/browserAnnotations';
 
 export interface BrowserAnnotationAssetIdentity {
   draftKey: string;

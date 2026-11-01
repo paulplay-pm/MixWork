@@ -6,7 +6,7 @@ import { openOauthFlow } from './oauthBrowserFlow';
 
 const QICHACHA_ISSUER = 'https://agent.qcc.com';
 const QICHACHA_RESOURCE = 'https://agent.qcc.com/mcp/company/stream';
-const QICHACHA_CLIENT_NAME = 'MixcWork';
+const QICHACHA_CLIENT_NAME = 'MixWork';
 
 type QichachaRegistrationResponse = {
   client_id?: string;
@@ -88,7 +88,7 @@ function startCallbackServer(expectedState: string): Promise<{ redirectUri: stri
         return;
       }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end('<h1>Qichacha authorization complete</h1><p>You can return to MixcWork.</p>');
+      res.end('<h1>Qichacha authorization complete</h1><p>You can return to MixWork.</p>');
     });
 
     server.once('error', reject);

@@ -1,17 +1,17 @@
 import { describe, expect, test } from 'vitest';
 
 import { ShareDeploymentCandidateSource } from '../../shared/shareDeployment/constants';
-import type { MixCWorkMessage, MixCWorkMessageMetadata } from '../types/mixcwork';
+import type { MixWorkMessage, MixWorkMessageMetadata } from '../types/mixwork';
 import { parseLocalServiceArtifactsFromMessages } from './localServiceContextParser';
 
 let timestamp = 0;
 
 function makeMessage(
   id: string,
-  type: MixCWorkMessage['type'],
+  type: MixWorkMessage['type'],
   content = '',
-  metadata?: MixCWorkMessageMetadata,
-): MixCWorkMessage {
+  metadata?: MixWorkMessageMetadata,
+): MixWorkMessage {
   timestamp += 1;
   return { id, type, content, timestamp, metadata };
 }
@@ -24,7 +24,7 @@ describe('parseLocalServiceArtifactsFromMessages', () => {
         toolName: 'Bash',
         toolUseId: 'tool-1',
         toolInput: {
-          command: 'lsof -ti:8765 | xargs kill -9 2>/dev/null; sleep 1; cd /Users/admin/mixcwork/project/dayan-shenjun && npm run dev',
+          command: 'lsof -ti:8765 | xargs kill -9 2>/dev/null; sleep 1; cd /Users/admin/mixwork/project/dayan-shenjun && npm run dev',
         },
       }),
       makeMessage('bash-result-1', 'tool_result', 'ready', { toolUseId: 'tool-1' }),
@@ -36,13 +36,13 @@ describe('parseLocalServiceArtifactsFromMessages', () => {
     ];
 
     const artifacts = parseLocalServiceArtifactsFromMessages(messages, 'session-1', {
-      workingDirectory: '/Users/admin/mixcwork/project',
+      workingDirectory: '/Users/admin/mixwork/project',
     });
 
     expect(artifacts).toHaveLength(1);
     expect(artifacts[0].messageId).toBe('assistant-1');
     expect(artifacts[0].localService?.projectDirectory).toBe(
-      '/Users/admin/mixcwork/project/dayan-shenjun',
+      '/Users/admin/mixwork/project/dayan-shenjun',
     );
     expect(artifacts[0].localService?.projectCandidates?.[0]).toEqual(expect.objectContaining({
       source: ShareDeploymentCandidateSource.ToolCdCommand,

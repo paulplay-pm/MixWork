@@ -2196,7 +2196,7 @@ const IMSettings: React.FC = () => {
                     setWecomQuickSetupStatus('pending');
                     setWecomQuickSetupError('');
                     try {
-                      const bot = await WecomAIBotSDK.openBotInfoAuthWindow({ source: 'mixcwork-ai' });
+                      const bot = await WecomAIBotSDK.openBotInfoAuthWindow({ source: 'mixwork-ai' });
                       if (!isMountedRef.current) return;
                       dispatch(setWecomInstanceConfig({ instanceId: activeWecomInstanceId!, config: { botId: bot.botid, secret: bot.secret, enabled: true } }));
                       dispatch(clearError());

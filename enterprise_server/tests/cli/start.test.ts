@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 describe('start subcommand', () => {
-  const prevDryRun = process.env.MIXCWORK_MIGRATE_DRY_RUN;
+  const prevDryRun = process.env.MIXWORK_MIGRATE_DRY_RUN;
   const prevSuperuser = process.env.POSTGRES_SUPERUSER_URL;
 
   beforeEach(() => {
@@ -9,14 +9,14 @@ describe('start subcommand', () => {
   });
 
   afterEach(() => {
-    if (prevDryRun === undefined) delete process.env.MIXCWORK_MIGRATE_DRY_RUN;
-    else process.env.MIXCWORK_MIGRATE_DRY_RUN = prevDryRun;
+    if (prevDryRun === undefined) delete process.env.MIXWORK_MIGRATE_DRY_RUN;
+    else process.env.MIXWORK_MIGRATE_DRY_RUN = prevDryRun;
     if (prevSuperuser === undefined) delete process.env.POSTGRES_SUPERUSER_URL;
     else process.env.POSTGRES_SUPERUSER_URL = prevSuperuser;
   });
 
   test('skips serve() in dry-run mode', async () => {
-    process.env.MIXCWORK_MIGRATE_DRY_RUN = '1';
+    process.env.MIXWORK_MIGRATE_DRY_RUN = '1';
 
     // Stub the runMigrationsOnce + serve modules so we never touch Postgres
     // or bind a port. The dry-run branch must return before serve() is called.

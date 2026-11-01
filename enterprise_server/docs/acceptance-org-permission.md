@@ -15,7 +15,7 @@ path, and that the audit trail explains each refusal.
 - **Backend**: this repo's `enterprise_server` (`npx tsx src/server.ts`) on a
   free port (`:8799`), against a **throwaway** database. `runMigrations()` applies
   000–030 (incl. the two-axis 028/029/030); built-in roles are seeded globally by
-  029. The user's own `:8787` server and its `mixcwork` DB were never touched.
+  029. The user's own `:8787` server and its `mixwork` DB were never touched.
 - **Data**: one org with a 5-level department tree and five users:
 
   | dept path | user | role | notes |

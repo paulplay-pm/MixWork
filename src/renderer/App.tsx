@@ -20,21 +20,21 @@ import { SIDEBAR_TASK_FILTER_ENABLED } from './components/agentSidebar/SidebarTa
 import KitsView from './components/kits/KitsView';
 import LibraryView from './components/library/LibraryView';
 import McpAuthHost from './components/mcp/McpAuthHost';
-import { MixCWorkView } from './components/mixcwork';
+import { MixWorkView } from './components/mixwork';
 import {
   CoworkShortcutDirection,
   type CoworkTaskSearchRequestEventDetail,
   CoworkTaskSearchRequestSource,
   CoworkUiEvent,
-} from './components/mixcwork/constants';
+} from './components/mixwork/constants';
 import {
   ConversationSearchShortcutTarget,
   resolveConversationSearchShortcutTarget,
-} from './components/mixcwork/conversationSearchShortcut';
-import CoworkPermissionModal from './components/mixcwork/CoworkPermissionModal';
-import CoworkQuestionWizard from './components/mixcwork/CoworkQuestionWizard';
-import EngineFailureOverlay from './components/mixcwork/EngineFailureOverlay';
-import EngineStartupOverlay from './components/mixcwork/EngineStartupOverlay';
+} from './components/mixwork/conversationSearchShortcut';
+import CoworkPermissionModal from './components/mixwork/CoworkPermissionModal';
+import CoworkQuestionWizard from './components/mixwork/CoworkQuestionWizard';
+import EngineFailureOverlay from './components/mixwork/EngineFailureOverlay';
+import EngineStartupOverlay from './components/mixwork/EngineStartupOverlay';
 import { ScheduledTasksView } from './components/scheduledTasks';
 import Settings, { type SettingsOpenOptions } from './components/Settings';
 import Sidebar from './components/Sidebar';
@@ -65,7 +65,7 @@ import {
   beginLatestAsyncRequest,
   isLatestAsyncRequest,
 } from './services/latestAsyncRequest';
-import { mixcworkService } from './services/mixcwork';
+import { mixworkService } from './services/mixwork';
 import { scheduledTaskService } from './services/scheduledTask';
 import { isTextEditingSafeShortcut, matchesShortcut } from './services/shortcuts';
 import { themeService } from './services/theme';
@@ -86,11 +86,11 @@ import {
   setDraftKitIds,
   setDraftPrompt,
   setDraftSkillIds,
-} from './store/slices/mixcworkSlice';
+} from './store/slices/mixworkSlice';
 import { setAvailableModels, setDefaultSelectedModel } from './store/slices/modelSlice';
 import { clearSelection } from './store/slices/quickActionSlice';
 import { setActiveSkillIds } from './store/slices/skillSlice';
-import { MixCWorkCollaborationMode, type MixCWorkPermissionResult } from './types/mixcwork';
+import { MixWorkCollaborationMode, type MixWorkPermissionResult } from './types/mixwork';
 
 const AGENT_TASK_SLOT_SHORTCUT_ACTIONS = [
   ShortcutAction.OpenAgentTask1,
@@ -700,7 +700,7 @@ const App: React.FC = () => {
 
   const handleOpenLibrarySession = useCallback((session: LibrarySessionRef) => {
     setMainView('cowork');
-    void mixcworkService.loadSession(session.sessionId).then(loaded => {
+    void mixworkService.loadSession(session.sessionId).then(loaded => {
       if (!loaded || !session.sessionArtifactId) return;
       dispatch(openArtifactPreviewTab({
         sessionId: session.sessionId,
@@ -727,12 +727,12 @@ const App: React.FC = () => {
 
   const openHomeWithKit = useCallback((kitId: string, text?: string) => {
     dispatch(setActiveKitIds([kitId]));
-    mixcworkService.clearSession({ restoreAgentSkills: true });
+    mixworkService.clearSession({ restoreAgentSkills: true });
     dispatch(clearSelection());
     if (text !== undefined) {
       dispatch(setDraftCollaborationMode({
         draftKey: '__home__',
-        mode: MixCWorkCollaborationMode.Default,
+        mode: MixWorkCollaborationMode.Default,
       }));
       // Set the draft prompt before switching view, so that when CoworkPromptInput
       // mounts/updates with draftKey='__home__', it picks up the text.
@@ -758,7 +758,7 @@ const App: React.FC = () => {
 
   const handleSkillUse = useCallback((skillId: string) => {
     dispatch(setActiveSkillIds([skillId]));
-    mixcworkService.clearSession({ restoreAgentSkills: true });
+    mixworkService.clearSession({ restoreAgentSkills: true });
     dispatch(clearSelection());
     dispatch(setDraftSkillIds({ draftKey: '__home__', skillIds: [skillId] }));
     setMainView('cowork');
@@ -803,11 +803,11 @@ const App: React.FC = () => {
   const handleNewChat = useCallback(() => {
     // Only clear when already on home (no session) — preserve __home__ draft when returning from a session
     const shouldClearInput = mainView === 'cowork' && !currentSessionId;
-    mixcworkService.clearSession({ restoreAgentSkills: true });
+    mixworkService.clearSession({ restoreAgentSkills: true });
     dispatch(clearSelection());
     dispatch(setDraftCollaborationMode({
       draftKey: '__home__',
-      mode: MixCWorkCollaborationMode.Default,
+      mode: MixWorkCollaborationMode.Default,
     }));
     setMainView('cowork');
     window.setTimeout(() => {
@@ -819,11 +819,11 @@ const App: React.FC = () => {
 
   const handleCreateSkillByChat = useCallback(() => {
     dispatch(setDraftPrompt({ sessionId: '__home__', draft: i18nService.t('skillCreatorPrompt') }));
-    mixcworkService.clearSession();
+    mixworkService.clearSession();
     dispatch(clearSelection());
     dispatch(setDraftCollaborationMode({
       draftKey: '__home__',
-      mode: MixCWorkCollaborationMode.Default,
+      mode: MixWorkCollaborationMode.Default,
     }));
     setMainView('cowork');
   }, [dispatch]);
@@ -1071,9 +1071,9 @@ const App: React.FC = () => {
     await handleConfirmUpdate();
   }, [handleConfirmUpdate]);
 
-  const handlePermissionResponse = useCallback(async (result: MixCWorkPermissionResult) => {
+  const handlePermissionResponse = useCallback(async (result: MixWorkPermissionResult) => {
     if (!pendingPermission) return;
-    await mixcworkService.respondToPermission(pendingPermission.requestId, result);
+    await mixworkService.respondToPermission(pendingPermission.requestId, result);
   }, [pendingPermission]);
 
   const handleMinimizePermission = useCallback(() => {
@@ -1230,7 +1230,7 @@ const App: React.FC = () => {
         if (mainView === 'cowork') {
           window.dispatchEvent(new CustomEvent(CoworkUiEvent.ShortcutStopSession));
         } else if (currentSessionId) {
-          void mixcworkService.stopSession(currentSessionId);
+          void mixworkService.stopSession(currentSessionId);
         }
         return;
       }
@@ -1401,11 +1401,11 @@ const App: React.FC = () => {
         // Logging must not block navigation.
       }
 
-      mixcworkService.clearSession({ restoreAgentSkills: true });
+      mixworkService.clearSession({ restoreAgentSkills: true });
       dispatch(clearSelection());
       dispatch(setDraftCollaborationMode({
         draftKey: '__home__',
-        mode: MixCWorkCollaborationMode.Default,
+        mode: MixWorkCollaborationMode.Default,
       }));
       dispatch(setDraftPrompt({ sessionId: '__home__', draft: text }));
       dispatch(clearDraftAttachments('__home__'));
@@ -1454,7 +1454,7 @@ const App: React.FC = () => {
     const unsubscribe = window.electron.cowork.onOpenSessionFromNotification?.(({ sessionId }) => {
       setShowSettings(false);
       setMainView('cowork');
-      void mixcworkService.loadSession(sessionId);
+      void mixworkService.loadSession(sessionId);
     });
     void window.electron.cowork.notifyOpenSessionFromNotificationReady?.();
     return unsubscribe;
@@ -1836,7 +1836,7 @@ const App: React.FC = () => {
                 }}
               />
             ) : (
-              <MixCWorkView
+              <MixWorkView
                 onRequestAppSettings={handleShowSettings}
                 onShowSkills={handleShowSkills}
                 onShowKits={handleShowKits}

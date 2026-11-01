@@ -112,7 +112,7 @@ vi.mock('./openclawLocalExtensions', () => ({
   findThirdPartyExtensionsDir: () => null,
   hasBundledOpenClawExtension: (id: string) => (
     id !== 'qwen-portal-auth'
-    && (id !== 'mixcwork-model-compat' || mockRuntimeState.modelCompatPluginAvailable)
+    && (id !== 'mixwork-model-compat' || mockRuntimeState.modelCompatPluginAvailable)
   ),
   hasRuntimeBundledOpenClawExtension: (id: string) => id === 'xai',
   resolveOpenClawExtensionPluginId: (id: string) => {
@@ -186,7 +186,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -241,12 +241,12 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(config.skills.entries).not.toHaveProperty('remotion');
   });
 
-  test('writes OpenClaw config fields required by MixCWork patches', async () => {
+  test('writes OpenClaw config fields required by MixWork patches', async () => {
     const legacyWorkingDirectory = path.join(tmpDir, 'legacy-working-directory');
     const mainAgentWorkingDirectory = path.join(tmpDir, 'main-agent-working-directory');
 
     const sync = await createSync({
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: legacyWorkingDirectory,
         systemPrompt: '',
         executionMode: 'local',
@@ -279,7 +279,7 @@ describe('OpenClawConfigSync runtime config output', () => {
       ],
     });
 
-    const result = sync.sync('mixcwork-patch-dependent-fields');
+    const result = sync.sync('mixwork-patch-dependent-fields');
     expect(result.ok).toBe(true);
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
@@ -323,7 +323,7 @@ describe('OpenClawConfigSync runtime config output', () => {
           description: '',
           systemPrompt: '',
           identity: '',
-          model: 'mixcwork/server-model',
+          model: 'mixwork/server-model',
           workingDirectory: '',
           icon: '',
           skillIds: [],
@@ -343,7 +343,7 @@ describe('OpenClawConfigSync runtime config output', () => {
           description: '',
           systemPrompt: '',
           identity: '',
-          model: 'mixcwork/plain-model',
+          model: 'mixwork/plain-model',
           workingDirectory: '',
           icon: '',
           skillIds: [],
@@ -363,7 +363,7 @@ describe('OpenClawConfigSync runtime config output', () => {
           description: '',
           systemPrompt: '',
           identity: '',
-          model: 'mixcwork/custom-model',
+          model: 'mixwork/custom-model',
           workingDirectory: '',
           icon: '',
           skillIds: [],
@@ -378,7 +378,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         },
       ],
       getAgentModelOverride: (enterpriseAgentId: string) => (
-        enterpriseAgentId === 'agent_a1' ? 'mixcwork/override-model' : ''
+        enterpriseAgentId === 'agent_a1' ? 'mixwork/override-model' : ''
       ),
     });
 
@@ -390,11 +390,11 @@ describe('OpenClawConfigSync runtime config output', () => {
     const byId = new Map(entries.map((entry) => [entry.id, entry]));
 
     // Enterprise agent with a stored, parseable override: primary is the override.
-    expect(byId.get('ent-overridden')?.model?.primary).toBe('mixcwork/override-model');
+    expect(byId.get('ent-overridden')?.model?.primary).toBe('mixwork/override-model');
     // Enterprise agent without a stored override: row model is kept.
-    expect(byId.get('ent-no-override')?.model?.primary).toBe('mixcwork/plain-model');
+    expect(byId.get('ent-no-override')?.model?.primary).toBe('mixwork/plain-model');
     // Non-enterprise agent: the override lookup never applies to it.
-    expect(byId.get('custom-agent')?.model?.primary).toBe('mixcwork/custom-model');
+    expect(byId.get('custom-agent')?.model?.primary).toBe('mixwork/custom-model');
   });
 
   test('enterprise model override is ignored when no override getter is wired', async () => {
@@ -427,7 +427,7 @@ describe('OpenClawConfigSync runtime config output', () => {
           description: '',
           systemPrompt: '',
           identity: '',
-          model: 'mixcwork/server-model',
+          model: 'mixwork/server-model',
           workingDirectory: '',
           icon: '',
           skillIds: [],
@@ -450,7 +450,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     const entries = config.agents.list as Array<{ id: string; model?: { primary?: string } }>;
     const entEntry = entries.find((entry) => entry.id === 'ent-agent');
-    expect(entEntry?.model?.primary).toBe('mixcwork/server-model');
+    expect(entEntry?.model?.primary).toBe('mixwork/server-model');
   });
 
   test('disables OpenClaw remote model pricing refresh in generated config', async () => {
@@ -491,7 +491,7 @@ describe('OpenClawConfigSync runtime config output', () => {
 
   test('defaults memory search to local FTS-only when embeddings are disabled', async () => {
     const sync = await createSync({
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -569,7 +569,7 @@ describe('OpenClawConfigSync runtime config output', () => {
 
   test('writes disabled OpenClaw heartbeat cadence when user disables heartbeat', async () => {
     const sync = await createSync({
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -609,7 +609,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -642,9 +642,9 @@ describe('OpenClawConfigSync runtime config output', () => {
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     // Rebrand: the legacy `request.proxy = { mode: 'env-proxy' }` was removed —
-    // there is no `request` key written on the mixcwork-server provider entry.
-    expect(config.models.providers['mixcwork-server']).toBeDefined();
-    expect(config.models.providers['mixcwork-server'].request).toBeUndefined();
+    // there is no `request` key written on the mixwork-server provider entry.
+    expect(config.models.providers['mixwork-server']).toBeDefined();
+    expect(config.models.providers['mixwork-server'].request).toBeUndefined();
   });
 
   test('writes managed browser proxy args when system proxy is enabled', async () => {
@@ -747,7 +747,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -779,12 +779,12 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(result.ok).toBe(true);
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    // Rebrand: all providers collapse into the single 'mixcwork-server' provider.
-    expect(config.models.providers['mixcwork-server']).toBeDefined();
+    // Rebrand: all providers collapse into the single 'mixwork-server' provider.
+    expect(config.models.providers['mixwork-server']).toBeDefined();
     // Rebrand: The user's OpenAI OAuth config routes through openai-completions
     // (buildProviderSelection does not pass providerName to mapApiTypeToOpenClawApi,
     // so the OpenAI special case that returns 'openai-responses' is bypassed).
-    expect(config.models.providers['mixcwork-server'].api).toBe('openai-completions');
+    expect(config.models.providers['mixwork-server'].api).toBe('openai-completions');
     // The legacy 'openai-codex' sibling provider is no longer created.
     expect(config.models.providers['openai-codex']).toBeUndefined();
     // The legacy per-vendor 'openai' and 'deepseek' providers no longer exist.
@@ -808,7 +808,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: legacyWorkingDirectory,
         systemPrompt: '',
         executionMode: 'local',
@@ -922,28 +922,28 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(fs.existsSync(path.join(writerWorkspace, 'USER.md'))).toBe(false);
   });
 
-  test('merges all server models into existing mixcwork-server provider and updates image input', async () => {
+  test('merges all server models into existing mixwork-server provider and updates image input', async () => {
     mockRuntimeState.serverModels = [
       {
-        modelId: 'qwen3.5-plus-MixcworkInner',
-        modelName: 'qwen3.5-plus-MixcworkInner',
-        provider: 'MixcworkInner',
+        modelId: 'qwen3.5-plus-MixWorkInner',
+        modelName: 'qwen3.5-plus-MixWorkInner',
+        provider: 'MixWorkInner',
         apiFormat: 'openai',
         supportsImage: true,
         explicitContextCache: true,
       },
       {
-        modelId: 'qwen3.6-plus-MixcworkInner',
-        modelName: 'qwen3.6-plus-MixcworkInner',
-        provider: 'MixcworkInner',
+        modelId: 'qwen3.6-plus-MixWorkInner',
+        modelName: 'qwen3.6-plus-MixWorkInner',
+        provider: 'MixWorkInner',
         apiFormat: 'openai',
         supportsImage: true,
         explicitContextCache: true,
       },
       {
-        modelId: 'claude-sonnet-4-6-MixcworkInner',
-        modelName: 'claude-sonnet-4-6-MixcworkInner',
-        provider: 'MixcworkInner',
+        modelId: 'claude-sonnet-4-6-MixWorkInner',
+        modelName: 'claude-sonnet-4-6-MixWorkInner',
+        provider: 'MixWorkInner',
         apiFormat: 'anthropic',
         supportsImage: true,
         supportsThinking: true,
@@ -951,9 +951,9 @@ describe('OpenClawConfigSync runtime config output', () => {
         explicitContextCache: true,
       },
       {
-        modelId: 'claude-opus-4-MixcworkInner',
-        modelName: 'claude-opus-4-MixcworkInner',
-        provider: 'MixcworkInner',
+        modelId: 'claude-opus-4-MixWorkInner',
+        modelName: 'claude-opus-4-MixWorkInner',
+        provider: 'MixWorkInner',
         apiFormat: 'anthropic',
         supportsImage: true,
         supportsThinking: true,
@@ -961,7 +961,7 @@ describe('OpenClawConfigSync runtime config output', () => {
       {
         modelId: 'claude-sonnet-4-6',
         modelName: 'Claude Sonnet 4.6 OpenAI Compat',
-        provider: 'MixcworkInner',
+        provider: 'MixWorkInner',
         apiFormat: 'openai',
         supportsImage: true,
         supportsThinking: true,
@@ -969,28 +969,28 @@ describe('OpenClawConfigSync runtime config output', () => {
         explicitContextCache: true,
       },
       {
-        modelId: 'glm-5.1-MixcworkInner',
-        provider: 'MixcworkInner',
+        modelId: 'glm-5.1-MixWorkInner',
+        provider: 'MixWorkInner',
         apiFormat: 'openai',
         supportsImage: false,
         supportsThinking: true,
       },
       {
-        modelId: 'deepseek-v3.2-MixcworkInner',
-        provider: 'MixcworkInner',
+        modelId: 'deepseek-v3.2-MixWorkInner',
+        provider: 'MixWorkInner',
         apiFormat: 'openai',
         supportsImage: false,
       },
     ];
     mockRuntimeState.rawApiConfig = {
       config: {
-        baseURL: 'https://mixcwork-server.example.com/api/proxy/v1',
+        baseURL: 'https://mixwork-server.example.com/api/proxy/v1',
         apiKey: 'access-token',
-        model: 'qwen3.5-plus-MixcworkInner',
+        model: 'qwen3.5-plus-MixWorkInner',
         apiType: 'openai',
       },
       providerMetadata: {
-        providerName: 'mixcwork-server',
+        providerName: 'mixwork-server',
         codingPlanEnabled: false,
         supportsImage: false,
         modelName: 'Qwen3.5 Plus',
@@ -1006,7 +1006,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -1038,11 +1038,11 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(result.ok).toBe(true);
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    // Rebrand: a single 'mixcwork-server' provider is written. The raw-API model is added first
+    // Rebrand: a single 'mixwork-server' provider is written. The raw-API model is added first
     // (line 1563-1573) with the user's upstream baseURL; serverModels overwrite later entries with
     // the proxy baseURL. baseUrl at the top level is the last value written — verify both URLs exist
     // and the proxy replaces the raw URL once a serverModel is processed.
-    const provider = config.models.providers['mixcwork-server'];
+    const provider = config.models.providers['mixwork-server'];
     expect(provider.models).toEqual(expect.arrayContaining([
       // Raw-API user model: id uses display name (modelName='Qwen3.5 Plus'); no contextWindow
       // supplied; supportsImage is false in the test so input is ['text'].
@@ -1059,24 +1059,24 @@ describe('OpenClawConfigSync runtime config output', () => {
       // qwen3.5-plus/qwen3.6-plus (the first two) because of how the loop interleaves with
       // the raw-API initial upsert.
       expect.objectContaining({
-        id: 'qwen3.5-plus-MixcworkInner',
+        id: 'qwen3.5-plus-MixWorkInner',
         api: 'openai-completions',
         input: ['text', 'image'],
       }),
       expect.objectContaining({
-        id: 'qwen3.6-plus-MixcworkInner',
+        id: 'qwen3.6-plus-MixWorkInner',
         api: 'openai-completions',
         input: ['text', 'image'],
       }),
       expect.objectContaining({
-        id: 'claude-sonnet-4-6-MixcworkInner',
+        id: 'claude-sonnet-4-6-MixWorkInner',
         api: 'anthropic-messages',
         input: ['text', 'image'],
         reasoning: true,
         contextWindow: 1_000_000,
       }),
       expect.objectContaining({
-        id: 'claude-opus-4-MixcworkInner',
+        id: 'claude-opus-4-MixWorkInner',
         api: 'anthropic-messages',
         input: ['text', 'image'],
         reasoning: true,
@@ -1091,13 +1091,13 @@ describe('OpenClawConfigSync runtime config output', () => {
         contextWindow: 1_000_000,
       }),
       expect.objectContaining({
-        id: 'glm-5.1-MixcworkInner',
+        id: 'glm-5.1-MixWorkInner',
         api: 'openai-completions',
         input: ['text'],
         reasoning: true,
       }),
       expect.objectContaining({
-        id: 'deepseek-v3.2-MixcworkInner',
+        id: 'deepseek-v3.2-MixWorkInner',
         api: 'openai-completions',
         input: ['text'],
       }),
@@ -1105,38 +1105,38 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(provider.models).toHaveLength(8); // 1 raw-API + 7 server models
     expect(JSON.stringify(provider.models)).not.toContain('cacheControlFormat');
     expect(JSON.stringify(provider.models)).not.toContain('supportsLongCacheRetention');
-    expect(JSON.stringify(config)).not.toContain('MIXCWORK_APIKEY_SERVER');
+    expect(JSON.stringify(config)).not.toContain('MIXWORK_APIKEY_SERVER');
     // Rebrand: explicit-cache params are now keyed by the serverModel's id (which equals
     // the raw modelId here because modelName=modelId in these fixtures; when modelName differs
     // from modelId, buildCompleteAgentModelDefaults writes a separate display-name key).
     expect(config.agents.defaults.models).toMatchObject({
-      'mixcwork-server/qwen3.5-plus-MixcworkInner': {
+      'mixwork-server/qwen3.5-plus-MixWorkInner': {
         params: {
           cacheRetention: 'short',
           contextCacheProvider: 'dashscope',
           contextCacheMode: 'explicit',
         },
       },
-      'mixcwork-server/qwen3.6-plus-MixcworkInner': {
+      'mixwork-server/qwen3.6-plus-MixWorkInner': {
         params: {
           cacheRetention: 'short',
           contextCacheProvider: 'dashscope',
           contextCacheMode: 'explicit',
         },
       },
-      // serverModels with provider='MixcworkInner' have base model ids that match the
+      // serverModels with provider='MixWorkInner' have base model ids that match the
       // explicit-cache family detection (e.g. 'claude-*' → claude family), so basic
       // ANTHROPIC_EXPLICIT_CONTEXT_CACHE_PARAMS apply even though the provider is
       // not Anthropic. Only the dashscope/anthropic-compatible variants require
       // shouldApplyProviderExplicitContextCacheDefault(providerName) === true.
-      'mixcwork-server/claude-opus-4-MixcworkInner': {
+      'mixwork-server/claude-opus-4-MixWorkInner': {
         params: { cacheRetention: 'short' },
       },
-      'mixcwork-server/claude-sonnet-4-6-MixcworkInner': {
+      'mixwork-server/claude-sonnet-4-6-MixWorkInner': {
         params: { cacheRetention: 'short' },
       },
-      'mixcwork-server/Claude Sonnet 4.6 OpenAI Compat': {},
-      'mixcwork-server/claude-sonnet-4-6': {
+      'mixwork-server/Claude Sonnet 4.6 OpenAI Compat': {},
+      'mixwork-server/claude-sonnet-4-6': {
         params: {
           cacheRetention: 'short',
           contextCacheProvider: 'anthropic-compatible',
@@ -1151,7 +1151,7 @@ describe('OpenClawConfigSync runtime config output', () => {
 
     const readProviderModels = () => {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      return config.models.providers['mixcwork-server'].models as Array<{
+      return config.models.providers['mixwork-server'].models as Array<{
         id: string;
         baseUrl?: string;
       }>;
@@ -1177,7 +1177,7 @@ describe('OpenClawConfigSync runtime config output', () => {
           apiType: 'openai',
         },
         providerMetadata: {
-          providerName: 'mixcwork-server',
+          providerName: 'mixwork-server',
           codingPlanEnabled: false,
           supportsImage: false,
           modelName: 'DeepSeek Flash',
@@ -1201,12 +1201,12 @@ describe('OpenClawConfigSync runtime config output', () => {
       expect(qwen?.baseUrl).toBe(`${proxyUrl}/proxy/vllm`);
       // The provider-level baseUrl stays the active model's provider.
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-      expect(config.models.providers['mixcwork-server'].baseUrl).toBe(`${proxyUrl}/proxy/deepseek`);
+      expect(config.models.providers['mixwork-server'].baseUrl).toBe(`${proxyUrl}/proxy/deepseek`);
       // The provider carries the real bearer (the user enterprise JWT in prod,
       // 'access-token' in this mock) — never the deleted proxy's 'proxy-managed'
       // placeholder.
-      expect(config.models.providers['mixcwork-server'].apiKey).toBe('access-token');
-      expect(config.models.providers['mixcwork-server'].apiKey).not.toBe('proxy-managed');
+      expect(config.models.providers['mixwork-server'].apiKey).toBe('access-token');
+      expect(config.models.providers['mixwork-server'].apiKey).not.toBe('proxy-managed');
     });
 
     test('two same-named rows under different providers become distinct, switchable models', async () => {
@@ -1231,7 +1231,7 @@ describe('OpenClawConfigSync runtime config output', () => {
           apiType: 'openai',
         },
         providerMetadata: {
-          providerName: 'mixcwork-server',
+          providerName: 'mixwork-server',
           codingPlanEnabled: false,
           supportsImage: false,
           modelName: 'Qwen B',
@@ -1272,7 +1272,7 @@ describe('OpenClawConfigSync runtime config output', () => {
           apiType: 'openai',
         },
         providerMetadata: {
-          providerName: 'mixcwork-server',
+          providerName: 'mixwork-server',
           codingPlanEnabled: false,
           supportsImage: false,
           modelName: 'DeepSeek Flash',
@@ -1306,7 +1306,7 @@ describe('OpenClawConfigSync runtime config output', () => {
           apiType: 'openai',
         },
         providerMetadata: {
-          providerName: 'mixcwork-server',
+          providerName: 'mixwork-server',
           codingPlanEnabled: false,
           supportsImage: false,
           modelName: 'Orphan Model',
@@ -1327,13 +1327,13 @@ describe('OpenClawConfigSync runtime config output', () => {
     mockRuntimeState.serverModels = [];
     mockRuntimeState.rawApiConfig = {
       config: {
-        baseURL: 'https://mixcwork-server.example.com/api/proxy/v1',
+        baseURL: 'https://mixwork-server.example.com/api/proxy/v1',
         apiKey: 'access-token',
         model: 'claude-sonnet-4-6',
         apiType: 'openai',
       },
       providerMetadata: {
-        providerName: 'mixcwork-server',
+        providerName: 'mixwork-server',
         codingPlanEnabled: false,
         supportsImage: true,
         supportsThinking: true,
@@ -1347,7 +1347,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(result.ok).toBe(true);
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    expect(config.models.providers['mixcwork-server'].models).toEqual(expect.arrayContaining([
+    expect(config.models.providers['mixwork-server'].models).toEqual(expect.arrayContaining([
       // Rebrand: id uses the display name (modelName='Claude Sonnet 4.6').
       expect.objectContaining({
         id: 'Claude Sonnet 4.6',
@@ -1357,7 +1357,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(config.agents.defaults.models).toMatchObject({
       // Rebrand: addExplicitContextCacheDefault uses selection.sessionModelId (the raw
       // modelId from rawApiConfig.model, here 'claude-sonnet-4-6'), not the display name.
-      'mixcwork-server/claude-sonnet-4-6': {
+      'mixwork-server/claude-sonnet-4-6': {
         params: {
           cacheRetention: 'short',
           contextCacheProvider: 'anthropic-compatible',
@@ -1445,33 +1445,33 @@ describe('OpenClawConfigSync runtime config output', () => {
       //   - buildCompleteAgentModelDefaults writes `${providerId}/${model.id}` (display name)
       // The cache params and customParams are merged only on the raw-modelId key. The
       // display-name key is empty ({}), the raw-modelId key has full cache + extra_body.
-      'mixcwork-server/Qwen3.5 Plus': {},
-      'mixcwork-server/qwen3.5-plus': {
+      'mixwork-server/Qwen3.5 Plus': {},
+      'mixwork-server/qwen3.5-plus': {
         params: {
           cacheRetention: 'short',
           contextCacheProvider: 'dashscope',
           contextCacheMode: 'explicit',
         },
       },
-      'mixcwork-server/Qwen3.6 Plus': {},
-      'mixcwork-server/qwen3.6-plus': {
+      'mixwork-server/Qwen3.6 Plus': {},
+      'mixwork-server/qwen3.6-plus': {
         params: {
           cacheRetention: 'short',
           contextCacheProvider: 'dashscope',
           contextCacheMode: 'explicit',
         },
       },
-      'mixcwork-server/Qwen3.7 Plus': {},
-      'mixcwork-server/Claude Opus 4.7': {},
-      'mixcwork-server/claude-opus-4-7': {
+      'mixwork-server/Qwen3.7 Plus': {},
+      'mixwork-server/Claude Opus 4.7': {},
+      'mixwork-server/claude-opus-4-7': {
         params: { cacheRetention: 'short' },
       },
-      'mixcwork-server/Claude Sonnet 4.6': {},
-      'mixcwork-server/claude-sonnet-4-6': {
+      'mixwork-server/Claude Sonnet 4.6': {},
+      'mixwork-server/claude-sonnet-4-6': {
         params: { cacheRetention: 'short' },
       },
-      'mixcwork-server/Claude Opus 4.6': {},
-      'mixcwork-server/claude-opus-4-6': {
+      'mixwork-server/Claude Opus 4.6': {},
+      'mixwork-server/claude-opus-4-6': {
         params: {
           cacheRetention: 'short',
           contextCacheProvider: 'anthropic-compatible',
@@ -1481,23 +1481,23 @@ describe('OpenClawConfigSync runtime config output', () => {
           },
         },
       },
-      'mixcwork-server/Namespaced Claude Sonnet 4.6': {},
-      'mixcwork-server/anthropic/claude-sonnet-4-6': {
+      'mixwork-server/Namespaced Claude Sonnet 4.6': {},
+      'mixwork-server/anthropic/claude-sonnet-4-6': {
         params: {
           cacheRetention: 'short',
           contextCacheProvider: 'anthropic-compatible',
           contextCacheMode: 'explicit',
         },
       },
-      'mixcwork-server/DeepSeek V4 Pro': {},
-      'mixcwork-server/GPT 5.5': {},
+      'mixwork-server/DeepSeek V4 Pro': {},
+      'mixwork-server/GPT 5.5': {},
     });
   });
 
   test('writes a complete agent model allowlist when any model has custom params', async () => {
     const { ProviderName } = await import('../../shared/providers');
     mockRuntimeState.serverModels = [
-      { modelId: 'MiniMax-M2.7-MixcworkInner', supportsImage: false },
+      { modelId: 'MiniMax-M2.7-MixWorkInner', supportsImage: false },
       { modelId: 'kimi-k2.6-inhouse-ZhiYun', supportsImage: true },
     ];
     mockRuntimeState.rawApiConfig = {
@@ -1559,9 +1559,9 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(result.ok).toBe(true);
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    // Rebrand: all providers collapse into 'mixcwork-server'. Keys use the display name.
-    expect(config.models.providers['mixcwork-server'].models).toEqual(expect.arrayContaining([
-      // Rebrand: all providers collapse into 'mixcwork-server'. enabledProviders models get
+    // Rebrand: all providers collapse into 'mixwork-server'. Keys use the display name.
+    expect(config.models.providers['mixwork-server'].models).toEqual(expect.arrayContaining([
+      // Rebrand: all providers collapse into 'mixwork-server'. enabledProviders models get
       // their display name as model id (model.id = providerModelName = resolveModelDisplayName).
       // The rawAPI entry (DeepSeek V4 Flash from mockRuntimeState.rawApiConfig) has no
       // contextWindow in the test fixture, so neither model has contextWindow set.
@@ -1582,25 +1582,25 @@ describe('OpenClawConfigSync runtime config output', () => {
     // / per-model customDefaults) AND buildCompleteAgentModelDefaults (display name) — they are
     // separate keys. Both are present in agents.defaults.models.
     expect(modelDefaults).toMatchObject({
-      'mixcwork-server/deepseek-v4-flash': {
+      'mixwork-server/deepseek-v4-flash': {
         params: {
           extra_body: {
             reasoning_effort: 'high',
           },
         },
       },
-      'mixcwork-server/custom-thinking-model': {
+      'mixwork-server/custom-thinking-model': {
         params: {
           extra_body: {
             reasoning_effort: 'high',
           },
         },
       },
-      'mixcwork-server/Custom Thinking Model': {},
-      'mixcwork-server/DeepSeek V4 Flash': {},
-      'mixcwork-server/DeepSeek V4 Pro': {},
-      'mixcwork-server/MiniMax-M2.7-MixcworkInner': {},
-      'mixcwork-server/kimi-k2.6-inhouse-ZhiYun': {},
+      'mixwork-server/Custom Thinking Model': {},
+      'mixwork-server/DeepSeek V4 Flash': {},
+      'mixwork-server/DeepSeek V4 Pro': {},
+      'mixwork-server/MiniMax-M2.7-MixWorkInner': {},
+      'mixwork-server/kimi-k2.6-inhouse-ZhiYun': {},
     });
   });
 
@@ -1670,9 +1670,9 @@ describe('OpenClawConfigSync runtime config output', () => {
     });
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    // Rebrand: all providers collapse into 'mixcwork-server'. The legacy 'custom_0' sibling
+    // Rebrand: all providers collapse into 'mixwork-server'. The legacy 'custom_0' sibling
     // provider is no longer created; the user's 'custom_0' enabled provider entry is merged in.
-    const serverProvider = config.models.providers['mixcwork-server'];
+    const serverProvider = config.models.providers['mixwork-server'];
     const customK3 = serverProvider.models.find((model: { id: string }) =>
       model.id === 'Kimi K3');
     // Rebrand: buildProviderSelection writes the serverModel's id as the display name
@@ -1680,7 +1680,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     const serverK3 = serverProvider.models.find((model: { id: string }) =>
       model.id === 'Kimi K3 Package');
 
-    // api is no longer 'mixcwork-model-compat' — it is the regular openai-completions transport.
+    // api is no longer 'mixwork-model-compat' — it is the regular openai-completions transport.
     expect(serverProvider.api).toBe('openai-completions');
     // supportsImage/supportsVideo are false in the inputs; input should be ['text'] only.
     // Without the legacy static capability table, contextWindow/maxTokens come from the
@@ -1700,7 +1700,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     // Rebrand: addExplicitContextCacheDefault writes `${providerId}/${sessionModelId}` (raw modelId)
     // AND buildCompleteAgentModelDefaults writes `${providerId}/${model.id}` (display name) as
     // separate keys, both containing the same extra_body.
-    expect(config.agents.defaults.models['mixcwork-server/kimi-k3']).toEqual({
+    expect(config.agents.defaults.models['mixwork-server/kimi-k3']).toEqual({
       params: {
         extra_body: {
           metadata: 'kept',
@@ -1713,17 +1713,17 @@ describe('OpenClawConfigSync runtime config output', () => {
     // The 'Kimi K3' (display name) and 'Plain Model' (display name) keys are written by
     // buildCompleteAgentModelDefaults; they do not carry the customParams (which live on
     // the raw-modelId keys above). Assert they exist but are empty.
-    expect(config.agents.defaults.models['mixcwork-server/Kimi K3']).toEqual({});
-    expect(config.agents.defaults.models['mixcwork-server/plain-model']).toEqual({
+    expect(config.agents.defaults.models['mixwork-server/Kimi K3']).toEqual({});
+    expect(config.agents.defaults.models['mixwork-server/plain-model']).toEqual({
       params: {
         extra_body: {
           temperature: 0.4,
         },
       },
     });
-    expect(config.agents.defaults.models['mixcwork-server/Plain Model']).toEqual({});
-    // Rebrand: the mixcwork-model-compat plugin entry is never written.
-    expect(config.plugins.entries?.['mixcwork-model-compat']).toBeUndefined();
+    expect(config.agents.defaults.models['mixwork-server/Plain Model']).toEqual({});
+    // Rebrand: the mixwork-model-compat plugin entry is never written.
+    expect(config.plugins.entries?.['mixwork-model-compat']).toBeUndefined();
 
     const unchangedSync = sync.sync('kimi-k3-compat-unchanged');
     expect(unchangedSync.ok).toBe(true);
@@ -1751,14 +1751,14 @@ describe('OpenClawConfigSync runtime config output', () => {
       models: {
         providers: {
           custom_0: {
-            api: 'mixcwork-model-compat',
+            api: 'mixwork-model-compat',
             models: [{ id: 'plain-model', api: 'openai-completions' }],
           },
         },
       },
       plugins: {
         entries: {
-          'mixcwork-model-compat': {
+          'mixwork-model-compat': {
             enabled: true,
             config: {
               modelProfiles: {
@@ -1776,7 +1776,7 @@ describe('OpenClawConfigSync runtime config output', () => {
       ...compatConfig,
       plugins: {
         entries: {
-          'mixcwork-model-compat': {
+          'mixwork-model-compat': {
             enabled: true,
             config: {
               modelProfiles: {
@@ -1792,7 +1792,7 @@ describe('OpenClawConfigSync runtime config output', () => {
       models: {
         providers: {
           custom_0: {
-            api: 'mixcwork-model-compat',
+            api: 'mixwork-model-compat',
             models: [
               { id: 'another-plain-model', api: 'openai-completions' },
               { id: 'plain-model', api: 'openai-completions' },
@@ -1805,12 +1805,12 @@ describe('OpenClawConfigSync runtime config output', () => {
       ...compatConfig,
       plugins: {
         entries: {
-          'mixcwork-model-compat': {
+          'mixwork-model-compat': {
             enabled: true,
             config: {
-              modelProfiles: compatConfig.plugins.entries['mixcwork-model-compat'].config.modelProfiles,
+              modelProfiles: compatConfig.plugins.entries['mixwork-model-compat'].config.modelProfiles,
               thinkingProfiles: {
-                'mixcwork-server/deepseek-v4-flash': {
+                'mixwork-server/deepseek-v4-flash': {
                   options: [
                     { level: 'off', openclawLevel: 'off' },
                     { level: 'high', openclawLevel: 'high' },
@@ -1843,7 +1843,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(sync.sync('ordinary-package-api-fallback')).toMatchObject({ ok: true });
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    expect(config.models.providers['mixcwork-server'].models).toContainEqual(
+    expect(config.models.providers['mixwork-server'].models).toContainEqual(
       expect.objectContaining({
         // Rebrand: model id uses display name (modelName) over modelId.
         id: 'Ordinary Package Model',
@@ -1866,17 +1866,17 @@ describe('OpenClawConfigSync runtime config output', () => {
         ],
         defaultLevel: 'high',
       },
-      requestCapabilities: ['mixcwork-options-v1'],
+      requestCapabilities: ['mixwork-options-v1'],
     }];
 
     const sync = await createSync();
     expect(sync.sync('server-thinking-profile')).toMatchObject({ ok: true });
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    expect(config.models.providers['mixcwork-server'].api).toBe('openai-completions');
+    expect(config.models.providers['mixwork-server'].api).toBe('openai-completions');
     // Rebrand: the user's raw-API model is the FIRST entry; serverModels come after.
     // Find the deepseek-v4-flash serverModel by id (display name) — it has the thinking profile.
-    const serverModel = config.models.providers['mixcwork-server'].models.find(
+    const serverModel = config.models.providers['mixwork-server'].models.find(
       (m: { id: string }) => m.id === 'DeepSeek V4 Flash',
     );
     expect(serverModel).toEqual(
@@ -1895,14 +1895,14 @@ describe('OpenClawConfigSync runtime config output', () => {
         }),
       }),
     );
-    // Rebrand: mixcwork-model-compat plugin entry is still written when a thinkingProfile
-    // is present. Key is the primaryModel (mixcwork-server/<displayName>). requestOptionsVersion
-    // is omitted for the no-requestOptions case (test passes requestCapabilities: ['mixcwork-options-v1']).
-    expect(config.plugins.entries['mixcwork-model-compat']).toEqual({
+    // Rebrand: mixwork-model-compat plugin entry is still written when a thinkingProfile
+    // is present. Key is the primaryModel (mixwork-server/<displayName>). requestOptionsVersion
+    // is omitted for the no-requestOptions case (test passes requestCapabilities: ['mixwork-options-v1']).
+    expect(config.plugins.entries['mixwork-model-compat']).toEqual({
       enabled: true,
       config: {
         thinkingProfiles: {
-          'mixcwork-server/DeepSeek V4 Flash': {
+          'mixwork-server/DeepSeek V4 Flash': {
             options: [
               { level: 'off', openclawLevel: 'off' },
               { level: 'high', openclawLevel: 'high' },
@@ -1917,7 +1917,7 @@ describe('OpenClawConfigSync runtime config output', () => {
   });
 
   // Rebrand: "keeps legacy thinking transport when the server does not advertise request options"
-  // was deleted because the mixcwork-model-compat plugin entry is never written, so the
+  // was deleted because the mixwork-model-compat plugin entry is never written, so the
   // legacy/new thinking-transport distinction no longer exists.
 
   test('fails closed when the Kimi K3 compatibility extension is unavailable', async () => {
@@ -1963,7 +1963,7 @@ describe('OpenClawConfigSync runtime config output', () => {
       agents: {
         defaults: {
           models: {
-            'mixcwork-server/MiniMax-M2.7-MixcworkInner': {},
+            'mixwork-server/MiniMax-M2.7-MixWorkInner': {},
           },
         },
       },
@@ -1988,11 +1988,11 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(result.ok).toBe(true);
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    expect(config.plugins.entries['mixcwork-media-generation']).toEqual({
+    expect(config.plugins.entries['mixwork-media-generation']).toEqual({
       enabled: true,
       config: {
         callbackUrl: 'http://127.0.0.1:5175/media-callback',
-        secret: '${MIXCWORK_MCP_BRIDGE_SECRET}',
+        secret: '${MIXWORK_MCP_BRIDGE_SECRET}',
         requestTimeoutMs: 150000,
       },
     });
@@ -2010,11 +2010,11 @@ describe('OpenClawConfigSync runtime config output', () => {
     expect(result.ok).toBe(true);
 
     const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    expect(config.plugins.entries['mixcwork-media-generation']).toEqual({
+    expect(config.plugins.entries['mixwork-media-generation']).toEqual({
       enabled: true,
       config: {
         callbackUrl: 'http://127.0.0.1:5175/media-callback',
-        secret: '${MIXCWORK_MCP_BRIDGE_SECRET}',
+        secret: '${MIXWORK_MCP_BRIDGE_SECRET}',
         requestTimeoutMs: 150000,
       },
     });
@@ -2057,7 +2057,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     }, null, 2));
 
     const sync = await createSync({
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -2094,7 +2094,7 @@ describe('OpenClawConfigSync runtime config output', () => {
 
   test('writes enabled memory-core dreaming config when dreaming is on', async () => {
     const sync = await createSync({
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -2143,10 +2143,10 @@ describe('OpenClawConfigSync runtime config output', () => {
       modelName: 'GPT-5.4',
     });
 
-    // Rebrand: providerId collapses to 'mixcwork-server'; primaryModel uses the display name (modelName);
+    // Rebrand: providerId collapses to 'mixwork-server'; primaryModel uses the display name (modelName);
     // auth is hard-coded 'api-key'; apiKey is omitted when empty; baseUrl is the raw input (no OAuth rewrite).
-    expect(selection.providerId).toBe(OpenClawProviderId.MixcworkServer);
-    expect(selection.primaryModel).toBe(`${OpenClawProviderId.MixcworkServer}/GPT-5.4`);
+    expect(selection.providerId).toBe(OpenClawProviderId.MixWorkServer);
+    expect(selection.primaryModel).toBe(`${OpenClawProviderId.MixWorkServer}/GPT-5.4`);
     expect(selection.providerConfig.baseUrl).toBe('https://api.openai.com/v1');
     // Rebrand: buildProviderSelection does not pass providerName to mapApiTypeToOpenClawApi,
     // so OpenAI baseUrl always falls through to openai-completions (not openai-responses).
@@ -2172,18 +2172,18 @@ describe('OpenClawConfigSync runtime config output', () => {
       modelName: 'MiniMax M3',
     });
 
-    // Rebrand: providerId is 'mixcwork-server'; the legacy '${MIXCWORK_APIKEY_*}' placeholder is gone
+    // Rebrand: providerId is 'mixwork-server'; the legacy '${MIXWORK_APIKEY_*}' placeholder is gone
     // (apiKey is passed through verbatim, or omitted when empty). catalogResolver is empty in tests so
     // maxTokens/contextWindow fall through to null (omitted).
-    expect(selection.providerId).toBe(OpenClawProviderId.MixcworkServer);
-    expect(selection.primaryModel).toBe(`${OpenClawProviderId.MixcworkServer}/MiniMax M3`);
+    expect(selection.providerId).toBe(OpenClawProviderId.MixWorkServer);
+    expect(selection.primaryModel).toBe(`${OpenClawProviderId.MixWorkServer}/MiniMax M3`);
     expect(selection.providerConfig.api).toBe(OpenClawApi.AnthropicMessages);
     expect(selection.providerConfig.auth).toBe(AuthType.ApiKey);
     expect(selection.providerConfig.apiKey).toBe('oauth-token');
     expect(selection.providerConfig.models[0].maxTokens).toBeUndefined();
   });
 
-  test('uses the catalog UUID as the OpenClaw model id for enterprise mixcwork-server models', async () => {
+  test('uses the catalog UUID as the OpenClaw model id for enterprise mixwork-server models', async () => {
     const { OpenClawProviderId, ProviderName } = await import('../../shared/providers');
     const { buildProviderSelection } = await import('./openclawConfigSync');
 
@@ -2197,21 +2197,21 @@ describe('OpenClawConfigSync runtime config output', () => {
       baseURL: 'http://127.0.0.1:8787/proxy/vllm',
       modelId: '21e3e29a-a900-4574-b1bd-aaa8fb803ff1',
       apiType: 'openai',
-      providerName: ProviderName.MixcworkServer,
+      providerName: ProviderName.MixWorkServer,
       codingPlanEnabled: false,
       supportsImage: true,
       supportsThinking: true,
       modelName: 'Qwen 3.8 27B',
     });
 
-    expect(selection.providerId).toBe(OpenClawProviderId.MixcworkServer);
+    expect(selection.providerId).toBe(OpenClawProviderId.MixWorkServer);
     expect(selection.providerConfig.models[0].id).toBe('21e3e29a-a900-4574-b1bd-aaa8fb803ff1');
     expect(selection.providerConfig.models[0].name).toBe('Qwen 3.8 27B');
-    expect(selection.primaryModel).toBe('mixcwork-server/21e3e29a-a900-4574-b1bd-aaa8fb803ff1');
+    expect(selection.primaryModel).toBe('mixwork-server/21e3e29a-a900-4574-b1bd-aaa8fb803ff1');
     expect(selection.sessionModelId).toBe('21e3e29a-a900-4574-b1bd-aaa8fb803ff1');
   });
 
-  test('keeps the display-name model id for non-UUID mixcwork-server models (legacy youdao path)', async () => {
+  test('keeps the display-name model id for non-UUID mixwork-server models (legacy youdao path)', async () => {
     const { ProviderName } = await import('../../shared/providers');
     const { buildProviderSelection } = await import('./openclawConfigSync');
 
@@ -2220,10 +2220,10 @@ describe('OpenClawConfigSync runtime config output', () => {
     // name the youdao proxy resolves.
     const selection = buildProviderSelection({
       apiKey: 'access-token',
-      baseURL: 'https://mixcwork-server.example.com/api/proxy/v1',
-      modelId: 'qwen3.5-plus-MixcworkInner',
+      baseURL: 'https://mixwork-server.example.com/api/proxy/v1',
+      modelId: 'qwen3.5-plus-MixWorkInner',
       apiType: 'openai',
-      providerName: ProviderName.MixcworkServer,
+      providerName: ProviderName.MixWorkServer,
       codingPlanEnabled: false,
       supportsImage: false,
       modelName: 'Qwen3.5 Plus',
@@ -2231,15 +2231,15 @@ describe('OpenClawConfigSync runtime config output', () => {
 
     expect(selection.providerConfig.models[0].id).toBe('Qwen3.5 Plus');
     expect(selection.providerConfig.models[0].name).toBe('Qwen3.5 Plus');
-    expect(selection.primaryModel).toBe('mixcwork-server/Qwen3.5 Plus');
-    expect(selection.sessionModelId).toBe('qwen3.5-plus-MixcworkInner');
+    expect(selection.primaryModel).toBe('mixwork-server/Qwen3.5 Plus');
+    expect(selection.sessionModelId).toBe('qwen3.5-plus-MixWorkInner');
   });
 
-  test('keeps the display-name model id for a non-mixcwork-server provider even with a UUID modelId', async () => {
+  test('keeps the display-name model id for a non-mixwork-server provider even with a UUID modelId', async () => {
     const { ProviderName } = await import('../../shared/providers');
     const { buildProviderSelection } = await import('./openclawConfigSync');
 
-    // The UUID-identity rule applies only to the mixcwork-server provider (the
+    // The UUID-identity rule applies only to the mixwork-server provider (the
     // enterprise proxy). A user-configured provider never carries a catalog
     // UUID, and its models[].id must remain the upstream name it sends directly.
     const selection = buildProviderSelection({
@@ -2254,7 +2254,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     });
 
     expect(selection.providerConfig.models[0].id).toBe('GPT-5.4');
-    expect(selection.primaryModel).toBe('mixcwork-server/GPT-5.4');
+    expect(selection.primaryModel).toBe('mixwork-server/GPT-5.4');
   });
 
   test('maps xAI OAuth mode to the xai provider without an apiKey', async () => {
@@ -2274,10 +2274,10 @@ describe('OpenClawConfigSync runtime config output', () => {
       modelName: 'Grok 4.3',
     });
 
-    // Rebrand: providerId collapses to 'mixcwork-server'; api falls through to openai-completions
+    // Rebrand: providerId collapses to 'mixwork-server'; api falls through to openai-completions
     // (providerName !== OpenAI does NOT trigger openai-responses); auth is api-key; apiKey is omitted when empty.
-    expect(selection.providerId).toBe(OpenClawProviderId.MixcworkServer);
-    expect(selection.primaryModel).toBe(`${OpenClawProviderId.MixcworkServer}/Grok 4.3`);
+    expect(selection.providerId).toBe(OpenClawProviderId.MixWorkServer);
+    expect(selection.primaryModel).toBe(`${OpenClawProviderId.MixWorkServer}/Grok 4.3`);
     expect(selection.providerConfig.baseUrl).toBe('https://api.x.ai/v1');
     expect(selection.providerConfig.api).toBe(OpenClawApi.OpenAICompletions);
     expect(selection.providerConfig.auth).toBe(AuthType.ApiKey);
@@ -2300,10 +2300,10 @@ describe('OpenClawConfigSync runtime config output', () => {
       modelName: 'Grok 4.3',
     });
 
-    // Rebrand: providerId collapses to 'mixcwork-server'; apiKey is passed through verbatim
-    // (the legacy '${MIXCWORK_APIKEY_XAI}' placeholder rewrite is gone). api falls through to
+    // Rebrand: providerId collapses to 'mixwork-server'; apiKey is passed through verbatim
+    // (the legacy '${MIXWORK_APIKEY_XAI}' placeholder rewrite is gone). api falls through to
     // openai-completions because providerName !== OpenAI.
-    expect(selection.providerId).toBe(OpenClawProviderId.MixcworkServer);
+    expect(selection.providerId).toBe(OpenClawProviderId.MixWorkServer);
     expect(selection.providerConfig.api).toBe(OpenClawApi.OpenAICompletions);
     expect(selection.providerConfig.auth).toBe(AuthType.ApiKey);
     expect(selection.providerConfig.apiKey).toBe('xai-key');
@@ -2357,10 +2357,10 @@ describe('OpenClawConfigSync runtime config output', () => {
       modelName: 'MiniMax M2.7',
     });
 
-    // Rebrand: providerId is 'mixcwork-server'. catalogResolver is empty in tests so
+    // Rebrand: providerId is 'mixwork-server'. catalogResolver is empty in tests so
     // contextWindow/maxTokens fall through to null (omitted).
-    expect(selection.providerId).toBe(OpenClawProviderId.MixcworkServer);
-    expect(selection.primaryModel).toBe(`${OpenClawProviderId.MixcworkServer}/MiniMax M2.7`);
+    expect(selection.providerId).toBe(OpenClawProviderId.MixWorkServer);
+    expect(selection.primaryModel).toBe(`${OpenClawProviderId.MixWorkServer}/MiniMax M2.7`);
     expect(selection.providerConfig.api).toBe(OpenClawApi.AnthropicMessages);
     expect(selection.providerConfig.auth).toBe(AuthType.ApiKey);
     expect(selection.providerConfig.models[0].contextWindow).toBeUndefined();
@@ -2430,7 +2430,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     const { OpenClawProviderId, ProviderName } = await import('../../shared/providers');
     const { buildProviderSelection } = await import('./openclawConfigSync');
 
-    // Rebrand: all providers collapse into 'mixcwork-server'. Capabilities flow through options
+    // Rebrand: all providers collapse into 'mixwork-server'. Capabilities flow through options
     // (the legacy 'qwen-portal' / 'qwen-oauth' sibling routes are gone).
     const qwenSelection = buildProviderSelection({
       apiKey: 'sk-test',
@@ -2442,8 +2442,8 @@ describe('OpenClawConfigSync runtime config output', () => {
       supportsImage: true, // rebrand: capability is now caller-supplied
       modelName: 'qwen3.6-plus',
     });
-    expect(qwenSelection.providerId).toBe(OpenClawProviderId.MixcworkServer);
-    expect(qwenSelection.primaryModel).toBe(`${OpenClawProviderId.MixcworkServer}/qwen3.6-plus`);
+    expect(qwenSelection.providerId).toBe(OpenClawProviderId.MixWorkServer);
+    expect(qwenSelection.primaryModel).toBe(`${OpenClawProviderId.MixWorkServer}/qwen3.6-plus`);
     expect(qwenSelection.providerConfig.models[0].input).toEqual(['text', 'image']);
 
     const customSelection = buildProviderSelection({
@@ -2455,8 +2455,8 @@ describe('OpenClawConfigSync runtime config output', () => {
       supportsImage: true, // rebrand: capability is now caller-supplied
       modelName: 'qwen3.6-plus',
     });
-    expect(customSelection.providerId).toBe(OpenClawProviderId.MixcworkServer);
-    expect(customSelection.primaryModel).toBe(`${OpenClawProviderId.MixcworkServer}/qwen3.6-plus`);
+    expect(customSelection.providerId).toBe(OpenClawProviderId.MixWorkServer);
+    expect(customSelection.primaryModel).toBe(`${OpenClawProviderId.MixWorkServer}/qwen3.6-plus`);
     expect(customSelection.providerConfig.models[0].input).toEqual(['text', 'image']);
   });
 
@@ -2464,7 +2464,7 @@ describe('OpenClawConfigSync runtime config output', () => {
     const { OpenClawApi, OpenClawProviderId, ProviderName } = await import('../../shared/providers');
     const { buildProviderSelection } = await import('./openclawConfigSync');
 
-    // Rebrand: all vendors collapse into 'mixcwork-server'. catalogResolver is empty in tests
+    // Rebrand: all vendors collapse into 'mixwork-server'. catalogResolver is empty in tests
     // (no server-side capability table), so reasoning/image caps must be passed explicitly via
     // options. Only the custom-thinking-model case retains its supportsThinking: true flag below.
 
@@ -2478,7 +2478,7 @@ describe('OpenClawConfigSync runtime config output', () => {
       supportsThinking: true, // rebrand: must be supplied
       modelName: 'DeepSeek V4 Pro',
     });
-    expect(deepseekSelection.providerId).toBe(OpenClawProviderId.MixcworkServer);
+    expect(deepseekSelection.providerId).toBe(OpenClawProviderId.MixWorkServer);
     expect(deepseekSelection.providerConfig.api).toBe(OpenClawApi.OpenAICompletions);
     expect(deepseekSelection.providerConfig.models[0].reasoning).toBe(true);
 
@@ -2507,7 +2507,7 @@ describe('OpenClawConfigSync runtime config output', () => {
       supportsThinking: true, // rebrand: must be supplied
       modelName: 'GLM 5.1',
     });
-    expect(zhipuGlmSelection.providerId).toBe(OpenClawProviderId.MixcworkServer);
+    expect(zhipuGlmSelection.providerId).toBe(OpenClawProviderId.MixWorkServer);
     expect(zhipuGlmSelection.providerConfig.models[0].reasoning).toBe(true);
 
     const qianfanGlmSelection = buildProviderSelection({
@@ -2520,7 +2520,7 @@ describe('OpenClawConfigSync runtime config output', () => {
       supportsThinking: true, // rebrand: must be supplied
       modelName: 'GLM 5.1',
     });
-    expect(qianfanGlmSelection.providerId).toBe(OpenClawProviderId.MixcworkServer);
+    expect(qianfanGlmSelection.providerId).toBe(OpenClawProviderId.MixWorkServer);
     expect(qianfanGlmSelection.providerConfig.models[0].reasoning).toBe(true);
 
     const openAiSelection = buildProviderSelection({
@@ -2594,7 +2594,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -2660,7 +2660,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -2771,7 +2771,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -2885,7 +2885,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -2973,7 +2973,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -3027,7 +3027,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -3083,7 +3083,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -3108,7 +3108,7 @@ describe('OpenClawConfigSync runtime config output', () => {
 
     const agentsMdPath = path.join(stateDir, 'workspace-main', 'AGENTS.md');
     const agentsMd = fs.readFileSync(agentsMdPath, 'utf8');
-    expect(agentsMd).toContain('MixCWork does not support sandbox browser execution in this version.');
+    expect(agentsMd).toContain('MixWork does not support sandbox browser execution in this version.');
     expect(agentsMd).toContain('For every `browser` tool call, set `target="host"` explicitly.');
   });
 
@@ -3120,7 +3120,7 @@ describe('OpenClawConfigSync runtime config output', () => {
 
     const agentsMdPath = path.join(stateDir, 'workspace-main', 'AGENTS.md');
     const agentsMd = fs.readFileSync(agentsMdPath, 'utf8');
-    // The policy tells the agent to introduce itself as a MixCWork assistant and
+    // The policy tells the agent to introduce itself as a MixWork assistant and
     // to never surface the underlying runtime name (so "runs inside OpenClaw"
     // stops leaking into self-introductions and IDENTITY.md).
     expect(agentsMd).toContain('## Identity & Branding Policy');
@@ -3167,7 +3167,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         getStateDir: () => stateDir,
         getBaseDir: () => tmpDir,
       } as never,
-      getMixCWorkConfig: () => ({
+      getMixWorkConfig: () => ({
         workingDirectory: tmpDir,
         systemPrompt: '',
         executionMode: 'local',
@@ -3200,7 +3200,7 @@ describe('OpenClawConfigSync runtime config output', () => {
           timeoutSeconds: 25,
           maxRedirects: 4,
           maxChars: 12000,
-          userAgent: 'MixCWork Test',
+          userAgent: 'MixWork Test',
           readability: false,
           allowRfc2544BenchmarkRange: true,
         },
@@ -3254,7 +3254,7 @@ describe('OpenClawConfigSync runtime config output', () => {
       timeoutSeconds: 25,
       maxRedirects: 4,
       maxChars: 12000,
-      userAgent: 'MixCWork Test',
+      userAgent: 'MixWork Test',
       ssrfPolicy: { allowRfc2544BenchmarkRange: true },
     });
     expect(config.tools.web.fetch.useEnvProxy).toBeUndefined();
@@ -3269,7 +3269,7 @@ describe('OpenClawConfigSync runtime config output', () => {
         transportType: 'stdio',
         command: 'node',
         args: ['server.js'],
-        env: { TAVILY_API_KEY: '${MIXCWORK_TAVILY_API_KEY}' },
+        env: { TAVILY_API_KEY: '${MIXWORK_TAVILY_API_KEY}' },
       }],
     });
 
@@ -3318,11 +3318,11 @@ describe('resolveModelSourceForOpenClawProvider', () => {
     mockRuntimeState.providerSourceEntries = [];
   });
 
-  test('classifies the MixCWork plan without any Settings entry', async () => {
+  test('classifies the MixWork plan without any Settings entry', async () => {
     const { resolveModelSourceForOpenClawProvider } = await import('./openclawConfigSync');
-    expect(resolveModelSourceForOpenClawProvider('mixcwork-server')).toEqual({
-      source: 'mixcwork-plan',
-      providerName: ProviderName.MixcworkServer,
+    expect(resolveModelSourceForOpenClawProvider('mixwork-server')).toEqual({
+      source: 'mixwork-plan',
+      providerName: ProviderName.MixWorkServer,
     });
   });
 
@@ -3344,7 +3344,7 @@ describe('resolveModelSourceForOpenClawProvider', () => {
     ];
     const { resolveModelSourceForOpenClawProvider } = await import('./openclawConfigSync');
     // Rebrand: the OpenClaw provider id 'zai' is no longer classified by this resolver —
-    // only 'mixcwork-server' and exact custom provider names are. Assert undefined.
+    // only 'mixwork-server' and exact custom provider names are. Assert undefined.
     expect(resolveModelSourceForOpenClawProvider('zai')).toBeUndefined();
   });
 

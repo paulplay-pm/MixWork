@@ -42,7 +42,7 @@ describe('routes/auth', () => {
     expect(j.token.length).toBeGreaterThan(20);
   });
 
-  test('POST /auth/login 设置 HttpOnly mixcwork_session cookie（Phase 2 浏览器登录门）', async () => {
+  test('POST /auth/login 设置 HttpOnly mixwork_session cookie（Phase 2 浏览器登录门）', async () => {
     const a = buildApp();
     const res = await a.request('/auth/login', {
       method: 'POST',
@@ -51,7 +51,7 @@ describe('routes/auth', () => {
     });
     const j = (await res.json()) as { token: string };
     const setCookie = res.headers.get('set-cookie') ?? '';
-    expect(setCookie).toContain('mixcwork_session=');
+    expect(setCookie).toContain('mixwork_session=');
     expect(setCookie).toContain(j.token);
     expect(setCookie.toLowerCase()).toContain('httponly');
     expect(setCookie.toLowerCase()).toContain('samesite=lax');
@@ -72,14 +72,14 @@ describe('routes/auth', () => {
     expect(res.headers.get('set-cookie')).toBeNull();
   });
 
-  test('POST /auth/logout 清除 mixcwork_session cookie', async () => {
+  test('POST /auth/logout 清除 mixwork_session cookie', async () => {
     const a = buildApp();
     const res = await a.request('/auth/logout', { method: 'POST' });
     expect(res.status).toBe(200);
     const setCookie = res.headers.get('set-cookie') ?? '';
-    expect(setCookie).toContain('mixcwork_session=');
+    expect(setCookie).toContain('mixwork_session=');
     // Cleared: empty value + zero max-age (equivalent to expiration).
-    expect(/mixcwork_session=;/.test(setCookie)).toBe(true);
+    expect(/mixwork_session=;/.test(setCookie)).toBe(true);
     expect(/max-age=0/i.test(setCookie)).toBe(true);
   });
 

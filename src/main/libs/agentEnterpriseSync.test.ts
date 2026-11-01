@@ -44,7 +44,7 @@ function fakeStore(initial: ReturnType<typeof row>[]): FakeStore {
   return {
     listAgents: () => agents,
     createAgent: vi.fn((req: { id?: string; name: string; source: 'enterprise'; enterpriseAgentId: string; model: string; skillIds: string[]; subagentAllowAgentIds: string[]; description?: string; identity?: string; systemPrompt?: string; thinkingLevel?: string; workingDirectory?: string; icon?: string; aboutYou?: string }) => {
-      // Mirror MixCWorkStore.createAgent id derivation: request.id || name-slug || random.
+      // Mirror MixWorkStore.createAgent id derivation: request.id || name-slug || random.
       const slug = req.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
       const id = req.id || slug || 'local_' + Math.random().toString(36).slice(2, 8);
       const r = row({ ...req, source: 'enterprise', enterpriseAgentId: req.enterpriseAgentId, id });
@@ -75,7 +75,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
         { agentId: 'b', name: 'B', description: '', identity: '', systemPrompt: '', aboutYou: '', model: '', thinkingLevel: '', icon: '', skillIds: [], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true, imChannels: [] },
         { agentId: 'c', name: 'C', description: '', identity: '', systemPrompt: '', aboutYou: '', model: '', thinkingLevel: '', icon: '', skillIds: [], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true, imChannels: [] },
       ],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: prefs as never,
       skillManager: skills as never,
       defaultModelRef: 'provider1/default-model',
@@ -95,7 +95,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
       serverView: [
         { agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', aboutYou: '', model: '', thinkingLevel: '', icon: '', skillIds: [], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true, imChannels: [] },
       ],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: prefs as never,
       skillManager: { getCatalogLocalId: (id: string) => id } as never,
       defaultModelRef: '',
@@ -112,7 +112,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
         model: 'unknownProvider/missing', thinkingLevel: '', icon: '',
         skillIds: [], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true, imChannels: [],
       }],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: { getCatalogLocalId: (id: string) => id } as never,
       defaultModelRef: 'p1/default',
@@ -131,7 +131,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
         model: '', thinkingLevel: '', icon: '',
         skillIds: ['installed', 'unknown'], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true, imChannels: [],
       }],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: { getCatalogLocalId: (id: string) => (id === 'installed' ? 'installed-local' : undefined) } as never,
       defaultModelRef: '',
@@ -149,7 +149,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
     const store = fakeStore([customRow]);
     await agentEnterpriseSync.syncFromServer({
       serverView: [],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: { getCatalogLocalId: (id: string) => id } as never,
       defaultModelRef: '',
@@ -172,7 +172,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
     const skillManager = { getCatalogLocalId: (id: string) => 'local_' + id };
     await agentEnterpriseSync.syncFromServer({
       serverView: [{ agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', aboutYou: '', model: '', thinkingLevel: 'medium', icon: '', skillIds: ['s1'], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true, imChannels: ['feishu'] }],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: prefs as never,
       skillManager: skillManager as never,
       defaultModelRef: '',
@@ -195,7 +195,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
     const skillManager = { getCatalogLocalId: (id: string) => 'local_' + id };
     await agentEnterpriseSync.syncFromServer({
       serverView: [{ agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', aboutYou: '', model: '', thinkingLevel: 'medium', icon: '', skillIds: ['s1'], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true, imChannels: [] }],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: skillManager as never,
       defaultModelRef: '',
@@ -208,7 +208,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
     const store = fakeStore([]);
     await agentEnterpriseSync.syncFromServer({
       serverView: [{ agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', model: '', thinkingLevel: 'medium', icon: '', skillIds: [], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true, imChannels: [], aboutYou: 'hello there' }],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: { getCatalogLocalId: () => null } as never,
       defaultModelRef: '',
@@ -221,7 +221,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
     const store = fakeStore([]);
     await agentEnterpriseSync.syncFromServer({
       serverView: [{ agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', model: '', thinkingLevel: 'medium', icon: '', skillIds: ['installed-1', 'not-installed-x'], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true, imChannels: [], aboutYou: '' }],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       // Only 'installed-1' resolves to a local id. Note: getCatalogLocalId's REAL
       // return type is `string | undefined` (skillManager.getCatalogLocalId), so
@@ -247,7 +247,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
     ]);
     await agentEnterpriseSync.syncFromServer({
       serverView: [{ agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', aboutYou: '', model: '', thinkingLevel: 'medium', icon: '', skillIds: ['s1', 'raw-x'], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true, imChannels: [] }],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: { getCatalogLocalId: (id: string) => (id === 's1' ? 'local_s1' : undefined) } as never,
       defaultModelRef: '',

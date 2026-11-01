@@ -411,7 +411,7 @@ AND c.types && ARRAY['chat','vision','reasoning']::text[]
 
 - 桌面端**不新增**媒体 / 语音模型选择 UI。
 - 桌面端**不直接调用厂商 API**；调用链不变：
-  `LLM(OpenClaw) → openclaw-extensions/mixcwork-media-generation → 桌面 media bridge → Enterprise server /api/media/{kind}/generate → 厂商`。
+  `LLM(OpenClaw) → openclaw-extensions/mixwork-media-generation → 桌面 media bridge → Enterprise server /api/media/{kind}/generate → 厂商`。
 - 桌面端只负责：把 LLM 指定的模型名原样发给服务端；用服务端返回的模型清单做**校验**（`resolveEffectiveMediaSelection` 的 `availableModelIds`）。
 
 ### 10.2 需要改的部分（P2 分期）

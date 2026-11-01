@@ -20,52 +20,52 @@ interface SkinBackdropProps {
 
 const HOME_OVERLAY = [
   'radial-gradient(ellipse at 50% 47%,',
-  'color-mix(in srgb, var(--mixcwork-background) 62%, transparent) 0%,',
-  'color-mix(in srgb, var(--mixcwork-background) 44%, transparent) 47%,',
-  'color-mix(in srgb, var(--mixcwork-background) 22%, transparent) 100%)',
+  'color-mix(in srgb, var(--mixwork-background) 62%, transparent) 0%,',
+  'color-mix(in srgb, var(--mixwork-background) 44%, transparent) 47%,',
+  'color-mix(in srgb, var(--mixwork-background) 22%, transparent) 100%)',
   ', linear-gradient(to bottom,',
-  'color-mix(in srgb, var(--mixcwork-background) 12%, transparent),',
-  'color-mix(in srgb, var(--mixcwork-background) 54%, transparent))',
+  'color-mix(in srgb, var(--mixwork-background) 12%, transparent),',
+  'color-mix(in srgb, var(--mixwork-background) 54%, transparent))',
 ].join(' ');
 
 const CONVERSATION_OVERLAY = [
   'linear-gradient(to bottom,',
-  'color-mix(in srgb, var(--mixcwork-background) 20%, transparent),',
-  'color-mix(in srgb, var(--mixcwork-background) 36%, transparent))',
+  'color-mix(in srgb, var(--mixwork-background) 20%, transparent),',
+  'color-mix(in srgb, var(--mixwork-background) 36%, transparent))',
 ].join(' ');
 
 const PRESENTED_HOME_OVERLAY = [
   'radial-gradient(ellipse at 50% 46%,',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 52%, transparent) 0%,',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 34%, transparent) 48%,',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 18%, transparent) 100%)',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 52%, transparent) 0%,',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 34%, transparent) 48%,',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 18%, transparent) 100%)',
   ', linear-gradient(to bottom,',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 12%, transparent),',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 82%, transparent))',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 12%, transparent),',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 82%, transparent))',
 ].join(' ');
 
 const PRESENTED_CONVERSATION_OVERLAY = [
   'linear-gradient(to bottom,',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 44%, transparent),',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 62%, transparent))',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 44%, transparent),',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 62%, transparent))',
 ].join(' ');
 
 const PRESENTED_DARK_CONVERSATION_OVERLAY = [
   'linear-gradient(to bottom,',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 30%, transparent),',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 45%, transparent))',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 30%, transparent),',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 45%, transparent))',
 ].join(' ');
 
 const PRESENTED_MANAGEMENT_OVERLAY = [
   'linear-gradient(to bottom,',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 32%, transparent),',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 46%, transparent))',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 32%, transparent),',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 46%, transparent))',
 ].join(' ');
 
 const PRESENTED_DARK_MANAGEMENT_OVERLAY = [
   'linear-gradient(to bottom,',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 18%, transparent),',
-  'color-mix(in srgb, var(--mixcwork-skin-canvas) 30%, transparent))',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 18%, transparent),',
+  'color-mix(in srgb, var(--mixwork-skin-canvas) 30%, transparent))',
 ].join(' ');
 
 const SkinBackdrop: React.FC<SkinBackdropProps> = ({ variant }) => {
@@ -107,7 +107,7 @@ const SkinBackdrop: React.FC<SkinBackdropProps> = ({ variant }) => {
         draggable={false}
         onError={() => setFailedUrl(assetUrl)}
         style={hasPresentation ? {
-          objectPosition: 'var(--mixcwork-skin-focus-x) var(--mixcwork-skin-focus-y)',
+          objectPosition: 'var(--mixwork-skin-focus-x) var(--mixwork-skin-focus-y)',
         } : undefined}
         className={`h-full w-full scale-[1.01] object-cover object-center ${
           hasPresentation

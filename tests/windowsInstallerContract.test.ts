@@ -53,7 +53,7 @@ describe('Windows installer hardening contracts', () => {
   test('releases the installer current-directory lock before the update rename', () => {
     const switchOutPath = installerInclude.indexOf('SetOutPath "$PLUGINSDIR"');
     const rename = installerInclude.indexOf(
-      'MoveFileW(w "$mixcworkOldInstallOriginalPath", w "$mixcworkOldInstallBackupPath")',
+      'MoveFileW(w "$mixworkOldInstallOriginalPath", w "$mixworkOldInstallBackupPath")',
     );
 
     expect(switchOutPath).toBeGreaterThan(-1);
@@ -63,7 +63,7 @@ describe('Windows installer hardening contracts', () => {
     expect(installerInclude).toContain('"ambiguous-dual-registration"');
     expect(installerInclude).toContain('phase=old-install-rename-attempt');
     expect(installerInclude).toContain('phase=old-install-rename-complete attempt_id=');
-    expect(installerInclude).toContain('status=$mixcworkOldInstallRenameStatus');
+    expect(installerInclude).toContain('status=$mixworkOldInstallRenameStatus');
     expect(installerInclude).not.toContain('phase=old-install-cleanup-complete');
   });
 
@@ -93,7 +93,7 @@ describe('Windows installer hardening contracts', () => {
     expect(installerInclude).toContain('!macro customAfterUninstallOldVersions');
     expect(installerInclude).toContain('point=post-old-uninstaller');
     expect(installerInclude).toContain(
-      String.raw`$$target = $$env:MIXCWORK_INSTALL_ROOT;`,
+      String.raw`$$target = $$env:MIXWORK_INSTALL_ROOT;`,
     );
     expect(installerInclude).toContain('before_count=');
     expect(installerInclude).toContain('remove=');
@@ -101,7 +101,7 @@ describe('Windows installer hardening contracts', () => {
     expect(installerInclude).toContain('Remove-MpPreference -ExclusionPath $$targets');
     expect(installerInclude).toContain('phase=old-install-cleanup-scheduled');
     expect(installerInclude).toContain(
-      '${If} $mixcworkOldInstallRenameStatus == "committed"',
+      '${If} $mixworkOldInstallRenameStatus == "committed"',
     );
     expect(installerInclude).toContain('target=exact-current-backup');
     expect(installerInclude).not.toContain('target_pattern=$INSTDIR.old');
@@ -134,14 +134,14 @@ describe('Windows installer hardening contracts', () => {
   });
 
   test('rolls a renamed installation back before every controlled failure exit', () => {
-    expect(installerInclude).toContain('Function mixcworkRollbackOldInstall');
+    expect(installerInclude).toContain('Function mixworkRollbackOldInstall');
     expect(installerInclude).toContain('phase=old-install-rollback-start');
     expect(installerInclude).toContain('phase=old-install-rollback-complete');
     expect(installerInclude).toContain('phase=old-install-commit-complete');
     expect(installerInclude).toContain('phase=skill-backup-failed-abort');
     expect(installerInclude).toContain('phase=skill-restore-failed');
     expect(installerInclude).toContain(
-      'StrCmp $mixcworkOldInstallRollbackStatus "success"',
+      'StrCmp $mixworkOldInstallRollbackStatus "success"',
     );
     expect(installerInclude).toContain('!macro customBeforeInstallerQuit REASON');
     expect(rootInstallerTemplate).toContain('!define MUI_CUSTOMFUNCTION_ABORT');
@@ -168,7 +168,7 @@ describe('Windows installer hardening contracts', () => {
       '!insertmacro customRollbackOldInstall "rename-verification-failed"',
     );
     expect(failure).toContain(
-      'StrCmp $mixcworkOldInstallRollbackStatus "success" OldInstallRenameVerificationRestored',
+      'StrCmp $mixworkOldInstallRollbackStatus "success" OldInstallRenameVerificationRestored',
     );
     expect(failure).toContain('outcome=recovery-required');
     expect(failure).toContain('outcome=restored');
@@ -185,7 +185,7 @@ describe('Windows installer hardening contracts', () => {
     const preflight = check.indexOf('!insertmacro DetectFreshOrPossibleExisting');
     const sourceProbe = check.indexOf('phase=legacy-skills-source-preflight');
     const resolver = check.indexOf('!insertmacro ResolveTrustedPowerShell');
-    const stop = check.indexOf('!insertmacro stopMixCWorkProcesses');
+    const stop = check.indexOf('!insertmacro stopMixWorkProcesses');
     const backup = check.indexOf('phase=skill-backup-complete');
 
     expect(preflight).toBeGreaterThan(-1);
@@ -194,7 +194,7 @@ describe('Windows installer hardening contracts', () => {
     expect(stop).toBeGreaterThan(resolver);
     expect(backup).toBeGreaterThan(stop);
     expect(check).toContain(
-      'StrCmp $mixcworkInstallScenario "fresh-install" CustomCheckFreshInstall',
+      'StrCmp $mixworkInstallScenario "fresh-install" CustomCheckFreshInstall',
     );
     expect(check).toContain('phase=fresh-install-old-flow-skipped');
     expect(check).toContain('"legacy-not-applicable-fresh-install"');
@@ -204,7 +204,7 @@ describe('Windows installer hardening contracts', () => {
   });
 
   test('re-kills processes on every stop round and logs survivors on failure', () => {
-    const start = installerInclude.indexOf('!macro stopMixCWorkProcesses');
+    const start = installerInclude.indexOf('!macro stopMixWorkProcesses');
     const end = installerInclude.indexOf('!macroend', start);
     const stopMacro = installerInclude.slice(start, end);
 
@@ -224,17 +224,17 @@ describe('Windows installer hardening contracts', () => {
 
     // Survivor dump runs only on the exit-3 verdict, receives its inputs via
     // the child environment, and always clears them afterwards.
-    expect(stopMacro).toContain('StrCmp $R2 "3" 0 StopMixCWorkProcessesLog');
+    expect(stopMacro).toContain('StrCmp $R2 "3" 0 StopMixWorkProcessesLog');
     expect(stopMacro).toContain(
-      String.raw`SetEnvironmentVariable(t "MIXCWORK_STOP_LOG_PATH", t "$APPDATA\MixCWork\install-timing.log")`,
+      String.raw`SetEnvironmentVariable(t "MIXWORK_STOP_LOG_PATH", t "$APPDATA\MixWork\install-timing.log")`,
     );
     expect(stopMacro).toContain(
-      'SetEnvironmentVariable(t "MIXCWORK_STOP_ATTEMPT_ID", t "$mixcworkInstallerAttemptId")',
+      'SetEnvironmentVariable(t "MIXWORK_STOP_ATTEMPT_ID", t "$mixworkInstallerAttemptId")',
     );
-    expect(stopMacro).toContain('SetEnvironmentVariable(t "MIXCWORK_STOP_LOG_PATH", t "")');
-    expect(stopMacro).toContain('SetEnvironmentVariable(t "MIXCWORK_STOP_ATTEMPT_ID", t "")');
+    expect(stopMacro).toContain('SetEnvironmentVariable(t "MIXWORK_STOP_LOG_PATH", t "")');
+    expect(stopMacro).toContain('SetEnvironmentVariable(t "MIXWORK_STOP_ATTEMPT_ID", t "")');
     expect(stopMacro).toContain(
-      'phase=process-stop-survivor attempt_id=$$env:MIXCWORK_STOP_ATTEMPT_ID',
+      'phase=process-stop-survivor attempt_id=$$env:MIXWORK_STOP_ATTEMPT_ID',
     );
     expect(stopMacro).toContain('name=$$($$p.ProcessName) pid=$$($$p.Id) path=$$fp');
     expect(stopMacro).toContain('phase=process-stop-survivors-logged');
@@ -289,8 +289,8 @@ describe('Windows installer hardening contracts', () => {
     expect(detector).toContain('FindNext $4 $5');
     expect(detector).toContain('StrCmp $5 "."');
     expect(detector).toContain('StrCmp $5 ".."');
-    expect(detector).toContain('IntCmp $6 2 MixcworkInstallPreflightFresh');
-    expect(detector).toContain('IntCmp $6 18 MixcworkInstallPreflightFresh');
+    expect(detector).toContain('IntCmp $6 2 MixWorkInstallPreflightFresh');
+    expect(detector).toContain('IntCmp $6 18 MixWorkInstallPreflightFresh');
     expect(detector).not.toContain('IfFileExists "$INSTDIR\\*"');
     expect(detector).not.toContain('IfFileExists "$INSTDIR\\*.*"');
   });
@@ -305,7 +305,7 @@ describe('Windows installer hardening contracts', () => {
     expect(installerInclude).toContain(String.raw`$WINDIR\Sysnative\tar.exe`);
     expect(installerInclude).toContain(String.raw`$WINDIR\System32\tar.exe`);
     expect(installerInclude).toContain(
-      String.raw`nsExec::ExecToLog '"$mixcworkTrustedTarPath"`,
+      String.raw`nsExec::ExecToLog '"$mixworkTrustedTarPath"`,
     );
     expect(installerInclude).not.toMatch(
       /(?:nsExec::\w+|Exec)\s+['"][^'"\n]*\bpowershell(?:\.exe)?\b/i,
@@ -317,13 +317,13 @@ describe('Windows installer hardening contracts', () => {
       .filter((line) => /(?:nsExec::\w+|Exec).*-Command/.test(line));
     expect(interpretedCommands.length).toBeGreaterThan(0);
     for (const command of interpretedCommands) {
-      expect(command).toContain('$mixcworkTrustedPowerShellPath');
-      expect(command).not.toMatch(/\$(?:INSTDIR|APPDATA|mixcworkOldInstall\w*)/);
+      expect(command).toContain('$mixworkTrustedPowerShellPath');
+      expect(command).not.toMatch(/\$(?:INSTDIR|APPDATA|mixworkOldInstall\w*)/);
     }
   });
 
   test('uses typed helper outcomes and a marker-backed ten-minute watchdog', () => {
-    const watchdogStart = installerInclude.indexOf('MIXCWORK_WATCHDOG_MARKER_PATH');
+    const watchdogStart = installerInclude.indexOf('MIXWORK_WATCHDOG_MARKER_PATH');
     const watchdogEnd = installerInclude.indexOf('TarExtractVerify:', watchdogStart);
     const watchdog = installerInclude.slice(watchdogStart, watchdogEnd);
 
@@ -334,11 +334,11 @@ describe('Windows installer hardening contracts', () => {
     expect(watchdog).toContain('WaitForExit(30000)');
     expect(watchdog).toContain('"process-timeout"');
     expect(watchdog).toContain('"process-termination-failed"');
-    expect(watchdog).toContain('MIXCWORK_WATCHDOG_TIMEOUT');
-    expect(watchdog).toContain('MIXCWORK_WATCHDOG_TERMINATION_FAILED');
-    expect(watchdog).toContain('function Write-MixcworkWatchdogMarker');
+    expect(watchdog).toContain('MIXWORK_WATCHDOG_TIMEOUT');
+    expect(watchdog).toContain('MIXWORK_WATCHDOG_TERMINATION_FAILED');
+    expect(watchdog).toContain('function Write-MixWorkWatchdogMarker');
     expect(watchdog).toContain(
-      'MIXCWORK_WATCHDOG_MARKER_WRITE_FAILED:',
+      'MIXWORK_WATCHDOG_MARKER_WRITE_FAILED:',
     );
     expect(
       watchdog.match(/Set-Content -LiteralPath \$\$marker/g),
@@ -395,7 +395,7 @@ describe('Windows installer hardening contracts', () => {
     const preLaunchDelete = installerInclude.indexOf(sentinelDelete);
     expect(preLaunchDelete).toBeGreaterThan(-1);
     expect(preLaunchDelete).toBeLessThan(
-      installerInclude.indexOf('MIXCWORK_WATCHDOG_MARKER_PATH'),
+      installerInclude.indexOf('MIXWORK_WATCHDOG_MARKER_PATH'),
     );
     expect(
       installerInclude.match(/Delete "\$INSTDIR\\resources\\\.unpack-runtime-ok"/g),
@@ -446,22 +446,22 @@ describe('Windows installer hardening contracts', () => {
     expect(installerInclude).toContain('Get-FileHash -LiteralPath');
     expect(installerInclude).toContain('$$verified.validation.status = \\"verified\\"');
     expect(installerInclude).toContain(
-      'StrCmp $mixcworkLegacySkillsStatus "legacy-backup-succeeded" 0 SkipSkillRestore',
+      'StrCmp $mixworkLegacySkillsStatus "legacy-backup-succeeded" 0 SkipSkillRestore',
     );
     expect(installerInclude).toContain('if ($$manifest.attemptId -ne $$attempt)');
     expect(installerInclude).toContain('if ($$manifest.source -ne $$source)');
     expect(installerInclude).toContain(
-      String.raw`skills-backup\$mixcworkInstallerAttemptId`,
+      String.raw`skills-backup\$mixworkInstallerAttemptId`,
     );
     expect(installerInclude).not.toContain(String.raw`skills-backup\*.*`);
 
     const restoreStart = installerInclude.indexOf(
-      'StrCmp $mixcworkLegacySkillsStatus "legacy-backup-succeeded" 0 SkipSkillRestore',
+      'StrCmp $mixworkLegacySkillsStatus "legacy-backup-succeeded" 0 SkipSkillRestore',
     );
     const restoreEnd = installerInclude.indexOf('SkipSkillRestore:', restoreStart);
     const restore = installerInclude.slice(restoreStart, restoreEnd);
     expect(restore).toContain(
-      'IfFileExists "$APPDATA\\MixCWork\\skills-backup\\$mixcworkInstallerAttemptId\\backup-manifest.json" SkillRestoreAttemptBackupReady',
+      'IfFileExists "$APPDATA\\MixWork\\skills-backup\\$mixworkInstallerAttemptId\\backup-manifest.json" SkillRestoreAttemptBackupReady',
     );
     expect(restore).toContain('"legacy-restore-backup-missing"');
     expect(restore).toContain('Write-Output (\\"name-conflict:\\"');
@@ -477,16 +477,16 @@ describe('Windows installer hardening contracts', () => {
   test('drives Skills backup state from helper exit codes, never stdout text', () => {
     const defines: Record<string, string> = {};
     for (const match of installerInclude.matchAll(
-      /!define (MIXCWORK_SKILL_BACKUP_EXIT_\w+) "(\d+)"/g,
+      /!define (MIXWORK_SKILL_BACKUP_EXIT_\w+) "(\d+)"/g,
     )) {
       defines[match[1]] = match[2];
     }
     expect(defines).toEqual({
-      MIXCWORK_SKILL_BACKUP_EXIT_VERIFIED: '0',
-      MIXCWORK_SKILL_BACKUP_EXIT_INSPECT_FAILED: '10',
-      MIXCWORK_SKILL_BACKUP_EXIT_COPY_FAILED: '11',
-      MIXCWORK_SKILL_BACKUP_EXIT_VERIFY_FAILED: '12',
-      MIXCWORK_SKILL_BACKUP_EXIT_NO_USER_SKILLS: '13',
+      MIXWORK_SKILL_BACKUP_EXIT_VERIFIED: '0',
+      MIXWORK_SKILL_BACKUP_EXIT_INSPECT_FAILED: '10',
+      MIXWORK_SKILL_BACKUP_EXIT_COPY_FAILED: '11',
+      MIXWORK_SKILL_BACKUP_EXIT_VERIFY_FAILED: '12',
+      MIXWORK_SKILL_BACKUP_EXIT_NO_USER_SKILLS: '13',
     });
     expect(new Set(Object.values(defines)).size).toBe(Object.keys(defines).length);
 
@@ -506,7 +506,7 @@ describe('Windows installer hardening contracts', () => {
   test('re-checks the attempt manifest after a verified backup before replacing the old install', () => {
     const backupComplete = installerInclude.indexOf('phase=skill-backup-complete');
     const postcheck = installerInclude.indexOf(
-      'IfFileExists "$APPDATA\\MixCWork\\skills-backup\\$mixcworkInstallerAttemptId\\backup-manifest.json" SkillBackupValidated',
+      'IfFileExists "$APPDATA\\MixWork\\skills-backup\\$mixworkInstallerAttemptId\\backup-manifest.json" SkillBackupValidated',
     );
     const postcheckLog = installerInclude.indexOf(
       'phase=skill-backup-manifest-postcheck-missing',
@@ -522,7 +522,7 @@ describe('Windows installer hardening contracts', () => {
     // A missing manifest downgrades to the existing fail-closed abort path
     // while the old install is still intact.
     expect(installerInclude.slice(postcheck, failedAbort)).toContain(
-      'StrCpy $mixcworkLegacySkillsStatus "legacy-backup-verify-failed"',
+      'StrCpy $mixworkLegacySkillsStatus "legacy-backup-verify-failed"',
     );
   });
 
@@ -554,7 +554,7 @@ describe('Windows installer hardening contracts', () => {
     expect(degraded).toContain('action=continue-with-attempt-backup-preserved');
     expect(degraded).toContain('action=continue-no-backup-found');
     expect(degraded).toContain(
-      'The recovery backup was preserved at $APPDATA\\MixCWork\\skills-backup\\$mixcworkInstallerAttemptId',
+      'The recovery backup was preserved at $APPDATA\\MixWork\\skills-backup\\$mixworkInstallerAttemptId',
     );
     expect(degraded).not.toContain('was not deleted');
   });
@@ -572,17 +572,17 @@ describe('Windows installer hardening contracts', () => {
       init.indexOf('FileOpen $9'),
     );
     expect(init).toContain(
-      'FileOpen $9 "$APPDATA\\MixCWork\\install-timing.log" a',
+      'FileOpen $9 "$APPDATA\\MixWork\\install-timing.log" a',
     );
     expect(init).toContain('FileSeek $9 0 END');
     expect(init).not.toContain(
-      'FileOpen $9 "$APPDATA\\MixCWork\\install-timing.log" w',
+      'FileOpen $9 "$APPDATA\\MixWork\\install-timing.log" w',
     );
-    expect(init).toContain('StrCpy $mixcworkInvocationSource "unknown"');
+    expect(init).toContain('StrCpy $mixworkInvocationSource "unknown"');
     expect(init).toContain('${If} ${isUpdated}');
     expect(init).toContain('${AndIf} ${isForceRun}');
-    expect(init).toContain('StrCpy $mixcworkInvocationSource "app-update"');
-    expect(init).toContain('launcher_fallback=$mixcworkLauncherFallback');
+    expect(init).toContain('StrCpy $mixworkInvocationSource "app-update"');
+    expect(init).toContain('launcher_fallback=$mixworkLauncherFallback');
 
     const phaseWrites = installerInclude
       .split('\n')
@@ -622,7 +622,7 @@ describe('Windows installer hardening contracts', () => {
     expect(prevalidated).toBeLessThan(finalizeMacro);
     expect(committed).toBeGreaterThan(finalizeMacro);
     expect(installerInclude).toContain(
-      'StrCmp $mixcworkOldInstallRenameStatus "prevalidated" 0 MixcworkRollbackDone',
+      'StrCmp $mixworkOldInstallRenameStatus "prevalidated" 0 MixWorkRollbackDone',
     );
     expect(installerInclude).toContain('registration=not-written');
   });
@@ -651,28 +651,28 @@ describe('Windows installer hardening contracts', () => {
   });
 
   test('relaunches a verified old app only for interactive update intent', () => {
-    const start = installerInclude.indexOf('Function mixcworkTryRelaunchOldApp');
+    const start = installerInclude.indexOf('Function mixworkTryRelaunchOldApp');
     const end = installerInclude.indexOf('FunctionEnd', start);
     const relaunch = installerInclude.slice(start, end);
 
     expect(relaunch).toContain('${StdUtils.TestParameter} $0 "updated"');
     expect(relaunch).toContain('${StdUtils.TestParameter} $0 "force-run"');
-    expect(relaunch).toContain('IfSilent 0 MixcworkOldAppRelaunchInteractive');
+    expect(relaunch).toContain('IfSilent 0 MixWorkOldAppRelaunchInteractive');
     expect(relaunch).toContain(
-      'StrCmp $mixcworkTargetProcessesStopStatus "success"',
+      'StrCmp $mixworkTargetProcessesStopStatus "success"',
     );
     expect(installerInclude).toContain(
-      'StrCpy $mixcworkOldAppAsarPath "$INSTDIR\\resources\\app.asar"',
+      'StrCpy $mixworkOldAppAsarPath "$INSTDIR\\resources\\app.asar"',
     );
-    expect(relaunch).toContain('$mixcworkOldAppAsarPath');
+    expect(relaunch).toContain('$mixworkOldAppAsarPath');
     expect(relaunch).toContain('IntOp $1 $0 & 0x410');
     expect(relaunch).toContain(
-      '${StdUtils.ExecShellAsUser} $0 "$mixcworkOldAppExecutablePath" "open" ""',
+      '${StdUtils.ExecShellAsUser} $0 "$mixworkOldAppExecutablePath" "open" ""',
     );
-    expect(relaunch).toContain('StrCmp $0 "0" MixcworkOldAppRelaunchSucceeded');
+    expect(relaunch).toContain('StrCmp $0 "0" MixWorkOldAppRelaunchSucceeded');
     expect(relaunch).toContain('"old-app-relaunch-failed"');
     expect(installerInclude).toContain(
-      'StrCmp $mixcworkOldInstallRollbackStatus "success" 0 MixcworkRollbackDone',
+      'StrCmp $mixworkOldInstallRollbackStatus "success" 0 MixWorkRollbackDone',
     );
   });
 

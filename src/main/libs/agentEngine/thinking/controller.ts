@@ -1,8 +1,8 @@
 import type {
-  MixCWorkMessage,
-  MixCWorkMessageMetadata,
-  MixCWorkStore,
-} from '../../../mixcworkStore';
+  MixWorkMessage,
+  MixWorkMessageMetadata,
+  MixWorkStore,
+} from '../../../mixworkStore';
 import { buildAnchoredThinkingKey } from './blocks';
 import { logThinkingDiagnostic } from './diagnostics';
 import { reconcileOpenClawThinkingBlocks } from './reconciliation';
@@ -20,13 +20,13 @@ export interface OpenClawThinkingTurnContext {
 }
 
 interface OpenClawThinkingControllerDependencies {
-  store: Pick<MixCWorkStore, 'addMessage' | 'getSession' | 'insertMessageBeforeId' | 'updateMessage'>;
-  emitMessage: (sessionId: string, message: MixCWorkMessage, beforeMessageId?: string) => void;
+  store: Pick<MixWorkStore, 'addMessage' | 'getSession' | 'insertMessageBeforeId' | 'updateMessage'>;
+  emitMessage: (sessionId: string, message: MixWorkMessage, beforeMessageId?: string) => void;
   emitMessageUpdate: (
     sessionId: string,
     messageId: string,
     content: string,
-    metadata?: MixCWorkMessageMetadata,
+    metadata?: MixWorkMessageMetadata,
   ) => void;
   throttledStoreUpdate: (
     sessionId: string,
@@ -132,7 +132,7 @@ export class OpenClawThinkingController {
 
     const existingMessage = this.dependencies.store
       .getSession(sessionId)?.messages.find((message) => message.id === messageId);
-    const metadata: MixCWorkMessageMetadata = {
+    const metadata: MixWorkMessageMetadata = {
       ...existingMessage?.metadata,
       isThinking: true,
       isStreaming: false,

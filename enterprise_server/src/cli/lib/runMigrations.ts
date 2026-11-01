@@ -6,7 +6,7 @@
 import { runMigrations } from '../../db/migrate.js';
 import { pool } from '../../db/pool.js';
 
-const dryRun = process.env.MIXCWORK_MIGRATE_DRY_RUN === '1';
+const dryRun = process.env.MIXWORK_MIGRATE_DRY_RUN === '1';
 
 export async function runMigrationsOnce(): Promise<void> {
   if (dryRun) {

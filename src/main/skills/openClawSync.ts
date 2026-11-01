@@ -15,7 +15,7 @@ export interface OpenClawSkillReport {
  * Extract plugin-provided skill IDs from an OpenClaw status report
  * and update the SkillManager's cached set.
  *
- * Skills whose baseDir resides inside the MixCWork user SKILLs directory
+ * Skills whose baseDir resides inside the MixWork user SKILLs directory
  * are excluded — those are user-installed (e.g. from the skill marketplace)
  * and should remain deletable.
  */
@@ -27,7 +27,7 @@ export function updatePluginSkillIdsFromReport(
   const skillsRoot = path.resolve(sm.getSkillsRoot());
   for (const entry of report.skills ?? []) {
     if (entry.source === 'openclaw-extra') {
-      // Skip skills inside the MixCWork user SKILLs directory —
+      // Skip skills inside the MixWork user SKILLs directory —
       // these are user-installed marketplace skills, not plugin-provided.
       if (entry.baseDir) {
         const resolved = path.resolve(entry.baseDir);

@@ -87,7 +87,7 @@
 - **OAuth 客户端档案**：`authorizeUrl`（用户去哪里登录/授权）、`tokenUrl`（桌面端拿 code 去换 token 的地址）、`clientId`（桌面端在 IdP 处的公开身份）、`scopes`（申请的权限范围）。这四个都是**公开元数据**——桌面端是 PKCE 公共客户端（`token_endpoint_auth_method=none`，没有 secret），所以它们不保密，企业端可以统一持有并下发。
 - **`callbackUrl`（redirect_uri）**：IdP 把授权 code 送回来的地址。它必须**在上游 IdP 处登记**，也必须**与桌面端实际发出的完全一致**。
 
-本轮查出的失真：控制台显示的回调地址是 `https://oauth.mixcwork.cn/mcp/callback`（"回调落企业端"的机密客户端网关设计，见 §7 的待办），而桌面端实际发的是 `http://localhost:<随机端口>/callback`。三者对不上：
+本轮查出的失真：控制台显示的回调地址是 `https://oauth.mixwork.cn/mcp/callback`（"回调落企业端"的机密客户端网关设计，见 §7 的待办），而桌面端实际发的是 `http://localhost:<随机端口>/callback`。三者对不上：
 1. 这个值**根本没下发**——`pickPublicOauth` 只下发 `authorizeUrl`/`tokenUrl`/`clientId`/`scopes`，服务端自己也不读它；
 2. 桌面端的**随机端口无法在上游登记**——Okta、Azure AD 这类严格匹配 redirect_uri 的 IdP 会直接 `redirect_uri_mismatch`；
 3. 桌面端绑定的是 `127.0.0.1`，发出去的却是 `localhost`——浏览器把 `localhost` 解析成 `::1` 时，code 会送到没人监听的套接字上。

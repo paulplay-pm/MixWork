@@ -5,9 +5,9 @@
 
 const BuildEnv = {
   Keyfrom: 'KEYFROM',
-  WebInstaller: 'MIXCWORK_WEB_INSTALLER',
-  WebPkgUrl: 'MIXCWORK_WEB_PKG_URL',
-  WebPkgBaseUrl: 'MIXCWORK_WEB_PKG_BASE_URL',
+  WebInstaller: 'MIXWORK_WEB_INSTALLER',
+  WebPkgUrl: 'MIXWORK_WEB_PKG_URL',
+  WebPkgBaseUrl: 'MIXWORK_WEB_PKG_BASE_URL',
 };
 
 // Every variable a channel build must control itself; the build entry points

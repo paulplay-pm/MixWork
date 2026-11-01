@@ -179,7 +179,7 @@ export async function openOauthFlow(
 ): Promise<{ token: string; expiresAt?: number }> { /* … lift the existing flow … */ }
 ```
 
-Keep the redirect scheme (`mixcwork-mcp://callback/<provider>`) identical to what qichacha uses today.
+Keep the redirect scheme (`mixwork-mcp://callback/<provider>`) identical to what qichacha uses today.
 
 - [ ] **Step 2.3: Slim `qichachaMcpAuth.ts` to a provider config**
 
@@ -237,7 +237,7 @@ export interface ProbeResult {
 
 - [ ] **Step 3.2: Implement HTTP/SSE branch**
 
-Use the existing `node-fetch` import already in the project. Build the headers by merging `record.headers` (which holds the bearer / api-key values). Build the body as a JSON-RPC `initialize` request (`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"mixcwork","version":"<pkg version>"}}}`). POST to `record.url`. Timeout: 10s. Map outcomes:
+Use the existing `node-fetch` import already in the project. Build the headers by merging `record.headers` (which holds the bearer / api-key values). Build the body as a JSON-RPC `initialize` request (`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"mixwork","version":"<pkg version>"}}}`). POST to `record.url`. Timeout: 10s. Map outcomes:
 - HTTP 200 with `result.serverInfo` (or any non-empty `result`) → `{ ok: true, status: 'authorized' }`.
 - HTTP 401 / 403 → `{ ok: false, status: 'unauthorized' }`.
 - ECONNREFUSED / DNS fail / timeout → `{ ok: false, status: 'connect-error' }`.

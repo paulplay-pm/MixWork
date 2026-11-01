@@ -7,7 +7,7 @@
 
 ## Problem
 
-Today, enterprise_server has catalogs for skills (`skill_marketplace_skills`, `023_skill_marketplace.sql`) and MCP servers (`mcp_marketplace_servers`, `018_mcp_marketplace_v2.sql`), but no concept of a centrally-authored **agent** that desktops can consume. Desktop `agents` only support `source: 'custom' | 'preset'` (`src/main/mixcworkStore.ts:400`), and the only existing "enterprise agents" path (`syncEnterpriseConfig` in `src/main/libs/enterpriseConfigSync.ts:795`) reads a local file pack, never touches enterprise_server HTTP, and ignores user roles. The company needs a real channel where:
+Today, enterprise_server has catalogs for skills (`skill_marketplace_skills`, `023_skill_marketplace.sql`) and MCP servers (`mcp_marketplace_servers`, `018_mcp_marketplace_v2.sql`), but no concept of a centrally-authored **agent** that desktops can consume. Desktop `agents` only support `source: 'custom' | 'preset'` (`src/main/mixworkStore.ts:400`), and the only existing "enterprise agents" path (`syncEnterpriseConfig` in `src/main/libs/enterpriseConfigSync.ts:795`) reads a local file pack, never touches enterprise_server HTTP, and ignores user roles. The company needs a real channel where:
 
 - an `agent_admin` user on enterprise_server authors a complete agent (identity / system prompt / model / thinking level / icon / skill bundle / subagent allow-list / role-scoped availability);
 - after publication, every desktop user in a role listed in `allowed_roles` sees the agent appear in their local "我的 Agent" list automatically;
@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS enterprise_agent_prefs (
   - `AgentSummary.enterpriseAgentId?: string`, `AgentSummary.isReadOnly?: boolean` (derived in reducer)
 - `src/main/sqliteStore.ts`: `ensureAgentSchema` adds `ALTER TABLE agents ADD COLUMN enterprise_agent_id TEXT` when missing; new `ensureEnterpriseAgentPrefsSchema` creates `enterprise_agent_prefs` when missing.
 - `src/main/auth/enterpriseClient.ts`: `listEnterpriseAgents(): Promise<EnterpriseAgentView[]>`.
-- `src/main/ipcHandlers/agents/handlers.enterprise.ts` (new file): `registerAgentEnterpriseHandlers({ loginGate, enterpriseClient, mixcworkStore })` registers `AgentIpcChannel.FetchEnterpriseAgents` (constant `agents:fetchEnterpriseAgents`); calls `loginGate.requireEnterprise()`; on HTTP failure returns `{ success: false }` **without touching local state**; on success calls `agentEnterpriseSync.syncFromServer` and returns `{ success: true, report }`.
+- `src/main/ipcHandlers/agents/handlers.enterprise.ts` (new file): `registerAgentEnterpriseHandlers({ loginGate, enterpriseClient, mixworkStore })` registers `AgentIpcChannel.FetchEnterpriseAgents` (constant `agents:fetchEnterpriseAgents`); calls `loginGate.requireEnterprise()`; on HTTP failure returns `{ success: false }` **without touching local state**; on success calls `agentEnterpriseSync.syncFromServer` and returns `{ success: true, report }`.
 - `src/main/libs/agentEnterpriseSync.ts` (new): pure function `syncFromServer(opts) → { view, report }` — strict D1 mirror; details below.
 - `src/main/libs/enterpriseAgentPrefsStore.ts` (new): thin store wrapping the new table; `upsert / remove / get`.
 - `src/main/libs/agentEnterpriseSyncThrottle.ts` (new): module-level `Map<key, { result, ts }>` keyed by user account id; same-key within 3000ms returns cached result, otherwise executes and records.
@@ -169,13 +169,13 @@ CREATE TABLE IF NOT EXISTS enterprise_agent_prefs (
 serverView = await enterpriseClient.listEnterpriseAgents()
 serverIds  = new Set(serverView.map(a => a.agent_id))
 
-existingLocal = mixcworkStore.listAgents()
+existingLocal = mixworkStore.listAgents()
                  .filter(a => a.source === 'enterprise')
 
 // REMOVE phase — server-invisible rows are deleted (only on successful HTTP)
 for (a of existingLocal) {
   if (!serverIds.has(a.enterpriseAgentId)) {
-    mixcworkStore.deleteAgent(a.id)
+    mixworkStore.deleteAgent(a.id)
     enterpriseAgentPrefsStore.remove(a.enterpriseAgentId)
     report.removed++
   }
@@ -201,10 +201,10 @@ for (sv of serverView) {
 
   local = existingLocal.find(a => a.enterpriseAgentId === sv.agent_id)
   if (local) {
-    mixcworkStore.updateAgent(local.id, payload)
+    mixworkStore.updateAgent(local.id, payload)
     report.upserted++
   } else {
-    mixcworkStore.createAgent(payload)
+    mixworkStore.createAgent(payload)
     report.upserted++
   }
 
@@ -282,7 +282,7 @@ The `references` endpoint shows admin the count + names of impacted agents in `D
 - `models/agentMarketplaceView.test.ts` — `mapAgent` snake→camel, `allowedRoles` JSONB→string[], null-tolerant.
 
 ### Desktop (`src/main/**/*.test.ts`, `src/renderer/**/*.test.tsx`)
-- `mixcworkStore.test.ts` — new column `enterprise_agent_id` round-trip, `source: 'enterprise'` CRUD, `mapAgentRow` NULL→undefined.
+- `mixworkStore.test.ts` — new column `enterprise_agent_id` round-trip, `source: 'enterprise'` CRUD, `mapAgentRow` NULL→undefined.
 - `enterpriseAgentPrefsStore.test.ts` — upsert / remove / get.
 - `agentEnterpriseSync.test.ts` — 3-agent happy path (upserted=3); second-pass removal (removed=1); model fallback (skipped=1); prefs orphan cleanup on removal; throw-on-fetch preserves local state.
 - `agentEnterpriseSyncThrottle.test.ts` — 3s window cache hit; 3s+1ms cache miss; per-account isolation.

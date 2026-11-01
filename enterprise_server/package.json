@@ -1,5 +1,5 @@
 {
-  "name": "@mixcwork/enterprise-server",
+  "name": "@mixwork/enterprise-server",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,7 +12,7 @@
     "reinit": "tsx --env-file=.env src/cli/reinit.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node --enable-source-maps dist/server.js",
-    "mixcwork-server": "node --enable-source-maps dist/cli/index.js"
+    "mixwork-server": "node --enable-source-maps dist/cli/index.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",

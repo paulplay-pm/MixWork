@@ -3,12 +3,12 @@
 Use the wrapper script unless the CLI is already installed globally:
 
 ```bash
-export SKILLS_ROOT="${MIXCWORK_SKILLS_ROOT:-${SKILLS_ROOT:-$HOME/Library/Application Support/MixCWork/SKILLs}}"
+export SKILLS_ROOT="${MIXWORK_SKILLS_ROOT:-${SKILLS_ROOT:-$HOME/Library/Application Support/MixWork/SKILLs}}"
 export PWCLI="$SKILLS_ROOT/playwright/scripts/playwright_cli.sh"
 "$PWCLI" --help
 ```
 
-Installed skills resolve from `$MIXCWORK_SKILLS_ROOT` / `$SKILLS_ROOT` (production default: app `userData/SKILLs`, macOS usually `~/Library/Application Support/MixCWork/SKILLs`).
+Installed skills resolve from `$MIXWORK_SKILLS_ROOT` / `$SKILLS_ROOT` (production default: app `userData/SKILLs`, macOS usually `~/Library/Application Support/MixWork/SKILLs`).
 
 Optional convenience alias:
 

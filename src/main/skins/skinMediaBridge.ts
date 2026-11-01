@@ -99,7 +99,7 @@ export class SkinMediaBridge {
     return result;
   }
 
-  async preflightMixcworkImageGeneration(
+  async preflightMixWorkImageGeneration(
     sessionId: string | null,
     selection: MediaSelectionState | undefined,
   ): Promise<SkinToolResult | null> {

@@ -2,13 +2,13 @@ import { describe, expect, test } from 'vitest';
 
 import {
   hasModelRuntimeProfile,
-  MixcworkModelRuntimeProfile,
+  MixWorkModelRuntimeProfile,
   ModelProfileTransportDecision,
   parseModelProfileMap,
   resolveModelProfileTransportDecision,
-} from '../openclaw-extensions/mixcwork-model-compat/profileMapping';
+} from '../openclaw-extensions/mixwork-model-compat/profileMapping';
 
-describe('mixcwork-model-compat profile mapping', () => {
+describe('mixwork-model-compat profile mapping', () => {
   test('keeps only exact valid model refs and known profiles in deterministic order', () => {
     expect(parseModelProfileMap({
       'custom_2/alias-k3': 'moonshot-kimi-k3',
@@ -16,8 +16,8 @@ describe('mixcwork-model-compat profile mapping', () => {
       'invalid-ref': 'moonshot-kimi-k3',
       'custom_1/other': 'unknown-profile',
     })).toEqual({
-      'custom_0/kimi-k3': MixcworkModelRuntimeProfile.MoonshotKimiK3,
-      'custom_2/alias-k3': MixcworkModelRuntimeProfile.MoonshotKimiK3,
+      'custom_0/kimi-k3': MixWorkModelRuntimeProfile.MoonshotKimiK3,
+      'custom_2/alias-k3': MixWorkModelRuntimeProfile.MoonshotKimiK3,
     });
   });
 
@@ -30,13 +30,13 @@ describe('mixcwork-model-compat profile mapping', () => {
       profiles,
       'custom_0',
       'Kimi_K3',
-      MixcworkModelRuntimeProfile.MoonshotKimiK3,
+      MixWorkModelRuntimeProfile.MoonshotKimiK3,
     )).toBe(true);
     expect(hasModelRuntimeProfile(
       profiles,
       'custom_0',
       'kimi-k3',
-      MixcworkModelRuntimeProfile.MoonshotKimiK3,
+      MixWorkModelRuntimeProfile.MoonshotKimiK3,
     )).toBe(false);
   });
 
@@ -72,11 +72,11 @@ describe('mixcwork-model-compat profile mapping', () => {
       modelProfiles: profiles,
       provider: 'custom_0',
       modelId: 'my-kimi-prod',
-      modelApi: 'mixcwork-model-compat',
+      modelApi: 'mixwork-model-compat',
     })).toEqual({
       kind: ModelProfileTransportDecision.Reject,
       expectedApi: 'openai-completions',
-      actualApi: 'mixcwork-model-compat',
+      actualApi: 'mixwork-model-compat',
     });
   });
 });

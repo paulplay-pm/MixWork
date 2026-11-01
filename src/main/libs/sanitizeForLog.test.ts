@@ -142,12 +142,12 @@ describe('serializeForLog', () => {
 describe('sanitizeUrlForLog', () => {
   test('removes query values and fragments from valid URLs', () => {
     const result = sanitizeUrlForLog(
-      'https://example.com/api/track?action=mixcwork_app_started&log_Usid=user-1#result',
+      'https://example.com/api/track?action=mixwork_app_started&log_Usid=user-1#result',
     );
 
     expect(result).toBe('https://example.com/api/track?[redacted]#[redacted]');
     expect(result).not.toContain('user-1');
-    expect(result).not.toContain('mixcwork_app_started');
+    expect(result).not.toContain('mixwork_app_started');
   });
 
   test('returns a safe marker for invalid URLs', () => {

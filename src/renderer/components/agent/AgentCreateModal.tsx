@@ -8,7 +8,7 @@ import { useSelector } from 'react-redux';
 import { agentService } from '../../services/agent';
 import { i18nService } from '../../services/i18n';
 import { imService } from '../../services/im';
-import { mixcworkService } from '../../services/mixcwork';
+import { mixworkService } from '../../services/mixwork';
 import { resolveThinkingLevelForModel } from '../../services/modelThinkingLevelMemory';
 import type { RootState } from '../../store';
 import type { Model } from '../../store/slices/modelSlice';
@@ -322,7 +322,7 @@ const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
       });
       if (agent) {
         if (userInfo !== initialUserInfoRef.current) {
-          const userInfoSaved = await mixcworkService.writeBootstrapFile('USER.md', userInfo, { agentId: agent.id });
+          const userInfoSaved = await mixworkService.writeBootstrapFile('USER.md', userInfo, { agentId: agent.id });
           if (!userInfoSaved) {
             console.warn(`[AgentCreateModal] failed to save USER.md for agent ${agent.id}`);
             window.dispatchEvent(new CustomEvent('app:showToast', { detail: i18nService.t('agentSaveFailed') }));

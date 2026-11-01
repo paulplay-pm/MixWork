@@ -1,5 +1,5 @@
 /**
- * Tailwind CSS v3 plugin — bridges --mixcwork-* CSS variables into Tailwind utility classes.
+ * Tailwind CSS v3 plugin — bridges --mixwork-* CSS variables into Tailwind utility classes.
  *
  * Usage in tailwind.config.js:
  *   plugins: [require('./src/renderer/theme/tailwind/plugin.cjs')]
@@ -24,73 +24,73 @@ module.exports = plugin(function () {
     extend: {
       colors: {
         // === Semantic theme colors (driven by CSS variables) ===
-        background:    withAlpha('--mixcwork-background'),
-        foreground:    withAlpha('--mixcwork-foreground'),
+        background:    withAlpha('--mixwork-background'),
+        foreground:    withAlpha('--mixwork-foreground'),
         primary: {
-          DEFAULT:     withAlpha('--mixcwork-primary'),
-          foreground:  withAlpha('--mixcwork-primary-foreground'),
-          hover:       withAlpha('--mixcwork-primary-hover'),
-          muted:       withAlpha('--mixcwork-primary-muted'),
-          dark:        withAlpha('--mixcwork-primary-hover'),  // backward compat alias
+          DEFAULT:     withAlpha('--mixwork-primary'),
+          foreground:  withAlpha('--mixwork-primary-foreground'),
+          hover:       withAlpha('--mixwork-primary-hover'),
+          muted:       withAlpha('--mixwork-primary-muted'),
+          dark:        withAlpha('--mixwork-primary-hover'),  // backward compat alias
         },
         accent: {
-          DEFAULT:     withAlpha('--mixcwork-accent'),
-          foreground:  withAlpha('--mixcwork-accent-foreground'),
+          DEFAULT:     withAlpha('--mixwork-accent'),
+          foreground:  withAlpha('--mixwork-accent-foreground'),
         },
         surface: {
-          DEFAULT:     withAlpha('--mixcwork-surface'),
-          foreground:  withAlpha('--mixcwork-surface-foreground'),
-          raised:      withAlpha('--mixcwork-surface-raised'),
-          overlay:     withAlpha('--mixcwork-surface-overlay'),
-          inset:       withAlpha('--mixcwork-surface-raised'),  // alias
+          DEFAULT:     withAlpha('--mixwork-surface'),
+          foreground:  withAlpha('--mixwork-surface-foreground'),
+          raised:      withAlpha('--mixwork-surface-raised'),
+          overlay:     withAlpha('--mixwork-surface-overlay'),
+          inset:       withAlpha('--mixwork-surface-raised'),  // alias
         },
         border: {
-          DEFAULT:     withAlpha('--mixcwork-border'),
-          subtle:      withAlpha('--mixcwork-border-subtle'),
-          input:       withAlpha('--mixcwork-input-border'),
+          DEFAULT:     withAlpha('--mixwork-border'),
+          subtle:      withAlpha('--mixwork-border-subtle'),
+          input:       withAlpha('--mixwork-input-border'),
         },
-        muted:         withAlpha('--mixcwork-text-muted'),
+        muted:         withAlpha('--mixwork-text-muted'),
         destructive: {
-          DEFAULT:     withAlpha('--mixcwork-destructive'),
-          foreground:  withAlpha('--mixcwork-destructive-foreground'),
+          DEFAULT:     withAlpha('--mixwork-destructive'),
+          foreground:  withAlpha('--mixwork-destructive-foreground'),
         },
-        success:       withAlpha('--mixcwork-success'),
-        warning:       withAlpha('--mixcwork-warning'),
+        success:       withAlpha('--mixwork-success'),
+        warning:       withAlpha('--mixwork-warning'),
 
-        // === Legacy claude.* aliases (map to --mixcwork-* for backward compat) ===
+        // === Legacy claude.* aliases (map to --mixwork-* for backward compat) ===
         claude: {
-          bg:                withAlpha('--mixcwork-background'),
-          surface:           withAlpha('--mixcwork-surface'),
-          surfaceHover:      withAlpha('--mixcwork-surface-raised'),
-          surfaceMuted:      withAlpha('--mixcwork-surface-raised'),
-          surfaceInset:      withAlpha('--mixcwork-surface-raised'),
-          border:            withAlpha('--mixcwork-border'),
-          borderLight:       withAlpha('--mixcwork-border-subtle'),
-          text:              withAlpha('--mixcwork-text-primary'),
-          textSecondary:     withAlpha('--mixcwork-text-secondary'),
+          bg:                withAlpha('--mixwork-background'),
+          surface:           withAlpha('--mixwork-surface'),
+          surfaceHover:      withAlpha('--mixwork-surface-raised'),
+          surfaceMuted:      withAlpha('--mixwork-surface-raised'),
+          surfaceInset:      withAlpha('--mixwork-surface-raised'),
+          border:            withAlpha('--mixwork-border'),
+          borderLight:       withAlpha('--mixwork-border-subtle'),
+          text:              withAlpha('--mixwork-text-primary'),
+          textSecondary:     withAlpha('--mixwork-text-secondary'),
           // dark.* aliases point to the same vars — theme handles light/dark
-          darkBg:            withAlpha('--mixcwork-background'),
-          darkSurface:       withAlpha('--mixcwork-surface'),
-          darkSurfaceHover:  withAlpha('--mixcwork-surface-raised'),
-          darkSurfaceMuted:  withAlpha('--mixcwork-surface-raised'),
-          darkSurfaceInset:  withAlpha('--mixcwork-surface-raised'),
-          darkBorder:        withAlpha('--mixcwork-border'),
-          darkBorderLight:   withAlpha('--mixcwork-border-subtle'),
-          darkText:          withAlpha('--mixcwork-text-primary'),
-          darkTextSecondary: withAlpha('--mixcwork-text-secondary'),
+          darkBg:            withAlpha('--mixwork-background'),
+          darkSurface:       withAlpha('--mixwork-surface'),
+          darkSurfaceHover:  withAlpha('--mixwork-surface-raised'),
+          darkSurfaceMuted:  withAlpha('--mixwork-surface-raised'),
+          darkSurfaceInset:  withAlpha('--mixwork-surface-raised'),
+          darkBorder:        withAlpha('--mixwork-border'),
+          darkBorderLight:   withAlpha('--mixwork-border-subtle'),
+          darkText:          withAlpha('--mixwork-text-primary'),
+          darkTextSecondary: withAlpha('--mixwork-text-secondary'),
           // Accent
-          accent:            withAlpha('--mixcwork-primary'),
-          accentHover:       withAlpha('--mixcwork-primary-hover'),
-          accentLight:       withAlpha('--mixcwork-primary'),
-          accentMuted:       withAlpha('--mixcwork-primary-muted'),
+          accent:            withAlpha('--mixwork-primary'),
+          accentHover:       withAlpha('--mixwork-primary-hover'),
+          accentLight:       withAlpha('--mixwork-primary'),
+          accentMuted:       withAlpha('--mixwork-primary-muted'),
         },
         secondary: {
-          DEFAULT: withAlpha('--mixcwork-text-secondary'),
-          dark:    withAlpha('--mixcwork-border'),
+          DEFAULT: withAlpha('--mixwork-text-secondary'),
+          dark:    withAlpha('--mixwork-border'),
         },
       },
       borderRadius: {
-        theme: 'var(--mixcwork-radius)',
+        theme: 'var(--mixwork-radius)',
       },
     },
   },

@@ -371,12 +371,12 @@ const LibraryItemCard: React.FC<{
         <h3 className={`line-clamp-2 ${MANAGEMENT_BODY_TEXT} font-medium leading-5 text-foreground`}>
           {item.title}
         </h3>
-        <div className={`mt-1 flex min-w-0 items-center gap-1.5 ${MANAGEMENT_META_TEXT} leading-[var(--mixcwork-leading-xs)] text-secondary`}>
+        <div className={`mt-1 flex min-w-0 items-center gap-1.5 ${MANAGEMENT_META_TEXT} leading-[var(--mixwork-leading-xs)] text-secondary`}>
           <span className="truncate">{getLibrarySourceLabel(item)}</span>
           <span aria-hidden="true">·</span>
           <span className="truncate">{getLibraryItemStatus(item)}</span>
         </div>
-        <div className={`${MANAGEMENT_META_TEXT} mt-1 leading-[var(--mixcwork-leading-xs)] text-tertiary`}>
+        <div className={`${MANAGEMENT_META_TEXT} mt-1 leading-[var(--mixwork-leading-xs)] text-tertiary`}>
           {formatLibraryTime(item.sortTime)}
         </div>
       </div>
@@ -1663,7 +1663,7 @@ const LibraryViewContent: React.FC<LibraryViewProps> = ({
                     ? 'libraryEmptyTitle'
                     : 'libraryLocalEmptyTitle')}
                 </h2>
-                <p className={`${MANAGEMENT_BODY_TEXT} mt-1 leading-[var(--mixcwork-leading-sm)] text-secondary`}>
+                <p className={`${MANAGEMENT_BODY_TEXT} mt-1 leading-[var(--mixwork-leading-sm)] text-secondary`}>
                   {i18nService.t(hasActiveLocalFilter
                     ? 'libraryEmptyDescription'
                     : 'libraryLocalEmptyDescription')}

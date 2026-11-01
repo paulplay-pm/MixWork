@@ -1,11 +1,11 @@
-name: mixcwork-enterprise
+name: mixwork-enterprise
 
 services:
   app:
     # When IMAGE_REPO is unset, the compose file points at the
     # script-built tag (single-segment "enterprise-server"). Override to a
     # registry path when pulling from a registry, e.g.
-    # IMAGE_REPO=registry.internal/mixcwork.
+    # IMAGE_REPO=registry.internal/mixwork.
     image: ${IMAGE_REPO:-enterprise-server}:${IMAGE_TAG:-latest}
     env_file: .env
     # Override DATABASE_URL inside the container to point at the host's
@@ -14,7 +14,7 @@ services:
     # container's own loopback here, so the override is required.
     # Set DATABASE_URL_HOST yourself if your .env name is different.
     environment:
-      DATABASE_URL: postgres://mixcwork:mixcwork@host.docker.internal:5434/mixcwork
+      DATABASE_URL: postgres://mixwork:mixwork@host.docker.internal:5434/mixwork
     restart: unless-stopped
     # Map "host.docker.internal" to the host's loopback. DATABASE_URLs in
     # .env typically use "localhost"; rewrite those to host.docker.internal
@@ -26,7 +26,7 @@ services:
     ports:
       - "127.0.0.1:8787:8787"
     volumes:
-      - mixcwork_data:/data
+      - mixwork_data:/data
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 15s
@@ -38,4 +38,4 @@ services:
       options: { max-size: "20m", max-file: "5" }
 
 volumes:
-  mixcwork_data:
+  mixwork_data:

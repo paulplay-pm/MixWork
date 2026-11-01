@@ -6,7 +6,7 @@
 
 ## Goal
 
-Rework the MixCWork desktop **连接器 (MCP)** page from its current
+Rework the MixWork desktop **连接器 (MCP)** page from its current
 two-tab shape (`市场` / `已安装`) into three tabs:
 
 1. **内置市场** (renamed from `市场`) — the desktop's **built-in** MCP

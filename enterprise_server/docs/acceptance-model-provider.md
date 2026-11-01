@@ -23,7 +23,7 @@ the audit trail explains each built-in-delete refusal.
   applies 000–032) and seeded exactly like the live server seeds it
   (`seedBuiltinProviders('o1')`). This is a genuine "throwaway DB" in the
   spirit of the constraint — it is discarded after the run and shares nothing
-  with any real database. **The developer's running server and its `mixcwork`
+  with any real database. **The developer's running server and its `mixwork`
   Postgres DB (on `:5432`) were never touched.** (This sandbox has no clean
   throwaway Postgres; the in-process pglite DB is the isolation mechanism.)
 - **Tokens** are HS256 JWTs signed with the same `JWT_SECRET` the server loads
@@ -249,16 +249,16 @@ token seeded via `addInitScript`, real org id) renders the providers page
 
 **Captured in this environment** against a real, isolated, seeded backend —
 *not* a fabricated or stale snapshot. The setup (all on spare ports; the dev
-server and its `mixcwork` DB on `:5432` were never touched):
+server and its `mixwork` DB on `:5432` were never touched):
 
 1. A **throwaway Postgres** on `:5433` (a Docker `postgres:16` container — this
    sandbox has no host `psql`/`initdb`, so the isolation came from the
-   container), database `mixcwork_acceptance`.
+   container), database `mixwork_acceptance`.
 2. **Seeded**: `runMigrations()` (000–032) + one org (`org-model-provider`) +
    `seedBuiltinProviders` (the 9 built-ins) + one custom provider (`vllm-demo`,
    with a key) + a key on the `anthropic` built-in (so the masked hint renders).
 3. The real `enterprise_server` (`npx tsx src/server.ts`) on `:8799` against
-   that DB (`JWT_SECRET` + `MIXCWORK_VAULT_MASTER_KEY` set), health-checked.
+   that DB (`JWT_SECRET` + `MIXWORK_VAULT_MASTER_KEY` set), health-checked.
 4. Baselines captured from `enterprise_server/web/`:
 
 ```bash
@@ -304,7 +304,7 @@ cross-checked against the token, so a foreign-org read or create fails with
 `400 org_mismatch`. The three visual baselines
 (`providers-list.png` / `provider-detail.png` / `model-drawer.png`) were
 captured against a real, isolated, seeded backend (a throwaway Postgres on a
-spare port; the dev `mixcwork` DB never touched). They are **gitignored /
+spare port; the dev `mixwork` DB never touched). They are **gitignored /
 local-only, not committed** (per `web/.gitignore`), and are regenerable via
 `npm run test:visual:update`.
 

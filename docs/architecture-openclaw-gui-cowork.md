@@ -1,4 +1,4 @@
-# MixCWork 架构说明：OpenClaw、GUI 与 Cowork 的关系
+# MixWork 架构说明：OpenClaw、GUI 与 Cowork 的关系
 
 ## 1. 一句话结论
 

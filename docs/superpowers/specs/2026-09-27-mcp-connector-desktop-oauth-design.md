@@ -1,4 +1,4 @@
-# MCP 连接器 — 桌面端「按服务商 OAuth」登录设计（MixCWork 工作台）
+# MCP 连接器 — 桌面端「按服务商 OAuth」登录设计（MixWork 工作台）
 
 **Date:** 2026-09-27
 **Owner:** paul

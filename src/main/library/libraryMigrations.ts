@@ -55,7 +55,7 @@ export const initializeLibraryTables = (db: Database.Database): void => {
         FOREIGN KEY (artifact_id)
           REFERENCES library_local_artifacts(id) ON DELETE CASCADE,
         FOREIGN KEY (session_id)
-          REFERENCES mixcwork_sessions(id) ON DELETE CASCADE
+          REFERENCES mixwork_sessions(id) ON DELETE CASCADE
       );
 
       CREATE INDEX IF NOT EXISTS idx_library_rel_session

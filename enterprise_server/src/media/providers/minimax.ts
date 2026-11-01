@@ -39,8 +39,8 @@ const DEFAULT_IMAGE_MODEL = 'image-01';
 const DEFAULT_VIDEO_MODEL = 'MiniMax-H3';
 
 /**
- * The desktop's media tools (`mixcwork_image_generate` /
- * `mixcwork_video_generate`) define their OWN parameter vocabulary, and the
+ * The desktop's media tools (`mixwork_image_generate` /
+ * `mixwork_video_generate`) define their OWN parameter vocabulary, and the
  * server hands that bag to the adapter verbatim:
  *
  *   `aspectRatio`, `resolution`, `size`, `imageSize`, `n` / `count`,

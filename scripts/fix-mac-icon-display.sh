@@ -8,7 +8,7 @@ echo "🔧 Applying macOS icon fix for Apple Silicon compatibility..."
 
 if [ -z "$1" ]; then
     echo "Usage: $0 <path-to-app>"
-    echo "Example: $0 release/mac-arm64/MixCWork.app"
+    echo "Example: $0 release/mac-arm64/MixWork.app"
     exit 1
 fi
 

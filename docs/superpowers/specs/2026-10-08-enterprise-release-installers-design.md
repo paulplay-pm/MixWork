@@ -2,7 +2,7 @@
 
 Date: 2026-10-08
 Status: Draft (for review)
-Scope: `enterprise_server` (API + storage + migration), `enterprise_server/web` (admin console), MixCWork desktop `src/main` (installer download).
+Scope: `enterprise_server` (API + storage + migration), `enterprise_server/web` (admin console), MixWork desktop `src/main` (installer download).
 
 ## 1. Intent
 
@@ -58,7 +58,7 @@ external URL.
 - Desktop: `appUpdateCoordinator.fetchUpdateInfo` → `parseEnterpriseUpdate` →
   `pickPlatformUrl`; `appUpdateInstaller.downloadUpdate(url, source, onProgress)`
   fetches via `session.defaultSession.fetch` with **no auth header**, writes to
-  `userData/updates/mixcwork-update-<source>-<ts>.download` then renames; no Range.
+  `userData/updates/mixwork-update-<source>-<ts>.download` then renames; no Range.
 - Windows download URL policy (`appUpdateUrlPolicy.ts`): `.exe` path, https or a
   trusted private origin (the enterprise server URL is trusted via
   `ENTERPRISE_SERVER_URL`), no credentials, no fragment, no non-default port
@@ -80,8 +80,8 @@ Migration `041_app_release_installers.sql`:
 
 ```json
 {
-  "macArm":     { "id": "<fileId>", "fileName": "MixCWork.dmg",   "fileSize": 123456789, "sha256": "<hex>" },
-  "windowsX64": { "id": "<fileId>", "fileName": "MixCWork-Setup.exe", "fileSize": 987654321, "sha256": "<hex>" }
+  "macArm":     { "id": "<fileId>", "fileName": "MixWork.dmg",   "fileSize": 123456789, "sha256": "<hex>" },
+  "windowsX64": { "id": "<fileId>", "fileName": "MixWork-Setup.exe", "fileSize": 987654321, "sha256": "<hex>" }
 }
 ```
 
@@ -231,7 +231,7 @@ avoid regressions.
   `createWriteStream({flags:'a'})`). On 200 (server ignores Range), reset `received=0`
   and truncate. `received` for progress is `existingBytes + streamedBytes`.
   - Partial file must be the **same flow's** file: key it by the existing
-    `mixcwork-update-<source>-<ts>` naming; if a previous `.download` exists for the
+    `mixwork-update-<source>-<ts>` naming; if a previous `.download` exists for the
     same source+version, resume it; else start fresh. Simpler robust rule: at the
     start of a download for a given `(source, latestVersion)`, look for the most
     recent `.download` file for that source whose recorded target matches; resume

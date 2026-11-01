@@ -3,7 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { i18nService } from '@/services/i18n';
 import type { Artifact } from '@/types/artifact';
 
-import { CoworkSelectedTextSource } from '../../../../shared/mixcwork/selectedText';
+import { CoworkSelectedTextSource } from '../../../../shared/mixwork/selectedText';
 import {
   type ArtifactSelectedTextContext,
   useArtifactSelectedTextAction,

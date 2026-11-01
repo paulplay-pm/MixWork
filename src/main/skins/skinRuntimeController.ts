@@ -51,11 +51,11 @@ export class SkinRuntimeController {
     return this.mediaBridge.handleToolRequest(request);
   }
 
-  preflightMixcworkImageGeneration(
+  preflightMixWorkImageGeneration(
     sessionId: string | null,
     selection: MediaSelectionState | undefined,
   ): Promise<SkinToolResult | null> {
-    return this.mediaBridge.preflightMixcworkImageGeneration(sessionId, selection);
+    return this.mediaBridge.preflightMixWorkImageGeneration(sessionId, selection);
   }
 
   handleRuntimeComplete(sessionId: string): void {

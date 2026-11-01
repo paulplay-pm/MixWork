@@ -42,7 +42,7 @@ describe('components/Sidebar', () => {
 
   test('renders brand block', () => {
     renderSidebar();
-    expect(screen.getByText(/MixcWork Console/i)).toBeInTheDocument();
+    expect(screen.getByText(/MixWork Console/i)).toBeInTheDocument();
   });
 
   test('renders all 5 nav section labels', async () => {

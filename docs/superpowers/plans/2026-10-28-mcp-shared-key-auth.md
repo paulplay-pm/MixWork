@@ -1813,7 +1813,7 @@ Expected: every line passes. Per-file is not optional here: a single run exhaust
 
 - [ ] **Step 4: Manual desktop check**
 
-`npm run electron:dev` with `ENTERPRISE_SERVER_URL` pointing at a local server, then walk behaviors 1–2, 12, 19, 25 of spec §8: install a shared-key connector, confirm no authorization prompt, `grep -r "<the org key>" "$(node -e "console.log(require('electron').app.getPath('userData'))" 2>/dev/null || echo ~/Library/Application\ Support/MixCWork)"` returns nothing, then log out and back in as another member and confirm the config re-syncs to a new `McpGateway` header (one OpenClaw restart).
+`npm run electron:dev` with `ENTERPRISE_SERVER_URL` pointing at a local server, then walk behaviors 1–2, 12, 19, 25 of spec §8: install a shared-key connector, confirm no authorization prompt, `grep -r "<the org key>" "$(node -e "console.log(require('electron').app.getPath('userData'))" 2>/dev/null || echo ~/Library/Application\ Support/MixWork)"` returns nothing, then log out and back in as another member and confirm the config re-syncs to a new `McpGateway` header (one OpenClaw restart).
 
 - [ ] **Step 5: Commit**
 

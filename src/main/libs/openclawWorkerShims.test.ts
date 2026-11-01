@@ -17,7 +17,7 @@ const cjsWorkerShims = require('../../../scripts/openclaw-worker-shims.cjs') as 
 const tempDirs: string[] = [];
 
 function makeRuntimeRoot(): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-openclaw-worker-shims-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-openclaw-worker-shims-'));
   tempDirs.push(dir);
   return dir;
 }

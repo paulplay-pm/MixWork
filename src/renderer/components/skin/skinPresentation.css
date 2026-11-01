@@ -1,5 +1,5 @@
 [data-skin-presentation="immersive_shell"] {
-  background-color: var(--mixcwork-skin-panel) !important;
+  background-color: var(--mixwork-skin-panel) !important;
 }
 
 [data-skin-presentation="immersive_shell"][data-skin-settings="true"],
@@ -14,52 +14,52 @@
     [data-skin-prompt-panel],
     [data-skin-management-page]
   ) {
-  --mixcwork-primary: var(--mixcwork-skin-accent);
-  --mixcwork-primary-foreground: var(--mixcwork-skin-accent-foreground);
-  --mixcwork-primary-hover: color-mix(
+  --mixwork-primary: var(--mixwork-skin-accent);
+  --mixwork-primary-foreground: var(--mixwork-skin-accent-foreground);
+  --mixwork-primary-hover: color-mix(
     in srgb,
-    var(--mixcwork-skin-accent) 82%,
-    var(--mixcwork-skin-foreground)
+    var(--mixwork-skin-accent) 82%,
+    var(--mixwork-skin-foreground)
   );
-  --mixcwork-primary-muted: color-mix(in srgb, var(--mixcwork-skin-accent) 15%, transparent);
-  --mixcwork-accent: var(--mixcwork-skin-accent-alt);
-  --mixcwork-accent-foreground: var(--mixcwork-skin-foreground);
-  --mixcwork-background: var(--mixcwork-skin-canvas);
-  --mixcwork-foreground: var(--mixcwork-skin-foreground);
-  --mixcwork-surface: var(--mixcwork-skin-panel);
-  --mixcwork-surface-foreground: var(--mixcwork-skin-foreground);
-  --mixcwork-surface-raised: var(--mixcwork-skin-panel-raised);
-  --mixcwork-surface-overlay: color-mix(in srgb, var(--mixcwork-skin-panel) 94%, transparent);
-  --mixcwork-text-primary: var(--mixcwork-skin-foreground);
-  --mixcwork-text-secondary: var(--mixcwork-skin-muted);
-  --mixcwork-text-muted: color-mix(in srgb, var(--mixcwork-skin-muted) 78%, transparent);
-  --mixcwork-border: var(--mixcwork-skin-border);
-  --mixcwork-border-subtle: color-mix(in srgb, var(--mixcwork-skin-border) 55%, transparent);
-  --mixcwork-input-border: var(--mixcwork-skin-border);
-  --mixcwork-scroll-thumb: color-mix(in srgb, var(--mixcwork-skin-accent) 48%, transparent);
-  --mixcwork-scroll-thumb-hover: var(--mixcwork-skin-accent);
+  --mixwork-primary-muted: color-mix(in srgb, var(--mixwork-skin-accent) 15%, transparent);
+  --mixwork-accent: var(--mixwork-skin-accent-alt);
+  --mixwork-accent-foreground: var(--mixwork-skin-foreground);
+  --mixwork-background: var(--mixwork-skin-canvas);
+  --mixwork-foreground: var(--mixwork-skin-foreground);
+  --mixwork-surface: var(--mixwork-skin-panel);
+  --mixwork-surface-foreground: var(--mixwork-skin-foreground);
+  --mixwork-surface-raised: var(--mixwork-skin-panel-raised);
+  --mixwork-surface-overlay: color-mix(in srgb, var(--mixwork-skin-panel) 94%, transparent);
+  --mixwork-text-primary: var(--mixwork-skin-foreground);
+  --mixwork-text-secondary: var(--mixwork-skin-muted);
+  --mixwork-text-muted: color-mix(in srgb, var(--mixwork-skin-muted) 78%, transparent);
+  --mixwork-border: var(--mixwork-skin-border);
+  --mixwork-border-subtle: color-mix(in srgb, var(--mixwork-skin-border) 55%, transparent);
+  --mixwork-input-border: var(--mixwork-skin-border);
+  --mixwork-scroll-thumb: color-mix(in srgb, var(--mixwork-skin-accent) 48%, transparent);
+  --mixwork-scroll-thumb-hover: var(--mixwork-skin-accent);
 }
 
 [data-skin-presentation="immersive_shell"][data-skin-task-search="true"] {
-  background-color: var(--mixcwork-skin-panel) !important;
+  background-color: var(--mixwork-skin-panel) !important;
 }
 
 [data-skin-presentation="immersive_shell"][data-skin-task-search="true"]
   [data-skin-search-result-active="true"] {
-  background-color: var(--mixcwork-skin-panel-raised) !important;
+  background-color: var(--mixwork-skin-panel-raised) !important;
 }
 
 [data-skin-presentation="immersive_shell"] [data-skin-cowork-frame="true"],
 [data-skin-presentation="immersive_shell"] [data-skin-cowork="true"],
 [data-skin-presentation="immersive_shell"] [data-skin-management-frame="true"] {
-  background-color: var(--mixcwork-skin-canvas) !important;
-  border-color: color-mix(in srgb, var(--mixcwork-skin-border) 55%, transparent) !important;
+  background-color: var(--mixwork-skin-canvas) !important;
+  border-color: color-mix(in srgb, var(--mixwork-skin-border) 55%, transparent) !important;
 }
 
 [data-skin-presentation="immersive_shell"] [data-skin-management-page="true"] {
   background-color: color-mix(
     in srgb,
-    var(--mixcwork-skin-canvas) 40%,
+    var(--mixwork-skin-canvas) 40%,
     transparent
   ) !important;
 }
@@ -67,32 +67,32 @@
 [data-skin-presentation="immersive_shell"] [data-skin-management-toolbar="true"] {
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--mixcwork-skin-canvas) 18%, transparent) 0%,
-    color-mix(in srgb, var(--mixcwork-skin-canvas) 10%, transparent) 76%,
+    color-mix(in srgb, var(--mixwork-skin-canvas) 18%, transparent) 0%,
+    color-mix(in srgb, var(--mixwork-skin-canvas) 10%, transparent) 76%,
     transparent 100%
   ) !important;
   backdrop-filter: blur(14px) saturate(0.82);
 }
 
 [data-skin-presentation="immersive_shell"] [data-skin-sidebar] {
-  color: var(--mixcwork-skin-foreground);
+  color: var(--mixwork-skin-foreground);
   background: linear-gradient(
     155deg,
-    var(--mixcwork-skin-panel-raised),
-    var(--mixcwork-skin-panel) 48%,
-    color-mix(in srgb, var(--mixcwork-skin-panel) 86%, var(--mixcwork-skin-canvas))
+    var(--mixwork-skin-panel-raised),
+    var(--mixwork-skin-panel) 48%,
+    color-mix(in srgb, var(--mixwork-skin-panel) 86%, var(--mixwork-skin-canvas))
   ) !important;
   box-shadow: none;
 }
 
 [data-skin-presentation="immersive_shell"]
   :is([data-skin-app-titlebar], [data-skin-session-titlebar]) {
-  color: var(--mixcwork-skin-foreground);
+  color: var(--mixwork-skin-foreground);
   background: linear-gradient(
     155deg,
-    var(--mixcwork-skin-panel-raised),
-    var(--mixcwork-skin-panel) 48%,
-    color-mix(in srgb, var(--mixcwork-skin-panel) 86%, var(--mixcwork-skin-canvas))
+    var(--mixwork-skin-panel-raised),
+    var(--mixwork-skin-panel) 48%,
+    color-mix(in srgb, var(--mixwork-skin-panel) 86%, var(--mixwork-skin-canvas))
   ) !important;
 }
 
@@ -101,7 +101,7 @@
 }
 
 [data-skin-presentation="immersive_shell"] [data-skin-session-titlebar] {
-  border-color: color-mix(in srgb, var(--mixcwork-skin-border) 55%, transparent) !important;
+  border-color: color-mix(in srgb, var(--mixwork-skin-border) 55%, transparent) !important;
 }
 
 [data-skin-presentation="immersive_shell"] [data-skin-artifact-add-tab="true"] {
@@ -109,27 +109,27 @@
 }
 
 [data-skin-presentation="immersive_shell"] [data-skin-sidebar] button:hover {
-  background-color: color-mix(in srgb, var(--mixcwork-skin-accent) 10%, transparent) !important;
+  background-color: color-mix(in srgb, var(--mixwork-skin-accent) 10%, transparent) !important;
 }
 
 [data-skin-presentation="immersive_shell"] [data-skin-sidebar]
   :is([aria-current="page"], [aria-selected="true"]) {
-  background-color: color-mix(in srgb, var(--mixcwork-skin-accent) 16%, transparent) !important;
-  box-shadow: inset 2px 0 var(--mixcwork-skin-accent);
+  background-color: color-mix(in srgb, var(--mixwork-skin-accent) 16%, transparent) !important;
+  box-shadow: inset 2px 0 var(--mixwork-skin-accent);
 }
 
 [data-skin-presentation="immersive_shell"] [data-skin-home-copy] h2 {
-  color: var(--mixcwork-skin-foreground) !important;
-  text-shadow: 0 1px 10px color-mix(in srgb, var(--mixcwork-skin-canvas) 72%, transparent);
+  color: var(--mixwork-skin-foreground) !important;
+  text-shadow: 0 1px 10px color-mix(in srgb, var(--mixwork-skin-canvas) 72%, transparent);
 }
 
 [data-skin-presentation="immersive_shell"] [data-skin-home-copy] p {
-  color: var(--mixcwork-skin-muted) !important;
+  color: var(--mixwork-skin-muted) !important;
 }
 
 [data-skin-presentation="immersive_shell"] [data-skin-quick-actions] button,
 [data-skin-presentation="immersive_shell"] [data-skin-prompt-panel] button {
-  box-shadow: 0 8px 22px color-mix(in srgb, var(--mixcwork-skin-canvas) 28%, transparent);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--mixwork-skin-canvas) 28%, transparent);
   backdrop-filter: blur(8px) saturate(1.04);
 }
 
@@ -138,22 +138,22 @@
   width: 4px;
   height: 4px;
   border-radius: 999px;
-  background: var(--mixcwork-skin-accent);
-  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--mixcwork-skin-accent) 42%, transparent);
+  background: var(--mixwork-skin-accent);
+  box-shadow: 0 0 10px 2px color-mix(in srgb, var(--mixwork-skin-accent) 42%, transparent);
   opacity: 0.45;
-  animation: mixcwork-skin-particle-pulse 5s ease-in-out infinite;
+  animation: mixwork-skin-particle-pulse 5s ease-in-out infinite;
 }
 
 .skin-ambient-effects span:nth-child(1) { left: 8%; top: 18%; }
 .skin-ambient-effects span:nth-child(2) { left: 27%; top: 72%; animation-delay: -1.2s; }
-.skin-ambient-effects span:nth-child(3) { left: 46%; top: 14%; background: var(--mixcwork-skin-accent-alt); animation-delay: -2.8s; }
+.skin-ambient-effects span:nth-child(3) { left: 46%; top: 14%; background: var(--mixwork-skin-accent-alt); animation-delay: -2.8s; }
 .skin-ambient-effects span:nth-child(4) { left: 63%; top: 61%; animation-delay: -0.7s; }
-.skin-ambient-effects span:nth-child(5) { left: 78%; top: 24%; background: var(--mixcwork-skin-accent-alt); animation-delay: -3.4s; }
+.skin-ambient-effects span:nth-child(5) { left: 78%; top: 24%; background: var(--mixwork-skin-accent-alt); animation-delay: -3.4s; }
 .skin-ambient-effects span:nth-child(6) { left: 91%; top: 76%; animation-delay: -2s; }
-.skin-ambient-effects span:nth-child(7) { left: 58%; top: 88%; background: var(--mixcwork-skin-accent-alt); animation-delay: -4.1s; }
+.skin-ambient-effects span:nth-child(7) { left: 58%; top: 88%; background: var(--mixwork-skin-accent-alt); animation-delay: -4.1s; }
 .skin-ambient-effects span:nth-child(8) { left: 84%; top: 47%; animation-delay: -1.8s; }
 
-@keyframes mixcwork-skin-particle-pulse {
+@keyframes mixwork-skin-particle-pulse {
   0%, 100% { opacity: 0.24; transform: scale(0.85); }
   50% { opacity: 0.62; transform: scale(1.12); }
 }

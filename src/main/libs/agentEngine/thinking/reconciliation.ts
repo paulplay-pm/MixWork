@@ -1,17 +1,17 @@
 import type {
-  MixCWorkMessage,
-  MixCWorkMessageMetadata,
-  MixCWorkStore,
-} from '../../../mixcworkStore';
+  MixWorkMessage,
+  MixWorkMessageMetadata,
+  MixWorkStore,
+} from '../../../mixworkStore';
 import {
   extractCurrentTurnThinkingBlocks,
   OpenClawThinkingMetadata,
 } from './blocks';
 
-type ThinkingMessagePayload = Omit<MixCWorkMessage, 'id' | 'timestamp'>;
+type ThinkingMessagePayload = Omit<MixWorkMessage, 'id' | 'timestamp'>;
 
 export type OpenClawThinkingReconciliationStore = Pick<
-  MixCWorkStore,
+  MixWorkStore,
   'addMessage' | 'getSession' | 'insertMessageBeforeId' | 'updateMessage'
 >;
 
@@ -23,11 +23,11 @@ export interface ReconcileOpenClawThinkingBlocksOptions {
   toolUseMessageIdByToolCallId: ReadonlyMap<string, string>;
   messageIdByThinkingKey: Map<string, string>;
   store: OpenClawThinkingReconciliationStore;
-  emitMessage: (message: MixCWorkMessage, beforeMessageId?: string) => void;
+  emitMessage: (message: MixWorkMessage, beforeMessageId?: string) => void;
   emitMessageUpdate: (
     messageId: string,
     content: string,
-    metadata: MixCWorkMessageMetadata,
+    metadata: MixWorkMessageMetadata,
   ) => void;
   onMessageCreated?: (details: {
     key: string;
@@ -36,7 +36,7 @@ export interface ReconcileOpenClawThinkingBlocksOptions {
   }) => void;
 }
 
-const getCurrentTurnMessages = (messages: MixCWorkMessage[]): MixCWorkMessage[] => {
+const getCurrentTurnMessages = (messages: MixWorkMessage[]): MixWorkMessage[] => {
   const lastUserIndex = messages.findLastIndex((message) => message.type === 'user');
   return messages.slice(lastUserIndex + 1);
 };
@@ -130,7 +130,7 @@ export const reconcileOpenClawThinkingBlocks = (
       messageId = message?.id;
     }
 
-    const metadata: MixCWorkMessageMetadata = {
+    const metadata: MixWorkMessageMetadata = {
       ...message?.metadata,
       isThinking: true,
       isStreaming: false,

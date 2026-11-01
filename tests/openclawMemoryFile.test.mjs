@@ -36,7 +36,7 @@ const {
 // ---- helpers ----------------------------------------------------------------
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-memoryfile-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-memoryfile-test-'));
 }
 
 function cleanupDir(dir) {

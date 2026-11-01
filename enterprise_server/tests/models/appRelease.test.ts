@@ -15,8 +15,8 @@ async function seedOrg(): Promise<void> {
 }
 
 const installers: ReleaseInstallers = {
-  macArm: { id: 'file-mac', fileName: 'MixcWork.dmg', fileSize: 10, sha256: 'mac-sha' },
-  windowsX64: { id: 'file-win', fileName: 'MixcWork.exe', fileSize: 20, sha256: 'win-sha' },
+  macArm: { id: 'file-mac', fileName: 'MixWork.dmg', fileSize: 10, sha256: 'mac-sha' },
+  windowsX64: { id: 'file-win', fileName: 'MixWork.exe', fileSize: 20, sha256: 'win-sha' },
 };
 
 async function makeRelease(
@@ -73,7 +73,7 @@ describe('models/appRelease (installers)', () => {
   test('getInstallerMeta resolves a fileId to owner + metadata', async () => {
     await makeRelease('1.0.0');
     const meta = await appRelease.getInstallerMeta('file-win');
-    expect(meta).toEqual({ orgId: 'o1', fileName: 'MixcWork.exe', fileSize: 20, sha256: 'win-sha' });
+    expect(meta).toEqual({ orgId: 'o1', fileName: 'MixWork.exe', fileSize: 20, sha256: 'win-sha' });
     expect(await appRelease.getInstallerMeta('missing')).toBeNull();
   });
 });

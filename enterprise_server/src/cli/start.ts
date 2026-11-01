@@ -5,7 +5,7 @@ import { runMigrationsOnce } from './lib/runMigrations.js';
 export async function run(): Promise<void> {
   await runMigrationsOnce();
   // If we are running in dry-run mode, exit before binding the port.
-  if (process.env.MIXCWORK_MIGRATE_DRY_RUN === '1') {
+  if (process.env.MIXWORK_MIGRATE_DRY_RUN === '1') {
     console.log('[start] dry-run complete; skipping serve()');
     await pool.end();
     return;

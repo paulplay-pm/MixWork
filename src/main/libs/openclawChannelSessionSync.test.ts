@@ -14,7 +14,7 @@ import {
 
 function createSync() {
   return new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: () => null,
       createSession: () => {
         throw new Error('createSession should not be called in this test');
@@ -31,14 +31,14 @@ function createSync() {
 }
 
 test('parseManagedSessionKey handles raw local session keys', () => {
-  expect(parseManagedSessionKey('mixcwork:abc-123')).toEqual({
+  expect(parseManagedSessionKey('mixwork:abc-123')).toEqual({
     agentId: null,
     sessionId: 'abc-123',
   });
 });
 
 test('parseManagedSessionKey handles canonical local session keys', () => {
-  expect(parseManagedSessionKey('agent:main:mixcwork:abc-123')).toEqual({
+  expect(parseManagedSessionKey('agent:main:mixwork:abc-123')).toEqual({
     agentId: 'main',
     sessionId: 'abc-123',
   });
@@ -47,24 +47,24 @@ test('parseManagedSessionKey handles canonical local session keys', () => {
 test('buildManagedSessionKey emits canonical local session keys', () => {
   expect(
     buildManagedSessionKey('abc-123'),
-  ).toBe(`agent:${DEFAULT_MANAGED_AGENT_ID}:mixcwork:abc-123`);
+  ).toBe(`agent:${DEFAULT_MANAGED_AGENT_ID}:mixwork:abc-123`);
   expect(
     buildManagedSessionKey('abc-123', 'secondary'),
-  ).toBe('agent:secondary:mixcwork:abc-123');
+  ).toBe('agent:secondary:mixwork:abc-123');
 });
 
 test('parseChannelSessionKey ignores managed local session keys', () => {
-  expect(parseChannelSessionKey('mixcwork:abc-123')).toBe(null);
-  expect(parseChannelSessionKey('agent:main:mixcwork:abc-123')).toBe(null);
+  expect(parseChannelSessionKey('mixwork:abc-123')).toBe(null);
+  expect(parseChannelSessionKey('agent:main:mixwork:abc-123')).toBe(null);
 });
 
 test('channel sync does not treat managed local session keys as channel sessions', () => {
   const sync = createSync();
 
-  expect(isManagedSessionKey('agent:main:mixcwork:abc-123')).toBe(true);
-  expect(sync.isChannelSessionKey('agent:main:mixcwork:abc-123')).toBe(false);
-  expect(sync.resolveOrCreateSession('agent:main:mixcwork:abc-123')).toBe(null);
-  expect(sync.resolveOrCreateMainAgentSession('agent:main:mixcwork:abc-123')).toBe(null);
+  expect(isManagedSessionKey('agent:main:mixwork:abc-123')).toBe(true);
+  expect(sync.isChannelSessionKey('agent:main:mixwork:abc-123')).toBe(false);
+  expect(sync.resolveOrCreateSession('agent:main:mixwork:abc-123')).toBe(null);
+  expect(sync.resolveOrCreateMainAgentSession('agent:main:mixwork:abc-123')).toBe(null);
 });
 
 test('channel sync still recognizes real channel session keys', () => {
@@ -118,7 +118,7 @@ test('channel sync reuses one local session for run-scoped cron session keys', (
     jobId === 'daily-monitor' ? 'Daily Monitor' : null,
   );
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: () => null,
       createSession,
     },
@@ -188,7 +188,7 @@ test('channel sync reuses a persisted scheduled task session after restart', () 
     throw new Error('createSession should not be called for a persisted scheduled task session');
   });
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession,
       getSessionIdByScheduledTaskId,
       updateSession,
@@ -224,7 +224,7 @@ test('channel sync replaces a stale persisted scheduled task lookup', () => {
   const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
   const createSession = vi.fn(() => ({ id: 'replacement-cron-session' }));
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: () => null,
       getSessionIdByScheduledTaskId: () => 'deleted-cron-session',
       createSession,
@@ -294,7 +294,7 @@ test('channel sync resolves the conversation record for a delivery target', () =
     },
   ];
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: (id: string) => (knownSessions.has(id) ? { id } : null),
       createSession: () => {
         throw new Error('createSession should not be called in this test');
@@ -358,7 +358,7 @@ test('channel sync resolves account-less group delivery target by selected bot b
     },
   ];
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: (id: string) => (knownSessions.has(id) ? { id } : null),
       createSession: () => {
         throw new Error('createSession should not be called in this test');
@@ -432,7 +432,7 @@ test('channel sync resolves Feishu group delivery mirrors as separate direct con
     },
   ];
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: (id: string) => (id === 'feishu-bound-group' ? { id } : null),
       createSession,
     },
@@ -488,7 +488,7 @@ test('channel sync resolves Feishu group delivery mirrors as separate direct con
 
 test('channel sync keeps non-Feishu delivery mirror resolution unchanged', () => {
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: (id: string) => (id === 'weixin-live' ? { id } : null),
       createSession: () => {
         throw new Error('createSession should not be called in this test');
@@ -554,7 +554,7 @@ test('channel sync suppresses local cron sessions for IM-announce jobs', () => {
     updatedAt: 1,
   }));
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: () => null,
       createSession,
     },
@@ -599,7 +599,7 @@ test('channel sync suppresses local cron sessions for IM-announce jobs', () => {
 
 test('channel sync treats stale agent ids as non-current after platform binding changes', () => {
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: () => null,
       createSession: () => {
         throw new Error('createSession should not be called in this test');
@@ -651,7 +651,7 @@ test('channel sync stores the real OpenClaw session key when creating a mapping'
     updatedAt: 1,
   }));
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: () => null,
       createSession,
     },
@@ -689,7 +689,7 @@ test('channel sync stores the real OpenClaw session key when creating a mapping'
 test('channel sync backfills the real OpenClaw session key for existing mappings', () => {
   const updateSessionOpenClawSessionKey = vi.fn();
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: () => ({
         id: 'cowork-1',
         title: '[Feishu] ou_123',
@@ -737,7 +737,7 @@ test('channel sync backfills the real OpenClaw session key for existing mappings
 test('channel sync corrects existing mapping cwd from the current bound agent', () => {
   const updateSession = vi.fn();
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: () => ({
         id: 'cowork-1',
         title: '[Feishu] ou_123',
@@ -837,7 +837,7 @@ test('channel sync creates separate local sessions for the same group under diff
     updatedAt: 1,
   })));
   const sync = new OpenClawChannelSessionSync({
-    mixcworkStore: {
+    mixworkStore: {
       getSession: (id: string) => (
         id === 'cowork-main'
           ? {

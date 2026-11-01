@@ -18,11 +18,11 @@ beforeEach(() => {
   });
   // Strong secrets
   process.env.JWT_SECRET = 'x'.repeat(40);
-  process.env.MIXCWORK_VAULT_MASTER_KEY = 'y'.repeat(40);
+  process.env.MIXWORK_VAULT_MASTER_KEY = 'y'.repeat(40);
   process.env.DATABASE_URL = 'postgres://app:secret@host:5432/appdb';
   process.env.POSTGRES_SUPERUSER_URL = 'postgres://postgres:pw@host:5432/postgres';
   // Per-test scratch: tmp root, redirected data dir, and fake install dir
-  tmp = mkdtempSync(join(tmpdir(), 'mixcwork-init-'));
+  tmp = mkdtempSync(join(tmpdir(), 'mixwork-init-'));
   process.env.INIT_DATA_DIR = join(tmp, 'data');
   mkdirSync(process.env.INIT_DATA_DIR, { recursive: true });
   process.env.INIT_SKIP_SYMLINK = '1';
@@ -97,7 +97,7 @@ describe('init subcommand', () => {
     writeFileSync(join(fakeInstall, 'caddyfile.example'), ':80 {}\n');
     writeFileSync(join(binDir, 'index.js'), '#!/usr/bin/env node\n');
     process.env.INSTALL_DIR = fakeInstall;
-    // init.ts hard-codes /usr/local/bin/mixcwork-server, which is not
+    // init.ts hard-codes /usr/local/bin/mixwork-server, which is not
     // writable in CI. The surface we can test is the path-resolution
     // function — the symlink target must be derived from the install
     // dir and the file at the resolved path must exist on disk.

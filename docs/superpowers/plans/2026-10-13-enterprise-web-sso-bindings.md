@@ -184,7 +184,7 @@ In `enterprise_server/web/src/i18n.ts`, find the zh dict (search for `'zh': {` o
 
 ```ts
 'ssoBindings.title': 'SSO 账号绑定',
-'ssoBindings.subtitle': '绑定企业身份源后,你可以使用对应的单点登录方式免密进入 MixCWork。可以同时绑定多个身份源,互不影响。',
+'ssoBindings.subtitle': '绑定企业身份源后,你可以使用对应的单点登录方式免密进入 MixWork。可以同时绑定多个身份源,互不影响。',
 'ssoBindings.statusBadge': '已绑定 {bound} / {total}',
 'ssoBindings.searchPlaceholder': '搜索 SSO 类型或名称',
 'ssoBindings.tabAll': '全部 {n}',
@@ -217,7 +217,7 @@ In the en dict, add:
 
 ```ts
 'ssoBindings.title': 'SSO account binding',
-'ssoBindings.subtitle': 'After binding an enterprise identity source, you can use the corresponding SSO sign-in to access MixCWork without password. You can bind multiple sources simultaneously.',
+'ssoBindings.subtitle': 'After binding an enterprise identity source, you can use the corresponding SSO sign-in to access MixWork without password. You can bind multiple sources simultaneously.',
 'ssoBindings.statusBadge': 'Bound {bound} / {total}',
 'ssoBindings.searchPlaceholder': 'Search SSO type or name',
 'ssoBindings.tabAll': 'All {n}',

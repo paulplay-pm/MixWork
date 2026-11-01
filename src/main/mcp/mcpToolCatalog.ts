@@ -61,7 +61,7 @@ export interface ListToolsDeps {
 }
 
 const PROTOCOL_VERSION = '2024-11-05';
-const CLIENT_INFO = { name: 'mixcwork-tool-catalog', version: '1.0.0' } as const;
+const CLIENT_INFO = { name: 'mixwork-tool-catalog', version: '1.0.0' } as const;
 const DEFAULT_TIMEOUT_MS = 10_000;
 const STDIO_TIMEOUT_MS = 8_000;
 /** A server that never stops paginating must not hang the dialog. */

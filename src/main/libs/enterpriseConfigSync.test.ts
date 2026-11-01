@@ -552,7 +552,7 @@ describe('enterpriseConfigSync', () => {
     ]);
   });
 
-  test('syncEnterpriseConfig syncs openclaw agents list into Mixcwork agents', async () => {
+  test('syncEnterpriseConfig syncs openclaw agents list into MixWork agents', async () => {
     const configDir = path.join(tmpDir, 'enterprise-config');
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(

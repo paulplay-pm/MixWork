@@ -318,7 +318,7 @@ export function registerKitHandlers(deps: KitHandlerDeps): void {
       }
 
       // 1. Download zip
-      tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-kit-'));
+      tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixwork-kit-'));
       let buffer: Buffer;
       const entBase = (() => { try { return getEnterpriseServerUrl(); } catch { return ''; } })();
       const isEnterpriseBundle = entBase !== '' && bundleUrl.startsWith(`${entBase}/api/kits/download/`);

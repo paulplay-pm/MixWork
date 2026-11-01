@@ -2,7 +2,7 @@
  * The media generation surface must authenticate with the ENTERPRISE org JWT.
  *
  * It used to use the consumer `auth_tokens`, which are always empty now that
- * MixCWork has no youdao backend — so every media request died with "No auth
+ * MixWork has no youdao backend — so every media request died with "No auth
  * tokens are available" before it left the process. This test pins the switch
  * so it cannot silently regress.
  */

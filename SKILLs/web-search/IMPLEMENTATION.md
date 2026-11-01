@@ -2,7 +2,7 @@
 
 ## 🎉 Implementation Summary
 
-The Web Search Skill has been successfully implemented and integrated into MixCWork. This skill enables Claude to perform real-time web searches using a Playwright-controlled browser, providing access to current information beyond the knowledge cutoff.
+The Web Search Skill has been successfully implemented and integrated into MixWork. This skill enables Claude to perform real-time web searches using a Playwright-controlled browser, providing access to current information beyond the knowledge cutoff.
 
 ## ✅ Completed Phases
 
@@ -108,7 +108,7 @@ Total: ~3500 lines of code + ~2000 lines of documentation
 ## 🔑 Key Features
 
 ### 1. Automatic Service Management
-- Bridge Server auto-starts with MixCWork
+- Bridge Server auto-starts with MixWork
 - Graceful shutdown on app quit
 - Process monitoring and health checks
 
@@ -336,7 +336,7 @@ bash SKILLs/web-search/scripts/start-server.sh
 ```
 feat: add web-search skill with Playwright-controlled browser
 
-Implements real-time web search capability for MixCWork using Playwright
+Implements real-time web search capability for MixWork using Playwright
 and Chrome DevTools Protocol. Enables Claude to access current information
 beyond knowledge cutoff.
 
@@ -359,7 +359,7 @@ Performance:
 - Memory usage: ~100MB
 
 Integration:
-- Auto-starts with MixCWork
+- Auto-starts with MixWork
 - Graceful shutdown on quit
 - Transparent browser operations
 - Cross-platform support (macOS/Linux/Windows)

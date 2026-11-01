@@ -23,7 +23,7 @@ import { expect, type Page, test } from '@playwright/test';
  * NOTE: baselines ARE captured — against a real, isolated, seeded throwaway
  * backend (a Docker `postgres:16` container with `runMigrations` +
  * `seedBuiltinProviders`, plus the real `enterprise_server` on spare ports;
- * the dev `mixcwork` DB was never touched). The screenshots are gitignored and
+ * the dev `mixwork` DB was never touched). The screenshots are gitignored and
  * local-only (web/.gitignore ignores tests/visual/screenshots/) — NOT
  * committed. Regenerate them with `npm run test:visual:update` (or directly):
  *   WEB_PORT=<spare> WEB_PROXY_TARGET=<backend> WEB_ORG_ID=<org> \

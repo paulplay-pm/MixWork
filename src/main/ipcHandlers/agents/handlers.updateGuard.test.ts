@@ -3,7 +3,7 @@
  * skills/subagents) and the resolved local baseline enrichment on the CRUD
  * `agents:update` / `agents:list` handlers.
  *
- * Uses a real `MixCWorkStore` (in-memory SQLite) plus a real `AgentManager`,
+ * Uses a real `MixWorkStore` (in-memory SQLite) plus a real `AgentManager`,
  * with a fake `SkillManager.getCatalogLocalId` that resolves server catalog
  * ids to `local_<id>`. The handler's real `deriveProvenance` path is
  * exercised — only the skill manager is faked.
@@ -25,18 +25,18 @@ import BetterSqlite3 from 'better-sqlite3';
 
 import { AgentIpcChannel } from '../../../shared/agent/constants';
 import { AgentManager } from '../../agentManager';
-import { MixCWorkStore } from '../../mixcworkStore';
+import { MixWorkStore } from '../../mixworkStore';
 import { registerAgentHandlers } from './handlers';
 
 let db: BetterSqlite3.Database;
-let store: MixCWorkStore;
+let store: MixWorkStore;
 
 /** Initialise a fresh in-memory database with the minimum schema. */
 function setupDb(): void {
   db = new BetterSqlite3(':memory:');
 
   db.exec(`
-    CREATE TABLE IF NOT EXISTS mixcwork_sessions (
+    CREATE TABLE IF NOT EXISTS mixwork_sessions (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       openclaw_session_id TEXT,
@@ -65,7 +65,7 @@ function setupDb(): void {
   `);
 
   db.exec(`
-    CREATE TABLE IF NOT EXISTS mixcwork_messages (
+    CREATE TABLE IF NOT EXISTS mixwork_messages (
       id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
       type TEXT NOT NULL,
@@ -73,7 +73,7 @@ function setupDb(): void {
       metadata TEXT,
       created_at INTEGER NOT NULL,
       sequence INTEGER,
-      FOREIGN KEY (session_id) REFERENCES mixcwork_sessions(id) ON DELETE CASCADE
+      FOREIGN KEY (session_id) REFERENCES mixwork_sessions(id) ON DELETE CASCADE
     );
   `);
 
@@ -142,7 +142,7 @@ function setupDb(): void {
     );
   `);
 
-  store = new MixCWorkStore(db);
+  store = new MixWorkStore(db);
 }
 
 const fakeSkillManager = {
@@ -164,8 +164,8 @@ function register(): void {
   handlers.clear();
   registerAgentHandlers({
     getAgentManager: () => new AgentManager(store),
-    getMixCWorkStore: () => store,
-    getMixCWorkEngineRouter: () => ({}) as never,
+    getMixWorkStore: () => store,
+    getMixWorkEngineRouter: () => ({}) as never,
     getIMGatewayManager: () => null,
     refreshImSessionWorkingDirectoriesForAgent: () => 0,
     resolveAgentWorkspacePath: (agentId: string) => `/ws/${agentId}`,

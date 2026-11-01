@@ -37,7 +37,7 @@ export const ComputerUseKitMetadata = {
     zh: '电脑操作',
   } satisfies LocalizedText,
   SkillDescription: {
-    en: 'Use MixCWork Computer Use tools to inspect and control Windows desktop applications.',
-    zh: '使用 MixcWork 电脑操作工具检查和操作 Windows 桌面应用。',
+    en: 'Use MixWork Computer Use tools to inspect and control Windows desktop applications.',
+    zh: '使用 MixWork 电脑操作工具检查和操作 Windows 桌面应用。',
   } satisfies LocalizedText,
 } as const;

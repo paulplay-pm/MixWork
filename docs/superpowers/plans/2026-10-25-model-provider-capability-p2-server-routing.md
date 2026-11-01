@@ -1370,7 +1370,7 @@ Expected: PASS.
 The dev database has one MiniMax card with four sections. After the P0 migrations:
 
 ```bash
-docker exec -e PGPASSWORD=mixcwork mixcwork-pg psql -U mixcwork -d mixcwork \
+docker exec -e PGPASSWORD=mixwork mixwork-pg psql -U mixwork -d mixwork \
   -c "SELECT c.id, c.provider, c.label, count(k.id) AS sections
         FROM provider_cards c LEFT JOIN provider_keys k ON k.card_id = c.id
        GROUP BY c.id, c.provider, c.label ORDER BY c.provider;"
@@ -1379,14 +1379,14 @@ docker exec -e PGPASSWORD=mixcwork mixcwork-pg psql -U mixcwork -d mixcwork \
 Expected: 9 cards; the MiniMax card has 4 sections.
 
 ```bash
-docker exec -e PGPASSWORD=mixcwork mixcwork-pg psql -U mixcwork -d mixcwork \
+docker exec -e PGPASSWORD=mixwork mixwork-pg psql -U mixwork -d mixwork \
   -c "SELECT m.model, m.types FROM model_catalog m WHERE m.types && ARRAY['image-gen','video-gen','asr']::text[] ORDER BY m.types, m.model;"
 ```
 
 Expected: `image-01`, `image-01-live` (image-gen), `MiniMax-H3`, `MiniMax-H3-Highspeed`, `MiniMax-H3-Lite`, `MiniMax-H3-Max` (video-gen), `asr-1.0` (asr).
 
 ```bash
-docker exec -e PGPASSWORD=mixcwork mixcwork-pg psql -U mixcwork -d mixcwork \
+docker exec -e PGPASSWORD=mixwork mixwork-pg psql -U mixwork -d mixwork \
   -c "SELECT type, model_id FROM model_type_defaults;"
 ```
 

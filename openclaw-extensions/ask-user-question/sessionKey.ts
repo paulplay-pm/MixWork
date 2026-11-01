@@ -1,14 +1,14 @@
-const LEGACY_MIXCWORK_SESSION_PREFIX = 'mixcwork:';
+const LEGACY_MIXWORK_SESSION_PREFIX = 'mixwork:';
 const AGENT_SESSION_PREFIX = 'agent:';
-const MIXCWORK_SESSION_MARKER = 'mixcwork';
+const MIXWORK_SESSION_MARKER = 'mixwork';
 const SUBAGENT_SESSION_MARKER = 'subagent';
 
 export function isAskUserQuestionCandidateSessionKey(sessionKey: string | undefined | null): boolean {
   const raw = (sessionKey ?? '').trim();
   if (!raw) return false;
 
-  if (raw.startsWith(LEGACY_MIXCWORK_SESSION_PREFIX)) {
-    return raw.slice(LEGACY_MIXCWORK_SESSION_PREFIX.length).trim().length > 0;
+  if (raw.startsWith(LEGACY_MIXWORK_SESSION_PREFIX)) {
+    return raw.slice(LEGACY_MIXWORK_SESSION_PREFIX.length).trim().length > 0;
   }
 
   if (!raw.startsWith(AGENT_SESSION_PREFIX)) {
@@ -27,5 +27,5 @@ export function isAskUserQuestionCandidateSessionKey(sessionKey: string | undefi
     return false;
   }
 
-  return source === MIXCWORK_SESSION_MARKER || source === SUBAGENT_SESSION_MARKER;
+  return source === MIXWORK_SESSION_MARKER || source === SUBAGENT_SESSION_MARKER;
 }

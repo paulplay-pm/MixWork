@@ -5,10 +5,10 @@ import {
   OpenClawConfigImpact,
   OpenClawPluginChangeAction,
 } from '../../libs/openclawConfigImpact';
-import type { MixCWorkStore } from '../../mixcworkStore';
+import type { MixWorkStore } from '../../mixworkStore';
 
 export interface PluginHandlerDeps {
-  getMixCWorkStore: () => MixCWorkStore;
+  getMixWorkStore: () => MixWorkStore;
   syncOpenClawConfig: (options: {
     reason: string;
     restartGatewayIfRunning?: boolean;
@@ -16,12 +16,12 @@ export interface PluginHandlerDeps {
 }
 
 export function registerPluginHandlers(deps: PluginHandlerDeps): void {
-  const { getMixCWorkStore, syncOpenClawConfig } = deps;
+  const { getMixWorkStore, syncOpenClawConfig } = deps;
 
   ipcMain.handle('plugins:list', async () => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
       return { success: true, plugins: await manager.listPlugins() };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Failed to list plugins' };
@@ -31,7 +31,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   ipcMain.handle('plugins:sync', async () => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
       const result = await manager.syncPluginsFromOpenClaw();
       return result;
     } catch (error) {
@@ -43,7 +43,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   ipcMain.handle('plugins:detect', async () => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
       const result = manager.detectPluginsFromOpenClaw();
       return result;
     } catch (error) {
@@ -60,7 +60,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   }) => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
       const sender = event.sender;
       const sendLog = (line: string) => {
         try { sender.send('plugins:install-log', line); } catch { /* window closed */ }
@@ -84,7 +84,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   ipcMain.handle('plugins:uninstall', async (_event, pluginId: string) => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
       const result = await manager.uninstallPlugin(pluginId);
       if (result.ok) {
         const impactDecision = classifyPluginConfigChange(OpenClawPluginChangeAction.Uninstall);
@@ -102,7 +102,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   ipcMain.handle('plugins:set-enabled', async (_event, pluginId: string, enabled: boolean) => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
       manager.setPluginEnabled(pluginId, enabled);
       const impactDecision = classifyPluginConfigChange(OpenClawPluginChangeAction.Toggle);
       await syncOpenClawConfig({
@@ -118,7 +118,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   ipcMain.handle('plugins:get-config-schema', async (_event, pluginId: string) => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
       const schema = manager.getPluginConfigSchema(pluginId);
       const config = manager.getPluginConfig(pluginId);
       return { success: true, schema, config };
@@ -130,7 +130,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   ipcMain.handle('plugins:save-config', async (_event, pluginId: string, config: Record<string, unknown>) => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
       manager.savePluginConfig(pluginId, config);
       const impactDecision = classifyPluginConfigChange(OpenClawPluginChangeAction.Config);
       await syncOpenClawConfig({
@@ -149,7 +149,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   }) => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
       for (const { pluginId, enabled } of changes.toggles ?? []) {
         manager.setPluginEnabled(pluginId, enabled);
       }
@@ -172,7 +172,7 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   ipcMain.handle('plugins:check-updates', async (_event, pluginIds?: string[]) => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
       const updates = await manager.checkPluginUpdates(pluginIds);
       return { success: true, updates };
     } catch (error) {
@@ -183,10 +183,10 @@ export function registerPluginHandlers(deps: PluginHandlerDeps): void {
   ipcMain.handle('plugins:update', async (event, pluginId: string) => {
     try {
       const { PluginManager } = await import('../../plugins/pluginManager');
-      const manager = new PluginManager(getMixCWorkStore());
+      const manager = new PluginManager(getMixWorkStore());
 
       // Find plugin info to determine source/spec/registry
-      const plugins = getMixCWorkStore().listUserPlugins();
+      const plugins = getMixWorkStore().listUserPlugins();
       const plugin = plugins.find(p => p.pluginId === pluginId);
       if (!plugin) {
         return { ok: false, error: `Plugin "${pluginId}" not found` };

@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import {
   type CoworkGoal,
   CoworkGoalStatus,
-} from '../../shared/mixcwork/goal';
+} from '../../shared/mixwork/goal';
 import { applyOptimisticGoalCommand } from './goalCommand';
 
 describe('applyOptimisticGoalCommand', () => {

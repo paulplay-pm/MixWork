@@ -11,7 +11,7 @@
 
 ## 1. 背景与根因
 
-MixCWork 已彻底断开 youdao，账号只经 MixCWork/Enterprise server 登录。企业 org JWT 存 **sessionStorage**；消费者遗留 `auth_tokens`（electron-store）对企业用户**恒为空**。
+MixWork 已彻底断开 youdao，账号只经 MixWork/Enterprise server 登录。企业 org JWT 存 **sessionStorage**；消费者遗留 `auth_tokens`（electron-store）对企业用户**恒为空**。
 
 桌面端两处功能仍用**消费者鉴权**打 `${ENTERPRISE_SERVER_URL}`：
 

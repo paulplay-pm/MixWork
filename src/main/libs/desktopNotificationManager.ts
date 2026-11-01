@@ -1,6 +1,6 @@
 import { app, type BrowserWindow, nativeImage, Notification } from 'electron';
 
-import { SESSION_AGNOSTIC_PERMISSION_SESSION_ID } from '../../shared/mixcwork/constants';
+import { SESSION_AGNOSTIC_PERMISSION_SESSION_ID } from '../../shared/mixwork/constants';
 import {
   classifyWaitingNotificationKind,
   normalizeNotificationSettings,

@@ -17,7 +17,7 @@
 // ═══════════════════════════════════════════════════════
 
 // ─── Provider Name ──────────────────────────────────────────────────────
-// providerName identifies the MixCWork internal provider (config key).
+// providerName identifies the MixWork internal provider (config key).
 export const ProviderName = {
   OpenAI: 'openai',
   Gemini: 'gemini',
@@ -37,7 +37,7 @@ export const ProviderName = {
   Ollama: 'ollama',
   LmStudio: 'lm-studio',
   Custom: 'custom',
-  MixcworkServer: 'mixcwork-server',
+  MixWorkServer: 'mixwork-server',
   Copilot: 'github-copilot',
 } as const;
 export type ProviderName = typeof ProviderName[keyof typeof ProviderName];
@@ -45,7 +45,7 @@ export type ProviderName = typeof ProviderName[keyof typeof ProviderName];
 // ─── OpenClaw Provider ID ───────────────────────────────────────────────
 // OpenClaw gateway provider identifiers. May differ from ProviderName.
 export const OpenClawProviderId = {
-  MixcworkServer: 'mixcwork-server',
+  MixWorkServer: 'mixwork-server',
   Moonshot: 'moonshot',
   Google: 'google',
   Xai: 'xai',
@@ -64,10 +64,10 @@ export const OpenClawProviderId = {
   Xiaomi: 'xiaomi',
   OpenRouter: 'openrouter',
   Copilot: 'github-copilot',
-  MixcworkCopilot: 'mixcwork-copilot',
+  MixWorkCopilot: 'mixwork-copilot',
   Ollama: 'ollama',
   LmStudio: 'lm-studio',
-  Mixcwork: 'mixcwork',
+  MixWork: 'mixwork',
 } as const;
 export type OpenClawProviderId = typeof OpenClawProviderId[keyof typeof OpenClawProviderId];
 

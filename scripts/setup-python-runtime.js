@@ -3,8 +3,8 @@
  * Prepare bundled Windows Python runtime under resources/python-win.
  *
  * This script mirrors setup-mingit.js behavior:
- * - Supports local offline archive via MIXCWORK_PORTABLE_PYTHON_ARCHIVE
- * - Supports optional mirror URL via MIXCWORK_PORTABLE_PYTHON_URL
+ * - Supports local offline archive via MIXWORK_PORTABLE_PYTHON_ARCHIVE
+ * - Supports optional mirror URL via MIXWORK_PORTABLE_PYTHON_URL
  * - Can run cross-platform for Windows packaging
  * - Bundles interpreter runtime only (no preinstalled skill dependencies)
  */
@@ -21,12 +21,12 @@ const extractZip = require('extract-zip');
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const OUTPUT_DIR = path.join(PROJECT_ROOT, 'resources', 'python-win');
 const DEFAULT_ARCHIVE_PATH = path.join(PROJECT_ROOT, 'resources', 'python-win-runtime.zip');
-const DEFAULT_WINDOWS_EMBED_PYTHON_VERSION = process.env.MIXCWORK_WINDOWS_EMBED_PYTHON_VERSION || '3.11.9';
+const DEFAULT_WINDOWS_EMBED_PYTHON_VERSION = process.env.MIXWORK_WINDOWS_EMBED_PYTHON_VERSION || '3.11.9';
 const DEFAULT_WINDOWS_EMBED_PYTHON_ZIP = `python-${DEFAULT_WINDOWS_EMBED_PYTHON_VERSION}-embed-amd64.zip`;
-const DEFAULT_WINDOWS_EMBED_PYTHON_URL = process.env.MIXCWORK_WINDOWS_EMBED_PYTHON_URL
+const DEFAULT_WINDOWS_EMBED_PYTHON_URL = process.env.MIXWORK_WINDOWS_EMBED_PYTHON_URL
   || `https://www.python.org/ftp/python/${DEFAULT_WINDOWS_EMBED_PYTHON_VERSION}/${DEFAULT_WINDOWS_EMBED_PYTHON_ZIP}`;
-const DEFAULT_GET_PIP_URL = process.env.MIXCWORK_WINDOWS_GET_PIP_URL || 'https://bootstrap.pypa.io/get-pip.py';
-const DEFAULT_PIP_PYZ_URL = process.env.MIXCWORK_WINDOWS_PIP_PYZ_URL || 'https://bootstrap.pypa.io/pip/pip.pyz';
+const DEFAULT_GET_PIP_URL = process.env.MIXWORK_WINDOWS_GET_PIP_URL || 'https://bootstrap.pypa.io/get-pip.py';
+const DEFAULT_PIP_PYZ_URL = process.env.MIXWORK_WINDOWS_PIP_PYZ_URL || 'https://bootstrap.pypa.io/pip/pip.pyz';
 const DEFAULT_RUNTIME_URL = DEFAULT_WINDOWS_EMBED_PYTHON_URL;
 
 const REQUIRED_FILES = [
@@ -185,10 +185,10 @@ function createPipWrappers(rootDir) {
   }
 }
 
-// Converge MixCWork-owned pip shim files to the current templates. Guarded by
+// Converge MixWork-owned pip shim files to the current templates. Guarded by
 // an ownership marker so a real pip package (copied from a host Python or
 // installed by get-pip) is never overwritten. Returns whether the shim layout
-// is MixCWork-owned.
+// is MixWork-owned.
 function convergePipShimFiles(rootDir) {
   const mainPath = path.join(rootDir, PIP_MODULE_MAIN_REL_PATH);
   let existingMain = null;
@@ -287,7 +287,7 @@ async function ensurePipPayload(rootDir, options = {}) {
   if (existingPipHealth.ok) {
     // The health check only tests file existence, which can hide a stale shim
     // from an earlier build (e.g. a cached resources/python-win). Converge
-    // MixCWork-owned shim/wrapper files to the current templates before
+    // MixWork-owned shim/wrapper files to the current templates before
     // accepting the runtime as prepared.
     if (convergePipShimFiles(rootDir)) {
       createPipWrappers(rootDir);
@@ -316,7 +316,7 @@ async function ensurePipPayload(rootDir, options = {}) {
       if (required) {
         throw new Error(
           'Unable to obtain pip runtime archive (pip.pyz). '
-          + 'Set MIXCWORK_WINDOWS_PIP_PYZ_URL to a reachable mirror if needed. '
+          + 'Set MIXWORK_WINDOWS_PIP_PYZ_URL to a reachable mirror if needed. '
           + `Original error: ${error instanceof Error ? error.message : String(error)}`
         );
       }
@@ -405,12 +405,12 @@ async function downloadArchive(url, destination) {
 }
 
 async function resolveArchive(required) {
-  const envArchive = resolveInputPath(process.env.MIXCWORK_PORTABLE_PYTHON_ARCHIVE);
+  const envArchive = resolveInputPath(process.env.MIXWORK_PORTABLE_PYTHON_ARCHIVE);
   if (envArchive) {
     if (!isNonEmptyFile(envArchive)) {
-      throw new Error(`MIXCWORK_PORTABLE_PYTHON_ARCHIVE points to an invalid file: ${envArchive}`);
+      throw new Error(`MIXWORK_PORTABLE_PYTHON_ARCHIVE points to an invalid file: ${envArchive}`);
     }
-    console.log(`[setup-python-runtime] Using local archive from MIXCWORK_PORTABLE_PYTHON_ARCHIVE: ${envArchive}`);
+    console.log(`[setup-python-runtime] Using local archive from MIXWORK_PORTABLE_PYTHON_ARCHIVE: ${envArchive}`);
     return { archivePath: envArchive, source: 'env-archive' };
   }
 
@@ -419,8 +419,8 @@ async function resolveArchive(required) {
     return { archivePath: DEFAULT_ARCHIVE_PATH, source: 'cache' };
   }
 
-  const urlFromEnv = typeof process.env.MIXCWORK_PORTABLE_PYTHON_URL === 'string'
-    ? process.env.MIXCWORK_PORTABLE_PYTHON_URL.trim()
+  const urlFromEnv = typeof process.env.MIXWORK_PORTABLE_PYTHON_URL === 'string'
+    ? process.env.MIXWORK_PORTABLE_PYTHON_URL.trim()
     : '';
   const downloadUrl = urlFromEnv || DEFAULT_RUNTIME_URL;
 
@@ -428,8 +428,8 @@ async function resolveArchive(required) {
     if (required) {
       throw new Error(
         'Portable Python archive is not available. '
-        + 'Set MIXCWORK_PORTABLE_PYTHON_ARCHIVE to a local package or '
-        + 'MIXCWORK_PORTABLE_PYTHON_URL to a downloadable runtime archive URL.'
+        + 'Set MIXWORK_PORTABLE_PYTHON_ARCHIVE to a local package or '
+        + 'MIXWORK_PORTABLE_PYTHON_URL to a downloadable runtime archive URL.'
       );
     }
     console.warn('[setup-python-runtime] Archive URL is not configured; skipping because --required is not set.');
@@ -446,8 +446,8 @@ async function resolveArchive(required) {
     if (required) {
       throw new Error(
         'Unable to obtain portable Python runtime archive. '
-        + 'Set MIXCWORK_PORTABLE_PYTHON_ARCHIVE to a local offline package or '
-        + 'set MIXCWORK_PORTABLE_PYTHON_URL to a reachable mirror. '
+        + 'Set MIXWORK_PORTABLE_PYTHON_ARCHIVE to a local offline package or '
+        + 'set MIXWORK_PORTABLE_PYTHON_URL to a reachable mirror. '
         + `Original error: ${error instanceof Error ? error.message : String(error)}`
       );
     }
@@ -623,7 +623,7 @@ async function ensurePortablePythonRuntime(options = {}) {
   const required = Boolean(options.required);
   const shouldRun = process.platform === 'win32'
     || required
-    || process.env.MIXCWORK_SETUP_PYTHON_RUNTIME_FORCE === '1';
+    || process.env.MIXWORK_SETUP_PYTHON_RUNTIME_FORCE === '1';
 
   if (!shouldRun) {
     console.log('[setup-python-runtime] Skip on non-Windows host (pass --required to force cross-platform preparation).');
@@ -665,8 +665,8 @@ async function ensurePortablePythonRuntime(options = {}) {
   } else if (required) {
     throw new Error(
       'Portable Python archive is not available for non-Windows host. '
-      + 'Set MIXCWORK_PORTABLE_PYTHON_ARCHIVE to a local package or '
-      + 'MIXCWORK_PORTABLE_PYTHON_URL to a downloadable runtime archive URL.'
+      + 'Set MIXWORK_PORTABLE_PYTHON_ARCHIVE to a local package or '
+      + 'MIXWORK_PORTABLE_PYTHON_URL to a downloadable runtime archive URL.'
     );
   } else {
     return { ok: true, skipped: true, pythonPath: null };

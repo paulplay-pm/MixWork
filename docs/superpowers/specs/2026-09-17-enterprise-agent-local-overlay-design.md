@@ -6,7 +6,7 @@
 
 ## Goal
 
-Let the MixCWork desktop present enterprise-server-provisioned agents as
+Let the MixWork desktop present enterprise-server-provisioned agents as
 **read-only for server-owned content** while allowing a local overlay of
 user-added items. A user who can *see* an enterprise agent (via role
 authorization) should be able to:
@@ -138,7 +138,7 @@ Effects:
 - Server removes a skill the user did not add → it disappears.
 - Server adds a skill → baseline grows; user items preserved.
 
-### Main-process update guard (`MixCWorkStore.updateAgent`, enterprise rows)
+### Main-process update guard (`MixWorkStore.updateAgent`, enterprise rows)
 
 The renderer sends the full set *it wants*. Main enforces the invariant so
 the renderer alone can't break it:
@@ -217,7 +217,7 @@ gating**:
   a server-removed skill (not user-added) disappears; a server-added skill
   grows the baseline while user items persist; collaboration list reflects a
   server change.
-- **`mixcworkStore` enterprise-row guard:** an update that omits a baseline
+- **`mixworkStore` enterprise-row guard:** an update that omits a baseline
   skill re-adds it (deleting a baseline is ineffective); server-owned field
   changes are rejected; `deleteAgent` on an enterprise row is rejected.
 - **IM:** an enterprise agent with `im_channels` allows credential entry but

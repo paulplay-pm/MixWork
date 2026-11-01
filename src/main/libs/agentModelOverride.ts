@@ -1,4 +1,4 @@
-import type { Agent } from '../mixcworkStore';
+import type { Agent } from '../mixworkStore';
 import { parsePrimaryModelRef } from './openclawAgentModels';
 
 /** The model ref an agent actually runs with: a parseable local override for

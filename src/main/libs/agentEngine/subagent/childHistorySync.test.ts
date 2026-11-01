@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import type { MixCWorkMessage } from '../../../mixcworkStore';
+import type { MixWorkMessage } from '../../../mixworkStore';
 import {
   buildSubagentChildHistorySyncPlan,
   normalizeSubagentVisibleUserText,
@@ -8,10 +8,10 @@ import {
 
 describe('subagent child history sync', () => {
   test('normalizes outbound subagent prompts to the visible user request', () => {
-    const rawOutboundPrompt = `[MixCWork system instructions]
+    const rawOutboundPrompt = `[MixWork system instructions]
 hidden setup
 
-[Context bridge from previous MixCWork conversation]
+[Context bridge from previous MixWork conversation]
 previous context
 
 [Current user request]
@@ -21,15 +21,15 @@ rewrite the intro`;
   });
 
   test('preserves visible local user text instead of raw outbound prompt', () => {
-    const rawOutboundPrompt = `[MixCWork system instructions]
+    const rawOutboundPrompt = `[MixWork system instructions]
 hidden setup
 
 [Current user request]
 rewrite the intro`;
-    const localMessages: MixCWorkMessage[] = [
+    const localMessages: MixWorkMessage[] = [
       { id: 'msg-1', type: 'user', content: rawOutboundPrompt, timestamp: 1, metadata: {} },
       { id: 'msg-2', type: 'assistant', content: 'new intro', timestamp: 2, metadata: {} },
-    ] as MixCWorkMessage[];
+    ] as MixWorkMessage[];
 
     const plan = buildSubagentChildHistorySyncPlan(localMessages, [
       { role: 'user', content: rawOutboundPrompt, timestamp: 10 },
@@ -50,9 +50,9 @@ rewrite the intro`;
   });
 
   test('includes subagent tool calls and results in child session history', () => {
-    const localMessages: MixCWorkMessage[] = [
+    const localMessages: MixWorkMessage[] = [
       { id: 'msg-1', type: 'user', content: 'run tests', timestamp: 1, metadata: {} },
-    ] as MixCWorkMessage[];
+    ] as MixWorkMessage[];
 
     const plan = buildSubagentChildHistorySyncPlan(localMessages, [
       { role: 'user', content: 'run tests' },

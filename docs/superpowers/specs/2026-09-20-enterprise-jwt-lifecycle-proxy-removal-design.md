@@ -2,13 +2,13 @@
 
 - **Date:** 2026-09-20
 - **Status:** Design — awaiting approval to implement
-- **Owners (files):** MixCWork desktop (`src/main`, `src/shared`) + `enterprise_server`
+- **Owners (files):** MixWork desktop (`src/main`, `src/shared`) + `enterprise_server`
 - **Scope:** Four parts, each independently committable: **A** delete the local token proxy, **B** point DSH plan models at enterprise-direct (multi-baseUrl), **C** self-heal the direct enterprise-JWT path (refresh + retry), **D** structured error signals from the enterprise server.
 
 ## 1. Problem
 
 Mid-conversation, plan (套餐) models fail with `401` → the desktop surfaces
-`coworkErrorMixCWorkLoginExpired` ("登录状态已过期，请重新登录后继续使用 MixCWork 套餐模型").
+`coworkErrorMixWorkLoginExpired` ("登录状态已过期，请重新登录后继续使用 MixWork 套餐模型").
 
 Root cause: plan models talk to the enterprise server **directly**
 (`${ENTERPRISE_SERVER_URL}/proxy/<provider>`), and the desktop bakes the
@@ -67,7 +67,7 @@ A is the consumer-only fallback. In practice the two backends are distinct:
 3. **A pure user-JWT refresh does not trigger a gateway hard restart on its
    own.** `needsHardRestart` (`main.ts:2573-2578`) is true only for
    `secretEnvVarsChanged` / bindings / explicit restart / `restartImpact`.
-   `secretEnvVarsChanged` is driven by the org `MIXCWORK_APIKEY_<PROVIDER>` env
+   `secretEnvVarsChanged` is driven by the org `MIXWORK_APIKEY_<PROVIDER>` env
    vars (`claudeSettings.ts:963-973`), which are the *org* `provider_key` values
    and do not change when only the user JWT changes. `sync()` sets
    `restartImpact: Restart` only for mcp/model-compat
@@ -148,7 +148,7 @@ Delete the module and its tests, and remove every reference.
     (`1597`, `1668`).
   - **Job 2 (must be preserved):** the loop at `1628-1700` that **enumerates
     every enterprise model** (`serverModels = getAllServerModelMetadata()`,
-    `1427`) into the single `mixcwork-server` provider, and — crucially — attaches
+    `1427`) into the single `mixwork-server` provider, and — crucially — attaches
     a **per-model `baseUrl`** via `resolveModelProxyUrl` (`1654-1663`) that points
     each model at its own `${ENTERPRISE_SERVER_URL}/proxy/<provider>`. The comment
     at `1633-1636` explains why: without a per-model `baseUrl` all models collapse
@@ -164,7 +164,7 @@ Delete the module and its tests, and remove every reference.
   each model's `apiKey` becomes the **current user enterprise JWT**
   (`sessionStorage.load()?.jwt`), matching how `tryEnterpriseCatalogFallback`
   keys the active model (`claudeSettings.ts:488`).
-- Net effect: identical provider shape to today (one `mixcwork-server` provider,
+- Net effect: identical provider shape to today (one `mixwork-server` provider,
   one model per enterprise catalog entry, per-model `/proxy/<provider>` base),
   but with a real JWT instead of `'proxy-managed'` and no loopback hop. This is
   what makes the provider `apiKey` a value Part C must keep fresh (§6).
@@ -221,7 +221,7 @@ groups: Array<{
 per provider group**, each with its own `baseURL`, and within each provider
 group keep the existing two-protocol split (openai-completions vs
 anthropic-messages) when that provider spans both. Route ids are derived per
-group (e.g. `mixcwork-plan-<provider>`, plus the anthropic suffix where needed),
+group (e.g. `mixwork-plan-<provider>`, plus the anthropic suffix where needed),
 sanitized by the existing `sanitizeDshRouteId`. Each route's `apiKeyEnv` is
 derived by the existing `deriveDshApiKeyEnvRef`.
 
@@ -303,8 +303,8 @@ does not apply.
 
 ### 6.3 C3: reactive single-flight recovery (secondary)
 In `openclawRuntimeAdapter.ts:resolveOpenClawRuntimeError`, when
-`isMixCWorkLoginExpiredMetadata(metadata)` (`:1668`) is true **and** the
-provider is `ProviderName.MixcworkServer`, attempt **one** recovery before
+`isMixWorkLoginExpiredMetadata(metadata)` (`:1668`) is true **and** the
+provider is `ProviderName.MixWorkServer`, attempt **one** recovery before
 surfacing the error:
 - If the stored enterprise JWT still verifies (not yet expired), trigger a
   refresh (`enterpriseClient.refresh()` → persist → `syncOpenClawConfig`) and
@@ -439,7 +439,7 @@ respects the A↔D shared-file seam so the adapter compiles at every step.
 ## 11. Risks
 
 - **Provider enumeration (highest risk).** The `1590-1703` block is the only
-  place every enterprise model is enumerated into the `mixcwork-server` provider
+  place every enterprise model is enumerated into the `mixwork-server` provider
   with its per-model `baseUrl`. Part A must *restructure* it, not delete it
   (§4). If the loopback base URLs / `'proxy-managed'` keys are removed but the
   enumeration or the per-model `baseUrl` resolution is lost, plan models either

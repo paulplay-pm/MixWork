@@ -19,7 +19,7 @@ test('repair language application refreshes the splash hint without rewriting co
 
   i18nService.setLanguage('en', { persist: false });
 
-  expect(setItem).toHaveBeenCalledWith('mixcwork-language', 'en');
+  expect(setItem).toHaveBeenCalledWith('mixwork-language', 'en');
 });
 
 test('a late older initialization cannot replace the newest locale result', async () => {
@@ -54,7 +54,7 @@ test('a late older initialization cannot replace the newest locale result', asyn
     language: 'zh',
     language_initialized: true,
   });
-  expect(setItem).toHaveBeenLastCalledWith('mixcwork-language', 'zh');
+  expect(setItem).toHaveBeenLastCalledWith('mixwork-language', 'zh');
 });
 
 test('repair language wins over a locale lookup that completes late', async () => {
@@ -82,5 +82,5 @@ test('repair language wins over a locale lookup that completes late', async () =
 
   expect(i18nService.getLanguage()).toBe('zh');
   expect(updateConfig).not.toHaveBeenCalled();
-  expect(setItem).toHaveBeenLastCalledWith('mixcwork-language', 'zh');
+  expect(setItem).toHaveBeenLastCalledWith('mixwork-language', 'zh');
 });

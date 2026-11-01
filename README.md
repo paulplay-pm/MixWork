@@ -1,6 +1,6 @@
 <h1 align="center">
-  <img src="public/mixcwork.png" alt="MixcWork" width="96"><br>
-  MixcWork
+  <img src="public/mixwork.png" alt="MixWork" width="96"><br>
+  MixWork
 </h1>
 
 <p align="center">
@@ -16,7 +16,7 @@
 
 ## Table of Contents
 
-- [What Is MixcWork](#what-is-MixcWork)
+- [What Is MixWork](#what-is-MixWork)
 - [Core Capabilities](#core-capabilities)
 - [Architecture](#architecture)
 - [Enterprise-Side Installation & Deployment](#enterprise-side-installation--deployment)
@@ -34,24 +34,24 @@
 
 ---
 
-## What Is MixcWork
+## What Is MixWork
 
-MixcWork is a **desktop-grade Enterprise Agent** built for real corporate work environments. It fuses LLM-driven agent capabilities with the local office toolchain, giving every employee an AI coworker on their own desktop that can execute real tasks — reading and writing local files, running shell commands, operating the browser, generating Word / Excel / PPT / PDF documents, sending and receiving email, connecting to IM channels, and completing cross-system composite office tasks under organizational authorization.
+MixWork is a **desktop-grade Enterprise Agent** built for real corporate work environments. It fuses LLM-driven agent capabilities with the local office toolchain, giving every employee an AI coworker on their own desktop that can execute real tasks — reading and writing local files, running shell commands, operating the browser, generating Word / Excel / PPT / PDF documents, sending and receiving email, connecting to IM channels, and completing cross-system composite office tasks under organizational authorization.
 
-MixcWork is composed of three cooperating parts:
+MixWork is composed of three cooperating parts:
 
-- **MixcWork Desktop (Client)** — a cross-platform desktop application built on Electron + React 18 + Redux Toolkit, the entry point employees use every day.
-- **MixcWork Enterprise Server** — a multi-tenant backend on Node.js + Hono + PostgreSQL that delivers unified identity authentication, organization / department / role management, model proxying and quotas, audit logs, policy distribution, the app marketplace, SSO bindings, and more.
+- **MixWork Desktop (Client)** — a cross-platform desktop application built on Electron + React 18 + Redux Toolkit, the entry point employees use every day.
+- **MixWork Enterprise Server** — a multi-tenant backend on Node.js + Hono + PostgreSQL that delivers unified identity authentication, organization / department / role management, model proxying and quotas, audit logs, policy distribution, the app marketplace, SSO bindings, and more.
 - **Enterprise Web Console** — a React SPA shipped inside the Enterprise Server. Administrators can use the browser to perform operations: organization initialization, user management, model and provider configuration, skill / MCP review, audit queries, and app distribution.
 
-What "enterprise-grade" means in MixcWork has four concrete manifestations:
+What "enterprise-grade" means in MixWork has four concrete manifestations:
 
 1. **Multi-tenant isolation** — the server supports multiple organizations (Orgs) coexisting with strict data isolation between them. Cross-org access returns 404 directly and never leaks existence.
 2. **Enterprise-grade permission model** — a two-axis model based on "fine-grained capability points (module:action) × data scope (DataScope)". Capability and data scope are evaluated and audited independently; any cross-tier escalation is fail-closed.
 3. **Enterprise-grade model governance** — the server acts as a unified proxy for LLM providers. API keys are encrypted at rest with AES-256-GCM. Models and quotas can be distributed per organization / role, and every call generates audit and usage records.
 4. **Enterprise-grade control channel** — administrators can use the server to push down the model catalog, expert kits, MCP / skill marketplace, SSO bindings, and app updates to all desktops. After login, the desktop client syncs these configurations automatically; end users never have to do anything manually.
 
-MixcWork works equally well as a personal desktop Agent or as an enterprise IT platform for unified procurement, distribution, governance, and auditing. This document covers installation, deployment, and development for **all scenarios**.
+MixWork works equally well as a personal desktop Agent or as an enterprise IT platform for unified procurement, distribution, governance, and auditing. This document covers installation, deployment, and development for **all scenarios**.
 
 ---
 
@@ -61,12 +61,12 @@ MixcWork works equally well as a personal desktop Agent or as an enterprise IT p
 
 #### Cowork Long-Running Sessions
 
-Run long-form Agent tasks against local projects and files. MixcWork streams progress in real time, persists session history, renders tool output, and asks for explicit approval before sensitive actions such as file operations, shell commands, or network access.
+Run long-form Agent tasks against local projects and files. MixWork streams progress in real time, persists session history, renders tool output, and asks for explicit approval before sensitive actions such as file operations, shell commands, or network access.
 
 The screenshot below shows a real scenario: the Agent receives a scan of handwritten notes on e-commerce warehouse cost and profit, identifies 6 ambiguous points and proactively labels them with "「?待确认」" for the user to confirm; on the right it generates a structured cost / profit settlement logic document in real time, with downloadable Markdown and HTML artifacts.
 
 <p align="center">
-  <img src="docs/res/desktop-screenshot.png" alt="MixcWork Desktop: long-running session with real-time artifact generation" width="960">
+  <img src="docs/res/desktop-screenshot.png" alt="MixWork Desktop: long-running session with real-time artifact generation" width="960">
 </p>
 
 #### Multi-Agent Workflows
@@ -79,11 +79,11 @@ Scenario-oriented capability bundles. Administrators publish kits from the admin
 
 #### Skills
 
-MixcWork ships with 29 built-in skills, covering web search, Word documents, Excel spreadsheets, PowerPoint, PDF processing, Remotion video generation, browser automation, image / video generation, stock research, content writing, email, weather, skill creation, and more. The Enterprise Server also provides a skill marketplace with submission review.
+MixWork ships with 29 built-in skills, covering web search, Word documents, Excel spreadsheets, PowerPoint, PDF processing, Remotion video generation, browser automation, image / video generation, stock research, content writing, email, weather, skill creation, and more. The Enterprise Server also provides a skill marketplace with submission review.
 
 #### MCP Servers
 
-Plug in external tools and data sources through Model Context Protocol. MixcWork stores user-configured MCP servers locally and syncs the enabled ones to the execution engine. Administrators can govern the available MCP set through the server's marketplace and submission review.
+Plug in external tools and data sources through Model Context Protocol. MixWork stores user-configured MCP servers locally and syncs the enabled ones to the execution engine. Administrators can govern the available MCP set through the server's marketplace and submission review.
 
 #### Scheduled Tasks
 
@@ -109,7 +109,7 @@ Sessions and app data live in a local SQLite database. Agent workspace memory us
 | **Authentication & SSO** | Local account / password (bcryptjs); SSO bindings (Feishu and other IdPs); JWT (HS256) issuance and validation |
 | **Permission model** | Two-axis "fine-grained capability point × data scope"; 41 built-in capability points; 5 DataScope values; fail-closed enforcement |
 | **Users & roles** | Department tree, role CRUD, built-in role protection (cannot be deleted); bulk operations; user invitations |
-| **Model catalog** | Per-organization model import and distribution; built-in provider templates (OpenAI, Anthropic, DeepSeek, MixcWork Server, etc.) |
+| **Model catalog** | Per-organization model import and distribution; built-in provider templates (OpenAI, Anthropic, DeepSeek, MixWork Server, etc.) |
 | **Provider key vault** | AES-256-GCM encryption at rest; only `api_key_masked` is returned; role-based access |
 | **Model proxy** | Unified `/proxy/<provider>` proxy; per-org / per-role quota; full audit |
 | **Audit logs** | Every operation audited; violations logged as `admin_access_denied`, distinguishing "missing capability point" from "outside data scope" |
@@ -125,7 +125,7 @@ Sessions and app data live in a local SQLite database. Agent workspace memory us
 The screenshot below shows the "Model Configuration" page: the left side groups built-in providers and custom providers, with per-provider on/off switches; the right side configures the Base URL, API protocol (OpenAI-compatible / Anthropic-compatible), a Coding Plan dedicated endpoint, and the encrypted API Key. The provider's model list sits below (model name, type, context window, enabled state, actions). All API keys are encrypted with AES-256-GCM upon submission, and the list only shows masked values.
 
 <p align="center">
-  <img src="docs/res/enterprise-console-screenshot.png" alt="MixcWork admin console: model configuration" width="960">
+  <img src="docs/res/enterprise-console-screenshot.png" alt="MixWork admin console: model configuration" width="960">
 </p>
 
 ### Real-World Prompts
@@ -151,14 +151,14 @@ The screenshot below shows the "Model Configuration" page: the left side groups 
                                │ HTTPS / JWT
                                ▼
 ┌────────────────────────────────────────────────────────────────┐
-│                  MixcWork Enterprise Server                     │
+│                  MixWork Enterprise Server                     │
 │   Hono + node:http  •  PostgreSQL  •  /proxy + /admin + /api    │
 │   Auth/RBAC • Vault • Audit • Catalog • Marketplace • Updates   │
 └──────────────────────────────┬─────────────────────────────────┘
                                │ HTTPS (ENTERPRISE_SERVER_URL)
                                ▼
 ┌────────────────────────────────────────────────────────────────┐
-│                  Employee desktop (MixcWork Desktop)            │
+│                  Employee desktop (MixWork Desktop)            │
 │   Electron 40 + React 18 + Redux Toolkit + Tailwind             │
 │   Renderer  ⇄  Main (IPC)  ⇄  Cowork Store (SQLite)             │
 │   Agents • Skills • MCP • IM • Scheduled Tasks • Artifacts      │
@@ -171,11 +171,11 @@ The desktop is offline-first: local SQLite holds sessions and app data; every en
 
 ## Enterprise-Side Installation & Deployment
 
-> Goal: deploy the MixcWork Enterprise Server (including the admin console) inside the organization, and push enterprise configuration down to all employee desktops.
+> Goal: deploy the MixWork Enterprise Server (including the admin console) inside the organization, and push enterprise configuration down to all employee desktops.
 
 For production deployment on a customer-managed Linux host, see
 [`docs/enterprise-server-deploy.md`](docs/enterprise-server-deploy.md). That
-document covers the Docker image, the `MixcWork-server` CLI, TLS termination,
+document covers the Docker image, the `MixWork-server` CLI, TLS termination,
 upgrades, and backups. The architecture overview, env-var reference, and
 local-dev "Quick Start" remain below for development.
 
@@ -204,27 +204,27 @@ local-dev "Quick Start" remain below for development.
 | --- | --- | --- |
 | `DATABASE_URL` | ✅ | `postgres://user:pass@host:5432/db` |
 | `JWT_SECRET` | ✅ | HS256 signing key, **≥ 32 characters**; generate with `openssl rand -hex 32` |
-| `MixcWork_VAULT_MASTER_KEY` | ✅ | Master key for provider key encryption; must be a 32-byte base64 string; generate with `openssl rand -base64 32`. **Loss = all provider keys unrecoverable** |
+| `MixWork_VAULT_MASTER_KEY` | ✅ | Master key for provider key encryption; must be a 32-byte base64 string; generate with `openssl rand -base64 32`. **Loss = all provider keys unrecoverable** |
 | `PORT` | ❌ | HTTP listen port, default `8787` |
 | `WEB_DIST_DIR` | ❌ | Override the bundled SPA directory, default `<cwd>/web-dist` |
 | `SSO_DESKTOP_REDIRECT_PORT` | ❌ | Desktop SSO loopback port, default `53231` |
 
-> ⚠️ The server **refuses to start** if `JWT_SECRET` or `MixcWork_VAULT_MASTER_KEY` is missing. Both are **read at startup only** — a restart is required to pick up changes. Rotating `JWT_SECRET` invalidates all existing sessions; rotating `MixcWork_VAULT_MASTER_KEY` makes all provider keys unreadable (must be re-entered).
+> ⚠️ The server **refuses to start** if `JWT_SECRET` or `MixWork_VAULT_MASTER_KEY` is missing. Both are **read at startup only** — a restart is required to pick up changes. Rotating `JWT_SECRET` invalidates all existing sessions; rotating `MixWork_VAULT_MASTER_KEY` makes all provider keys unreadable (must be re-entered).
 
 ### 4. Quick Start (First-Time Deployment)
 
 ```bash
 # 1. Clone and install root dependencies (workspaces will install enterprise_server)
-git clone https://github.com/MixcWork/MixcWork.git
-cd MixcWork
+git clone https://github.com/paulplay-pm/MixWork.git
+cd MixWork
 npm install
 
 # 2. Bring up PostgreSQL (pick one)
 #    Option A: Docker
-docker run -d --name MixcWork-pg \
-  -e POSTGRES_USER=MixcWork \
-  -e POSTGRES_PASSWORD=MixcWork \
-  -e POSTGRES_DB=MixcWork \
+docker run -d --name MixWork-pg \
+  -e POSTGRES_USER=MixWork \
+  -e POSTGRES_PASSWORD=MixWork \
+  -e POSTGRES_DB=MixWork \
   -p 5432:5432 \
   postgres:16
 #    Option B: existing Postgres — create a database + role and use that in DATABASE_URL
@@ -233,9 +233,9 @@ docker run -d --name MixcWork-pg \
 cd enterprise_server
 cp .env.example .env
 # Edit .env and fill in:
-#   DATABASE_URL=postgres://MixcWork:MixcWork@localhost:5432/MixcWork
+#   DATABASE_URL=postgres://MixWork:MixWork@localhost:5432/MixWork
 #   JWT_SECRET=<openssl rand -hex 32>
-#   MixcWork_VAULT_MASTER_KEY=<openssl rand -base64 32>
+#   MixWork_VAULT_MASTER_KEY=<openssl rand -base64 32>
 
 # 4. Build the admin console SPA (required on first install and after upgrade)
 npm run web:install
@@ -257,7 +257,7 @@ npm run enterprise:dev
 
 After step 4, log in to the admin console at `/login` using **org name + username + password**. We recommend completing these immediately:
 
-1. **Import a provider key** — go to "Provider & Models" and enter at least one LLM provider's API key for the current org (OpenAI, Anthropic, DeepSeek, MixcWork Server, etc.). Keys are encrypted at rest; the plaintext is never returned.
+1. **Import a provider key** — go to "Provider & Models" and enter at least one LLM provider's API key for the current org (OpenAI, Anthropic, DeepSeek, MixWork Server, etc.). Keys are encrypted at rest; the plaintext is never returned.
 2. **Create departments / roles / users** — under "Organization", build a department tree, define roles, and invite colleagues. **Built-in roles** (`super_admin`, `org_admin`, `model_admin`, `policy_admin`, `auditor`, all `dept_admin`, all `member`) **cannot be deleted**.
 3. **Publish kits / skills / MCP / Agent** (optional) — upload or import through "Marketplace"; once reviewed, they appear in the desktop's marketplace.
 4. **Configure SSO** (optional) — in "SSO Bindings", enter IdP credentials and the callback URL template, so employees can log in to the desktop via SSO.
@@ -285,7 +285,7 @@ operations), see [`docs/enterprise-server-deploy.md`](docs/enterprise-server-dep
 
 ### 1. Enterprise Mode Only (Recommended for Enterprise Users)
 
-If your company has already deployed the MixcWork Enterprise Server, you only need the desktop installer + login credentials:
+If your company has already deployed the MixWork Enterprise Server, you only need the desktop installer + login credentials:
 
 1. Get the latest installer (macOS / Windows / Linux) from your company's IT channel.
 2. After installing, launch the app and choose "Enterprise" on the login page.
@@ -315,20 +315,20 @@ If you don't connect to the Enterprise Server, you can use Personal mode directl
 
 | Channel | Notes |
 | --- | --- |
-| Official site [MixcWork.app](https://MixcWork.app/) | Always the latest stable build |
+| Official site [MixWork.app](https://MixWork.app/) | Always the latest stable build |
 | Internal enterprise channel | Hosted by IT; the URL is injected into the installer either at build time or via the `ENTERPRISE_SERVER_URL` env var on startup |
 | GitHub Releases | Historical versions and betas |
 
 ### 4. Data & Log Locations (User Side)
 
-- **App data**: `<userData>/MixcWork.sqlite`
-  - macOS: `~/Library/Application Support/MixcWork/MixcWork.sqlite`
-  - Windows: `%APPDATA%/MixcWork/MixcWork.sqlite`
-  - Linux: `~/.config/MixcWork/MixcWork.sqlite`
+- **App data**: `<userData>/MixWork.sqlite`
+  - macOS: `~/Library/Application Support/MixWork/MixWork.sqlite`
+  - Windows: `%APPDATA%/MixWork/MixWork.sqlite`
+  - Linux: `~/.config/MixWork/MixWork.sqlite`
 - **Main process logs**: 7-day retention, 80 MB per file before rotation
-  - macOS: `~/Library/Logs/MixcWork/main-YYYY-MM-DD.log`
-  - Windows: `%APPDATA%/MixcWork/logs/main-YYYY-MM-DD.log`
-  - Linux: `~/.config/MixcWork/logs/main-YYYY-MM-DD.log`
+  - macOS: `~/Library/Logs/MixWork/main-YYYY-MM-DD.log`
+  - Windows: `%APPDATA%/MixWork/logs/main-YYYY-MM-DD.log`
+  - Linux: `~/.config/MixWork/logs/main-YYYY-MM-DD.log`
 - **Agent workspace memory**: `<userData>/openclaw/state/workspace-{agentId}/` (the main Agent is `workspace-main`), containing `MEMORY.md`, `USER.md`, `SOUL.md`, and daily notes `memory/YYYY-MM-DD.md`
 - **Execution engine logs**: `<userData>/openclaw/logs/gateway-*.log`, 3-day retention
 
@@ -336,14 +336,14 @@ If you don't connect to the Enterprise Server, you can use Personal mode directl
 
 ## Development Guide
 
-> Audience: developers working on MixcWork Desktop or the Enterprise Server.
+> Audience: developers working on MixWork Desktop or the Enterprise Server.
 
 ### 1. Repository Layout
 
 This repository is a single npm workspaces monorepo:
 
 ```
-MixcWork/
+MixWork/
 ├── src/                       # Desktop (Electron Main + Renderer)
 ├── enterprise_server/         # Enterprise server (Node.js + Hono + PostgreSQL)
 ├── enterprise_server/web/     # Admin console SPA (Vite + React 19 + TanStack Query + Zustand)
@@ -369,8 +369,8 @@ MixcWork/
 #### 3.1 First-Time Startup
 
 ```bash
-git clone https://github.com/MixcWork/MixcWork.git
-cd MixcWork
+git clone https://github.com/paulplay-pm/MixWork.git
+cd MixWork
 npm install
 # First launch will automatically build the execution runtime the desktop needs (takes a few minutes)
 npm run electron:dev:openclaw
@@ -436,11 +436,11 @@ Packaging bakes the execution engine runtime into `Resources/openclaw-runtime`; 
 
 Environment variables for offline / private-source packaging:
 
-- `MixcWork_PORTABLE_PYTHON_ARCHIVE`
-- `MixcWork_PORTABLE_PYTHON_URL`
-- `MixcWork_WINDOWS_EMBED_PYTHON_VERSION`
-- `MixcWork_WINDOWS_EMBED_PYTHON_URL`
-- `MixcWork_WINDOWS_GET_PIP_URL`
+- `MixWork_PORTABLE_PYTHON_ARCHIVE`
+- `MixWork_PORTABLE_PYTHON_URL`
+- `MixWork_WINDOWS_EMBED_PYTHON_VERSION`
+- `MixWork_WINDOWS_EMBED_PYTHON_URL`
+- `MixWork_WINDOWS_GET_PIP_URL`
 
 ### 4. Enterprise Server Development
 
@@ -449,17 +449,17 @@ Environment variables for offline / private-source packaging:
 npm run enterprise:install
 
 # Bring up local Postgres
-docker run -d --name MixcWork-pg \
-  -e POSTGRES_USER=MixcWork \
-  -e POSTGRES_PASSWORD=MixcWork \
-  -e POSTGRES_DB=MixcWork \
+docker run -d --name MixWork-pg \
+  -e POSTGRES_USER=MixWork \
+  -e POSTGRES_PASSWORD=MixWork \
+  -e POSTGRES_DB=MixWork \
   -p 5432:5432 \
   postgres:16
 
 # Prepare .env
 cd enterprise_server
 cp .env.example .env
-# Fill in DATABASE_URL / JWT_SECRET / MixcWork_VAULT_MASTER_KEY
+# Fill in DATABASE_URL / JWT_SECRET / MixWork_VAULT_MASTER_KEY
 
 # Run the server and admin console SPA together
 npm run dev          # Server (tsx watch, auto-restart on file changes)
@@ -483,7 +483,7 @@ npm run web:test --workspace=enterprise_server
 ### 4.5 Packaging the Production Docker Image
 
 > `docs/enterprise-server-deploy.md` covers how to **run** the image on a
-> production host (TLS, `MixcWork-server` CLI, upgrades, backups). This
+> production host (TLS, `MixWork-server` CLI, upgrades, backups). This
 > section covers how to **build** it.
 
 The recommended entry point is `scripts/package-enterprise-server.sh`,
@@ -499,7 +499,7 @@ USE_BUILDKIT=1 ./scripts/package-enterprise-server.sh --tag v2026.10.19
 
 # 4.5.2 Push directly to an internal registry (multi-arch needs --push)
 ./scripts/package-enterprise-server.sh --tag v2026.10.19 \
-    --registry registry.internal/MixcWork --push
+    --registry registry.internal/MixWork --push
 
 # 4.5.3 Multi-arch
 ./scripts/package-enterprise-server.sh --tag v2026.10.19 \
@@ -510,7 +510,7 @@ Image naming:
 
 - **Default** `enterprise-server:v<version>-<short-sha>` (single-segment;
   matches the `IMAGE_REPO` default in `docker-compose.yml` and in
-  `MixcWork-server upgrade`, so `docker compose up -d` works with no env
+  `MixWork-server upgrade`, so `docker compose up -d` works with no env
   override)
 - OCI tag chars: `[a-zA-Z0-9._-]` only — `+` is rejected by `docker push`
 - `--tag` defaults to `dev-<short-sha>` when omitted
@@ -518,7 +518,7 @@ Image naming:
 Other flags:
 
 - `--env-file <path>` + `--generate-secrets`: writes `JWT_SECRET` and
-  `MixcWork_VAULT_MASTER_KEY` (generated via `openssl rand`) into the
+  `MixWork_VAULT_MASTER_KEY` (generated via `openssl rand`) into the
   specified file. The image itself never bakes secrets — they are passed
   at runtime via `env_file:` or `docker run -e`
 - `--load-only`: same as `--load`, local docker daemon only, no push
@@ -533,9 +533,9 @@ Other flags:
 
 ```bash
 docker tag enterprise-server:v2026.10.19-abcd123 \
-    registry.internal/MixcWork/enterprise-server:v2026.10.19-abcd123
+    registry.internal/MixWork/enterprise-server:v2026.10.19-abcd123
 
-docker push registry.internal/MixcWork/enterprise-server:v2026.10.19-abcd123
+docker push registry.internal/MixWork/enterprise-server:v2026.10.19-abcd123
 ```
 
 CI does this automatically (see
@@ -544,7 +544,7 @@ only when you need to push from a build host. After it's in the internal
 registry, the production host can run:
 
 ```bash
-MixcWork-server upgrade --to v2026.10.19-abcd123
+MixWork-server upgrade --to v2026.10.19-abcd123
 ```
 
 #### 4.5.2 Quick rebuild + integration smoke test
@@ -562,11 +562,11 @@ curl -fsS http://127.0.0.1:8787/health
 Key facts about the smoke-test stack:
 
 - The image `ENTRYPOINT` is `tini + node /app/repo/dist/cli/index.js` —
-  i.e. the CLI itself, **without** a `MixcWork-server` prefix (`MixcWork-
+  i.e. the CLI itself, **without** a `MixWork-server` prefix (`MixWork-
   server` is a shim created on the production host by the `init`
   subcommand, and does not exist inside the container)
-- `docker-compose.yml` injects `DATABASE_URL=postgres://MixcWork:MixcWork@
-  host.docker.internal:5434/MixcWork` so the container can reach a Postgres
+- `docker-compose.yml` injects `DATABASE_URL=postgres://MixWork:MixWork@
+  host.docker.internal:5434/MixWork` so the container can reach a Postgres
   running on the docker host; override that line for any other DB
 - Health endpoints are `/health` (returns `{"ok":true}`) and
   `/api/health` (returns `{"ok":true}` plus the SPA's `index.html`)
@@ -575,7 +575,7 @@ Key facts about the smoke-test stack:
 
 ```bash
 docker run --rm enterprise-server:v2026.10.19-abcd123 version
-# → MixcWork-server v2026.10.19-abcd123
+# → MixWork-server v2026.10.19-abcd123
 
 docker run --rm enterprise-server:v2026.10.19-abcd123 help
 ```
@@ -585,7 +585,7 @@ docker run --rm enterprise-server:v2026.10.19-abcd123 help
 ```bash
 docker run --rm \
     --env-file enterprise_server/.env \
-    -e MixcWork_MIGRATE_DRY_RUN=1 \
+    -e MixWork_MIGRATE_DRY_RUN=1 \
     enterprise-server:v2026.10.19-abcd123 \
     migrate
 ```
@@ -698,16 +698,16 @@ Recommended flow for a desktop + Enterprise Server integration:
 
 ### Desktop
 
-- App data: `<userData>/MixcWork.sqlite`
+- App data: `<userData>/MixWork.sqlite`
 - Execution engine state, memory, generated config, gateway logs: `<userData>/openclaw/`
 - Main Agent workspace: `workspace-main`; non-main Agents: `workspace-<agentId>`
 - Main process logs (7-day retention, 80 MB rotation):
-  - macOS: `~/Library/Logs/MixcWork/main-YYYY-MM-DD.log`
-  - Windows: `%APPDATA%/MixcWork/logs/main-YYYY-MM-DD.log`
-  - Linux: `~/.config/MixcWork/logs/main-YYYY-MM-DD.log`
+  - macOS: `~/Library/Logs/MixWork/main-YYYY-MM-DD.log`
+  - Windows: `%APPDATA%/MixWork/logs/main-YYYY-MM-DD.log`
+  - Linux: `~/.config/MixWork/logs/main-YYYY-MM-DD.log`
 - Gateway capture logs (3-day retention):
-  - macOS: `~/Library/Logs/MixcWork/openclaw/gateway-YYYY-MM-DD.log`
-  - Windows: `%APPDATA%/MixcWork/openclaw/logs/gateway-YYYY-MM-DD.log`
+  - macOS: `~/Library/Logs/MixWork/openclaw/gateway-YYYY-MM-DD.log`
+  - Windows: `%APPDATA%/MixWork/openclaw/logs/gateway-YYYY-MM-DD.log`
 
 ### Enterprise Server
 
@@ -722,7 +722,7 @@ Recommended flow for a desktop + Enterprise Server integration:
 - **Desktop renderer**: `contextIsolation` on, `nodeIntegration` off, sandboxing on. The renderer can only reach the main process through the IPC APIs declared in `src/main/preload.ts`.
 - **Sensitive actions**: tool calls must pass through a permission gate and be logged.
 - **Enterprise Server**:
-  - Provider keys are encrypted at rest with AES-256-GCM, keyed from `MixcWork_VAULT_MASTER_KEY`.
+  - Provider keys are encrypted at rest with AES-256-GCM, keyed from `MixWork_VAULT_MASTER_KEY`.
   - `GET /admin/provider-keys` only returns `api_key_masked`; the plaintext is never returned.
   - Authorization failures (`admin_access_denied`) are always fail-closed (read + write). Cross-org access returns 404 without leaking existence; built-in roles are 409-locked and cannot be deleted.
   - Every admin operation is audited, distinguishing "missing capability point" (`target_type=route`) from "outside data scope" (`target_type=user`, `reason=outside_scope`).
@@ -746,4 +746,4 @@ Recommended flow for a desktop + Enterprise Server integration:
 
 [MIT License](LICENSE)
 
-Built and maintained by the MixcWork team.
+Built and maintained by the MixWork team.

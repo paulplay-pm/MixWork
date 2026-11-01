@@ -19,14 +19,14 @@ describe('api/releaseInstallers.uploadInstaller', () => {
   });
 
   test('init -> chunks -> complete posts the right endpoints and returns meta', async () => {
-    const file = new File([new Uint8Array(5).fill(65)], 'mixcwork.exe', { type: 'application/octet-stream' });
+    const file = new File([new Uint8Array(5).fill(65)], 'mixwork.exe', { type: 'application/octet-stream' });
 
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { uploadId: 'up1', chunkSize: 8 * 1024 * 1024 })); // init
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { acceptedIndex: 0, totalAccepted: 1 })); // chunk 0
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: 'up1', fileName: 'mixcwork.exe', fileSize: 5, sha256: 'abc' })); // complete
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: 'up1', fileName: 'mixwork.exe', fileSize: 5, sha256: 'abc' })); // complete
 
     const meta = await uploadInstaller({ platform: 'windowsX64', file, getToken, onProgress: vi.fn() });
-    expect(meta).toEqual({ id: 'up1', fileName: 'mixcwork.exe', fileSize: 5, sha256: 'abc' });
+    expect(meta).toEqual({ id: 'up1', fileName: 'mixwork.exe', fileSize: 5, sha256: 'abc' });
 
     const urls = fetchMock.mock.calls.map((c) => c[0] as string);
     expect(urls[0]).toBe('http://test/admin/releases/installers/init');
@@ -34,13 +34,13 @@ describe('api/releaseInstallers.uploadInstaller', () => {
     expect(urls[2]).toBe('http://test/admin/releases/installers/up1/complete');
 
     const initBody = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
-    expect(initBody).toMatchObject({ platform: 'windowsX64', fileName: 'mixcwork.exe', fileSize: 5 });
+    expect(initBody).toMatchObject({ platform: 'windowsX64', fileName: 'mixwork.exe', fileSize: 5 });
     const authHeader = (fetchMock.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
     expect(authHeader.authorization).toBe('Bearer tok');
   });
 
   test('a failed chunk surfaces a resumable InstallerUploadError', async () => {
-    const file = new File([new Uint8Array(5).fill(65)], 'mixcwork.exe', { type: 'application/octet-stream' });
+    const file = new File([new Uint8Array(5).fill(65)], 'mixwork.exe', { type: 'application/octet-stream' });
 
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { uploadId: 'up1', chunkSize: 8 * 1024 * 1024 })); // init
     fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: 'boom' })); // chunk 0 fails
@@ -58,10 +58,10 @@ describe('api/releaseInstallers.uploadInstaller', () => {
   test('resume skips already-accepted chunks', async () => {
     // 8-byte file with a 4-byte chunkSize = 2 chunks; resume from totalAccepted=1
     // sends only chunk 1 (not chunk 0) and does not call init.
-    const file = new File([new Uint8Array(8).fill(65)], 'mixcwork.exe', { type: 'application/octet-stream' });
+    const file = new File([new Uint8Array(8).fill(65)], 'mixwork.exe', { type: 'application/octet-stream' });
 
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { acceptedIndex: 1, totalAccepted: 2 })); // chunk 1
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: 'up9', fileName: 'mixcwork.exe', fileSize: 8, sha256: 'z' })); // complete
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: 'up9', fileName: 'mixwork.exe', fileSize: 8, sha256: 'z' })); // complete
 
     const meta = await uploadInstaller({
       platform: 'windowsX64',
@@ -84,7 +84,7 @@ describe('api/releaseInstallers.uploadInstaller', () => {
     // carry chunkSize: 4, and resuming from it (without an explicit chunkSize) must
     // continue at chunk 1 computed with the 4-byte slices — not re-slice at the
     // 8 MiB default (which would yield 1 chunk and skip the loop entirely).
-    const file = new File([new Uint8Array(8).fill(65)], 'mixcwork.exe', { type: 'application/octet-stream' });
+    const file = new File([new Uint8Array(8).fill(65)], 'mixwork.exe', { type: 'application/octet-stream' });
 
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { uploadId: 'up1', chunkSize: 4 })); // init (server chunkSize: 4)
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { acceptedIndex: 0, totalAccepted: 1 })); // chunk 0
@@ -101,7 +101,7 @@ describe('api/releaseInstallers.uploadInstaller', () => {
     expect(resume).toEqual({ uploadId: 'up1', totalAccepted: 1, chunkSize: 4 });
 
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { acceptedIndex: 1, totalAccepted: 2 })); // resumed chunk 1
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: 'up1', fileName: 'mixcwork.exe', fileSize: 8, sha256: 'z' })); // complete
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: 'up1', fileName: 'mixwork.exe', fileSize: 8, sha256: 'z' })); // complete
 
     const meta = await uploadInstaller({
       platform: 'windowsX64',
@@ -128,7 +128,7 @@ describe('api/releaseInstallers.uploadInstaller', () => {
     // Every upload error became just "upload failed (http 400)" — the server
     // returns `{error: 'bad_order'}` (matches the rest of the codebase). After
     // the fix the parsed code flows into the thrown Error message.
-    const file = new File([new Uint8Array(5).fill(65)], 'mixcwork.exe', { type: 'application/octet-stream' });
+    const file = new File([new Uint8Array(5).fill(65)], 'mixwork.exe', { type: 'application/octet-stream' });
 
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { uploadId: 'up1', chunkSize: 8 * 1024 * 1024 })); // init
     fetchMock.mockResolvedValueOnce(jsonResponse(400, { error: 'bad_order' })); // chunk 0 fails

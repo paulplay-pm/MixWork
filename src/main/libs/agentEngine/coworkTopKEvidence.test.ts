@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import type { MixCWorkMessage } from '../../mixcworkStore';
+import type { MixWorkMessage } from '../../mixworkStore';
 import { ContinuityCapsuleSource, type CoworkContinuityCapsule } from './coworkContinuityCapsule';
 import {
   buildCoworkTopKEvidenceBridge,
@@ -8,11 +8,11 @@ import {
 } from './coworkTopKEvidence';
 
 const message = (
-  type: MixCWorkMessage['type'],
+  type: MixWorkMessage['type'],
   content: string,
   timestamp: number,
-  metadata?: MixCWorkMessage['metadata'],
-): MixCWorkMessage => ({
+  metadata?: MixWorkMessage['metadata'],
+): MixWorkMessage => ({
   id: `${type}-${timestamp}`,
   type,
   content,
@@ -72,7 +72,7 @@ test('top-k evidence bridge retrieves bounded matching historical evidence', () 
   });
   const bridge = result.bridge;
 
-  expect(bridge).toContain('[MixCWork retrieved evidence after context compaction]');
+  expect(bridge).toContain('[MixWork retrieved evidence after context compaction]');
   expect(bridge).toContain('tool result: shell');
   expect(bridge).toContain('src/pages/Bakery.tsx');
   expect(bridge).toContain('expected ja copy');

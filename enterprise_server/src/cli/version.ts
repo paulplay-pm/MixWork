@@ -1,7 +1,7 @@
 const VERSION = process.env.VERSION ?? 'dev';
 
 export function run(): void {
-  console.log(`mixcwork-server ${VERSION}`);
+  console.log(`mixwork-server ${VERSION}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

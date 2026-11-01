@@ -1,25 +1,25 @@
-.mixcwork-sheet-preview {
+.mixwork-sheet-preview {
   height: 100%;
   width: 100%;
   overflow: hidden;
   background: #fff;
 }
 
-.mixcwork-sheet-preview .fortune-container {
+.mixwork-sheet-preview .fortune-container {
   height: 100%;
   width: 100%;
   border: 0;
   font-family: inherit;
 }
 
-.mixcwork-sheet-preview .fortune-workarea {
+.mixwork-sheet-preview .fortune-workarea {
   display: none;
 }
 
-.mixcwork-sheet-preview .fortune-stat-area {
+.mixwork-sheet-preview .fortune-stat-area {
   min-height: 22px;
 }
 
-.mixcwork-sheet-preview .luckysheet-sheets-bar {
+.mixwork-sheet-preview .luckysheet-sheets-bar {
   border-top-color: #e5e7eb;
 }

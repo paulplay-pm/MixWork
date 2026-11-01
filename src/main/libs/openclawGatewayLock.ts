@@ -11,13 +11,13 @@ import path from 'path';
  * OpenClaw v2026.6.1 src/infra/gateway-lock.ts). The payload is JSON:
  * `{ pid, createdAt, configPath, startTime? }`.
  *
- * When MixCWork force-kills the gateway (Windows SIGTERM is
+ * When MixWork force-kills the gateway (Windows SIGTERM is
  * TerminateProcess), the kill can land between the lock file's create and
  * payload write, leaving an EMPTY lock file behind. OpenClaw treats an
  * unreadable payload as owner "unknown" and only reclaims it after a 30s
  * mtime staleness window — while its own acquire timeout is 5s — so every
  * respawn within those 30s fails with "gateway already running; lock
- * timeout". MixCWork is the gateway's only supervisor, so whenever it knows
+ * timeout". MixWork is the gateway's only supervisor, so whenever it knows
  * it has no live gateway child it can safely reclaim locks whose owner is
  * dead or whose payload is unreadable.
  */

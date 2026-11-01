@@ -5,7 +5,7 @@ import {
   type MediaStatusPollPolicy,
   type MediaStatusResponse,
   pollMediaStatus,
-} from '../../../openclaw-extensions/mixcwork-media-generation/statusPolling';
+} from '../../../openclaw-extensions/mixwork-media-generation/statusPolling';
 
 const policy: MediaStatusPollPolicy = {
   timeoutMs: 100,

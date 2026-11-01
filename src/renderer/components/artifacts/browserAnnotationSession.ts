@@ -1,4 +1,4 @@
-import type { CoworkBrowserAnnotationBatch } from '@shared/mixcwork/browserAnnotations';
+import type { CoworkBrowserAnnotationBatch } from '@shared/mixwork/browserAnnotations';
 
 export function resolveRemovedActiveBrowserAnnotationBatch(
   previousBatch: CoworkBrowserAnnotationBatch | undefined,

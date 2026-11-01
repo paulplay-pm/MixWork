@@ -115,7 +115,7 @@ export type ProviderProxyResultCode =
 
 /**
  * `error` discriminants the LLM proxy writes into its JSON error bodies. The
- * desktop mirrors these (MixCWork `src/shared/enterpriseAccount/proxyWireSignals.ts`)
+ * desktop mirrors these (MixWork `src/shared/enterpriseAccount/proxyWireSignals.ts`)
  * and reads them out of the OpenClaw-preserved raw error body, so these string
  * values are the source of truth for the wire. Kept separate from
  * `ProviderProxyResultCode` (the numeric HTTP status) because the desktop keys
@@ -158,7 +158,7 @@ export type ProviderProxyQuotaReason =
  * stores in localStorage, so `verifyToken` re-validates it on every page
  * serve. Set by POST /auth/login, cleared by POST /auth/logout.
  */
-export const AuthSessionCookie = 'mixcwork_session';
+export const AuthSessionCookie = 'mixwork_session';
 
 /** Max-Age (seconds) for the session cookie. Matches the 1h JWT lifetime. */
 export const AUTH_SESSION_COOKIE_MAX_AGE_SECONDS = 60 * 60;

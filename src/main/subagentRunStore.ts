@@ -137,7 +137,7 @@ export class SubagentRunStore {
           cs.title AS parent_title,
           cs.updated_at AS parent_updated_at
         FROM subagent_runs sr
-        LEFT JOIN mixcwork_sessions cs ON cs.id = sr.parent_session_id
+        LEFT JOIN mixwork_sessions cs ON cs.id = sr.parent_session_id
         WHERE COALESCE(NULLIF(TRIM(sr.agent_id), ''), 'main') = ?
         ORDER BY sr.created_at DESC
         LIMIT ? OFFSET ?

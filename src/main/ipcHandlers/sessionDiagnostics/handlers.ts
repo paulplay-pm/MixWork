@@ -2,7 +2,7 @@ import type Database from 'better-sqlite3';
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import path from 'path';
 
-import { MixCWorkIpcChannel } from '../../../shared/mixcwork/constants';
+import { MixWorkIpcChannel } from '../../../shared/mixwork/constants';
 import {
   buildSessionDiagnosticsDefaultFileName,
   exportSessionDiagnosticsZip,
@@ -23,7 +23,7 @@ export function registerSessionDiagnosticsHandlers(
   deps: SessionDiagnosticsHandlerDeps,
 ): void {
   ipcMain.handle(
-    MixCWorkIpcChannel.ExportSessionDiagnostics,
+    MixWorkIpcChannel.ExportSessionDiagnostics,
     async (
       event,
       options: {

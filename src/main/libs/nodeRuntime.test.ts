@@ -12,7 +12,7 @@ const mockElectronState = vi.hoisted(() => ({
 vi.mock('electron', () => ({
   app: {
     getAppPath: () => mockElectronState.appPath,
-    getName: () => 'MixCWork',
+    getName: () => 'MixWork',
     getPath: (name: string) => (name === 'userData' ? mockElectronState.userData : os.tmpdir()),
     isPackaged: mockElectronState.isPackaged,
   },
@@ -31,9 +31,9 @@ function setPlatform(platform: NodeJS.Platform): void {
 }
 
 beforeEach(() => {
-  mockElectronState.appPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-node-runtime-'));
+  mockElectronState.appPath = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-node-runtime-'));
   mockElectronState.isPackaged = false;
-  mockElectronState.userData = path.join(os.tmpdir(), 'mixcwork-user-data');
+  mockElectronState.userData = path.join(os.tmpdir(), 'mixwork-user-data');
 });
 
 afterEach(() => {
@@ -42,21 +42,21 @@ afterEach(() => {
 });
 
 describe('selectSpawnableNodeCandidate', () => {
-  test('skips MixCWork bash and cmd shims on Windows and returns node.exe', () => {
+  test('skips MixWork bash and cmd shims on Windows and returns node.exe', () => {
     expect(selectSpawnableNodeCandidate([
-      'C:\\Users\\demo\\AppData\\Roaming\\MixCWork\\cowork\\bin\\node',
-      'C:\\Users\\demo\\AppData\\Roaming\\MixCWork\\cowork\\bin\\node.cmd',
+      'C:\\Users\\demo\\AppData\\Roaming\\MixWork\\cowork\\bin\\node',
+      'C:\\Users\\demo\\AppData\\Roaming\\MixWork\\cowork\\bin\\node.cmd',
       'C:\\Program Files\\nodejs\\node.exe',
-    ], 'win32', 'C:\\Users\\demo\\AppData\\Roaming\\MixCWork')).toBe(
+    ], 'win32', 'C:\\Users\\demo\\AppData\\Roaming\\MixWork')).toBe(
       'C:\\Program Files\\nodejs\\node.exe',
     );
   });
 
   test('returns null on Windows when only non-native shims are available', () => {
     expect(selectSpawnableNodeCandidate([
-      'C:\\Users\\demo\\AppData\\Roaming\\MixCWork\\cowork\\bin\\node',
-      'C:\\Users\\demo\\AppData\\Roaming\\MixCWork\\cowork\\bin\\node.cmd',
-    ], 'win32', 'C:\\Users\\demo\\AppData\\Roaming\\MixCWork')).toBeNull();
+      'C:\\Users\\demo\\AppData\\Roaming\\MixWork\\cowork\\bin\\node',
+      'C:\\Users\\demo\\AppData\\Roaming\\MixWork\\cowork\\bin\\node.cmd',
+    ], 'win32', 'C:\\Users\\demo\\AppData\\Roaming\\MixWork')).toBeNull();
   });
 
   test('keeps the first command candidate on macOS', () => {
@@ -65,11 +65,11 @@ describe('selectSpawnableNodeCandidate', () => {
 });
 
 describe('resolveNodeRuntimeForSpawn', () => {
-  test('uses real node.exe on Windows when present after MixCWork shims', () => {
+  test('uses real node.exe on Windows when present after MixWork shims', () => {
     setPlatform('win32');
 
     const runtime = resolveNodeRuntimeForSpawn({}, () => [
-      'C:\\Users\\demo\\AppData\\Roaming\\MixCWork\\cowork\\bin\\node',
+      'C:\\Users\\demo\\AppData\\Roaming\\MixWork\\cowork\\bin\\node',
       'C:\\Program Files\\nodejs\\node.exe',
     ]);
 
@@ -84,7 +84,7 @@ describe('resolveNodeRuntimeForSpawn', () => {
     setPlatform('win32');
 
     const runtime = resolveNodeRuntimeForSpawn({}, () => [
-      'C:\\Users\\demo\\AppData\\Roaming\\MixCWork\\cowork\\bin\\node',
+      'C:\\Users\\demo\\AppData\\Roaming\\MixWork\\cowork\\bin\\node',
     ]);
 
     expect(runtime.command).toBe(process.execPath);

@@ -13,7 +13,7 @@ const nodeSqlite = require('node:sqlite') as { DatabaseSync: new (p: string) => 
 describe('scripts/migrate-to-multi-tenant', () => {
   let userData: string;
   beforeEach(() => {
-    userData = mkdtempSync(join(tmpdir(), 'mixcwork-mig-'));
+    userData = mkdtempSync(join(tmpdir(), 'mixwork-mig-'));
   });
 
   test('旧 workspace-main 移到 default-org/<userId>/', async () => {
@@ -26,7 +26,7 @@ describe('scripts/migrate-to-multi-tenant', () => {
   });
 
   test('旧 users 表被 DROP', async () => {
-    const dbPath = join(userData, 'mixcwork.sqlite');
+    const dbPath = join(userData, 'mixwork.sqlite');
     const db = new nodeSqlite.DatabaseSync(dbPath);
     (db as unknown as { exec: (sql: string) => void }).exec(
       `CREATE TABLE users(id TEXT, username TEXT, password_hash TEXT)`
@@ -50,7 +50,7 @@ describe('scripts/migrate-to-multi-tenant', () => {
   });
 
   test('旧 providers 表被 DROP', async () => {
-    const dbPath = join(userData, 'mixcwork.sqlite');
+    const dbPath = join(userData, 'mixwork.sqlite');
     const db = new nodeSqlite.DatabaseSync(dbPath);
     (db as unknown as { exec: (sql: string) => void }).exec(
       `CREATE TABLE providers(id TEXT, name TEXT, api_key TEXT)`

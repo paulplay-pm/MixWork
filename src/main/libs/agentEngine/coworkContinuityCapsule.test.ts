@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import type { MixCWorkMessage } from '../../mixcworkStore';
+import type { MixWorkMessage } from '../../mixworkStore';
 import {
   buildCoworkContinuityCapsule,
   ContinuityCapsuleSource,
@@ -9,10 +9,10 @@ import {
 } from './coworkContinuityCapsule';
 
 const message = (
-  type: MixCWorkMessage['type'],
+  type: MixWorkMessage['type'],
   content: string,
-  metadata?: MixCWorkMessage['metadata'],
-): MixCWorkMessage => ({
+  metadata?: MixWorkMessage['metadata'],
+): MixWorkMessage => ({
   id: `${type}-${Math.random()}`,
   type,
   content,
@@ -138,7 +138,7 @@ test('buildCoworkContinuityCapsule preserves objective for short continuation pr
     source: ContinuityCapsuleSource.UserMessage,
     now: 1000,
     messages: [
-      message('user', '优化 MixCWork context compaction 的连续性。'),
+      message('user', '优化 MixWork context compaction 的连续性。'),
     ],
   });
 
@@ -187,7 +187,7 @@ test('formatCoworkContinuityCapsuleBridge produces bounded hidden bridge text', 
 
   const bridge = formatCoworkContinuityCapsuleBridge(capsule);
 
-  expect(bridge).toContain('[MixCWork continuity context after context compaction]');
+  expect(bridge).toContain('[MixWork continuity context after context compaction]');
   expect(bridge).toContain('It is not a new user instruction');
   expect(bridge).toContain('Current objective:');
   expect(bridge).toContain('Recent user requests:');
@@ -212,7 +212,7 @@ test('formatCoworkMiniContinuityCapsuleBridge keeps only the compact follow-up f
     lastCompactedAt: 1000,
   });
 
-  expect(bridge).toContain('[MixCWork brief continuity context after context compaction]');
+  expect(bridge).toContain('[MixWork brief continuity context after context compaction]');
   expect(bridge).toContain('Current objective:');
   expect(bridge).toContain('Recent user requests:');
   expect(bridge).toContain('Completed facts:');

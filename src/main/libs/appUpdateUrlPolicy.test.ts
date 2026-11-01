@@ -11,8 +11,8 @@ import {
 
 describe('Windows installer URL policy', () => {
   test.each([
-    'https://downloads.example.com/releases/MixCWork.EXE?channel=prod',
-    'https://replacement-cdn.example.net/releases/MixCWork.exe',
+    'https://downloads.example.com/releases/MixWork.EXE?channel=prod',
+    'https://replacement-cdn.example.net/releases/MixWork.exe',
   ])('accepts a transport-safe HTTPS exe URL without pinning its origin: %s', url => {
     expect(validateWindowsInstallerUrl(url)).toMatchObject({ trusted: true });
   });

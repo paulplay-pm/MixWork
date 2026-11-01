@@ -1,22 +1,22 @@
 import type {
-  MixCWorkSessionStatus,
-  MixCWorkStore,
-} from '../../../mixcworkStore';
+  MixWorkSessionStatus,
+  MixWorkStore,
+} from '../../../mixworkStore';
 import { parseAgentIdFromSubagentSessionKey } from './sessionKeys';
 import type {
   SubagentChildSessionCandidateParams,
   SubagentChildSessionMaterializeParams,
 } from './tracker';
 
-type SubagentSessionMaterializerStore = Pick<MixCWorkStore, 'getSession' | 'updateSession'>
-  & Partial<Pick<MixCWorkStore, 'getAgent' | 'upsertSubagentChildSession'>>;
+type SubagentSessionMaterializerStore = Pick<MixWorkStore, 'getSession' | 'updateSession'>
+  & Partial<Pick<MixWorkStore, 'getAgent' | 'upsertSubagentChildSession'>>;
 
 export interface SubagentSessionMaterializerDeps {
   store: SubagentSessionMaterializerStore;
   rememberSessionKey: (sessionId: string, sessionKey: string) => void;
   markSessionHistoryUnsynced: (sessionId: string) => void;
   notifySessionsChanged: (sessionId: string) => void;
-  emitSessionStatus: (sessionId: string, status: MixCWorkSessionStatus) => void;
+  emitSessionStatus: (sessionId: string, status: MixWorkSessionStatus) => void;
   emitComplete: (sessionId: string, sessionKey: string) => void;
   emitError: (sessionId: string, error: string) => void;
   resolveSessionIdBySessionKey: (sessionKey: string) => string | null;
@@ -30,7 +30,7 @@ export class SubagentSessionMaterializer {
     if (!params.childSessionKey.trim() || !params.childCoworkSessionId.trim()) return;
     const title = this.buildTitle(params);
     try {
-      const status: MixCWorkSessionStatus = params.status === 'error' ? 'error' : 'running';
+      const status: MixWorkSessionStatus = params.status === 'error' ? 'error' : 'running';
       if (typeof this.deps.store.upsertSubagentChildSession !== 'function') {
         return;
       }
@@ -85,7 +85,7 @@ export class SubagentSessionMaterializer {
       return;
     }
 
-    const nextStatus: MixCWorkSessionStatus = status === 'done' ? 'completed' : 'error';
+    const nextStatus: MixWorkSessionStatus = status === 'done' ? 'completed' : 'error';
     const previousStatus = this.deps.store.getSession(sessionId, 0)?.status ?? 'unknown';
     console.log(
       '[OpenClawRuntime] passive subagent finalize:',

@@ -13,7 +13,7 @@ import {
   setLoading,
   updateAgent as updateAgentAction,
 } from '../store/slices/agentSlice';
-import { clearCurrentSession } from '../store/slices/mixcworkSlice';
+import { clearCurrentSession } from '../store/slices/mixworkSlice';
 import { clearAgentSelectedModel } from '../store/slices/modelSlice';
 import { clearActiveSkills, setActiveSkillIds } from '../store/slices/skillSlice';
 import type { Agent, PresetAgent } from '../types/agent';
@@ -259,8 +259,8 @@ class AgentService {
       store.dispatch(clearAgentSelectedModel(id));
       if (wasCurrentAgent) {
         this.switchAgent(AgentId.Main);
-        const { mixcworkService } = await import('./mixcwork');
-        mixcworkService.loadSessions(AgentId.Main);
+        const { mixworkService } = await import('./mixwork');
+        mixworkService.loadSessions(AgentId.Main);
       }
       return true;
     } catch (error) {

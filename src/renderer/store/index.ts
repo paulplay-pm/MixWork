@@ -8,7 +8,7 @@ import imReducer from './slices/imSlice';
 import kitReducer from './slices/kitSlice';
 import mcpAuthReducer from './slices/mcpAuthSlice';
 import mcpReducer from './slices/mcpSlice';
-import coworkReducer from './slices/mixcworkSlice';
+import coworkReducer from './slices/mixworkSlice';
 import modelReducer from './slices/modelSlice';
 import quickActionReducer from './slices/quickActionSlice';
 import scheduledTaskReducer from './slices/scheduledTaskSlice';

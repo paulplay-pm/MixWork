@@ -62,7 +62,7 @@ export function getModelAnalyticsParams(
   }
 
   const modelSource =
-    resolvedModel.isServerModel || resolvedModel.providerKey === ProviderName.MixcworkServer
+    resolvedModel.isServerModel || resolvedModel.providerKey === ProviderName.MixWorkServer
       ? 'package'
       : 'custom';
 

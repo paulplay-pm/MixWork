@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MixcWork</title>
+    <title>MixWork</title>
     <style>
       /* Pre-React splash: a static replica of EngineStartupOverlay so the whole
          startup (window shown -> renderer init -> engine starting) is one
@@ -193,10 +193,10 @@
     </style>
     <script>
       // 在页面加载前预设主题，避免闪烁。
-      // 'mixcwork-theme-appearance' 由 theme-manager.ts 在每次应用主题时写入。
+      // 'mixwork-theme-appearance' 由 theme-manager.ts 在每次应用主题时写入。
       (function () {
         try {
-          var appearance = localStorage.getItem('mixcwork-theme-appearance');
+          var appearance = localStorage.getItem('mixwork-theme-appearance');
           if (appearance !== 'dark' && appearance !== 'light') {
             appearance = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
           }
@@ -215,7 +215,7 @@
         <div class="splash-content">
           <div class="splash-logo-wrap">
             <div class="splash-logo-glow"></div>
-            <img class="splash-logo" src="mixcwork-small.png" alt="MixcWork" width="72" height="72" draggable="false" />
+            <img class="splash-logo" src="mixwork-small.png" alt="MixWork" width="72" height="72" draggable="false" />
           </div>
           <h1 class="splash-title" id="splash-title">AI 引擎启动中</h1>
           <p class="splash-subtitle" id="splash-subtitle">加载中...</p>
@@ -236,11 +236,11 @@
     </div>
     <script>
       // 本地化启动屏文案并随机选一条小提示。
-      // 'mixcwork-language' 由 i18n.ts 在语言确定后写入；首次启动回退到系统语言。
+      // 'mixwork-language' 由 i18n.ts 在语言确定后写入；首次启动回退到系统语言。
       // 文案需与 src/renderer/services/i18n.ts 中的 engineStarting* / loading 保持同步。
       (function () {
         try {
-          var lang = localStorage.getItem('mixcwork-language');
+          var lang = localStorage.getItem('mixwork-language');
           if (lang !== 'zh' && lang !== 'en') {
             lang = navigator.language === 'zh-CN' ? 'zh' : 'en';
           }
@@ -288,7 +288,7 @@
               dotButtons[j].className = j === idx ? 'splash-dot splash-dot-active' : 'splash-dot';
             }
             try {
-              sessionStorage.setItem('mixcwork-splash-tip-index', String(idx));
+              sessionStorage.setItem('mixwork-splash-tip-index', String(idx));
             } catch (e) {
               /* storage unavailable */
             }

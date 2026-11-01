@@ -6,7 +6,7 @@
 |---|---|
 | `DATABASE_URL` | `postgres://user:pass@host:5432/db` |
 | `JWT_SECRET` | ≥32 字符随机串；用于签发与校验 JWT |
-| `MIXCWORK_VAULT_MASTER_KEY` | 32 字节 base64（生成：`openssl rand -base64 32`）；provider key 加密主密钥 |
+| `MIXWORK_VAULT_MASTER_KEY` | 32 字节 base64（生成：`openssl rand -base64 32`）；provider key 加密主密钥 |
 | `PORT` | 默认 `8787` |
 | `ORG_ID` | （可选）CLI init 使用的 org id，默认 `default-org` |
 
@@ -19,7 +19,7 @@ npm run enterprise:install
 # 2. 配置环境变量
 export DATABASE_URL='postgres://...'
 export JWT_SECRET="$(openssl rand -hex 32)"
-export MIXCWORK_VAULT_MASTER_KEY="$(openssl rand -base64 32)"
+export MIXWORK_VAULT_MASTER_KEY="$(openssl rand -base64 32)"
 
 # 3. 初始化数据库 + 打印 Super Admin 邀请码
 npm run enterprise:init

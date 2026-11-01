@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Generate the MixCWork system-tray icons.
+"""Generate the MixWork system-tray icons.
 
-Composes the orange node-network mark (lifted from `public/mixcwork.png`) on a
+Composes the orange node-network mark (lifted from `public/mixwork.png`) on a
 transparent canvas so it reads against both light and dark menu bars /
 taskbars. Emits:
   resources/tray/tray-icon.png         48x48  Linux

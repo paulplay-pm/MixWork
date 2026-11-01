@@ -193,7 +193,7 @@ describe('openOauthFlow', () => {
     expect(opts.webPreferences.sandbox).toBe(true);
     expect(opts.webPreferences.contextIsolation).toBe(true);
     expect(opts.webPreferences.nodeIntegration).toBe(false);
-    expect(opts.webPreferences.partition).toBe('mixcwork-sso-oauth');
+    expect(opts.webPreferences.partition).toBe('mixwork-sso-oauth');
     // The window was closed after settlement.
     expect(win._closed).toBe(true);
   });
@@ -220,7 +220,7 @@ describe('openOauthFlow', () => {
     const partitions = lastWindows.map(
       (w) => (w._opts as { webPreferences: { partition: string } }).webPreferences.partition
     );
-    expect(partitions).toEqual(['mixcwork-sso-oauth', 'mixcwork-sso-oauth']);
+    expect(partitions).toEqual(['mixwork-sso-oauth', 'mixwork-sso-oauth']);
   });
 
   test('rejects when timeout elapses with no credential', async () => {

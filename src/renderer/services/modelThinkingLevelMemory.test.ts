@@ -1,4 +1,4 @@
-import { MixCWorkRequestCapability } from '@shared/providers/mixcworkRequestOptions';
+import { MixWorkRequestCapability } from '@shared/providers/mixworkRequestOptions';
 import { ModelThinkingLevel, OpenClawThinkingLevel } from '@shared/providers/modelThinking';
 import { afterEach, beforeEach, expect, test } from 'vitest';
 
@@ -9,15 +9,15 @@ import {
   resolveThinkingLevelForModel,
 } from './modelThinkingLevelMemory';
 
-const STORAGE_KEY = 'mixcwork.model-thinking-levels';
-const PRO_KEY = 'mixcwork-server::deepseek-v4-pro';
-const FLASH_KEY = 'mixcwork-server::deepseek-v4-flash';
+const STORAGE_KEY = 'mixwork.model-thinking-levels';
+const PRO_KEY = 'mixwork-server::deepseek-v4-pro';
+const FLASH_KEY = 'mixwork-server::deepseek-v4-flash';
 
 const PRO_MODEL = {
   id: 'deepseek-v4-pro',
-  providerKey: 'mixcwork-server',
+  providerKey: 'mixwork-server',
   isServerModel: true,
-  requestCapabilities: [MixCWorkRequestCapability.OptionsV1],
+  requestCapabilities: [MixWorkRequestCapability.OptionsV1],
   thinkingConfig: {
     options: [
       { level: ModelThinkingLevel.High, openclawLevel: OpenClawThinkingLevel.High },

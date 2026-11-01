@@ -57,7 +57,7 @@ vi.mock('electron', () => ({
   },
 }));
 
-import { SESSION_AGNOSTIC_PERMISSION_SESSION_ID } from '../../shared/mixcwork/constants';
+import { SESSION_AGNOSTIC_PERMISSION_SESSION_ID } from '../../shared/mixwork/constants';
 import { DesktopNotificationManager } from './desktopNotificationManager';
 
 const { FakeNotification } = hoisted;

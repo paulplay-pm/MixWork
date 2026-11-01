@@ -1,6 +1,6 @@
-import type { MixCWorkSessionStatus } from '../../mixcworkStore';
+import type { MixWorkSessionStatus } from '../../mixworkStore';
 
-export function resolveChannelSessionTerminalStatus(rawStatus: string): MixCWorkSessionStatus | null {
+export function resolveChannelSessionTerminalStatus(rawStatus: string): MixWorkSessionStatus | null {
   if (
     rawStatus === 'failed' ||
     rawStatus === 'killed' ||
@@ -29,8 +29,8 @@ export function resolveChannelSessionTerminalStatus(rawStatus: string): MixCWork
 export function resolveChannelSessionNextStatus(input: {
   hasActiveRun: boolean | null;
   rawStatus: string;
-  currentStatus: MixCWorkSessionStatus;
-}): MixCWorkSessionStatus | null {
+  currentStatus: MixWorkSessionStatus;
+}): MixWorkSessionStatus | null {
   const { hasActiveRun, rawStatus, currentStatus } = input;
 
   if (hasActiveRun === true) return 'running';

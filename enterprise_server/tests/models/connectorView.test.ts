@@ -172,7 +172,7 @@ describe('mapPublicConnector.oauth (user-oauth whitelist)', () => {
     // sends — only the server's own value is, so the console, the desktop
     // and the IdP registration cannot drift apart.
     const v = mapPublicConnector(
-      makeRow({ ...base, auth_config: { ...base.auth_config, callbackUrl: 'https://oauth.mixcwork.cn/mcp/callback' } }),
+      makeRow({ ...base, auth_config: { ...base.auth_config, callbackUrl: 'https://oauth.mixwork.cn/mcp/callback' } }),
     );
     expect(v.oauth?.redirectUri).toBe(mcpOAuthRedirectUri());
     expect(v.oauth?.redirectUri).toBe('http://127.0.0.1:53232/callback');

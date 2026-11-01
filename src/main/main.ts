@@ -88,7 +88,7 @@ import { canonicalizeMediaModelId, HAPPYHORSE_1_1_MODEL_ID, mediaModelDisplayNam
 import {
   type CoworkBrowserAnnotationMessageBatch,
   normalizeBrowserAnnotationBatches,
-} from '../shared/mixcwork/browserAnnotations';
+} from '../shared/mixwork/browserAnnotations';
 import {
   COWORK_BTW_EVENT_QUESTION_MAX_CHARS,
   COWORK_BTW_IDENTIFIER_MAX_CHARS,
@@ -99,36 +99,36 @@ import {
   type CoworkBtwSubmitRequest,
   type CoworkBtwSubmitResponse,
   normalizeCoworkBtwQuestion,
-} from '../shared/mixcwork/btw';
+} from '../shared/mixwork/btw';
 import {
-  MIXCWORK_MESSAGE_PAGE_SIZE,
-  MIXCWORK_SEARCH_MESSAGE_PAGE_MAX_SIZE,
-  MIXCWORK_SEARCH_MESSAGE_PAGE_SIZE,
-  MIXCWORK_SESSION_PAGE_SIZE,
-  MIXCWORK_TEMP_ATTACHMENTS_DIR_NAME,
-  MIXCWORK_TEMP_DIR_NAME,
-  MixCWorkContextUsageFailureReason,
-  MixCWorkContextUsageSource,
-  MixCWorkForkMode,
-  MixCWorkIpcChannel,
-} from '../shared/mixcwork/constants';
+  MIXWORK_MESSAGE_PAGE_SIZE,
+  MIXWORK_SEARCH_MESSAGE_PAGE_MAX_SIZE,
+  MIXWORK_SEARCH_MESSAGE_PAGE_SIZE,
+  MIXWORK_SESSION_PAGE_SIZE,
+  MIXWORK_TEMP_ATTACHMENTS_DIR_NAME,
+  MIXWORK_TEMP_DIR_NAME,
+  MixWorkContextUsageFailureReason,
+  MixWorkContextUsageSource,
+  MixWorkForkMode,
+  MixWorkIpcChannel,
+} from '../shared/mixwork/constants';
 import {
   buildCoworkImageAttachmentPreviews,
   type CoworkImageAttachmentPreview,
   formatCoworkImageAttachmentLimit,
   validateCoworkImageAttachmentSize,
-} from '../shared/mixcwork/imageAttachments';
-import { containsPlanModePrompt } from '../shared/mixcwork/planMode';
-import type { CoworkSearchMessageCursor } from '../shared/mixcwork/search';
+} from '../shared/mixwork/imageAttachments';
+import { containsPlanModePrompt } from '../shared/mixwork/planMode';
+import type { CoworkSearchMessageCursor } from '../shared/mixwork/search';
 import {
   type CoworkSelectedTextSnippet,
   normalizeCoworkSelectedTextSnippets,
-} from '../shared/mixcwork/selectedText';
+} from '../shared/mixwork/selectedText';
 import {
   CoworkSteerRejectReason,
   CoworkSteerStatus,
-} from '../shared/mixcwork/steer';
-import { stripNullChars } from '../shared/mixcwork/text';
+} from '../shared/mixwork/steer';
+import { stripNullChars } from '../shared/mixwork/text';
 import {
   normalizeNotificationSettings,
   type NotificationSettings,
@@ -230,8 +230,8 @@ import { LibraryIndexService } from './library/libraryIndexService';
 import { registerLibraryIpcHandlers } from './library/libraryIpc';
 import { LibraryLocalStore } from './library/libraryLocalStore';
 import {
-  type MixCWorkAgentEngine,
-  MixCWorkEngineRouter,
+  type MixWorkAgentEngine,
+  MixWorkEngineRouter,
   OpenClawRuntimeAdapter,
   type PermissionResult,
 } from './libs/agentEngine';
@@ -308,24 +308,24 @@ import { LibraryThumbnailRenderer } from './libs/libraryThumbnailRenderer';
 import { LibraryThumbnailService } from './libs/libraryThumbnailService';
 import { exportLogsZip } from './libs/logExport';
 import { inferImageMimeTypeFromDataUrl, type PersistedGeneratedImageAsset, persistGeneratedImageAssets, type PersistGeneratedImageAssetsResult, persistGeneratedVideoAssets, type RemoteGeneratedMediaAsset } from './libs/mediaAssetPersistence';
-import { saveMixCWorkApiConfig } from './libs/mixcworkConfigStore';
-import { getMixCWorkLogPath } from './libs/mixcworkLogger';
+import { saveMixWorkApiConfig } from './libs/mixworkConfigStore';
+import { getMixWorkLogPath } from './libs/mixworkLogger';
 import {
   registerProxyTokenRefresher,
   startCoworkOpenAICompatProxy,
   stopCoworkOpenAICompatProxy,
-} from './libs/mixcworkOpenAICompatProxy';
+} from './libs/mixworkOpenAICompatProxy';
 import {
-  createMixCWorkTempJanitor,
+  createMixWorkTempJanitor,
   ensureCoworkTempGitignore,
   findCoworkTempRoot,
-  type MixCWorkTempJanitor,
-} from './libs/mixcworkTempJanitor';
+  type MixWorkTempJanitor,
+} from './libs/mixworkTempJanitor';
 import {
   generateSessionTitle,
   getElectronNodeRuntimePath,
   probeCoworkModelReadiness,
-} from './libs/mixcworkUtil';
+} from './libs/mixworkUtil';
 import {
   migrateAgentModelRefs,
   parsePrimaryModelRef,
@@ -445,7 +445,7 @@ import {
   MediaGenerationRequestType,
   summarizeMediaGenerationParamsForLog,
 } from './mediaGenerationReferences';
-import { type MixCWorkForkContextMessage, type MixCWorkMessage, MixCWorkStore } from './mixcworkStore';
+import { type MixWorkForkContextMessage, type MixWorkMessage, MixWorkStore } from './mixworkStore';
 import { OpenClawSessionIpc } from './openclawSession/constants';
 import { OpenClawSessionPolicyIpc } from './openclawSessionPolicy/constants';
 import {
@@ -501,12 +501,12 @@ const gwDiagTs = (): string => {
 // Configure the app identity before any OS-level surfaces are created.
 app.name = APP_NAME;
 app.setName(APP_NAME);
-// Brand casing moved from MixCWork to MixcWork. Electron derives userData —
+// Brand casing moved from MixWork to MixWork. Electron derives userData —
 // and therefore the SQLite database, sessions and OpenClaw state — from the
 // app name, so keep an existing install on its original directory instead of
 // stranding it under a new folder.
 {
-  const legacyUserDataDir = path.join(app.getPath('appData'), 'MixCWork');
+  const legacyUserDataDir = path.join(app.getPath('appData'), 'MixWork');
   const currentUserDataDir = app.getPath('userData');
   if (legacyUserDataDir !== currentUserDataDir
     && fs.existsSync(legacyUserDataDir)
@@ -1294,44 +1294,44 @@ const buildAvailableOpenClawProviders = (): Record<string, { models: Array<{ id:
     .map(model => model.modelId.trim())
     .filter(Boolean);
   if (serverModelIds.length > 0) {
-    const serverProvider = providerMap[OpenClawProviderId.MixcworkServer]
+    const serverProvider = providerMap[OpenClawProviderId.MixWorkServer]
       ?? { models: [] };
     for (const modelId of serverModelIds) {
       if (!serverProvider.models.some(model => model.id === modelId)) {
         serverProvider.models.push({ id: modelId });
       }
     }
-    providerMap[OpenClawProviderId.MixcworkServer] = serverProvider;
+    providerMap[OpenClawProviderId.MixWorkServer] = serverProvider;
   }
 
   return providerMap;
 };
 
-// Canonicalize a mixcwork-server model ref's model portion to the catalog UUID.
+// Canonicalize a mixwork-server model ref's model portion to the catalog UUID.
 // New refs already carry the UUID and are returned as-is; legacy refs saved
 // before the enterprise identity moved to the catalog UUID carry the upstream
 // name, which the enterprise cache resolves to a UUID when the name is unique
 // (an ambiguous name resolves to null and is left unchanged so the user
 // re-picks rather than we guess). Non-server refs and unresolvable refs are
 // returned unchanged. This is the single choke point that keeps old persisted
-// `mixcwork-server/<name>` refs routing against the now-UUID-keyed OpenClaw
+// `mixwork-server/<name>` refs routing against the now-UUID-keyed OpenClaw
 // `models[].id` set.
-const canonicalizeMixcworkServerRef = (modelRef: string): string => {
+const canonicalizeMixWorkServerRef = (modelRef: string): string => {
   const parsed = parsePrimaryModelRef(modelRef);
-  if (!parsed || parsed.providerId !== ProviderName.MixcworkServer) return modelRef;
+  if (!parsed || parsed.providerId !== ProviderName.MixWorkServer) return modelRef;
   const canonical = enterpriseModelCache.canonicalModelId(parsed.modelId);
-  return canonical ? `${OpenClawProviderId.MixcworkServer}/${canonical}` : modelRef;
+  return canonical ? `${OpenClawProviderId.MixWorkServer}/${canonical}` : modelRef;
 };
 
 const normalizeOpenClawModelRef = (modelRef: string): string => {
   const normalized = modelRef.trim();
   if (!normalized) return normalized;
 
-  // Resolve a legacy `mixcwork-server/<name>` ref to its catalog UUID before
+  // Resolve a legacy `mixwork-server/<name>` ref to its catalog UUID before
   // qualification so it matches the UUID-keyed `models[].id` the gateway routes
   // on. Qualified refs return the canonical `primaryModel`; the (possibly
   // canonicalized) input is the fallback for unresolved refs.
-  const canonicalized = canonicalizeMixcworkServerRef(normalized);
+  const canonicalized = canonicalizeMixWorkServerRef(normalized);
 
   const qualification = resolveQualifiedAgentModelRef({
     agentModel: canonicalized,
@@ -1366,10 +1366,10 @@ const resolveInlineAttachmentDir = (cwd?: string): string => {
   if (trimmed) {
     const resolved = path.resolve(trimmed);
     if (fs.existsSync(resolved) && fs.statSync(resolved).isDirectory()) {
-      return path.join(resolved, MIXCWORK_TEMP_DIR_NAME, MIXCWORK_TEMP_ATTACHMENTS_DIR_NAME, 'manual');
+      return path.join(resolved, MIXWORK_TEMP_DIR_NAME, MIXWORK_TEMP_ATTACHMENTS_DIR_NAME, 'manual');
     }
   }
-  return path.join(app.getPath('temp'), 'mixcwork', 'attachments');
+  return path.join(app.getPath('temp'), 'mixwork', 'attachments');
 };
 
 const ensurePngFileName = (value: string): string => {
@@ -1386,7 +1386,7 @@ const buildLogExportFileName = (): string => {
   const now = new Date();
   const datePart = `${now.getFullYear()}${padTwoDigits(now.getMonth() + 1)}${padTwoDigits(now.getDate())}`;
   const timePart = `${padTwoDigits(now.getHours())}${padTwoDigits(now.getMinutes())}${padTwoDigits(now.getSeconds())}`;
-  return `mixcwork-logs-${datePart}-${timePart}.zip`;
+  return `mixwork-logs-${datePart}-${timePart}.zip`;
 };
 
 const OPENCLAW_DAILY_LOG_RETENTION_DAYS = 7;
@@ -1467,7 +1467,7 @@ const sanitizeIpcPayload = (value: unknown, depth = 0, seen?: WeakSet<object>): 
   return String(value);
 };
 
-const sanitizeMixCWorkMessageForIpc = (message: unknown): unknown => {
+const sanitizeMixWorkMessageForIpc = (message: unknown): unknown => {
   if (!message || typeof message !== 'object') {
     return message;
   }
@@ -1574,7 +1574,7 @@ const savePngWithDialog = async (
   const defaultName = getDefaultExportImageName(defaultFileName);
   // Automation hook: end-to-end tests cannot drive the native save dialog, so
   // an explicit directory override saves the PNG directly.
-  const autosaveDir = process.env.MIXCWORK_EXPORT_IMAGE_AUTOSAVE_DIR;
+  const autosaveDir = process.env.MIXWORK_EXPORT_IMAGE_AUTOSAVE_DIR;
   if (autosaveDir) {
     const outputPath = ensurePngFileName(path.join(autosaveDir, defaultName));
     await fs.promises.mkdir(autosaveDir, { recursive: true });
@@ -1635,8 +1635,8 @@ const DEV_SERVER_URL = process.env.ELECTRON_START_URL || 'http://localhost:5175'
 const enableVerboseLogging =
   process.env.ELECTRON_ENABLE_LOGGING === '1' || process.env.ELECTRON_ENABLE_LOGGING === 'true';
 const disableGpu =
-  process.env.MIXCWORK_DISABLE_GPU === '1' ||
-  process.env.MIXCWORK_DISABLE_GPU === 'true' ||
+  process.env.MIXWORK_DISABLE_GPU === '1' ||
+  process.env.MIXWORK_DISABLE_GPU === 'true' ||
   process.env.ELECTRON_DISABLE_GPU === '1' ||
   process.env.ELECTRON_DISABLE_GPU === 'true';
 const reloadOnChildProcessGone =
@@ -1754,9 +1754,9 @@ process.on('exit', code => {
 });
 
 let store: SqliteStore | null = null;
-let mixcworkStore: MixCWorkStore | null = null;
+let mixworkStore: MixWorkStore | null = null;
 let openClawRuntimeAdapter: OpenClawRuntimeAdapter | null = null;
-let mixcworkEngineRouter: MixCWorkEngineRouter | null = null;
+let mixworkEngineRouter: MixWorkEngineRouter | null = null;
 let skillManager: SkillManager | null = null;
 let mcpRuntime: McpRuntime | null = null;
 let skinRuntimeController: SkinRuntimeController | null = null;
@@ -1821,7 +1821,7 @@ const bootstrapMultiTenantEnterprise = (): { configured: boolean; url: string | 
   // Hook the Login handler so that after a successful login the freshly
   // populated enterprise catalog is picked up by the OpenClaw config sync
   // (which would otherwise have run at boot with an empty cache and
-  // emitted no MIXCWORK_APIKEY_* env keys).
+  // emitted no MIXWORK_APIKEY_* env keys).
   setEnterpriseLoginSyncHook(async () => {
     await syncOpenClawConfig({
       reason: 'enterprise-login-refresh',
@@ -1831,7 +1831,7 @@ const bootstrapMultiTenantEnterprise = (): { configured: boolean; url: string | 
     // the model-cache pattern above; failure is logged, not surfaced.
     try {
       await runEnterpriseAgentSync({
-        getMixCWorkStore,
+        getMixWorkStore,
         getEnterpriseAgentPrefsStore,
         getSkillManager,
         getAvailableModelsRef: resolveDefaultAgentModelRef,
@@ -1858,7 +1858,7 @@ const bootstrapMultiTenantEnterprise = (): { configured: boolean; url: string | 
   void (async () => {
     try {
       await runEnterpriseAgentSync({
-        getMixCWorkStore,
+        getMixWorkStore,
         getEnterpriseAgentPrefsStore,
         getSkillManager,
         getAvailableModelsRef: resolveDefaultAgentModelRef,
@@ -2082,22 +2082,22 @@ const ensureOpenClawRunningForCowork = async () => {
   return await manager.startGateway('ensure-running-for-cowork');
 };
 
-const getMixCWorkStore = () => {
-  if (!mixcworkStore) {
+const getMixWorkStore = () => {
+  if (!mixworkStore) {
     const sqliteStore = getStore();
-    mixcworkStore = new MixCWorkStore(sqliteStore.getDatabase());
-    const cleaned = mixcworkStore.autoDeleteNonPersonalMemories();
+    mixworkStore = new MixWorkStore(sqliteStore.getDatabase());
+    const cleaned = mixworkStore.autoDeleteNonPersonalMemories();
     if (cleaned > 0) {
       console.info(`[cowork-memory] Auto-deleted ${cleaned} non-personal/procedural memories`);
     }
   }
-  return mixcworkStore;
+  return mixworkStore;
 };
 
 let agentManager: AgentManager | null = null;
 const getAgentManager = () => {
   if (!agentManager) {
-    agentManager = new AgentManager(getMixCWorkStore());
+    agentManager = new AgentManager(getMixWorkStore());
   }
   return agentManager;
 };
@@ -2114,7 +2114,7 @@ const resolveAgentDefaultWorkingDirectory = (agentId?: string): string =>
   resolveAgentDefaultWorkingDirectoryFromDeps(agentId, {
     getAgent: (id) => getAgentManager().getAgent(id),
     getEnterpriseAgentPrefs: (enterpriseAgentId) => getEnterpriseAgentPrefsStore().get(enterpriseAgentId),
-    getGlobalDefaultCwd: () => getMixCWorkStore().getConfig().workingDirectory.trim(),
+    getGlobalDefaultCwd: () => getMixWorkStore().getConfig().workingDirectory.trim(),
   });
 
 const resolveSessionWorkingDirectory = (options: { cwd?: string; agentId?: string }): string => {
@@ -2123,37 +2123,37 @@ const resolveSessionWorkingDirectory = (options: { cwd?: string; agentId?: strin
   return resolveAgentDefaultWorkingDirectory(options.agentId);
 };
 
-const isMixcworkServerModelRef = (modelRef: string): boolean => {
+const isMixWorkServerModelRef = (modelRef: string): boolean => {
   const normalized = modelRef.trim();
   if (!normalized) return false;
 
   const parsed = parsePrimaryModelRef(normalized);
   if (parsed) {
-    return parsed.providerId === ProviderName.MixcworkServer;
+    return parsed.providerId === ProviderName.MixWorkServer;
   }
 
   return getAllServerModelMetadata().some(model => model.modelId === normalized);
 };
 
 const shouldRefreshServerQuotaForSession = (sessionId: string): boolean => {
-  const session = getMixCWorkStore().getSession(sessionId);
+  const session = getMixWorkStore().getSession(sessionId);
   const sessionModelRef = session?.modelOverride?.trim();
   if (sessionModelRef) {
-    return isMixcworkServerModelRef(sessionModelRef);
+    return isMixWorkServerModelRef(sessionModelRef);
   }
 
   const agentModelRef = session?.agentId
     ? getAgentManager().getAgent(session.agentId)?.model?.trim()
     : '';
   if (agentModelRef) {
-    return isMixcworkServerModelRef(agentModelRef);
+    return isMixWorkServerModelRef(agentModelRef);
   }
 
   const apiConfig = resolveCurrentApiConfig();
-  return apiConfig.providerMetadata?.providerName === ProviderName.MixcworkServer;
+  return apiConfig.providerMetadata?.providerName === ProviderName.MixWorkServer;
 };
 
-const resolveMixCWorkAgentEngine = (): MixCWorkAgentEngine => {
+const resolveMixWorkAgentEngine = (): MixWorkAgentEngine => {
   return 'openclaw';
 };
 
@@ -2161,7 +2161,7 @@ const getOpenClawConfigSync = (): OpenClawConfigSync => {
   if (!openClawConfigSync) {
     openClawConfigSync = new OpenClawConfigSync({
       engineManager: getOpenClawEngineManager(),
-      getMixCWorkConfig: () => getMixCWorkStore().getConfig(),
+      getMixWorkConfig: () => getMixWorkStore().getConfig(),
       getBrowserWebAccessConfig: () => getStore().get<AppConfigSettings>('app_config')?.browserWebAccess,
       isEnterprise: () => !!getStore().get('enterprise_config'),
       getOpenClawSessionPolicy: () => loadOpenClawSessionPolicyConfig(getStore()),
@@ -2233,10 +2233,10 @@ const getOpenClawConfigSync = (): OpenClawConfigSync => {
       getAskUserCallbackUrl: () => getMcpRuntime().getAskUserCallbackUrl(),
       getMediaCallbackUrl: () => getMcpRuntime().getMediaCallbackUrl(),
       getMcpBridgeSecret: () => getMcpRuntime().getBridgeSecret(),
-      getAgents: () => getMixCWorkStore().listAgents(),
+      getAgents: () => getMixWorkStore().listAgents(),
       getAgentModelOverride: (enterpriseAgentId) => getEnterpriseAgentPrefsStore().getModel(enterpriseAgentId),
       getUserPlugins: () =>
-        getMixCWorkStore()
+        getMixWorkStore()
           .listUserPlugins()
           .filter(p => !isHiddenUserPluginId(p.pluginId))
           .map(p => ({ pluginId: p.pluginId, enabled: p.enabled, config: p.config })),
@@ -2892,10 +2892,10 @@ const repairOpenClawGatewayState = (): Promise<OpenClawGatewayRepairResult> => {
 
 const bindCoworkRuntimeForwarder = (): void => {
   if (coworkRuntimeForwarderBound) return;
-  const runtime = getMixCWorkEngineRouter();
+  const runtime = getMixWorkEngineRouter();
 
   runtime.on('message', (sessionId: string, message: unknown, beforeMessageId?: string) => {
-    const safeMessage = sanitizeMixCWorkMessageForIpc(message);
+    const safeMessage = sanitizeMixWorkMessageForIpc(message);
     const windows = BrowserWindow.getAllWindows();
     const messageType = typeof message === 'object' && message && 'type' in message
       ? (message as { type?: unknown }).type
@@ -2907,7 +2907,7 @@ const bindCoworkRuntimeForwarder = (): void => {
     windows.forEach((win) => {
       if (win.isDestroyed()) return;
       try {
-        win.webContents.send('mixcwork:stream:message', { sessionId, message: safeMessage, beforeMessageId });
+        win.webContents.send('mixwork:stream:message', { sessionId, message: safeMessage, beforeMessageId });
       } catch (error) {
         console.error('Failed to forward cowork message:', error);
       }
@@ -2922,7 +2922,7 @@ const bindCoworkRuntimeForwarder = (): void => {
       windows.forEach(win => {
         if (win.isDestroyed()) return;
         try {
-          win.webContents.send('mixcwork:stream:messageUpdate', {
+          win.webContents.send('mixwork:stream:messageUpdate', {
             sessionId,
             messageId,
             content: safeContent,
@@ -2940,7 +2940,7 @@ const bindCoworkRuntimeForwarder = (): void => {
     windows.forEach(win => {
       if (win.isDestroyed()) return;
       try {
-        win.webContents.send('mixcwork:stream:sessionStatus', { sessionId, status });
+        win.webContents.send('mixwork:stream:sessionStatus', { sessionId, status });
       } catch (error) {
         console.error('[CoworkRuntime] failed to forward session status:', error);
       }
@@ -2963,7 +2963,7 @@ const bindCoworkRuntimeForwarder = (): void => {
     windows.forEach(win => {
       if (win.isDestroyed()) return;
       try {
-        win.webContents.send(MixCWorkIpcChannel.StreamBtwResult, {
+        win.webContents.send(MixWorkIpcChannel.StreamBtwResult, {
           sessionId,
           result: safeResult,
         });
@@ -2978,7 +2978,7 @@ const bindCoworkRuntimeForwarder = (): void => {
     windows.forEach(win => {
       if (win.isDestroyed()) return;
       try {
-        win.webContents.send('mixcwork:stream:contextUsage', { sessionId, usage });
+        win.webContents.send('mixwork:stream:contextUsage', { sessionId, usage });
       } catch (error) {
         console.error('[CoworkRuntime] failed to forward context usage:', error);
       }
@@ -2990,7 +2990,7 @@ const bindCoworkRuntimeForwarder = (): void => {
     windows.forEach(win => {
       if (win.isDestroyed()) return;
       try {
-        win.webContents.send(MixCWorkIpcChannel.StreamGoal, { sessionId, goal });
+        win.webContents.send(MixWorkIpcChannel.StreamGoal, { sessionId, goal });
       } catch (error) {
         console.error('[CoworkRuntime] failed to forward goal update:', error);
       }
@@ -3005,7 +3005,7 @@ const bindCoworkRuntimeForwarder = (): void => {
     windows.forEach(win => {
       if (win.isDestroyed()) return;
       try {
-        win.webContents.send('mixcwork:stream:contextMaintenance', { sessionId, active });
+        win.webContents.send('mixwork:stream:contextMaintenance', { sessionId, active });
       } catch (error) {
         console.error('[CoworkRuntime] failed to forward context maintenance status:', error);
       }
@@ -3021,7 +3021,7 @@ const bindCoworkRuntimeForwarder = (): void => {
     windows.forEach(win => {
       if (win.isDestroyed()) return;
       try {
-        win.webContents.send('mixcwork:stream:permission', { sessionId, request: safeRequest });
+        win.webContents.send('mixwork:stream:permission', { sessionId, request: safeRequest });
       } catch (error) {
         console.error('Failed to forward cowork permission request:', error);
       }
@@ -3052,7 +3052,7 @@ const bindCoworkRuntimeForwarder = (): void => {
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(win => {
       if (win.isDestroyed()) return;
-      win.webContents.send('mixcwork:stream:complete', { sessionId, claudeSessionId });
+      win.webContents.send('mixwork:stream:complete', { sessionId, claudeSessionId });
     });
     // If this session used a server model, notify renderer to refresh quota.
     try {
@@ -3075,14 +3075,14 @@ const bindCoworkRuntimeForwarder = (): void => {
     mediaReferencesBySession.delete(sessionId);
     // Mark session as error in store so the .catch() fallback can detect duplicates.
     try {
-      getMixCWorkStore().updateSession(sessionId, { status: 'error' });
+      getMixWorkStore().updateSession(sessionId, { status: 'error' });
     } catch {
       /* ignore */
     }
     const windows = BrowserWindow.getAllWindows();
     windows.forEach(win => {
       if (win.isDestroyed()) return;
-      win.webContents.send('mixcwork:stream:error', { sessionId, error });
+      win.webContents.send('mixwork:stream:error', { sessionId, error });
     });
     try {
       if (shouldRefreshServerQuotaForSession(sessionId)) {
@@ -3121,11 +3121,11 @@ const enterpriseJwtRefreshDeps: {
   refreshPlanCredential: () => getDshEngineManager().refreshPlanCredential(),
 };
 
-const getMixCWorkEngineRouter = () => {
-  if (!mixcworkEngineRouter) {
+const getMixWorkEngineRouter = () => {
+  if (!mixworkEngineRouter) {
     if (!openClawRuntimeAdapter) {
       openClawRuntimeAdapter = new OpenClawRuntimeAdapter(
-        getMixCWorkStore(),
+        getMixWorkStore(),
         getOpenClawEngineManager(),
         {
           normalizeModelRef: normalizeOpenClawModelRef,
@@ -3136,7 +3136,7 @@ const getMixCWorkEngineRouter = () => {
             getCronJobService().notifyGatewayReady();
             handleGatewaySelfRestartSettled();
           },
-          // A mixcwork-server 401 whose stored JWT was rejected: if the JWT is
+          // A mixwork-server 401 whose stored JWT was rejected: if the JWT is
           // still refreshable, rotate it (single-flight) and re-apply the config,
           // and tell the user to retry; once it is past expiry the refresh
           // endpoint can no longer verify it, so leave the generic login-expired
@@ -3163,9 +3163,9 @@ const getMixCWorkEngineRouter = () => {
               .catch((error) => {
                 console.warn('[Auth] enterprise JWT reactive refresh failed:', error);
               });
-            return t('coworkErrorMixCWorkLoginRefreshedRetry');
+            return t('coworkErrorMixWorkLoginRefreshedRetry');
           },
-          // A mixcwork-server turn that came back as the enterprise /proxy
+          // A mixwork-server turn that came back as the enterprise /proxy
           // `not_member` 401: the member was disabled/removed after a
           // validly-signed JWT was issued, so refreshing that JWT is a no-op
           // (the refresh endpoint re-signs without checking status). Tear down
@@ -3198,7 +3198,7 @@ const getMixCWorkEngineRouter = () => {
         const imStore = imManager.getIMStore();
         if (imStore) {
           const channelSessionSync = new OpenClawChannelSessionSync({
-            mixcworkStore: getMixCWorkStore(),
+            mixworkStore: getMixWorkStore(),
             imStore,
             getDefaultCwd: (agentId?: string) =>
               resolveAgentDefaultWorkingDirectory(agentId) || os.homedir(),
@@ -3211,32 +3211,32 @@ const getMixCWorkEngineRouter = () => {
         console.warn('[Main] Failed to set up channel session sync:', error);
       }
     }
-    mixcworkEngineRouter = new MixCWorkEngineRouter({
-      getCurrentEngine: resolveMixCWorkAgentEngine,
+    mixworkEngineRouter = new MixWorkEngineRouter({
+      getCurrentEngine: resolveMixWorkAgentEngine,
       openclawRuntime: openClawRuntimeAdapter,
     });
   }
-  return mixcworkEngineRouter;
+  return mixworkEngineRouter;
 };
 
-let mixcworkTempJanitor: MixCWorkTempJanitor | null = null;
+let mixworkTempJanitor: MixWorkTempJanitor | null = null;
 
-const getMixCWorkTempJanitor = (): MixCWorkTempJanitor => {
-  if (!mixcworkTempJanitor) {
-    mixcworkTempJanitor = createMixCWorkTempJanitor({
-      listAllCwds: () => getMixCWorkStore().listRecentSessionCwds(0),
+const getMixWorkTempJanitor = (): MixWorkTempJanitor => {
+  if (!mixworkTempJanitor) {
+    mixworkTempJanitor = createMixWorkTempJanitor({
+      listAllCwds: () => getMixWorkStore().listRecentSessionCwds(0),
       listActiveCwds: () => {
         try {
-          const activeSessionIds = getMixCWorkEngineRouter().getActiveSessionIds();
-          return getMixCWorkStore().listSessionCwds(activeSessionIds);
+          const activeSessionIds = getMixWorkEngineRouter().getActiveSessionIds();
+          return getMixWorkStore().listSessionCwds(activeSessionIds);
         } catch (error) {
-          console.warn('[MixCWorkTempJanitor] failed to resolve active session cwds:', error);
+          console.warn('[MixWorkTempJanitor] failed to resolve active session cwds:', error);
           return [];
         }
       },
     });
   }
-  return mixcworkTempJanitor;
+  return mixworkTempJanitor;
 };
 
 const getDesktopNotificationManager = (): DesktopNotificationManager => {
@@ -3248,7 +3248,7 @@ const getDesktopNotificationManager = (): DesktopNotificationManager => {
         getStore().get<AppConfigSettings>('app_config')?.notificationSettings,
       getSessionTitle: (sessionId: string) => {
         try {
-          return getMixCWorkStore().getSession(sessionId, 0)?.title ?? null;
+          return getMixWorkStore().getSession(sessionId, 0)?.title ?? null;
         } catch {
           return null;
         }
@@ -3311,12 +3311,12 @@ const getIMGatewayManager = () => {
     const sqliteStore = getStore();
 
     // Get Cowork dependencies for IM Cowork mode
-    const runtime = getMixCWorkEngineRouter();
-    const store = getMixCWorkStore();
+    const runtime = getMixWorkEngineRouter();
+    const store = getMixWorkStore();
 
     imGatewayManager = new IMGatewayManager(sqliteStore.getDatabase(), {
       coworkRuntime: runtime,
-      mixcworkStore: store,
+      mixworkStore: store,
       ensureCoworkReady: async () => {
         const status = await ensureOpenClawRunningForCowork();
         if (status.phase !== 'running') {
@@ -3501,7 +3501,7 @@ const refreshImSessionWorkingDirectoriesForAgent = (agentId: string): number => 
 
   try {
     const imStore = getIMGatewayManager().getIMStore();
-    const mixcworkStore = getMixCWorkStore();
+    const mixworkStore = getMixWorkStore();
     let updatedCount = 0;
 
     for (const mapping of imStore.listSessionMappings()) {
@@ -3509,12 +3509,12 @@ const refreshImSessionWorkingDirectoriesForAgent = (agentId: string): number => 
         continue;
       }
 
-      const session = mixcworkStore.getSession(mapping.coworkSessionId);
+      const session = mixworkStore.getSession(mapping.coworkSessionId);
       if (!session || session.cwd === resolvedCwd) {
         continue;
       }
 
-      mixcworkStore.updateSession(session.id, { cwd: resolvedCwd }, { touchUpdatedAt: false });
+      mixworkStore.updateSession(session.id, { cwd: resolvedCwd }, { touchUpdatedAt: false });
       updatedCount += 1;
     }
 
@@ -3705,7 +3705,7 @@ const flushOpenSessionFromNotification = (): void => {
   const sessionId = pendingOpenSessionFromNotificationId;
   pendingOpenSessionFromNotificationId = null;
   console.log(`[DesktopNotification] opening session ${sessionId} from notification`);
-  mainWindow.webContents.send(MixCWorkIpcChannel.OpenSessionFromNotification, { sessionId });
+  mainWindow.webContents.send(MixWorkIpcChannel.OpenSessionFromNotification, { sessionId });
 };
 
 const focusMainWindowForReason = (reason: string): void => {
@@ -4243,7 +4243,7 @@ const clearMediaPollingStateForOwner = (ownerAccountKey: string): void => {
 const emitMediaStatusPollUpdate = (update: MediaStatusPollUpdate): void => {
   BrowserWindow.getAllWindows().forEach(win => {
     if (win.isDestroyed()) return;
-    win.webContents.send(MixCWorkIpcChannel.MediaStatusPollUpdate, update);
+    win.webContents.send(MixWorkIpcChannel.MediaStatusPollUpdate, update);
   });
 };
 
@@ -4388,7 +4388,7 @@ const scheduleReload = (reason: string, webContents?: WebContents) => {
 // 确保应用程序只有一个实例
 const gotTheLock = app.requestSingleInstanceLock();
 
-// Register the `mixcwork://` URL scheme so the desktop app is the
+// Register the `mixwork://` URL scheme so the desktop app is the
 // OS-level handler for deep links. The packaging side declares the
 // scheme in electron-builder.json (`protocols: [{ name, schemes }]`),
 // which makes the installer / DMG / AppImage / .deb register the
@@ -4397,31 +4397,31 @@ const gotTheLock = app.requestSingleInstanceLock();
 //
 // Why this exists: the post-bind success page in the user's OS
 // browser (src/main/sso/genericSsoLogin.ts → bindSuccessHtml) lets
-// the user click "关闭本页面,打开MixCWork" to close the bind tab and
+// the user click "关闭本页面,打开MixWork" to close the bind tab and
 // refocus the running desktop app. The button's JS does
-// `location.href = 'mixcwork://'`, which the OS routes back to this
+// `location.href = 'mixwork://'`, which the OS routes back to this
 // process. We then focus the existing main window rather than
 // launching a new instance.
 if (process.defaultApp) {
   // dev mode: pass argv[0] (electron) and the script path so the
   // scheme is registered against the dev binary, not a packaged one
   if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('mixcwork', process.execPath, [
+    app.setAsDefaultProtocolClient('mixwork', process.execPath, [
       path.resolve(process.argv[1]!),
     ]);
   }
 } else {
-  app.setAsDefaultProtocolClient('mixcwork');
+  app.setAsDefaultProtocolClient('mixwork');
 }
 
-/** Pull the first `mixcwork://…` URL out of an argv array. Used by
+/** Pull the first `mixwork://…` URL out of an argv array. Used by
  *  the second-instance handler (Windows / Linux: the OS appends the
  *  URL to the second invocation's argv) and the initial-launch
  *  scan (Linux: the first launch's argv carries it). Returns null
- *  if no `mixcwork://` URL is present. */
-function findMixcworkUrlInArgv(argv: readonly string[]): string | null {
+ *  if no `mixwork://` URL is present. */
+function findMixWorkUrlInArgv(argv: readonly string[]): string | null {
   for (const arg of argv) {
-    if (typeof arg === 'string' && arg.startsWith('mixcwork://')) return arg;
+    if (typeof arg === 'string' && arg.startsWith('mixwork://')) return arg;
   }
   return null;
 }
@@ -4467,26 +4467,26 @@ if (!gotTheLock) {
     }
   };
 
-  // macOS: the OS routes `mixcwork://` URL clicks here instead of
+  // macOS: the OS routes `mixwork://` URL clicks here instead of
   // appending to argv. We focus the existing main window so the
   // user lands on their desktop app rather than a fresh instance.
   // (Linux/Windows: the OS appends the URL to the second
   // invocation's argv, handled by the second-instance event below.)
   app.on('open-url', (event, url) => {
     event.preventDefault();
-    if (!url.startsWith('mixcwork://')) return;
-    console.log('[Main] mixcwork deep link received via open-url', { url });
-    focusMainWindow(`mixcwork deep link: ${url}`);
+    if (!url.startsWith('mixwork://')) return;
+    console.log('[Main] mixwork deep link received via open-url', { url });
+    focusMainWindow(`mixwork deep link: ${url}`);
   });
 
-  // Linux: the first launch's argv may carry a `mixcwork://` URL
+  // Linux: the first launch's argv may carry a `mixwork://` URL
   // (no `open-url`, no `second-instance`). Queue it so the
   // ready-to-show / did-finish-load gate pulls the main window
   // forward once it has rendered. (macOS gets the same URL via
   // open-url; Windows via second-instance.)
-  const initialDeepLink = findMixcworkUrlInArgv(process.argv);
+  const initialDeepLink = findMixWorkUrlInArgv(process.argv);
   if (initialDeepLink) {
-    console.log('[Main] mixcwork deep link in initial argv', { url: initialDeepLink });
+    console.log('[Main] mixwork deep link in initial argv', { url: initialDeepLink });
     pendingShowOnFirstFrame = true;
   }
 
@@ -4515,13 +4515,13 @@ if (!gotTheLock) {
     }
 
     // Windows / Linux: when the OS launches a second instance because
-    // the user clicked a `mixcwork://…` link, the URL is appended to
+    // the user clicked a `mixwork://…` link, the URL is appended to
     // the second invocation's argv. We don't act on the URL payload
     // here yet (no deep-link routes defined); we just focus the
     // existing main window so the user lands on their desktop app
     // rather than the bind-success browser tab.
-    const deepLink = findMixcworkUrlInArgv(commandLine);
-    focusMainWindow(deepLink ? `mixcwork deep link: ${deepLink}` : 'second instance activation');
+    const deepLink = findMixWorkUrlInArgv(commandLine);
+    focusMainWindow(deepLink ? `mixwork deep link: ${deepLink}` : 'second instance activation');
   });
 
   // IPC 处理程序
@@ -4673,7 +4673,7 @@ if (!gotTheLock) {
         outputPath,
         entries: [
           ...getRecentMainLogEntries(),
-          { archiveName: 'cowork.log', filePath: getMixCWorkLogPath() },
+          { archiveName: 'cowork.log', filePath: getMixWorkLogPath() },
           ...getRecentComputerUseLogEntries(),
           ...manager.getRecentGatewayLogEntries(),
           ...getRecentOpenClawDailyLogEntries(manager.getOpenClawDailyLogDir()),
@@ -4681,7 +4681,7 @@ if (!gotTheLock) {
             ? [
                 {
                   archiveName: 'install-timing.log',
-                  filePath: path.join(app.getPath('appData'), 'MixCWork', 'install-timing.log'),
+                  filePath: path.join(app.getPath('appData'), 'MixWork', 'install-timing.log'),
                 },
               ]
             : []),
@@ -4977,7 +4977,7 @@ if (!gotTheLock) {
   /**
    * Authenticated fetch for the media generation surface.
    *
-   * Uses the ENTERPRISE org JWT, not the consumer `auth_tokens`: MixCWork has no
+   * Uses the ENTERPRISE org JWT, not the consumer `auth_tokens`: MixWork has no
    * youdao backend left, so for an enterprise-only deployment those are always
    * empty and every media request failed with "No auth tokens are available"
    * before it left the process.
@@ -5028,7 +5028,7 @@ if (!gotTheLock) {
     agentId?: string;
   }): string => {
     const session = options.sessionId
-      ? getMixCWorkStore().getSession(options.sessionId)
+      ? getMixWorkStore().getSession(options.sessionId)
       : null;
     const agentId = options.agentId?.trim() || session?.agentId || 'main';
     const agentRow = getAgentManager().getAgent(agentId);
@@ -5039,10 +5039,10 @@ if (!gotTheLock) {
       || session?.modelOverride?.trim()
       || agentModelRef.trim()
       || resolveDefaultAgentModelRef();
-    // Canonicalize a legacy `mixcwork-server/<name>` ref to its catalog UUID so
+    // Canonicalize a legacy `mixwork-server/<name>` ref to its catalog UUID so
     // the run-gate (`evaluateServerModelRunGate`) and the send-gate both
     // resolve against the UUID-keyed enterprise metadata cache.
-    return canonicalizeMixcworkServerRef(rawModelRef?.trim() || '');
+    return canonicalizeMixWorkServerRef(rawModelRef?.trim() || '');
   };
 
   const getServerModelRunGateError = (reason: ServerModelRunGateReason): string => {
@@ -5248,7 +5248,7 @@ if (!gotTheLock) {
     let selectedModelSource = explicitModel ? 'tool' : resolvedModelFromSelection ? 'selection' : 'none';
 
     if (action === 'generate' && tool === MediaGenerationTool.Image) {
-      const skinPreflight = await skinRuntime.preflightMixcworkImageGeneration(
+      const skinPreflight = await skinRuntime.preflightMixWorkImageGeneration(
         sessionId,
         selection,
       );
@@ -6190,7 +6190,7 @@ if (!gotTheLock) {
   };
 
   const emitMediaTaskMessage = (sessionId: string, content: string, metadata?: Record<string, unknown>) => {
-    let message: MixCWorkMessage = {
+    let message: MixWorkMessage = {
       id: `media-task-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       type: 'system' as const,
       content,
@@ -6198,7 +6198,7 @@ if (!gotTheLock) {
       ...(metadata ? { metadata } : {}),
     };
     try {
-      message = getMixCWorkStore().addMessage(sessionId, {
+      message = getMixWorkStore().addMessage(sessionId, {
         type: 'system',
         content,
         ...(metadata ? { metadata } : {}),
@@ -6208,7 +6208,7 @@ if (!gotTheLock) {
     }
     BrowserWindow.getAllWindows().forEach(win => {
       if (!win.isDestroyed()) {
-        win.webContents.send('mixcwork:stream:message', { sessionId, message });
+        win.webContents.send('mixwork:stream:message', { sessionId, message });
       }
     });
   };
@@ -6220,7 +6220,7 @@ if (!gotTheLock) {
     const imageAssets = assets.filter(asset => asset.type === 'image' && asset.url.trim());
     if (imageAssets.length === 0) return null;
 
-    const sessionForAssets = getMixCWorkStore().getSession(sessionId);
+    const sessionForAssets = getMixWorkStore().getSession(sessionId);
     const cwd = sessionForAssets?.cwd?.trim();
     if (!cwd) {
       console.warn('[MediaGeneration] skipped image persistence because the session working directory was missing.');
@@ -6270,7 +6270,7 @@ if (!gotTheLock) {
     const videoAssets = assets.filter(asset => asset.type === 'video' && asset.url.trim());
     if (videoAssets.length === 0) return null;
 
-    const sessionForAssets = getMixCWorkStore().getSession(sessionId);
+    const sessionForAssets = getMixWorkStore().getSession(sessionId);
     const cwd = sessionForAssets?.cwd?.trim();
     if (!cwd) {
       console.warn('[MediaGeneration] skipped video persistence because the session working directory was missing.');
@@ -6427,7 +6427,7 @@ if (!gotTheLock) {
       // then reuse the existing packaging + upload path.
       const packaged = await (async () => {
         const dir = await fs.promises.mkdtemp(
-          path.join(os.tmpdir(), 'mixcwork-html-share-baked-'),
+          path.join(os.tmpdir(), 'mixwork-html-share-baked-'),
         );
         workDir = dir;
         const entryPath = path.join(dir, 'index.html');
@@ -6915,7 +6915,7 @@ if (!gotTheLock) {
   });
 
   // Media generation IPC handlers
-  ipcMain.handle(MixCWorkIpcChannel.GetMediaModels, async (_event, type: 'image' | 'video') => {
+  ipcMain.handle(MixWorkIpcChannel.GetMediaModels, async (_event, type: 'image' | 'video') => {
     try {
       if (type !== 'image' && type !== 'video') {
         console.warn('[Media:getModels] rejected invalid media type');
@@ -7169,7 +7169,7 @@ if (!gotTheLock) {
       console.error('[DataMigration] backup failed:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to back up MixCWork data',
+        error: error instanceof Error ? error.message : 'Failed to back up MixWork data',
       };
     }
   });
@@ -7228,11 +7228,11 @@ if (!gotTheLock) {
         success,
         scheduledRestart: rendererReleased,
         rollbackPath: restoreResult?.rollbackPath,
-        error: success ? undefined : restoreResult?.error || 'Failed to import MixCWork data backup',
+        error: success ? undefined : restoreResult?.error || 'Failed to import MixWork data backup',
       };
     } catch (error) {
       isCleanupInProgress = false;
-      const message = error instanceof Error ? error.message : 'Failed to import MixCWork data backup';
+      const message = error instanceof Error ? error.message : 'Failed to import MixWork data backup';
       console.error('[DataMigration] restore scheduling failed:', error);
       if (rendererReleased) {
         dialog.showErrorBox(t('dataMigrationRestoreDialogTitle'), message);
@@ -7446,10 +7446,10 @@ if (!gotTheLock) {
     getProviders: () => {
       const appConfig = getStore().get<{ providers?: Record<string, ProviderConfig> }>('app_config');
       const providers = { ...(appConfig?.providers ?? {}) };
-      // The hollow local `mixcwork-server` provider (empty key, no models) has no
+      // The hollow local `mixwork-server` provider (empty key, no models) has no
       // standalone route; the billed plan is served by the per-provider plan
       // routes built in getPlanProvider from the enterprise catalog.
-      delete providers[ProviderName.MixcworkServer];
+      delete providers[ProviderName.MixWorkServer];
       return providers;
     },
     getPlanProvider: () => {
@@ -7496,7 +7496,7 @@ if (!gotTheLock) {
     },
     getDefaultCwd: () => {
       try {
-        const workingDirectory = getMixCWorkStore().getConfig().workingDirectory?.trim();
+        const workingDirectory = getMixWorkStore().getConfig().workingDirectory?.trim();
         if (workingDirectory) return workingDirectory;
       } catch {
         // Cowork store may not be ready yet; fall through to the home dir.
@@ -7510,7 +7510,7 @@ if (!gotTheLock) {
 
   // Cowork IPC handlers
   ipcMain.handle(
-    'mixcwork:session:start',
+    'mixwork:session:start',
     async (
       _event,
       options: {
@@ -7567,7 +7567,7 @@ if (!gotTheLock) {
             agentId: options.agentId,
           });
           const parsed = parsePrimaryModelRef(resolvedRef);
-          if (parsed && parsed.providerId === OpenClawProviderId.MixcworkServer) {
+          if (parsed && parsed.providerId === OpenClawProviderId.MixWorkServer) {
             try {
               // Resolve the ref portion (catalog UUID, canonicalized above) to
               // its key/endpoint. Returns null for a portion that is not
@@ -7599,8 +7599,8 @@ if (!gotTheLock) {
           };
         }
 
-        const mixcworkStoreInstance = getMixCWorkStore();
-        const config = mixcworkStoreInstance.getConfig();
+        const mixworkStoreInstance = getMixWorkStore();
+        const config = mixworkStoreInstance.getConfig();
         const systemPrompt = mergeCoworkSystemPrompt(options.systemPrompt ?? config.systemPrompt);
         const persistedSystemPrompt = containsPlanModePrompt(systemPrompt)
           ? mergeCoworkSystemPrompt(config.systemPrompt)
@@ -7649,7 +7649,7 @@ if (!gotTheLock) {
           );
         }
 
-        const session = mixcworkStoreInstance.createSession(
+        const session = mixworkStoreInstance.createSession(
           title,
           taskWorkingDirectory,
           persistedSystemPrompt,
@@ -7720,15 +7720,15 @@ if (!gotTheLock) {
           browserAnnotations,
           imageAttachmentPreviews,
         });
-        mixcworkStoreInstance.addMessage(session.id, {
+        mixworkStoreInstance.addMessage(session.id, {
           type: 'user',
           content: prompt,
           metadata: messageMetadata,
         });
 
-        mixcworkStoreInstance.updateSession(session.id, { status: 'running' });
+        mixworkStoreInstance.updateSession(session.id, { status: 'running' });
 
-        const runtime = getMixCWorkEngineRouter();
+        const runtime = getMixWorkEngineRouter();
         console.log(
           '[CoworkFirstResponseTiming] start IPC dispatched to runtime.',
           `Session ${session.id}.`,
@@ -7756,13 +7756,13 @@ if (!gotTheLock) {
           .catch(error => {
             console.error('[Cowork] session error:', error);
             try {
-              const existing = mixcworkStoreInstance.getSession(session.id);
+              const existing = mixworkStoreInstance.getSession(session.id);
               if (existing?.status === 'error') return;
               const errorMessage = error instanceof Error ? error.message : String(error);
               const windows = BrowserWindow.getAllWindows();
               windows.forEach(win => {
                 if (win.isDestroyed()) return;
-                win.webContents.send('mixcwork:stream:error', {
+                win.webContents.send('mixwork:stream:error', {
                   sessionId: session.id,
                   error: errorMessage,
                 });
@@ -7775,7 +7775,7 @@ if (!gotTheLock) {
             }
           });
 
-        const sessionWithMessages = mixcworkStoreInstance.getSession(session.id) || {
+        const sessionWithMessages = mixworkStoreInstance.getSession(session.id) || {
           ...session,
           status: 'running' as const,
         };
@@ -7790,7 +7790,7 @@ if (!gotTheLock) {
   );
 
   ipcMain.handle(
-    'mixcwork:session:continue',
+    'mixwork:session:continue',
     async (
       _event,
       options: {
@@ -7844,17 +7844,17 @@ if (!gotTheLock) {
           };
         }
 
-        const runtime = getMixCWorkEngineRouter();
-        const mixcworkStoreInstance = getMixCWorkStore();
-        const existingSession = mixcworkStoreInstance.getSession(options.sessionId);
-        const config = mixcworkStoreInstance.getConfig();
+        const runtime = getMixWorkEngineRouter();
+        const mixworkStoreInstance = getMixWorkStore();
+        const existingSession = mixworkStoreInstance.getSession(options.sessionId);
+        const config = mixworkStoreInstance.getConfig();
         const hasLegacyPersistedPlanMode = containsPlanModePrompt(existingSession?.systemPrompt);
         const continuationSystemPrompt = mergeCoworkSystemPrompt(
           options.systemPrompt
             ?? (hasLegacyPersistedPlanMode ? config.systemPrompt : existingSession?.systemPrompt),
         );
         if (hasLegacyPersistedPlanMode) {
-          mixcworkStoreInstance.updateSession(options.sessionId, {
+          mixworkStoreInstance.updateSession(options.sessionId, {
             systemPrompt: mergeCoworkSystemPrompt(config.systemPrompt) ?? '',
           });
           console.log(
@@ -7943,13 +7943,13 @@ if (!gotTheLock) {
           .catch(error => {
             console.error('[Cowork] continue error:', error);
             try {
-              const existing = getMixCWorkStore().getSession(options.sessionId);
+              const existing = getMixWorkStore().getSession(options.sessionId);
               if (existing?.status === 'error') return;
               const errorMessage = error instanceof Error ? error.message : String(error);
               const windows = BrowserWindow.getAllWindows();
               windows.forEach(win => {
                 if (win.isDestroyed()) return;
-                win.webContents.send('mixcwork:stream:error', {
+                win.webContents.send('mixwork:stream:error', {
                   sessionId: options.sessionId,
                   error: errorMessage,
                 });
@@ -7962,7 +7962,7 @@ if (!gotTheLock) {
             }
           });
 
-        const session = getMixCWorkStore().getSession(options.sessionId);
+        const session = getMixWorkStore().getSession(options.sessionId);
         return { success: true, session };
       } catch (error) {
         return {
@@ -7973,7 +7973,7 @@ if (!gotTheLock) {
     },
   );
 
-  ipcMain.handle(MixCWorkIpcChannel.SubmitBtw, async (
+  ipcMain.handle(MixWorkIpcChannel.SubmitBtw, async (
     _event,
     options: CoworkBtwSubmitRequest,
   ): Promise<CoworkBtwSubmitResponse> => {
@@ -8020,7 +8020,7 @@ if (!gotTheLock) {
           runId,
         };
       }
-      const runtime = getMixCWorkEngineRouter();
+      const runtime = getMixWorkEngineRouter();
       if (!runtime.submitBtw) {
         return {
           success: false,
@@ -8051,7 +8051,7 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle(MixCWorkIpcChannel.AbortBtw, async (
+  ipcMain.handle(MixWorkIpcChannel.AbortBtw, async (
     _event,
     options: CoworkBtwAbortRequest,
   ): Promise<CoworkBtwAbortResponse> => {
@@ -8077,7 +8077,7 @@ if (!gotTheLock) {
         `Session ${sessionId}.`,
         `Run ${runId}.`,
       );
-      const runtime = getMixCWorkEngineRouter();
+      const runtime = getMixWorkEngineRouter();
       if (!runtime.abortBtw) {
         return {
           success: false,
@@ -8110,7 +8110,7 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle(MixCWorkIpcChannel.SubmitSteer, async (
+  ipcMain.handle(MixWorkIpcChannel.SubmitSteer, async (
     _event,
     options: { sessionId: string; text: string; clientSteerId: string },
   ) => {
@@ -8178,7 +8178,7 @@ if (!gotTheLock) {
         };
       }
 
-      const runtime = getMixCWorkEngineRouter();
+      const runtime = getMixWorkEngineRouter();
       if (!runtime.submitSteer) {
         return {
           success: false,
@@ -8222,7 +8222,7 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle(MixCWorkIpcChannel.GoalCommand, async (
+  ipcMain.handle(MixWorkIpcChannel.GoalCommand, async (
     _event,
     options: { sessionId: string; command: string },
   ) => {
@@ -8239,7 +8239,7 @@ if (!gotTheLock) {
           error: 'Session id and goal command are required.',
         };
       }
-      const runtime = getMixCWorkEngineRouter();
+      const runtime = getMixWorkEngineRouter();
       if (!runtime.runGoalCommand) {
         return {
           success: false,
@@ -8263,9 +8263,9 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle(MixCWorkIpcChannel.StopSession, async (_event, sessionId: string) => {
+  ipcMain.handle(MixWorkIpcChannel.StopSession, async (_event, sessionId: string) => {
     try {
-      const runtime = getMixCWorkEngineRouter();
+      const runtime = getMixWorkEngineRouter();
       runtime.stopSession(sessionId);
       return { success: true };
     } catch (error) {
@@ -8276,7 +8276,7 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle(MixCWorkIpcChannel.MarkSessionViewed, async (_event, sessionId: string) => {
+  ipcMain.handle(MixWorkIpcChannel.MarkSessionViewed, async (_event, sessionId: string) => {
     try {
       getDesktopNotificationManager().markSessionViewed(sessionId);
       return { success: true };
@@ -8289,7 +8289,7 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle(MixCWorkIpcChannel.SetActiveSession, async (event, sessionId: string | null) => {
+  ipcMain.handle(MixWorkIpcChannel.SetActiveSession, async (event, sessionId: string | null) => {
     if (!mainWindow || mainWindow.isDestroyed() || event.sender.id !== mainWindow.webContents.id) {
       return { success: false, error: 'Unknown renderer' };
     }
@@ -8307,7 +8307,7 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle(MixCWorkIpcChannel.OpenSessionFromNotificationReady, async event => {
+  ipcMain.handle(MixWorkIpcChannel.OpenSessionFromNotificationReady, async event => {
     if (!mainWindow || mainWindow.isDestroyed() || event.sender.id !== mainWindow.webContents.id) {
       console.warn('[DesktopNotification] ignored notification open readiness from an unknown renderer');
       return { success: false, error: 'Unknown renderer' };
@@ -8319,11 +8319,11 @@ if (!gotTheLock) {
     return { success: true };
   });
 
-  ipcMain.handle('mixcwork:session:delete', async (_event, sessionId: string) => {
+  ipcMain.handle('mixwork:session:delete', async (_event, sessionId: string) => {
     try {
-      getMixCWorkEngineRouter().stopSession(sessionId);
-      const mixcworkStoreInstance = getMixCWorkStore();
-      const affectedArtifactIds = mixcworkStoreInstance.deleteSession(sessionId);
+      getMixWorkEngineRouter().stopSession(sessionId);
+      const mixworkStoreInstance = getMixWorkStore();
+      const affectedArtifactIds = mixworkStoreInstance.deleteSession(sessionId);
       if (affectedArtifactIds.length > 0) {
         libraryIndexService?.notifyChange({
           reason: LibraryChangeReason.SessionDeleted,
@@ -8351,7 +8351,7 @@ if (!gotTheLock) {
       // Notify runtime to purge in-memory caches for this session
       // so that channel messages can create a fresh session.
       try {
-        getMixCWorkEngineRouter().onSessionDeleted(sessionId);
+        getMixWorkEngineRouter().onSessionDeleted(sessionId);
       } catch {
         // Router may not be initialised yet; safe to ignore.
       }
@@ -8364,21 +8364,21 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle('mixcwork:session:deleteBatch', async (_event, sessionIds: string[]) => {
+  ipcMain.handle('mixwork:session:deleteBatch', async (_event, sessionIds: string[]) => {
     try {
-      const runtime = getMixCWorkEngineRouter();
+      const runtime = getMixWorkEngineRouter();
       sessionIds.forEach(sessionId => {
         runtime.stopSession(sessionId);
       });
-      const mixcworkStoreInstance = getMixCWorkStore();
-      const affectedArtifactIds = mixcworkStoreInstance.deleteSessions(sessionIds);
+      const mixworkStoreInstance = getMixWorkStore();
+      const affectedArtifactIds = mixworkStoreInstance.deleteSessions(sessionIds);
       if (affectedArtifactIds.length > 0) {
         libraryIndexService?.notifyChange({
           reason: LibraryChangeReason.SessionDeleted,
           itemIds: affectedArtifactIds,
         });
       }
-      const router = getMixCWorkEngineRouter();
+      const router = getMixWorkEngineRouter();
       for (const sessionId of sessionIds) {
         skinRuntimeController?.handleSessionDeleted(sessionId);
         getDesktopNotificationManager().handleSessionDeleted(sessionId);
@@ -8403,11 +8403,11 @@ if (!gotTheLock) {
   });
 
   ipcMain.handle(
-    'mixcwork:session:pin',
+    'mixwork:session:pin',
     async (_event, options: { sessionId: string; pinned: boolean }) => {
       try {
-        const mixcworkStoreInstance = getMixCWorkStore();
-        const pinOrder = mixcworkStoreInstance.setSessionPinned(options.sessionId, options.pinned);
+        const mixworkStoreInstance = getMixWorkStore();
+        const pinOrder = mixworkStoreInstance.setSessionPinned(options.sessionId, options.pinned);
         return { success: true, pinOrder };
       } catch (error) {
         return {
@@ -8419,15 +8419,15 @@ if (!gotTheLock) {
   );
 
   ipcMain.handle(
-    'mixcwork:session:rename',
+    'mixwork:session:rename',
     async (_event, options: { sessionId: string; title: string }) => {
       try {
         const title = options.title.trim();
         if (!title) {
           return { success: false, error: 'Title is required' };
         }
-        const mixcworkStoreInstance = getMixCWorkStore();
-        mixcworkStoreInstance.updateSession(options.sessionId, { title }, { touchUpdatedAt: false });
+        const mixworkStoreInstance = getMixWorkStore();
+        mixworkStoreInstance.updateSession(options.sessionId, { title }, { touchUpdatedAt: false });
         return { success: true };
       } catch (error) {
         return {
@@ -8439,7 +8439,7 @@ if (!gotTheLock) {
   );
 
   ipcMain.handle(
-    MixCWorkIpcChannel.ForkSession,
+    MixWorkIpcChannel.ForkSession,
     async (
       _event,
       options?: {
@@ -8454,9 +8454,9 @@ if (!gotTheLock) {
           return { success: false, error: 'Session id is required' };
         }
 
-        const runtime = getMixCWorkEngineRouter();
-        const mixcworkStoreInstance = getMixCWorkStore();
-        const sourceSession = mixcworkStoreInstance.getSession(sessionId);
+        const runtime = getMixWorkEngineRouter();
+        const mixworkStoreInstance = getMixWorkStore();
+        const sourceSession = mixworkStoreInstance.getSession(sessionId);
         if (!sourceSession) {
           console.warn('[CoworkFork] fork request referenced a missing session');
           return { success: false, error: 'Session not found' };
@@ -8468,9 +8468,9 @@ if (!gotTheLock) {
 
         const forkedFromMessageId = options?.forkedFromMessageId?.trim() || null;
         const forkedFromTimestamp = forkedFromMessageId
-          ? mixcworkStoreInstance.getMessageTimestamp(sessionId, forkedFromMessageId)
+          ? mixworkStoreInstance.getMessageTimestamp(sessionId, forkedFromMessageId)
           : null;
-        const forkContextMessages: MixCWorkForkContextMessage[] = [];
+        const forkContextMessages: MixWorkForkContextMessage[] = [];
         const compactionSummary = await runtime.getForkCompactionSummary(
           sessionId,
           forkedFromTimestamp ?? undefined,
@@ -8494,9 +8494,9 @@ if (!gotTheLock) {
         }
 
         console.log(`[CoworkFork] creating a local conversation fork from session ${sessionId}`);
-        const session = mixcworkStoreInstance.forkSession({
+        const session = mixworkStoreInstance.forkSession({
           sourceSessionId: sessionId,
-          forkMode: MixCWorkForkMode.Conversation,
+          forkMode: MixWorkForkMode.Conversation,
           forkedFromMessageId,
           title: options?.title,
           contextMessages: forkContextMessages,
@@ -8513,9 +8513,9 @@ if (!gotTheLock) {
     },
   );
 
-  ipcMain.handle('mixcwork:session:get', async (_event, sessionId: string) => {
+  ipcMain.handle('mixwork:session:get', async (_event, sessionId: string) => {
     try {
-      const session = getMixCWorkStore().getSession(sessionId);
+      const session = getMixWorkStore().getSession(sessionId);
       if (session) {
         console.log(
           `[CoworkIPC] loaded session ${sessionId}; returned ${session.messages.length} of ${session.totalMessages} messages from offset ${session.messagesOffset}.`,
@@ -8532,7 +8532,7 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle('mixcwork:session:remoteManaged', async (_event, sessionId: string) => {
+  ipcMain.handle('mixwork:session:remoteManaged', async (_event, sessionId: string) => {
     try {
       const mapping = getIMGatewayManager()
         ?.getIMStore()
@@ -8548,14 +8548,14 @@ if (!gotTheLock) {
   });
 
   ipcMain.handle(
-    'mixcwork:session:list',
+    'mixwork:session:list',
     async (_event, options?: { limit?: number; offset?: number; agentId?: string; searchQuery?: string }) => {
       try {
-        const limit = options?.limit ?? MIXCWORK_SESSION_PAGE_SIZE;
+        const limit = options?.limit ?? MIXWORK_SESSION_PAGE_SIZE;
         const offset = options?.offset ?? 0;
         const agentId = options?.agentId;
         const searchQuery = options?.searchQuery?.trim() ?? '';
-        const store = getMixCWorkStore();
+        const store = getMixWorkStore();
         const startedAt = searchQuery ? Date.now() : 0;
         const sessions = searchQuery
           ? store.searchSessions({ query: searchQuery, limit, offset, agentId })
@@ -8580,15 +8580,15 @@ if (!gotTheLock) {
   );
 
   ipcMain.handle(
-    'mixcwork:session:getMessages',
+    'mixwork:session:getMessages',
     async (_event, options: {
       sessionId: string;
       limit?: number;
       offset?: number;
     }) => {
       try {
-        const { sessionId, limit = MIXCWORK_MESSAGE_PAGE_SIZE, offset = 0 } = options;
-        const store = getMixCWorkStore();
+        const { sessionId, limit = MIXWORK_MESSAGE_PAGE_SIZE, offset = 0 } = options;
+        const store = getMixWorkStore();
         const total = store.countSessionMessages(sessionId);
         const messages = store.getPagedSessionMessages(sessionId, limit, offset);
         console.log(
@@ -8605,7 +8605,7 @@ if (!gotTheLock) {
   );
 
   ipcMain.handle(
-    MixCWorkIpcChannel.GetSessionSearchMessages,
+    MixWorkIpcChannel.GetSessionSearchMessages,
     async (_event, options: {
       sessionId: string;
       limit?: number;
@@ -8614,15 +8614,15 @@ if (!gotTheLock) {
       knownTotal?: number;
     }) => {
       try {
-        const requestedLimit = options?.limit ?? MIXCWORK_SEARCH_MESSAGE_PAGE_SIZE;
+        const requestedLimit = options?.limit ?? MIXWORK_SEARCH_MESSAGE_PAGE_SIZE;
         const limit = Number.isFinite(requestedLimit)
-          ? Math.max(1, Math.min(MIXCWORK_SEARCH_MESSAGE_PAGE_MAX_SIZE, Math.floor(requestedLimit)))
-          : MIXCWORK_SEARCH_MESSAGE_PAGE_SIZE;
+          ? Math.max(1, Math.min(MIXWORK_SEARCH_MESSAGE_PAGE_MAX_SIZE, Math.floor(requestedLimit)))
+          : MIXWORK_SEARCH_MESSAGE_PAGE_SIZE;
         const requestedOffset = options?.offset ?? 0;
         const offset = Number.isFinite(requestedOffset)
           ? Math.max(0, Math.floor(requestedOffset))
           : 0;
-        const page = getMixCWorkStore().getSessionSearchMessagePage(
+        const page = getMixWorkStore().getSessionSearchMessagePage(
           options.sessionId,
           limit,
           offset,
@@ -8645,9 +8645,9 @@ if (!gotTheLock) {
     },
   );
 
-  ipcMain.handle(MixCWorkIpcChannel.GetSessionMessageRailIndex, async (_event, sessionId: string) => {
+  ipcMain.handle(MixWorkIpcChannel.GetSessionMessageRailIndex, async (_event, sessionId: string) => {
     try {
-      const store = getMixCWorkStore();
+      const store = getMixWorkStore();
       const items = store.getSessionMessageRailIndex(sessionId);
       console.log(
         `[CoworkIPC] loaded message rail index for session ${sessionId}; returned ${items.length} items.`,
@@ -8662,26 +8662,26 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle('mixcwork:session:contextUsage', async (_event, sessionId: string) => {
+  ipcMain.handle('mixwork:session:contextUsage', async (_event, sessionId: string) => {
     try {
-      const usage = await getMixCWorkEngineRouter().getContextUsage(sessionId);
+      const usage = await getMixWorkEngineRouter().getContextUsage(sessionId);
       return {
         success: true,
         usage,
-        source: usage ? MixCWorkContextUsageSource.Live : MixCWorkContextUsageSource.Unavailable,
+        source: usage ? MixWorkContextUsageSource.Live : MixWorkContextUsageSource.Unavailable,
       };
     } catch (error) {
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Failed to get context usage',
-        reason: MixCWorkContextUsageFailureReason.GatewayError,
+        reason: MixWorkContextUsageFailureReason.GatewayError,
       };
     }
   });
 
-  ipcMain.handle('mixcwork:session:compactContext', async (_event, sessionId: string) => {
+  ipcMain.handle('mixwork:session:compactContext', async (_event, sessionId: string) => {
     try {
-      const result = await getMixCWorkEngineRouter().compactContext(sessionId);
+      const result = await getMixWorkEngineRouter().compactContext(sessionId);
       return { success: true, ...result };
     } catch (error) {
       console.warn(`[CoworkIPC] manual context compaction failed for session ${sessionId}:`, error);
@@ -8709,8 +8709,8 @@ if (!gotTheLock) {
 
   registerAgentHandlers({
     getAgentManager,
-    getMixCWorkStore,
-    getMixCWorkEngineRouter,
+    getMixWorkStore,
+    getMixWorkEngineRouter,
     getIMGatewayManager,
     getSkillManager: () => getSkillManager(),
     refreshImSessionWorkingDirectoriesForAgent,
@@ -8720,7 +8720,7 @@ if (!gotTheLock) {
   });
 
   registerAgentEnterpriseHandlers({
-    getMixCWorkStore: () => getMixCWorkStore(),
+    getMixWorkStore: () => getMixWorkStore(),
     getEnterpriseAgentPrefsStore,
     getSkillManager: () => getSkillManager(),
     getAvailableModelsRef: () => resolveDefaultAgentModelRef(),
@@ -8728,7 +8728,7 @@ if (!gotTheLock) {
   });
 
   ipcMain.handle(
-    'mixcwork:session:exportResultImage',
+    'mixwork:session:exportResultImage',
     async (
       event,
       options: {
@@ -8755,7 +8755,7 @@ if (!gotTheLock) {
   );
 
   ipcMain.handle(
-    'mixcwork:session:captureImageChunk',
+    'mixwork:session:captureImageChunk',
     async (
       event,
       options: {
@@ -8787,7 +8787,7 @@ if (!gotTheLock) {
   );
 
   ipcMain.handle(
-    'mixcwork:session:saveResultImage',
+    'mixwork:session:saveResultImage',
     async (
       event,
       options: {
@@ -8817,7 +8817,7 @@ if (!gotTheLock) {
   );
 
   ipcMain.handle(
-    'mixcwork:session:exportText',
+    'mixwork:session:exportText',
     async (
       event,
       options: {
@@ -8872,10 +8872,10 @@ if (!gotTheLock) {
 
   registerCoworkSubagentHandlers({
     getOpenClawRuntimeAdapter: () => openClawRuntimeAdapter,
-    getMixCWorkEngineRouter,
+    getMixWorkEngineRouter,
   });
 
-  ipcMain.handle(MixCWorkIpcChannel.CancelMediaTask, async (_event, taskId: string) => {
+  ipcMain.handle(MixWorkIpcChannel.CancelMediaTask, async (_event, taskId: string) => {
     try {
       const requestAccountScope = getCurrentMediaTurnAccountScope();
       if (requestAccountScope === null) {
@@ -8907,7 +8907,7 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle('mixcwork:permission:respond', async (_event, options: {
+  ipcMain.handle('mixwork:permission:respond', async (_event, options: {
     requestId: string;
     result: PermissionResult;
   }) => {
@@ -8920,7 +8920,7 @@ if (!gotTheLock) {
       //   not match a pending bridge request (i.e. for normal SDK permission requests).
       //
       // - respondToPermission() handles standard Claude Agent SDK permission requests
-      //   managed by the MixCWorkEngineRouter. It is a no-op when the requestId does
+      //   managed by the MixWorkEngineRouter. It is a no-op when the requestId does
       //   not match a pending SDK permission (i.e. for bridge plugin requests).
       //
       // Both calls are safe to invoke unconditionally; exactly one will match.
@@ -8942,7 +8942,7 @@ if (!gotTheLock) {
           getMcpRuntime().resolveAskUser(options.requestId, askUserResponse);
         }
 
-        const runtime = getMixCWorkEngineRouter();
+        const runtime = getMixWorkEngineRouter();
         runtime.respondToPermission(options.requestId, options.result);
         // Close the desktop notification for this request regardless of which
         // subsystem handled it (runtime approvals emit permissionResolved on
@@ -8958,9 +8958,9 @@ if (!gotTheLock) {
     },
   );
 
-  ipcMain.handle('mixcwork:config:get', async () => {
+  ipcMain.handle('mixwork:config:get', async () => {
     try {
-      const config = getMixCWorkStore().getConfig();
+      const config = getMixWorkStore().getConfig();
       return { success: true, config };
     } catch (error) {
       return {
@@ -8970,9 +8970,9 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle(MixCWorkIpcChannel.TempStorageUsage, async () => {
+  ipcMain.handle(MixWorkIpcChannel.TempStorageUsage, async () => {
     try {
-      const preview = await getMixCWorkTempJanitor().preview();
+      const preview = await getMixWorkTempJanitor().preview();
       return { success: true, ...preview };
     } catch (error) {
       return {
@@ -8983,13 +8983,13 @@ if (!gotTheLock) {
   });
 
   ipcMain.handle(
-    MixCWorkIpcChannel.TempStorageClean,
+    MixWorkIpcChannel.TempStorageClean,
     async (_event, options?: { cwds?: string[] }) => {
       try {
         const selectedCwds = Array.isArray(options?.cwds)
           ? options.cwds.filter((cwd): cwd is string => typeof cwd === 'string' && cwd.trim() !== '')
           : undefined;
-        const summary = await getMixCWorkTempJanitor().clean(selectedCwds);
+        const summary = await getMixWorkTempJanitor().clean(selectedCwds);
         return { success: true, ...summary };
       } catch (error) {
         return {
@@ -9045,7 +9045,7 @@ if (!gotTheLock) {
       if (patch.model) {
         patch.model = normalizeOpenClawModelRef(patch.model);
       }
-      const runtime = getMixCWorkEngineRouter();
+      const runtime = getMixWorkEngineRouter();
       const patchResult = await runtime.patchSession(sessionId, patch);
 
       if (patch.model !== undefined || patch.thinkingLevel !== undefined) {
@@ -9064,10 +9064,10 @@ if (!gotTheLock) {
             ? parseModelThinkingLevel(patch.thinkingLevel) ?? ''
             : '';
         }
-        getMixCWorkStore().updateSession(sessionId, sessionUpdates, { touchUpdatedAt: false });
+        getMixWorkStore().updateSession(sessionId, sessionUpdates, { touchUpdatedAt: false });
       }
 
-      const session = getMixCWorkStore().getSession(sessionId);
+      const session = getMixWorkStore().getSession(sessionId);
       if (!session) {
         throw new Error(`Session ${sessionId} not found`);
       }
@@ -9085,7 +9085,7 @@ if (!gotTheLock) {
   });
 
   ipcMain.handle(
-    'mixcwork:memory:listEntries',
+    'mixwork:memory:listEntries',
     async (
       _event,
       input: {
@@ -9111,7 +9111,7 @@ if (!gotTheLock) {
               memoryMigrationDone = true;
             },
             getActiveMemoryTexts: () => {
-              return getMixCWorkStore()
+              return getMixWorkStore()
                 .listUserMemories({ status: 'all', includeDeleted: false, limit: 200 })
                 .map(m => m.text);
             },
@@ -9132,7 +9132,7 @@ if (!gotTheLock) {
     },
   );
   ipcMain.handle(
-    'mixcwork:memory:createEntry',
+    'mixwork:memory:createEntry',
     async (
       _event,
       input: {
@@ -9156,7 +9156,7 @@ if (!gotTheLock) {
     },
   );
   ipcMain.handle(
-    'mixcwork:memory:updateEntry',
+    'mixwork:memory:updateEntry',
     async (
       _event,
       input: {
@@ -9188,7 +9188,7 @@ if (!gotTheLock) {
     },
   );
   ipcMain.handle(
-    'mixcwork:memory:deleteEntry',
+    'mixwork:memory:deleteEntry',
     async (
       _event,
       input: {
@@ -9209,7 +9209,7 @@ if (!gotTheLock) {
       }
     },
   );
-  ipcMain.handle(MixCWorkIpcChannel.MemoryReadRaw, async () => {
+  ipcMain.handle(MixWorkIpcChannel.MemoryReadRaw, async () => {
     try {
       const filePath = resolveMemoryFilePath(
         getMainAgentWorkspacePath(getOpenClawEngineManager().getStateDir()),
@@ -9222,7 +9222,7 @@ if (!gotTheLock) {
       };
     }
   });
-  ipcMain.handle(MixCWorkIpcChannel.MemoryWriteRaw, async (_event, input: { content: string }) => {
+  ipcMain.handle(MixWorkIpcChannel.MemoryWriteRaw, async (_event, input: { content: string }) => {
     try {
       if (typeof input?.content !== 'string') {
         return { success: false, error: 'Memory content is required' };
@@ -9239,7 +9239,7 @@ if (!gotTheLock) {
       };
     }
   });
-  ipcMain.handle('mixcwork:memory:getStats', async () => {
+  ipcMain.handle('mixwork:memory:getStats', async () => {
     try {
       const filePath = resolveMemoryFilePath(
         getMainAgentWorkspacePath(getOpenClawEngineManager().getStateDir()),
@@ -9264,7 +9264,7 @@ if (!gotTheLock) {
     }
   });
   // ── Dreaming content display ──────────────────────────────────────────
-  ipcMain.handle('mixcwork:dreaming:status', async () => {
+  ipcMain.handle('mixwork:dreaming:status', async () => {
     try {
       const gwClient = openClawRuntimeAdapter?.getGatewayClient();
       if (!gwClient) {
@@ -9287,7 +9287,7 @@ if (!gotTheLock) {
       };
     }
   });
-  ipcMain.handle('mixcwork:dreaming:diary', async () => {
+  ipcMain.handle('mixwork:dreaming:diary', async () => {
     try {
       const gwClient = openClawRuntimeAdapter?.getGatewayClient();
       if (!gwClient) {
@@ -9307,7 +9307,7 @@ if (!gotTheLock) {
     }
   });
 
-  ipcMain.handle(MixCWorkIpcChannel.BootstrapRead, async (
+  ipcMain.handle(MixWorkIpcChannel.BootstrapRead, async (
     _event,
     filename: string,
     options?: { agentId?: string },
@@ -9324,7 +9324,7 @@ if (!gotTheLock) {
       };
     }
   });
-  ipcMain.handle(MixCWorkIpcChannel.BootstrapWrite, async (
+  ipcMain.handle(MixWorkIpcChannel.BootstrapWrite, async (
     _event,
     filename: string,
     content: string,
@@ -9393,10 +9393,10 @@ if (!gotTheLock) {
     };
   }
 
-  ipcMain.handle('mixcwork:config:set', async (_event, config: {
+  ipcMain.handle('mixwork:config:set', async (_event, config: {
     workingDirectory?: string;
     executionMode?: 'auto' | 'local' | 'sandbox';
-    agentEngine?: MixCWorkAgentEngine;
+    agentEngine?: MixWorkAgentEngine;
     memoryEnabled?: boolean;
     memoryImplicitUpdateEnabled?: boolean;
     memoryLlmJudgeEnabled?: boolean;
@@ -9448,7 +9448,7 @@ if (!gotTheLock) {
         ? config.openClawHeartbeatEnabled
         : undefined;
       const normalizedEmbedding = normalizeEmbeddingConfig(config);
-      const normalizedConfig: Parameters<MixCWorkStore['setConfig']>[0] = {
+      const normalizedConfig: Parameters<MixWorkStore['setConfig']>[0] = {
         ...config,
         executionMode: normalizedExecutionMode,
         agentEngine: normalizedAgentEngine,
@@ -9461,9 +9461,9 @@ if (!gotTheLock) {
         openClawHeartbeatEnabled: normalizedOpenClawHeartbeatEnabled,
         ...normalizedEmbedding,
       };
-      const previousConfig = getMixCWorkStore().getConfig();
+      const previousConfig = getMixWorkStore().getConfig();
       const previousWorkingDir = previousConfig.workingDirectory;
-      getMixCWorkStore().setConfig(normalizedConfig);
+      getMixWorkStore().setConfig(normalizedConfig);
       if (normalizedConfig.workingDirectory !== undefined && normalizedConfig.workingDirectory !== previousWorkingDir) {
         getSkillManager().handleWorkingDirectoryChange();
         // Main agent workspace is decoupled from workingDirectory — no MEMORY.md
@@ -9471,7 +9471,7 @@ if (!gotTheLock) {
         // {STATE_DIR}/workspace-main/ regardless of the user's working directory.
       }
 
-      const nextConfig = getMixCWorkStore().getConfig();
+      const nextConfig = getMixWorkStore().getConfig();
       const impactDecision = classifyCoworkConfigChange(previousConfig, nextConfig);
       if (impactDecision.impact !== OpenClawConfigImpact.None) {
         const syncResult = await syncOpenClawConfig({
@@ -9499,7 +9499,7 @@ if (!gotTheLock) {
 
   // ==================== Plugin Management IPC Handlers ====================
 
-  registerPluginHandlers({ getMixCWorkStore, syncOpenClawConfig });
+  registerPluginHandlers({ getMixWorkStore, syncOpenClawConfig });
 
   // ==================== Scheduled Task IPC Handlers (OpenClaw) ====================
 
@@ -9542,7 +9542,7 @@ if (!gotTheLock) {
     }),
     getOpenClawRuntimeAdapter: () => openClawRuntimeAdapter,
     getCoworkSessionTitle: (sessionId: string) =>
-      getMixCWorkStore().getSession(sessionId, 0)?.title ?? null,
+      getMixWorkStore().getSession(sessionId, 0)?.title ?? null,
   };
   registerScheduledTaskHandlers(scheduledTaskHandlerDeps);
 
@@ -10493,7 +10493,7 @@ if (!gotTheLock) {
 
   ipcMain.handle('get-recent-cwds', async (_event, limit?: number) => {
     const boundedLimit = limit ? Math.min(Math.max(limit, 1), 20) : 8;
-    return getMixCWorkStore().listRecentCwds(boundedLimit);
+    return getMixWorkStore().listRecentCwds(boundedLimit);
   });
 
   ipcMain.handle('get-api-config', async () => {
@@ -10523,7 +10523,7 @@ if (!gotTheLock) {
       },
     ) => {
       try {
-        saveMixCWorkApiConfig(config);
+        saveMixWorkApiConfig(config);
         return { success: true };
       } catch (error) {
         return {
@@ -10958,7 +10958,7 @@ if (!gotTheLock) {
 
   ipcMain.handle(ShellIpc.OpenHtmlInBrowser, async (_event, htmlContent: string) => {
     try {
-      const tmpDir = path.join(os.tmpdir(), 'mixcwork-preview');
+      const tmpDir = path.join(os.tmpdir(), 'mixwork-preview');
       fs.mkdirSync(tmpDir, { recursive: true });
       const tmpFile = path.join(tmpDir, `preview-${Date.now()}.html`);
       fs.writeFileSync(tmpFile, htmlContent, 'utf-8');
@@ -11065,7 +11065,7 @@ if (!gotTheLock) {
   });
 
   registerAsrIpcHandlers({
-    // The enterprise org JWT, not the consumer `auth_tokens` — MixCWork has no
+    // The enterprise org JWT, not the consumer `auth_tokens` — MixWork has no
     // youdao backend left, so the consumer tokens are always empty for an
     // enterprise user and every ASR request was answered 401.
     getEnterpriseJwt: () => sessionStorage.load()?.jwt ?? null,
@@ -11649,11 +11649,11 @@ if (!gotTheLock) {
     // Dock 图标。开发模式下 Electron 从 node_modules/electron 的默认 bundle 启动：
     //   - macOS：Dock 提示文字（tooltip）与左上角菜单名由该 bundle 的 Info.plist
     //     （CFBundleName）决定，macOS 会缓存它——由 scripts/patch-electron-dev-name.cjs
-    //     在 start:electron 前将其改写为 MixCWork（app.setName 无法覆盖）。
+    //     在 start:electron 前将其改写为 MixWork（app.setName 无法覆盖）。
     //   - 原生「关于」面板（macOS 的 showAboutPanel / Windows 的菜单 About）默认显示
     //     Electron 的默认图标与 Electron 运行时版本（40.2.1）。这里显式指定应用 Logo
     //     （PNG）、名称与产品版本号（app.getVersion()：dev 读仓库根 package.json，
-    //     打包读应用 package.json）覆盖之，使其显示 MixCWork 自身版本。
+    //     打包读应用 package.json）覆盖之，使其显示 MixWork 自身版本。
     // macOS 另用 1024px 应用 Logo（squircle 圆角）覆盖 Dock 图标；打包模式下 .app/.exe
     // 已带正确图标，重复设置无副作用。
     {
@@ -12147,9 +12147,9 @@ if (!gotTheLock) {
     mediaStatusPollCounts.clear();
 
     // Stop Cowork sessions without blocking shutdown.
-    if (mixcworkEngineRouter) {
+    if (mixworkEngineRouter) {
       console.log('[Main] Stopping cowork sessions...');
-      mixcworkEngineRouter.stopAllSessions();
+      mixworkEngineRouter.stopAllSessions();
     }
     if (openClawRuntimeAdapter) {
       openClawRuntimeAdapter.disconnectGatewayClient();
@@ -12421,11 +12421,11 @@ if (!gotTheLock) {
     // Note: Calendar permission is checked on-demand when calendar operations are requested
     // We don't trigger permission dialogs at startup to avoid annoying users
 
-    // Ensure default working directory exists. Prefer the new mixcwork
-    // location; fall back to the legacy mixcwork/project and migrate
+    // Ensure default working directory exists. Prefer the new mixwork
+    // location; fall back to the legacy mixwork/project and migrate
     // in place if it exists.
-    const newProjectDir = path.join(os.homedir(), 'mixcwork', 'project');
-    const legacyProjectDir = path.join(os.homedir(), 'mixcwork', 'project');
+    const newProjectDir = path.join(os.homedir(), 'mixwork', 'project');
+    const legacyProjectDir = path.join(os.homedir(), 'mixwork', 'project');
     let defaultProjectDir = newProjectDir;
     if (!fs.existsSync(newProjectDir)) {
       if (fs.existsSync(legacyProjectDir)) {
@@ -12484,7 +12484,7 @@ if (!gotTheLock) {
     // Dev/E2E convenience: boot the dsh engine once the app is ready and the
     // store can answer provider queries, so app-level checks can assert
     // readiness from logs without driving the settings UI.
-    if (process.env.MIXCWORK_DSH_AUTOSTART === '1') {
+    if (process.env.MIXWORK_DSH_AUTOSTART === '1') {
       ensureDshEngineReady()
         .then(url => console.log(`[DSH] Autostart ready at ${url}`))
         .catch(error => console.error('[DSH] Autostart failed', error));
@@ -12521,7 +12521,7 @@ if (!gotTheLock) {
 
     // Defensive recovery: app may be force-closed during execution and leave
     // stale running flags in DB. Normalize them on startup.
-    const resetCount = getMixCWorkStore().resetRunningSessions();
+    const resetCount = getMixWorkStore().resetRunningSessions();
     console.log('[Main] initApp: resetRunningSessions done, count:', resetCount);
     if (resetCount > 0) {
       console.log(`[Main] Reset ${resetCount} stuck cowork session(s) from running -> idle`);
@@ -12605,15 +12605,15 @@ if (!gotTheLock) {
             }
           },
           config => {
-            const cs = getMixCWorkStore();
+            const cs = getMixWorkStore();
             cs.setConfig(config);
           },
           () => {
-            const cs = getMixCWorkStore();
+            const cs = getMixWorkStore();
             return cs.getConfig().workingDirectory;
           },
           agent => {
-            const cs = getMixCWorkStore();
+            const cs = getMixWorkStore();
             const existing = cs.getAgent(agent.id);
             const updates = {
               name: agent.name,
@@ -12653,7 +12653,7 @@ if (!gotTheLock) {
       if (hadEnterprise) {
         store.delete('enterprise_config');
         // Reset executionMode to default so sandbox mode reverts to "off".
-        const cs = getMixCWorkStore();
+        const cs = getMixWorkStore();
         cs.setConfig({ executionMode: 'local' });
         // R85a: exit enterprise mode also lifts the skill access gate. The
         // gate's periodic tick no-ops once `enterprise_config` is gone, so
@@ -12700,14 +12700,14 @@ if (!gotTheLock) {
     profiler.measure('coworkOpenAICompatProxy');
 
     // Agent model migration — runs after cache warmup so resolveMatchedProvider
-    // can match mixcwork-server models without falling back.
+    // can match mixwork-server models without falling back.
     const defaultAgentModelRef = resolveDefaultAgentModelRef();
-    const backfilledAgentModels = getMixCWorkStore().backfillEmptyAgentModels(defaultAgentModelRef);
+    const backfilledAgentModels = getMixWorkStore().backfillEmptyAgentModels(defaultAgentModelRef);
     const qualifiedAgentModels = migrateAgentModelRefs({
       defaultModelRef: defaultAgentModelRef,
       availableProviders: buildAvailableOpenClawProviders(),
       agents: getAgentManager().listAgents(),
-      updateAgent: (id, patch) => getMixCWorkStore().updateAgent(id, patch),
+      updateAgent: (id, patch) => getMixWorkStore().updateAgent(id, patch),
     });
     if (backfilledAgentModels > 0 || qualifiedAgentModels > 0) {
       console.log(
@@ -12721,7 +12721,7 @@ if (!gotTheLock) {
       const engineManager = getOpenClawEngineManager();
       migrateMainAgentWorkspace(
         engineManager.getStateDir(),
-        getMixCWorkStore().getConfig().workingDirectory,
+        getMixWorkStore().getConfig().workingDirectory,
         getStore(),
       );
     } catch (err) {

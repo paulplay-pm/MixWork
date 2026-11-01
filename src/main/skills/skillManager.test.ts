@@ -182,13 +182,13 @@ test('getSkillScriptRuntimeCandidates delegates to shared node runtime resolutio
 
 test('getSkillScriptRuntimeCandidates preserves Electron-as-node fallback env', () => {
   nodeRuntimeMocks.resolveNodeRuntimeForSpawn.mockReturnValue({
-    command: 'C:\\MixCWork\\MixCWork.exe',
+    command: 'C:\\MixWork\\MixWork.exe',
     args: [],
     env: { ELECTRON_RUN_AS_NODE: '1' },
   });
 
   expect(getSkillScriptRuntimeCandidates({ PATH: 'ignored' })).toEqual([{
-    command: 'C:\\MixCWork\\MixCWork.exe',
+    command: 'C:\\MixWork\\MixWork.exe',
     args: [],
     extraEnv: { ELECTRON_RUN_AS_NODE: '1' },
   }]);

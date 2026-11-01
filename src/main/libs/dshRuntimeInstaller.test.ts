@@ -20,7 +20,7 @@ import {
 } from './dshRuntimeInstaller';
 
 const tempRoots: string[] = [];
-const INSTALL_SENTINEL = '.mixcwork-install-ok.json';
+const INSTALL_SENTINEL = '.mixwork-install-ok.json';
 
 function makeTempDir(prefix: string): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), prefix));

@@ -1,4 +1,4 @@
-# MCP 连接器 — 桌面端按「传输协议 × 鉴权方式」消费设计（MixCWork 工作台）
+# MCP 连接器 — 桌面端按「传输协议 × 鉴权方式」消费设计（MixWork 工作台）
 
 **Date:** 2026-09-27
 **Owner:** paul
@@ -51,7 +51,7 @@
 
 > **SSO 归属决策（已确认）：** SSO 走**桌面直连**，且「SSO 端点存服务端、通用 OAuth 驱动」——即 SSO 复用 `user-oauth` 的通用 OAuth 驱动，差异仅在元数据来源（`ssoApp` 作 provider 标识 + 服务端下发的 SSO 端点/clientId）。**不**在桌面内置 4 个 IdP 的硬编码流程。
 >
-> **⚠ 明确决策（用户确认）：连接器 SSO 不复用成员企业会话。** MCP 连接器 `sso` 鉴权 = 「MixCWork/桌面 → **该第三方 MCP 服务**的 API 调用」的身份验证，由**连接器自身单独绑定并使用 SSO 做验证**（连接器自己的 IdP 端点 + clientId，走桌面通用 OAuth 驱动），**不是**「成员已用企业 SSO 登录 MixCWork 即放行」。它与 `2026-09-27-enterprise-sso-member-login-federation-design.md`（成员登录联邦）是**两件不同的事、无数据耦合** —— 成员登录联邦的 `sso_connections` **不**作为连接器 SSO 的凭据源。
+> **⚠ 明确决策（用户确认）：连接器 SSO 不复用成员企业会话。** MCP 连接器 `sso` 鉴权 = 「MixWork/桌面 → **该第三方 MCP 服务**的 API 调用」的身份验证，由**连接器自身单独绑定并使用 SSO 做验证**（连接器自己的 IdP 端点 + clientId，走桌面通用 OAuth 驱动），**不是**「成员已用企业 SSO 登录 MixWork 即放行」。它与 `2026-09-27-enterprise-sso-member-login-federation-design.md`（成员登录联邦）是**两件不同的事、无数据耦合** —— 成员登录联邦的 `sso_connections` **不**作为连接器 SSO 的凭据源。
 
 ---
 

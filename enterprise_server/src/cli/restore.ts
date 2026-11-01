@@ -6,7 +6,7 @@ import { createInterface } from 'node:readline';
 
 import { assertDockerOnPath, assertRoot, requireEnv } from './lib/preflight.js';
 
-const ETC_MIXCWORK = process.env.MIXCWORK_ETC_DIR ?? '/etc/mixcwork';
+const ETC_MIXWORK = process.env.MIXWORK_ETC_DIR ?? '/etc/mixwork';
 
 async function confirm(prompt: string): Promise<boolean> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -40,7 +40,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
     }
   }
   if (!archive) {
-    console.error('Usage: mixcwork-server restore --from <archive.tar.gz> [--force]');
+    console.error('Usage: mixwork-server restore --from <archive.tar.gz> [--force]');
     process.exit(2);
   }
   assertRoot();
@@ -64,7 +64,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
   }
   // Extract to a staging dir first. We never `rm -rf` the live data dir
   // before the tar extract succeeds; if tar fails the live data survives.
-  const work = mkdtempSync(join(tmpdir(), 'mixcwork-restore-'));
+  const work = mkdtempSync(join(tmpdir(), 'mixwork-restore-'));
   console.log(`[restore] extracting ${archive} to staging`);
   const extract = spawnSync('tar', ['xzf', archive, '-C', work], { stdio: 'inherit' });
   if (extract.status !== 0) {
@@ -88,7 +88,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
   // the live dir is missing. Cross-device rename falls back to copy +
   // delete, which is still safe because we've already extracted the
   // replacement successfully.
-  const liveData = join(ETC_MIXCWORK, 'data');
+  const liveData = join(ETC_MIXWORK, 'data');
   const stagedData = join(work, 'data');
   if (!existsSync(stagedData)) {
     console.error(`[restore] archive did not contain a "data/" directory: ${stagedData} missing`);

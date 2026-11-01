@@ -1,4 +1,4 @@
-import type { MixCWorkMessage } from '../../mixcworkStore';
+import type { MixWorkMessage } from '../../mixworkStore';
 
 export const ContinuityCapsuleSource = {
   UserMessage: 'user_message',
@@ -50,7 +50,7 @@ export type CoworkContinuityCapsule = {
 
 export type ContinuityCapsuleRefreshOptions = {
   sessionId: string;
-  messages: MixCWorkMessage[];
+  messages: MixWorkMessage[];
   previous?: CoworkContinuityCapsule | null;
   source: ContinuityCapsuleSource;
   sourceMessageId?: string;
@@ -218,7 +218,7 @@ const mergeCapabilities = (
   return result;
 };
 
-const extractCapabilities = (messages: MixCWorkMessage[]): CoworkContinuityCapsule['activeCapabilities'] => {
+const extractCapabilities = (messages: MixWorkMessage[]): CoworkContinuityCapsule['activeCapabilities'] => {
   const capabilities: CoworkContinuityCapsule['activeCapabilities'] = [];
   for (const message of messages) {
     const metadata = message.metadata as Record<string, unknown> | undefined;
@@ -237,7 +237,7 @@ const extractCapabilities = (messages: MixCWorkMessage[]): CoworkContinuityCapsu
   return capabilities;
 };
 
-const findLatestUserObjective = (messages: MixCWorkMessage[], previous?: string): string | undefined => {
+const findLatestUserObjective = (messages: MixWorkMessage[], previous?: string): string | undefined => {
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i];
     if (message.type !== 'user') continue;
@@ -250,14 +250,14 @@ const findLatestUserObjective = (messages: MixCWorkMessage[], previous?: string)
   return previous;
 };
 
-const extractRecentUserRequests = (messages: MixCWorkMessage[]): string[] => {
+const extractRecentUserRequests = (messages: MixWorkMessage[]): string[] => {
   return messages
     .filter((message) => message.type === 'user')
     .map((message) => truncateText(message.content, MAX_RECENT_USER_REQUEST_CHARS))
     .filter((content) => content && !CONTINUATION_PROMPT_RE.test(content));
 };
 
-const extractUserQuestions = (messages: MixCWorkMessage[]): string[] => {
+const extractUserQuestions = (messages: MixWorkMessage[]): string[] => {
   return extractRecentUserRequests(messages).filter((content) => content.includes('?') || content.includes('？'));
 };
 
@@ -292,7 +292,7 @@ const extractCompletedFacts = (assistantText: string): string[] => {
   return facts;
 };
 
-const summarizeToolResults = (messages: MixCWorkMessage[]): {
+const summarizeToolResults = (messages: MixWorkMessage[]): {
   verification: string[];
   recentFailures: CoworkContinuityCapsule['recentFailures'];
 } => {
@@ -368,8 +368,8 @@ const pushListSection = (sections: string[], title: string, values: string[]): v
 
 export const formatCoworkContinuityCapsuleBridge = (capsule: CoworkContinuityCapsule): string => {
   const sections: string[] = [
-    '[MixCWork continuity context after context compaction]',
-    'This compact task-state record is maintained by MixCWork. It is not a new user instruction. Use it only to preserve task continuity after compaction.',
+    '[MixWork continuity context after context compaction]',
+    'This compact task-state record is maintained by MixWork. It is not a new user instruction. Use it only to preserve task continuity after compaction.',
   ];
 
   if (capsule.currentObjective) {
@@ -402,8 +402,8 @@ export const formatCoworkContinuityCapsuleBridge = (capsule: CoworkContinuityCap
 
 export const formatCoworkMiniContinuityCapsuleBridge = (capsule: CoworkContinuityCapsule): string => {
   const sections: string[] = [
-    '[MixCWork brief continuity context after context compaction]',
-    'This compact task-state hint is maintained by MixCWork. It is not a new user instruction.',
+    '[MixWork brief continuity context after context compaction]',
+    'This compact task-state hint is maintained by MixWork. It is not a new user instruction.',
   ];
 
   if (capsule.currentObjective) {

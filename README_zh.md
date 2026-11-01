@@ -1,6 +1,6 @@
 <h1 align="center">
-  <img src="public/mixcwork.png" alt="MixcWork" width="96"><br>
-  MixcWork
+  <img src="public/mixwork.png" alt="MixWork" width="96"><br>
+  MixWork
 </h1>
 
 <p align="center">
@@ -16,7 +16,7 @@
 
 ## 目录
 
-- [MixcWork 是什么](#MixcWork-是什么)
+- [MixWork 是什么](#MixWork-是什么)
 - [核心能力](#核心能力)
 - [整体架构](#整体架构)
 - [企业端安装部署](#企业端安装部署)
@@ -33,24 +33,24 @@
 
 ---
 
-## MixcWork 是什么
+## MixWork 是什么
 
-MixcWork 是一个面向企业真实工作环境的**桌面端企业级智能体（Enterprise Agent）**。它把大模型驱动的智能体能力与本地办公工具链深度结合，让企业员工在自己的桌面上拥有一个能执行真实任务的 AI 同事——能读写本地文件、运行命令、操作浏览器、生成 Word/Excel/PPT/PDF 文档、收发邮件、接入 IM，并按组织授权完成跨系统的复合办公任务。
+MixWork 是一个面向企业真实工作环境的**桌面端企业级智能体（Enterprise Agent）**。它把大模型驱动的智能体能力与本地办公工具链深度结合，让企业员工在自己的桌面上拥有一个能执行真实任务的 AI 同事——能读写本地文件、运行命令、操作浏览器、生成 Word/Excel/PPT/PDF 文档、收发邮件、接入 IM，并按组织授权完成跨系统的复合办公任务。
 
-MixcWork 由三个相互协作的部分组成：
+MixWork 由三个相互协作的部分组成：
 
-- **桌面客户端（MixcWork Desktop）**：基于 Electron + React 18 + Redux Toolkit 的跨平台桌面应用，是员工日常使用的入口。
-- **企业服务端（MixcWork Enterprise Server）**：基于 Node.js + Hono + PostgreSQL 的多租户后端，提供统一身份认证、组织/部门/角色管理、模型代理与配额、审计日志、策略下发、应用市场、SSO 绑定等能力。
+- **桌面客户端（MixWork Desktop）**：基于 Electron + React 18 + Redux Toolkit 的跨平台桌面应用，是员工日常使用的入口。
+- **企业服务端（MixWork Enterprise Server）**：基于 Node.js + Hono + PostgreSQL 的多租户后端，提供统一身份认证、组织/部门/角色管理、模型代理与配额、审计日志、策略下发、应用市场、SSO 绑定等能力。
 - **管理控制台（Enterprise Web Console）**：由企业服务端内置的 React SPA，管理员通过浏览器即可完成组织初始化、用户管理、模型与 Provider 配置、技能/MCP 审核、审计查询、应用发布等运营动作。
 
-企业级智能体的核心含义，在 MixcWork 里有四个具体体现：
+企业级智能体的核心含义，在 MixWork 里有四个具体体现：
 
 1. **多租户隔离**——服务端支持多个组织（Org）共存，组织间数据强隔离，跨组织访问直接 404，绝不泄露存在性。
 2. **企业级权限模型**——基于「细粒度权限点（module:action）× 数据范围（DataScope）」的两轴模型，权限点与数据范围独立判定并审计，跨级越权一律 fail-closed。
 3. **企业级模型治理**——服务端统一代理 LLM Provider，API Key 使用 AES-256-GCM 加密静态存储，可按组织/角色下发模型与配额，所有调用生成审计与用量记录。
 4. **企业级管控通道**——管理员可通过服务端向桌面端统一下发模型目录、专家套件、MCP/技能市场、SSO 绑定、应用更新；桌面端在登录后会自动同步这些配置，无需终端用户手工干预。
 
-MixcWork 既可以作为个人开发者使用的桌面 Agent，也可以作为企业 IT 统一采购、分发、管控、审计的智能体平台。本文档覆盖**全部场景**的安装、部署与开发。
+MixWork 既可以作为个人开发者使用的桌面 Agent，也可以作为企业 IT 统一采购、分发、管控、审计的智能体平台。本文档覆盖**全部场景**的安装、部署与开发。
 
 ---
 
@@ -60,12 +60,12 @@ MixcWork 既可以作为个人开发者使用的桌面 Agent，也可以作为�
 
 #### Cowork 长任务会话
 
-围绕本地项目和文件执行长任务。MixcWork 实时流式展示进度、持久化会话历史、渲染工具输出，并在文件操作、终端命令、网络访问等敏感动作前请求用户审批。
+围绕本地项目和文件执行长任务。MixWork 实时流式展示进度、持久化会话历史、渲染工具输出，并在文件操作、终端命令、网络访问等敏感动作前请求用户审批。
 
 下图展示了一次真实场景：Agent 拿到一张电商仓库成本/利润手写笔记的扫描件，识别出 6 处模糊点并主动标注「?待确认」交给用户核对；右侧实时生成结构化的成本/利润结转逻辑文档与可下载的 Markdown / HTML Artifact。
 
 <p align="center">
-  <img src="docs/res/desktop-screenshot.png" alt="MixcWork 桌面端：长任务会话 + Artifact 实时生成" width="960">
+  <img src="docs/res/desktop-screenshot.png" alt="MixWork 桌面端：长任务会话 + Artifact 实时生成" width="960">
 </p>
 
 #### 多 Agent 工作流
@@ -78,11 +78,11 @@ MixcWork 既可以作为个人开发者使用的桌面 Agent，也可以作为�
 
 #### 技能（Skills）
 
-MixcWork 内置 29 个技能，覆盖 Web 搜索、Word 文档、Excel 表格、PowerPoint、PDF 处理、Remotion 视频生成、浏览器自动化、图片/视频生成、股票研究、内容写作、邮件、天气、技能创建等场景。企业服务端还提供技能市场与提交审核。
+MixWork 内置 29 个技能，覆盖 Web 搜索、Word 文档、Excel 表格、PowerPoint、PDF 处理、Remotion 视频生成、浏览器自动化、图片/视频生成、股票研究、内容写作、邮件、天气、技能创建等场景。企业服务端还提供技能市场与提交审核。
 
 #### MCP 服务
 
-通过 Model Context Protocol 接入外部工具和数据源。MixcWork 在本地保存用户配置的 MCP 服务，并把启用的服务同步给执行引擎；管理员可通过服务端的市场与提交审核统一管控可用的 MCP。
+通过 Model Context Protocol 接入外部工具和数据源。MixWork 在本地保存用户配置的 MCP 服务，并把启用的服务同步给执行引擎；管理员可通过服务端的市场与提交审核统一管控可用的 MCP。
 
 #### 定时任务
 
@@ -108,7 +108,7 @@ MixcWork 内置 29 个技能，覆盖 Web 搜索、Word 文档、Excel 表格、
 | **认证与 SSO** | 本地账号密码（bcryptjs）；SSO 绑定（飞书等 IdP）；JWT（HS256）签发与校验 |
 | **权限模型** | 「细粒度权限点 × 数据范围」两轴；41 个内置权限点；5 种 DataScope；fail-closed 校验 |
 | **用户与角色管理** | 部门树、角色 CRUD、内置角色保护（不可删除）；批量操作；用户邀请 |
-| **模型目录** | 按组织导入与下发模型；内置 Provider 模板（OpenAI、Anthropic、DeepSeek、MixcWork Server 等） |
+| **模型目录** | 按组织导入与下发模型；内置 Provider 模板（OpenAI、Anthropic、DeepSeek、MixWork Server 等） |
 | **Provider Key 保险库** | AES-256-GCM 加密静态存储；只返回 `api_key_masked`；支持按角色访问 |
 | **模型代理** | `/proxy/<provider>` 统一代理；按组织/角色配额；全量审计 |
 | **审计日志** | 全操作审计；越权行为以 `admin_access_denied` 记录，区分权限点缺失与数据范围外 |
@@ -124,7 +124,7 @@ MixcWork 内置 29 个技能，覆盖 Web 搜索、Word 文档、Excel 表格、
 下图展示了「模型配置」页面：左侧按内置服务商 / 自定义服务商分组并以开关粒度控制启停，右侧配置 Base URL、API 协议（OpenAI 兼容 / Anthropic 兼容）、Coding Plan 专属端点与加密的 API Key，下方是该服务商下挂载的模型列表（模型名、类型、上下文窗口、启用状态、操作）。所有 API Key 提交后即以 AES-256-GCM 加密入库，列表只展示掩码。
 
 <p align="center">
-  <img src="docs/res/enterprise-console-screenshot.png" alt="MixcWork 管理控制台：模型配置" width="960">
+  <img src="docs/res/enterprise-console-screenshot.png" alt="MixWork 管理控制台：模型配置" width="960">
 </p>
 
 ### 实战指令
@@ -150,14 +150,14 @@ MixcWork 内置 29 个技能，覆盖 Web 搜索、Word 文档、Excel 表格、
                                │ HTTPS / JWT
                                ▼
 ┌────────────────────────────────────────────────────────────────┐
-│                  MixcWork Enterprise Server                     │
+│                  MixWork Enterprise Server                     │
 │   Hono + node:http  •  PostgreSQL  •  /proxy + /admin + /api    │
 │   Auth/RBAC • Vault • Audit • Catalog • Marketplace • Updates   │
 └──────────────────────────────┬─────────────────────────────────┘
                                │ HTTPS (ENTERPRISE_SERVER_URL)
                                ▼
 ┌────────────────────────────────────────────────────────────────┐
-│                  员工桌面 (MixcWork Desktop)                     │
+│                  员工桌面 (MixWork Desktop)                     │
 │   Electron 40 + React 18 + Redux Toolkit + Tailwind             │
 │   Renderer  ⇄  Main (IPC)  ⇄  Cowork Store (SQLite)             │
 │   Agents • Skills • MCP • IM • Scheduled Tasks • Artifacts      │
@@ -170,7 +170,7 @@ MixcWork 内置 29 个技能，覆盖 Web 搜索、Word 文档、Excel 表格、
 
 ## 企业端安装部署
 
-> 目标：负责在企业内部署 MixcWork Enterprise Server（含管理控制台），并向员工桌面端统一下发企业配置。
+> 目标：负责在企业内部署 MixWork Enterprise Server（含管理控制台），并向员工桌面端统一下发企业配置。
 
 ### A. 生产环境部署（客户自管 Linux 主机）
 
@@ -193,8 +193,8 @@ MixcWork 内置 29 个技能，覆盖 Web 搜索、Word 文档、Excel 表格、
 
 ```bash
 # 1.1 拉取源码并切到目标版本
-git clone https://github.com/your-org/MixcWork.git
-cd MixcWork
+git clone https://github.com/your-org/MixWork.git
+cd MixWork
 git checkout v2026.10.19   # 替换为实际要部署的版本 tag
 
 # 1.2 用打包脚本构建（详见 §4.4，完整说明在开发指南）
@@ -202,14 +202,14 @@ git checkout v2026.10.19   # 替换为实际要部署的版本 tag
 
 # 1.3 推送到内部镜像仓库
 docker tag enterprise-server:v2026.10.19-abcd123 \
-  registry.internal/MixcWork/enterprise-server:v2026.10.19-abcd123
-docker push registry.internal/MixcWork/enterprise-server:v2026.10.19-abcd123
+  registry.internal/MixWork/enterprise-server:v2026.10.19-abcd123
+docker push registry.internal/MixWork/enterprise-server:v2026.10.19-abcd123
 ```
 
 或在**生产主机**上直接拉：
 
 ```bash
-docker pull registry.internal/MixcWork/enterprise-server:v2026.10.19-abcd123
+docker pull registry.internal/MixWork/enterprise-server:v2026.10.19-abcd123
 ```
 
 #### A.3 步骤 2 — 准备 `.env`
@@ -217,8 +217,8 @@ docker pull registry.internal/MixcWork/enterprise-server:v2026.10.19-abcd123
 在生产主机上：
 
 ```bash
-mkdir -p /etc/MixcWork
-cd /etc/MixcWork
+mkdir -p /etc/MixWork
+cd /etc/MixWork
 cp /path/to/enterprise_server/.env.example .env
 ```
 
@@ -226,48 +226,48 @@ cp /path/to/enterprise_server/.env.example .env
 
 | 变量 | 必填 | 说明 | 生成方式 |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | ✅ | `postgres://app:<password>@<pg-host>:5432/MixcWork` | 手动 |
+| `DATABASE_URL` | ✅ | `postgres://app:<password>@<pg-host>:5432/MixWork` | 手动 |
 | `JWT_SECRET` | ✅ | HS256 签名密钥，**≥ 32 字符** | `openssl rand -hex 32` |
-| `MixcWork_VAULT_MASTER_KEY` | ✅ | Provider Key 加密主密钥，**32 字节 base64**；丢失则全部 Provider Key 不可恢复 | `openssl rand -base64 32` |
+| `MixWork_VAULT_MASTER_KEY` | ✅ | Provider Key 加密主密钥，**32 字节 base64**；丢失则全部 Provider Key 不可恢复 | `openssl rand -base64 32` |
 | `IMAGE_TAG` | ✅ | 镜像 tag（如 `v2026.10.15`） | 手动 |
 | `POSTGRES_SUPERUSER_URL` | ⚠️ 仅 `init` 阶段 | `postgres://postgres:<pw>@<pg-host>:5432/postgres`；**init 成功后务必删除此行** | 手动 |
 
-> ⚠️ `init` 默认会用 `POSTGRES_SUPERUSER_URL` 自动建应用账号与库。如已在 Postgres 里手动建好，改为运行 `MixcWork-server init --no-db-bootstrap` 并删除 `POSTGRES_SUPERUSER_URL`。
+> ⚠️ `init` 默认会用 `POSTGRES_SUPERUSER_URL` 自动建应用账号与库。如已在 Postgres 里手动建好，改为运行 `MixWork-server init --no-db-bootstrap` 并删除 `POSTGRES_SUPERUSER_URL`。
 
-#### A.4 步骤 3 — `MixcWork-server init`
+#### A.4 步骤 3 — `MixWork-server init`
 
 在生产主机上，确保 `.env` 在当前目录：
 
 ```bash
-cd /etc/MixcWork          # 或任何含 .env 的工作目录
-MixcWork-server init
-# 或：node /opt/MixcWork/enterprise_server/dist/cli/index.js init
+cd /etc/MixWork          # 或任何含 .env 的工作目录
+MixWork-server init
+# 或：node /opt/MixWork/enterprise_server/dist/cli/index.js init
 ```
 
 `init` 会：
 
-1. 校验 Docker 在 `PATH`、当前用户是 `root`（init 拒绝以非 root 身份写 `/etc/MixcWork/`）
-2. 校验 `JWT_SECRET` 与 `MixcWork_VAULT_MASTER_KEY` 强度
+1. 校验 Docker 在 `PATH`、当前用户是 `root`（init 拒绝以非 root 身份写 `/etc/MixWork/`）
+2. 校验 `JWT_SECRET` 与 `MixWork_VAULT_MASTER_KEY` 强度
 3. 用 `POSTGRES_SUPERUSER_URL` 创建应用账号与库（已存在则跳过；同账号报错）
-4. 在 `/etc/MixcWork/` 写入：
+4. 在 `/etc/MixWork/` 写入：
    - `compose.yml`（来自镜像 bundle 的 compose 模板，`image:` 已被替换为 `IMAGE_TAG`）
    - `caddyfile.example`（反向代理配置模板）
    - `current-version`（`IMAGE_TAG`）
-5. 在 `/usr/local/bin/MixcWork-server` 创建一个指向 `cli/dist/index.js` 的符号链接（最佳努力，失败只警告，不中断 init）
+5. 在 `/usr/local/bin/MixWork-server` 创建一个指向 `cli/dist/index.js` 的符号链接（最佳努力，失败只警告，不中断 init）
 
 #### A.5 步骤 4 — 启动
 
 ```bash
-MixcWork-server start
-# 等价于：docker compose -f /etc/MixcWork/compose.yml up -d
+MixWork-server start
+# 等价于：docker compose -f /etc/MixWork/compose.yml up -d
 ```
 
 等待 `docker compose ps` 显示 `Up (healthy)`：
 
 ```bash
-docker compose -f /etc/MixcWork/compose.yml ps
+docker compose -f /etc/MixWork/compose.yml ps
 # NAME                STATUS              PORTS
-# MixcWork-app         Up (healthy)        0.0.0.0:8787->8787/tcp
+# MixWork-app         Up (healthy)        0.0.0.0:8787->8787/tcp
 ```
 
 #### A.6 步骤 5 — 首次运行（初始化组织 + Super Admin）
@@ -283,13 +283,13 @@ https://<enterprise-host>/setup
 - **组织名**（例：`Acme Corp`）—— 桌面端"Enterprise"登录时填的也是这个
 - **Super Admin 用户名 + 密码** —— 之后用 `(组织名, 用户名, 密码)` 登录管理控制台 `/login`
 
-> 完成后 `/api/setup/*` 永久关闭（HTTP 410）。如需重开，跑 `MixcWork-server reinit`，会再次打开 setup 向导（**已有的组织与数据不会被清空**）。
+> 完成后 `/api/setup/*` 永久关闭（HTTP 410）。如需重开，跑 `MixWork-server reinit`，会再次打开 setup 向导（**已有的组织与数据不会被清空**）。
 
 #### A.7 步骤 6 — 配置反向代理
 
 容器本身监听 `http://0.0.0.0:8787`。生产环境强烈建议前置 nginx / Caddy 终止 TLS。
 
-**Caddyfile 示例**（`/etc/MixcWork/caddyfile.example` 已含模板）：
+**Caddyfile 示例**（`/etc/MixWork/caddyfile.example` 已含模板）：
 
 ```caddy
 <enterprise-host> {
@@ -336,16 +336,16 @@ curl -fsS https://<enterprise-host>/api/health
 
 ```bash
 # 7.1 拉取新镜像到生产主机
-docker pull registry.internal/MixcWork/enterprise-server:v2026.11.1
+docker pull registry.internal/MixWork/enterprise-server:v2026.11.1
 
 # 7.2 一条命令完成升级（预迁移 dry-run → 切镜像 → 重启 → 校验）
-MixcWork-server upgrade --to v2026.11.1
+MixWork-server upgrade --to v2026.11.1
 ```
 
 升级流程：
 
 1. `docker pull <new-image>`
-2. **dry-run** 预迁移（`MixcWork_MIGRATE_DRY_RUN=1`），只校验迁移 SQL 是否可执行，**不写库**
+2. **dry-run** 预迁移（`MixWork_MIGRATE_DRY_RUN=1`），只校验迁移 SQL 是否可执行，**不写库**
 3. 把 `compose.yml` 的 `image:` 替换为新 tag
 4. `docker compose up -d` 拉起新容器
 5. 轮询 `/health`（默认 30 秒超时）
@@ -355,32 +355,32 @@ MixcWork-server upgrade --to v2026.11.1
 #### A.9 步骤 8 — 备份
 
 ```bash
-MixcWork-server backup                # 默认写到 ./MixcWork-backup-YYYY-MM-DD.tar.gz
+MixWork-server backup                # 默认写到 ./MixWork-backup-YYYY-MM-DD.tar.gz
 # 或：
-MixcWork-server backup --out /var/backups/MixcWork/MixcWork-$(date +%F).tar.gz
+MixWork-server backup --out /var/backups/MixWork/MixWork-$(date +%F).tar.gz
 ```
 
 `backup` 做两件事：
 
 1. `pg_dump --format=custom` 写到一个临时目录
-2. 把临时目录里的 `dump.sql.gz` 与 `/etc/MixcWork/data/` 一起打成 `<out>`
+2. 把临时目录里的 `dump.sql.gz` 与 `/etc/MixWork/data/` 一起打成 `<out>`
 
 建议：
 
-- 把 `MixcWork-backup-*.tar.gz` 推到对象存储（S3/OSS/COS）
+- 把 `MixWork-backup-*.tar.gz` 推到对象存储（S3/OSS/COS）
 - 保留最近 14 天本地副本 + 异地冷归档
 
 #### A.10 步骤 9 — 恢复
 
 ```bash
 # 9.1 先停服务（restore 会校验 /health）
-MixcWork-server stop
+MixWork-server stop
 
 # 9.2 跑恢复
-MixcWork-server restore --from /var/backups/MixcWork/MixcWork-2026-10-15.tar.gz
+MixWork-server restore --from /var/backups/MixWork/MixWork-2026-10-15.tar.gz
 
 # 9.3 启动
-MixcWork-server start
+MixWork-server start
 ```
 
 `restore` 流程（已加保险）：
@@ -395,10 +395,10 @@ MixcWork-server start
 
 | 命令 | 用途 | 退出码 |
 | --- | --- | --- |
-| `MixcWork-server status` | 健康 / 版本 | `0` 正常 / `1` 异常 / `2` 未运行 |
-| `MixcWork-server logs` | `docker compose logs` 透传 | — |
-| `MixcWork-server version` | 当前版本 | `0` |
-| `MixcWork-server reinit` | 重新打开 setup 向导（**不**清空数据） | `0` |
+| `MixWork-server status` | 健康 / 版本 | `0` 正常 / `1` 异常 / `2` 未运行 |
+| `MixWork-server logs` | `docker compose logs` 透传 | — |
+| `MixWork-server version` | 当前版本 | `0` |
+| `MixWork-server reinit` | 重新打开 setup 向导（**不**清空数据） | `0` |
 
 容器日志位置（外部采集时挂这些目录）：
 
@@ -410,12 +410,12 @@ MixcWork-server start
 | 现象 | 排查 |
 | --- | --- |
 | `init` 报 "Docker is not on PATH" | 安装 `docker-ce` 与 `docker-compose-plugin`；确认 `docker --version` ≥ 24 |
-| `init` 报 "same role"（`POSTGRES_SUPERUSER_URL` 与 `DATABASE_URL` 同账号） | 在 Postgres 手动 `CREATE ROLE` 出应用账号，再 `MixcWork-server init --no-db-bootstrap` |
-| `upgrade` 之后容器 restart loop | 升级已自动回滚到旧 tag；查 `docker logs MixcWork-app` 找新版本为何没起。**数据库没动** |
+| `init` 报 "same role"（`POSTGRES_SUPERUSER_URL` 与 `DATABASE_URL` 同账号） | 在 Postgres 手动 `CREATE ROLE` 出应用账号，再 `MixWork-server init --no-db-bootstrap` |
+| `upgrade` 之后容器 restart loop | 升级已自动回滚到旧 tag；查 `docker logs MixWork-app` 找新版本为何没起。**数据库没动** |
 | `/api/health` 200 但 `/` 空白 | 反向代理没把 `/` 转发过去；Caddy 加 `flush_interval -1`，nginx 调 `proxy_read_timeout 120s` |
-| `MixcWork-server: command not found` | `init` 步骤 5 失败；手动建链接：`ln -s /opt/MixcWork/enterprise_server/dist/cli/index.js /usr/local/bin/MixcWork-server && chmod +x /opt/MixcWork/enterprise_server/dist/cli/index.js` |
-| `restore` 报 "archive did not contain a data/" | 备份是在用本工具之前手动 `tar` 打的；用 `MixcWork-server backup` 重新生成 |
-| 升级回滚后想强制升级到新版本 | 排查完阻塞问题（多半是数据库迁移 dry-run 失败），再 `MixcWork-server upgrade --to <ver>` 一次 |
+| `MixWork-server: command not found` | `init` 步骤 5 失败；手动建链接：`ln -s /opt/MixWork/enterprise_server/dist/cli/index.js /usr/local/bin/MixWork-server && chmod +x /opt/MixWork/enterprise_server/dist/cli/index.js` |
+| `restore` 报 "archive did not contain a data/" | 备份是在用本工具之前手动 `tar` 打的；用 `MixWork-server backup` 重新生成 |
+| 升级回滚后想强制升级到新版本 | 排查完阻塞问题（多半是数据库迁移 dry-run 失败），再 `MixWork-server upgrade --to <ver>` 一次 |
 
 #### A.13 桌面端对接
 
@@ -439,7 +439,7 @@ ENTERPRISE_SERVER_URL=https://<enterprise-host>
 
 ### 1. 仅使用企业版（推荐企业用户）
 
-如果你的公司已经部署了 MixcWork Enterprise Server，你只需要拿到桌面安装包 + 登录凭据：
+如果你的公司已经部署了 MixWork Enterprise Server，你只需要拿到桌面安装包 + 登录凭据：
 
 1. 从公司 IT 渠道获取最新安装包（macOS / Windows / Linux）。
 2. 安装后启动应用，登录页选择「Enterprise」。
@@ -474,14 +474,14 @@ ENTERPRISE_SERVER_URL=https://<enterprise-host>
 
 ### 4. 数据与日志位置（用户端）
 
-- **应用数据**：`<userData>/MixcWork.sqlite`
-  - macOS：`~/Library/Application Support/MixcWork/MixcWork.sqlite`
-  - Windows：`%APPDATA%/MixcWork/MixcWork.sqlite`
-  - Linux：`~/.config/MixcWork/MixcWork.sqlite`
+- **应用数据**：`<userData>/MixWork.sqlite`
+  - macOS：`~/Library/Application Support/MixWork/MixWork.sqlite`
+  - Windows：`%APPDATA%/MixWork/MixWork.sqlite`
+  - Linux：`~/.config/MixWork/MixWork.sqlite`
 - **主进程日志**：保留 7 天，单文件 80 MB 轮转
-  - macOS：`~/Library/Logs/MixcWork/main-YYYY-MM-DD.log`
-  - Windows：`%APPDATA%/MixcWork/logs/main-YYYY-MM-DD.log`
-  - Linux：`~/.config/MixcWork/logs/main-YYYY-MM-DD.log`
+  - macOS：`~/Library/Logs/MixWork/main-YYYY-MM-DD.log`
+  - Windows：`%APPDATA%/MixWork/logs/main-YYYY-MM-DD.log`
+  - Linux：`~/.config/MixWork/logs/main-YYYY-MM-DD.log`
 - **Agent 工作区记忆**：`<userData>/openclaw/state/workspace-{agentId}/`（主 Agent 是 `workspace-main`），内含 `MEMORY.md`、`USER.md`、`SOUL.md`、每日笔记 `memory/YYYY-MM-DD.md`
 - **执行引擎日志**：`<userData>/openclaw/logs/gateway-*.log`，保留 3 天
 
@@ -489,14 +489,14 @@ ENTERPRISE_SERVER_URL=https://<enterprise-host>
 
 ## 开发指南
 
-> 目标读者：MixcWork 桌面端 / 企业服务端的开发者。桌面端用 npm + Electron；企业服务端只通过 Docker 镜像交付，开发与打包全在容器内进行（详见 §4）。
+> 目标读者：MixWork 桌面端 / 企业服务端的开发者。桌面端用 npm + Electron；企业服务端只通过 Docker 镜像交付，开发与打包全在容器内进行（详见 §4）。
 
 ### 1. 代码仓库布局
 
 本仓库是一个 npm workspaces 单仓：
 
 ```
-MixcWork/
+MixWork/
 ├── src/                 # 桌面端（Electron Main + Renderer）
 ├── enterprise_server/   # 企业服务端（Node.js + Hono + PostgreSQL）
 ├── enterprise_server/web/  # 管理控制台 SPA（Vite + React 19 + TanStack Query + Zustand）
@@ -522,8 +522,8 @@ MixcWork/
 #### 3.1 首次启动
 
 ```bash
-git clone https://github.com/MixcWork/MixcWork.git
-cd MixcWork
+git clone https://github.com/paulplay-pm/MixWork.git
+cd MixWork
 npm install
 # 首次启动会自动构建桌面端所需的执行 runtime（约几分钟）
 npm run electron:dev:openclaw
@@ -589,11 +589,11 @@ npm run dist:linux
 
 离线 / 私有源打包可用的环境变量：
 
-- `MixcWork_PORTABLE_PYTHON_ARCHIVE`
-- `MixcWork_PORTABLE_PYTHON_URL`
-- `MixcWork_WINDOWS_EMBED_PYTHON_VERSION`
-- `MixcWork_WINDOWS_EMBED_PYTHON_URL`
-- `MixcWork_WINDOWS_GET_PIP_URL`
+- `MixWork_PORTABLE_PYTHON_ARCHIVE`
+- `MixWork_PORTABLE_PYTHON_URL`
+- `MixWork_WINDOWS_EMBED_PYTHON_VERSION`
+- `MixWork_WINDOWS_EMBED_PYTHON_URL`
+- `MixWork_WINDOWS_GET_PIP_URL`
 
 ### 4. 企业服务端开发与打包（Docker）
 
@@ -608,7 +608,7 @@ npm run dist:linux
 docker buildx build \
   -f enterprise_server/Dockerfile \
   --target ts-build \
-  --tag MixcWork-enterprise-dev:latest \
+  --tag MixWork-enterprise-dev:latest \
   --load \
   .
 ```
@@ -623,27 +623,27 @@ docker buildx build \
 
 ```yaml
 # enterprise_server/docker-compose.dev.yml
-name: MixcWork-enterprise-dev
+name: MixWork-enterprise-dev
 
 services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: MixcWork
-      POSTGRES_PASSWORD: MixcWork
-      POSTGRES_DB: MixcWork
+      POSTGRES_USER: MixWork
+      POSTGRES_PASSWORD: MixWork
+      POSTGRES_DB: MixWork
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U MixcWork"]
+      test: ["CMD-SHELL", "pg_isready -U MixWork"]
       interval: 5s
       timeout: 3s
       retries: 5
 
   app:
-    image: MixcWork-enterprise-dev:latest   # 来自 4.1 的开发镜像
+    image: MixWork-enterprise-dev:latest   # 来自 4.1 的开发镜像
     env_file: .env
     depends_on:
       postgres:
@@ -662,7 +662,7 @@ volumes:
 
 ```bash
 cd enterprise_server
-cp .env.example .env   # 填 DATABASE_URL / JWT_SECRET / MixcWork_VAULT_MASTER_KEY
+cp .env.example .env   # 填 DATABASE_URL / JWT_SECRET / MixWork_VAULT_MASTER_KEY
 
 # 起 Postgres
 docker compose -f docker-compose.dev.yml up -d postgres
@@ -674,7 +674,7 @@ docker compose -f docker-compose.dev.yml run --rm --service-ports app
 
 > 改 `src/` 里的 TypeScript / `web/` 里的 SPA 代码后：
 > - **服务端代码改动**：`tsx watch` 自动重启，浏览器刷新即可
-> - **SPA 代码改动**：重跑 §4.1 重新打 `MixcWork-enterprise-dev:latest`（web 改动需要重 build），再 `Ctrl+C` 重跑 `docker compose ... run`
+> - **SPA 代码改动**：重跑 §4.1 重新打 `MixWork-enterprise-dev:latest`（web 改动需要重 build），再 `Ctrl+C` 重跑 `docker compose ... run`
 
 #### 4.3 集成验证：直接跑生产镜像
 
@@ -710,7 +710,7 @@ curl -fsS http://127.0.0.1:8787/api/health
 
 # 4.4.2 直接推送到内部 registry（多架构需要 --push）
 ./scripts/package-enterprise-server.sh --tag v2026.10.19 \
-    --registry registry.internal/MixcWork --push
+    --registry registry.internal/MixWork --push
 
 # 4.4.3 多架构打包
 ./scripts/package-enterprise-server.sh --tag v2026.10.19 \
@@ -719,13 +719,13 @@ curl -fsS http://127.0.0.1:8787/api/health
 
 镜像命名规范：
 
-- **默认产出** `enterprise-server:v<version>-<short-sha>`（**单段名**，与 `docker-compose.yml` 的 `IMAGE_REPO` 默认值及 `MixcWork-server upgrade` 的 `IMAGE_REPO` 默认值一致，无需 env 覆盖即可 `docker compose up -d`）
+- **默认产出** `enterprise-server:v<version>-<short-sha>`（**单段名**，与 `docker-compose.yml` 的 `IMAGE_REPO` 默认值及 `MixWork-server upgrade` 的 `IMAGE_REPO` 默认值一致，无需 env 覆盖即可 `docker compose up -d`）
 - 仅允许 `[a-zA-Z0-9._-]`，**禁止 `+`**（OCI image tag 字符集限制，`docker push` 会拒绝）
 - 不写 `--tag` 时默认 `dev-<short-sha>`
 
 脚本还提供：
 
-- `--env-file <path>` + `--generate-secrets`：用 `openssl rand` 生成 `JWT_SECRET` 与 `MixcWork_VAULT_MASTER_KEY` 写入指定文件，供你合并进生产主机的 `.env`。**镜像本身不 bake secret**，运行时由 `env_file:` 提供
+- `--env-file <path>` + `--generate-secrets`：用 `openssl rand` 生成 `JWT_SECRET` 与 `MixWork_VAULT_MASTER_KEY` 写入指定文件，供你合并进生产主机的 `.env`。**镜像本身不 bake secret**，运行时由 `env_file:` 提供
 - `--load-only`：与 `--load` 行为相同，仅本机 docker 加载，不推送
 - `--help`：完整参数说明
 
@@ -737,12 +737,12 @@ curl -fsS http://127.0.0.1:8787/api/health
 
 ```bash
 docker tag enterprise-server:v2026.10.19-abcd123 \
-    registry.internal/MixcWork/enterprise-server:v2026.10.19-abcd123
+    registry.internal/MixWork/enterprise-server:v2026.10.19-abcd123
 
-docker push registry.internal/MixcWork/enterprise-server:v2026.10.19-abcd123
+docker push registry.internal/MixWork/enterprise-server:v2026.10.19-abcd123
 ```
 
-CI 会自动构建并推送（见 `.github/workflows/enterprise-server-image.yml`）；本地用上面这条命令手动推一次即可。推到内部仓库后，`MixcWork-server upgrade --to v2026.10.19-abcd123` 就能在生产主机上拉新镜像。
+CI 会自动构建并推送（见 `.github/workflows/enterprise-server-image.yml`）；本地用上面这条命令手动推一次即可。推到内部仓库后，`MixWork-server upgrade --to v2026.10.19-abcd123` 就能在生产主机上拉新镜像。
 
 #### 4.6 改代码后的快速重打包 + 集成验证流程
 
@@ -758,29 +758,29 @@ curl -fsS http://127.0.0.1:8787/health
 
 集成验证的关键点：
 
-- 镜像的 `ENTRYPOINT` 是 `tini + node /app/repo/dist/cli/index.js`，**入口就是** CLI 本身，**不要** 再加 `MixcWork-server` 前缀（参见 4.7）
-- compose 默认注入 `DATABASE_URL=postgres://MixcWork:MixcWork@host.docker.internal:5434/MixcWork`，让容器内能连到 docker host 上的 Postgres；改用其他 DB 时直接覆盖该值即可
+- 镜像的 `ENTRYPOINT` 是 `tini + node /app/repo/dist/cli/index.js`，**入口就是** CLI 本身，**不要** 再加 `MixWork-server` 前缀（参见 4.7）
+- compose 默认注入 `DATABASE_URL=postgres://MixWork:MixWork@host.docker.internal:5434/MixWork`，让容器内能连到 docker host 上的 Postgres；改用其他 DB 时直接覆盖该值即可
 - 健康检查端点是 `/health` 与 `/api/health`（二者都返回 `{"ok":true}`，后者还 serve SPA 的 `index.html`）
 
 #### 4.7 镜像内 CLI 工具
 
-`enterprise-server` 镜像的 `ENTRYPOINT` 是 `tini + node /app/repo/dist/cli/index.js`，所以容器内**直接用** `version` / `migrate` 等子命令，不需要 `MixcWork-server` 前缀（`MixcWork-server` 是在生产主机上由 `init` 子命令在 `/usr/local/bin/` 建立的 shim，**容器内**没有这个文件）。
+`enterprise-server` 镜像的 `ENTRYPOINT` 是 `tini + node /app/repo/dist/cli/index.js`，所以容器内**直接用** `version` / `migrate` 等子命令，不需要 `MixWork-server` 前缀（`MixWork-server` 是在生产主机上由 `init` 子命令在 `/usr/local/bin/` 建立的 shim，**容器内**没有这个文件）。
 
 ```bash
 # 查看构建时注入的版本
 docker run --rm enterprise-server:v2026.10.19-abcd123 version
-# → MixcWork-server v2026.10.19-abcd123
+# → MixWork-server v2026.10.19-abcd123
 
 # 列出所有子命令
 docker run --rm enterprise-server:v2026.10.19-abcd123 help
 ```
 
-`start` 子命令会自动跑迁移；手动跑迁移（带 `MixcWork_MIGRATE_DRY_RUN=1` 校验）：
+`start` 子命令会自动跑迁移；手动跑迁移（带 `MixWork_MIGRATE_DRY_RUN=1` 校验）：
 
 ```bash
 docker run --rm \
     --env-file enterprise_server/.env \
-    -e MixcWork_MIGRATE_DRY_RUN=1 \
+    -e MixWork_MIGRATE_DRY_RUN=1 \
     enterprise-server:v2026.10.19-abcd123 \
     migrate
 ```
@@ -871,16 +871,16 @@ Dockerfile 的 `build` 阶段在 `tsc` 之后跑了一次 `enterprise_server/scr
 
 ### 桌面端
 
-- 应用数据：`<userData>/MixcWork.sqlite`
+- 应用数据：`<userData>/MixWork.sqlite`
 - 执行引擎状态、记忆、生成配置、网关日志：`<userData>/openclaw/`
 - 主 Agent 工作区：`workspace-main`；非主 Agent：`workspace-<agentId>`
 - 主进程日志（保留 7 天，80 MB 轮转）：
-  - macOS：`~/Library/Logs/MixcWork/main-YYYY-MM-DD.log`
-  - Windows：`%APPDATA%/MixcWork/logs/main-YYYY-MM-DD.log`
-  - Linux：`~/.config/MixcWork/logs/main-YYYY-MM-DD.log`
+  - macOS：`~/Library/Logs/MixWork/main-YYYY-MM-DD.log`
+  - Windows：`%APPDATA%/MixWork/logs/main-YYYY-MM-DD.log`
+  - Linux：`~/.config/MixWork/logs/main-YYYY-MM-DD.log`
 - 网关抓取日志（保留 3 天）：
-  - macOS：`~/Library/Logs/MixcWork/openclaw/gateway-YYYY-MM-DD.log`
-  - Windows：`%APPDATA%/MixcWork/openclaw/logs/gateway-YYYY-MM-DD.log`
+  - macOS：`~/Library/Logs/MixWork/openclaw/gateway-YYYY-MM-DD.log`
+  - Windows：`%APPDATA%/MixWork/openclaw/logs/gateway-YYYY-MM-DD.log`
 
 ### 企业服务端
 
@@ -895,7 +895,7 @@ Dockerfile 的 `build` 阶段在 `tsc` 之后跑了一次 `enterprise_server/scr
 - **桌面端渲染层**：`contextIsolation` 开启、`nodeIntegration` 关闭、sandbox 启用；渲染层到主进程只能通过 `src/main/preload.ts` 声明的 IPC API。
 - **敏感动作**：工具调用前必须经权限门控并记录。
 - **企业服务端**：
-  - Provider Key 用 AES-256-GCM 静态加密，密钥从 `MixcWork_VAULT_MASTER_KEY` 派生。
+  - Provider Key 用 AES-256-GCM 静态加密，密钥从 `MixWork_VAULT_MASTER_KEY` 派生。
   - `GET /admin/provider-keys` 只返回 `api_key_masked`，从不返回明文。
   - 越权（`admin_access_denied`）一律 fail-closed（读 + 写），跨组织访问返回 404 不泄露存在性，内置角色 409 锁定不可删除。
   - 所有管理操作写审计，区分权限点缺失（`target_type=route`）与数据范围外（`target_type=user`, `reason=outside_scope`）。
@@ -919,4 +919,4 @@ Dockerfile 的 `build` 阶段在 `tsc` 之后跑了一次 `enterprise_server/scr
 
 [MIT License](LICENSE)
 
-由 MixcWork 团队开发维护。
+由 MixWork 团队开发维护。

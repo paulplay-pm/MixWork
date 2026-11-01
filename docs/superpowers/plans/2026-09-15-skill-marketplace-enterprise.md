@@ -1657,7 +1657,7 @@ In `src/main/skills/skillManager.ts`:
 - Modify `downloadZipUrl` (~line 1256) to build a headers object and attach the token when the origin matches:
 ```ts
 const downloadZipUrl = async (zipUrl: string, tempRoot: string): Promise<string> => {
-  const headers: Record<string, string> = { 'User-Agent': 'MixCWork Skill Downloader' };
+  const headers: Record<string, string> = { 'User-Agent': 'MixWork Skill Downloader' };
   try {
     if (new URL(zipUrl).origin === getEnterpriseServerUrl()) {
       const token = await enterpriseClient.getToken();

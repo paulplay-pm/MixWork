@@ -61,8 +61,8 @@ describe('routes/updates (installers)', () => {
       published_at: '2026-08-27T00:00:00Z',
       change_log: { zh: { title: 'zh', content: ['a'] }, en: { title: 'en', content: ['b'] } },
       installers: {
-        macArm: { id: 'mac-file', fileName: 'MixcWork.dmg', fileSize: 100, sha256: 'x' },
-        windowsX64: { id: 'win-file', fileName: 'MixcWork.exe', fileSize: 200, sha256: 'y' },
+        macArm: { id: 'mac-file', fileName: 'MixWork.dmg', fileSize: 100, sha256: 'x' },
+        windowsX64: { id: 'win-file', fileName: 'MixWork.exe', fileSize: 200, sha256: 'y' },
       },
     });
     await appRelease.setLatest(id);
@@ -88,7 +88,7 @@ describe('routes/updates (installers)', () => {
     const { id } = await appRelease.add('o1', {
       version: '1.2.3',
       change_log: {},
-      installers: { windowsX64: { id: 'win-file', fileName: 'MixcWork.exe', fileSize: 200, sha256: 'y' } },
+      installers: { windowsX64: { id: 'win-file', fileName: 'MixWork.exe', fileSize: 200, sha256: 'y' } },
     });
     await appRelease.setLatest(id);
     const a = buildApp();

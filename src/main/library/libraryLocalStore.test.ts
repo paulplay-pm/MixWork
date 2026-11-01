@@ -21,7 +21,7 @@ describe('LibraryLocalStore', () => {
   beforeEach(() => {
     db = new Database(':memory:');
     db.exec(`
-      CREATE TABLE mixcwork_sessions (
+      CREATE TABLE mixwork_sessions (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         cwd TEXT NOT NULL,
@@ -38,7 +38,7 @@ describe('LibraryLocalStore', () => {
 
   const insertSession = (id: string, title: string, updatedAt: number) => {
     db.prepare(`
-      INSERT INTO mixcwork_sessions (id, title, cwd, agent_id, updated_at)
+      INSERT INTO mixwork_sessions (id, title, cwd, agent_id, updated_at)
       VALUES (?, ?, '/workspace', 'main', ?)
     `).run(id, title, updatedAt);
   };
@@ -84,7 +84,7 @@ describe('LibraryLocalStore', () => {
   const deleteSession = (sessionId: string) => {
     db.transaction(() => {
       db.prepare('DELETE FROM library_artifact_sessions WHERE session_id = ?').run(sessionId);
-      db.prepare('DELETE FROM mixcwork_sessions WHERE id = ?').run(sessionId);
+      db.prepare('DELETE FROM mixwork_sessions WHERE id = ?').run(sessionId);
     })();
   };
 

@@ -60,7 +60,7 @@ export const buildKitReferences = (
       id: kitId,
       ...(name ? { name } : {}),
       uri: buildKitReferenceUri(kitId),
-      source: KitReferenceSource.MixcworkKits,
+      source: KitReferenceSource.MixWorkKits,
     };
   });
 };

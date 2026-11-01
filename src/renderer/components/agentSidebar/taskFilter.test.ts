@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import { MixCWorkSessionStatusValue } from '../../types/mixcwork';
+import { MixWorkSessionStatusValue } from '../../types/mixwork';
 import {
   AgentSidebarIndicator,
   type AgentSidebarIndicator as AgentSidebarIndicatorType,
@@ -21,8 +21,8 @@ const makeTask = (
   title: id,
   isScheduledTask: false,
   status: indicator === AgentSidebarIndicator.Running
-    ? MixCWorkSessionStatusValue.Running
-    : MixCWorkSessionStatusValue.Completed,
+    ? MixWorkSessionStatusValue.Running
+    : MixWorkSessionStatusValue.Completed,
   pinned: false,
   updatedAt,
   createdAt: updatedAt,

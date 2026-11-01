@@ -57,7 +57,7 @@ export async function registerPublicClient(args: RegisterPublicClientArgs): Prom
   const {
     registrationEndpoint,
     redirectUri,
-    clientName = 'MixCWork Desktop',
+    clientName = 'MixWork Desktop',
     fetchImpl = fetch,
     timeoutMs = 8000,
   } = args;
@@ -109,7 +109,7 @@ export async function registerPublicClient(args: RegisterPublicClientArgs): Prom
   if (authMethod !== 'none') {
     throw new OAuthRegistrationError(
       `the provider registered a confidential client (token_endpoint_auth_method=${authMethod}); ` +
-        'MixCWork drives a public PKCE client with no secret — ask your admin to configure a client id for this connector instead',
+        'MixWork drives a public PKCE client with no secret — ask your admin to configure a client id for this connector instead',
     );
   }
 

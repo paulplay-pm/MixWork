@@ -17,8 +17,8 @@ describe('Kimi K3 OpenClaw compatibility patch decisions', () => {
   });
 
   test('keeps the plugin API owner separate from concrete model transports', () => {
-    expectPatchContains('openclaw-mixcwork-model-compat-api.patch', [
-      'MIXCWORK_MODEL_COMPAT_API = "mixcwork-model-compat"',
+    expectPatchContains('openclaw-mixwork-model-compat-api.patch', [
+      'MIXWORK_MODEL_COMPAT_API = "mixwork-model-compat"',
       'MODEL_TRANSPORT_APIS',
       'ModelTransportApiSchema',
       'keeps a provider API owner out of model transport resolution',

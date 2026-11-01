@@ -8,7 +8,7 @@
 
 **Tech Stack:** Server: Node/TypeScript, Hono, `pg` (prod) / `@electric-sql/pglite` (tests), `adm-zip`, `zod`. Admin SPA: React + React Query + zustand auth store, Tailwind. Desktop: Electron + React + Redux, main-process `electron` IPC, `node:crypto`.
 
-**Spec:** `/Users/paulwang/work/MixCWork/docs/superpowers/specs/2026-09-28-skill-management-refactor-design.md` — the plan argues from it; read both.
+**Spec:** `/Users/paulwang/work/MixWork/docs/superpowers/specs/2026-09-28-skill-management-refactor-design.md` — the plan argues from it; read both.
 
 ## Global Constraints
 

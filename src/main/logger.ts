@@ -3,9 +3,9 @@
  * Intercepts console.* methods and writes to file + console simultaneously.
  *
  * Log file locations:
- *   macOS:   ~/Library/Logs/MixCWork/main-YYYY-MM-DD.log
- *   Windows: %USERPROFILE%\AppData\Roaming\MixCWork\logs\main-YYYY-MM-DD.log
- *   Linux:   ~/.config/MixCWork/logs/main-YYYY-MM-DD.log
+ *   macOS:   ~/Library/Logs/MixWork/main-YYYY-MM-DD.log
+ *   Windows: %USERPROFILE%\AppData\Roaming\MixWork\logs\main-YYYY-MM-DD.log
+ *   Linux:   ~/.config/MixWork/logs/main-YYYY-MM-DD.log
  *
  * Rotation policy:
  *   - Daily log files (one file per calendar day)
@@ -91,7 +91,7 @@ export function initLogger(): void {
 
   // Log startup marker
   log.info('='.repeat(60));
-  log.info(`MixCWork started (${process.platform} ${process.arch})`);
+  log.info(`MixWork started (${process.platform} ${process.arch})`);
   log.info('='.repeat(60));
 }
 

@@ -9,7 +9,7 @@ import {
   findThirdPartyExtensionsDir,
   listBundledOpenClawExtensionManifests,
 } from '../libs/openclawLocalExtensions';
-import type { MixCWorkStore, PluginSource } from '../mixcworkStore';
+import type { MixWorkStore, PluginSource } from '../mixworkStore';
 import {
   cleanupPluginInstallStagingDir,
   createPluginInstallStagingDir,
@@ -215,9 +215,9 @@ function generateHintsFromSchema(
 }
 
 export class PluginManager {
-  private store: MixCWorkStore;
+  private store: MixWorkStore;
 
-  constructor(store: MixCWorkStore) {
+  constructor(store: MixWorkStore) {
     this.store = store;
   }
 
@@ -458,7 +458,7 @@ export class PluginManager {
   }
 
   private async packNpmPlugin(params: PluginInstallParams, onLog?: PluginInstallLogCallback): Promise<string> {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-plugin-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-plugin-'));
     const spec = params.version ? `${params.spec}@${params.version}` : params.spec;
     const npm = resolveNpmCommand();
     const args = [...npm.baseArgs, 'pack', spec, '--pack-destination', tmpDir];
@@ -491,7 +491,7 @@ export class PluginManager {
   }
 
   private async packGitPlugin(params: PluginInstallParams, onLog?: PluginInstallLogCallback): Promise<string> {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-plugin-git-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-plugin-git-'));
     const sourceDir = path.join(tmpDir, 'source');
 
     const gitUrl = params.spec;
@@ -618,7 +618,7 @@ export class PluginManager {
 
   /**
    * Sync plugins from OpenClaw's extensions directories and config into the
-   * local SQLite store. Discovers plugins installed outside of MixCWork
+   * local SQLite store. Discovers plugins installed outside of MixWork
    * (via AI conversation, CLI, or OpenClaw Web UI) and adds them so they
    * appear in the plugin management UI.
    */
@@ -866,10 +866,10 @@ const INTERNAL_PLUGIN_IDS = [
   'openrouter',
   'ollama',
   'lm-studio',
-  'mixcwork-server',
+  'mixwork-server',
   'github-copilot',
-  'mixcwork-copilot',
-  'mixcwork',
+  'mixwork-copilot',
+  'mixwork',
   'kimi',
 
   // Aliases / legacy IDs for preinstalled channel plugins.

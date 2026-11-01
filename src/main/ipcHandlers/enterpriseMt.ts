@@ -14,7 +14,7 @@ import { registerSsoHandlers } from './sso';
  * login so the OpenClaw config sync re-collects the freshly-populated
  * enterprise catalog and the gateway restarts with the right env keys.
  * Without this, the gateway started at boot with no JWT, so the cache
- * was empty, so collectSecretEnvVars() emitted no MIXCWORK_APIKEY_* keys,
+ * was empty, so collectSecretEnvVars() emitted no MIXWORK_APIKEY_* keys,
  * so the placeholder substitution in openclaw.json failed at gateway
  * startup.
  */
@@ -207,7 +207,7 @@ export function registerEnterpriseMtHandlers(): void {
           console.warn('[enterpriseMt] enterpriseModelCache.load after login failed:', cacheErr);
         }
         // The boot-time sync ran with no JWT, so collectSecretEnvVars()
-        // produced an empty MIXCWORK_APIKEY_* map. After login the cache is
+        // produced an empty MIXWORK_APIKEY_* map. After login the cache is
         // populated; re-run the sync so the gateway restarts with the real
         // env keys and the placeholder substitution in openclaw.json
         // succeeds.

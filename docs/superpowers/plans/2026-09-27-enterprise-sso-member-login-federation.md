@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Let org members sign in to MixCWork (web console + desktop) through their company's identity provider (OIDC, OAuth2, Azure AD, Feishu, DingTalk, WeCom — SAML2 stored but disabled for v1), with JIT user creation and email-domain gating. Server issues the same JWT shape as password login; clients reuse existing token storage.
+**Goal:** Let org members sign in to MixWork (web console + desktop) through their company's identity provider (OIDC, OAuth2, Azure AD, Feishu, DingTalk, WeCom — SAML2 stored but disabled for v1), with JIT user creation and email-domain gating. Server issues the same JWT shape as password login; clients reuse existing token storage.
 
-**Architecture:** Three concentric rings of new server routes in `enterprise_server/src/routes/sso.ts`: a public pre-login listing, a state-gated OAuth dance (`authorize` + `callback`), and admin CRUD behind `requirePermission(PP.Sso*)`. Identity is mapped per connection (`identity_id_field`/`login_name_field`/`email_field`). JIT + email-domain gate + cross-IdP dedup run in a single service module (`src/sso/jit.ts`). The console SSO callback is server-rendered HTML that writes the JWT into `localStorage` (the SPA's existing token store, `mixcwork.enterprise.auth.token`) and navigates to `/`. The desktop callback reuses the qichacha-MCP localhost-callback + `openOauthFlow` primitive — the enterprise `authorize` URL is loaded into a sandboxed `BrowserWindow`, the enterprise server redirects to a desktop-controlled `localhost:<port>` callback, and the captured token is fed into the existing `enterpriseClient.persistSession` + `loginGate.unlock`.
+**Architecture:** Three concentric rings of new server routes in `enterprise_server/src/routes/sso.ts`: a public pre-login listing, a state-gated OAuth dance (`authorize` + `callback`), and admin CRUD behind `requirePermission(PP.Sso*)`. Identity is mapped per connection (`identity_id_field`/`login_name_field`/`email_field`). JIT + email-domain gate + cross-IdP dedup run in a single service module (`src/sso/jit.ts`). The console SSO callback is server-rendered HTML that writes the JWT into `localStorage` (the SPA's existing token store, `mixwork.enterprise.auth.token`) and navigates to `/`. The desktop callback reuses the qichacha-MCP localhost-callback + `openOauthFlow` primitive — the enterprise `authorize` URL is loaded into a sandboxed `BrowserWindow`, the enterprise server redirects to a desktop-controlled `localhost:<port>` callback, and the captured token is fed into the existing `enterpriseClient.persistSession` + `loginGate.unlock`.
 
 **Tech Stack:** Hono (server, `enterprise_server`), pglite (in-process tests), Postgres (production), `jose` (JWT, ID-token verification), `node:crypto` (state, PKCE), `pool.query<T>(sql, params)` (data access), zod (request validation), TanStack Query v5 + React Router (SPA), zustand (SPA auth store), vitest (tests). Desktop: Electron `enterpriseMt` IPC bridge + `openOauthFlow` + `http.createServer` localhost callback.
 
@@ -18,8 +18,8 @@ The review loop is the net for conflicts that emerge from implementation. The sc
 |---|---|---|---|---|
 | R1 | Spec §14.5 says "no new PermissionPoint, reuse org-admin," but the codebase convention is per-module `requirePermission(PP.<Action>)` on every admin CRUD route (`mcpConnectors.ts:302,321,331,341,…`, `admin/users.ts:131,150,191,203,…`). `requireAdmin` is a backward-compat alias for `requireCapability('admin')`, not the primary guard. Spec §7 explicitly says "mirror `adminUserRoutes`' guard convention" — that points at `requirePermission` with dedicated points. | Spec §7 vs §14.5 vs codebase | **Add `sso:*` PermissionPoints (`SsoView`/`SsoCreate`/`SsoEdit`) following the `mcp`/`skill` pattern; grant them to `org_admin`. Amends spec §14.5.** | Rework if rejected. |
 | R2 | `roleResolver.pointsFor` reads the live `roles` table; `BUILTIN_ROLE_POINTS` in `permissionPoints.ts` is seed-only (migration 029, `ON CONFLICT DO NOTHING`); there is **no boot-time re-assert** of the seed against the TS source. Existing built-in roles installed before this plan will keep their old `permissions` JSONB unless a migration re-asserts. | `auth/roleResolver.ts:37`, `db/migrations/029_seed_roles_v2.sql` | **Add a new migration (037) that idempotently `UPDATE roles.permissions` for `org_admin`/`super_admin` to add the new `sso:*` strings, mirroring 029's "upgrade-in-place" pattern for legacy org_admin.** | Existing org_admin members won't be able to load the SSO admin page until migration runs. |
-| R3 | SPA auth bootstraps from `localStorage` (key `mixcwork.enterprise.auth.token`, `web/src/auth/store.ts:44`), not a cookie. The existing `POST /auth/login` returns `{ token }` in JSON and the SPA calls `login(r.token)` to persist. The SSO console callback cannot simply `Set-Cookie` — it must return a server-rendered HTML page that writes `localStorage.setItem('mixcwork.enterprise.auth.token', '<jwt>')` and redirects. | `web/src/auth/store.ts:44,87-89`, `web/src/pages/LoginPage.tsx:101-102` | **Server-rendered HTML callback (HTML doc containing a `<script>` that sets localStorage and `location.assign('/')`). No new dependency.** | Slightly more elaborate callback; necessary. |
-| R4 | "Login entry: console + desktop." Desktop currently has no browser-handler registration for `mixcwork://` deep links — `main.ts:494` only registers `ArtifactPreviewProtocol.LocalFile` as a privileged scheme. Adding protocol registration is out of scope for the SSO subsystem (electron-builder config, OS-level registration). | `src/main/main.ts:494-503` | **Desktop handoff uses the existing localhost-callback pattern (qichacha MCP) — no deep-link protocol work. The enterprise server's `authorize` URL includes a `redirect_uri` of `http://localhost:<random-port>/callback`, the desktop spins up an `http.createServer`, and the final 302 lands on that loopback, where the desktop captures the JWT.** | None — already proven path. |
+| R3 | SPA auth bootstraps from `localStorage` (key `mixwork.enterprise.auth.token`, `web/src/auth/store.ts:44`), not a cookie. The existing `POST /auth/login` returns `{ token }` in JSON and the SPA calls `login(r.token)` to persist. The SSO console callback cannot simply `Set-Cookie` — it must return a server-rendered HTML page that writes `localStorage.setItem('mixwork.enterprise.auth.token', '<jwt>')` and redirects. | `web/src/auth/store.ts:44,87-89`, `web/src/pages/LoginPage.tsx:101-102` | **Server-rendered HTML callback (HTML doc containing a `<script>` that sets localStorage and `location.assign('/')`). No new dependency.** | Slightly more elaborate callback; necessary. |
+| R4 | "Login entry: console + desktop." Desktop currently has no browser-handler registration for `mixwork://` deep links — `main.ts:494` only registers `ArtifactPreviewProtocol.LocalFile` as a privileged scheme. Adding protocol registration is out of scope for the SSO subsystem (electron-builder config, OS-level registration). | `src/main/main.ts:494-503` | **Desktop handoff uses the existing localhost-callback pattern (qichacha MCP) — no deep-link protocol work. The enterprise server's `authorize` URL includes a `redirect_uri` of `http://localhost:<random-port>/callback`, the desktop spins up an `http.createServer`, and the final 302 lands on that loopback, where the desktop captures the JWT.** | None — already proven path. |
 
 ## Global Constraints
 
@@ -58,7 +58,7 @@ Each file gets one clear responsibility. Files that change together live togethe
 - **`src/sso/jit.ts`** — `resolveUser({ orgId, connectionId, externalId, email, loginName }): Promise<{ userId; createdJit: boolean }>`. Implements the §5 algorithm (email-domain gate → identity-table lookup → email-dedup → JIT). Idempotent & reentrant.
 - **`src/sso/oauth.ts`** — `buildAuthorizeUrl(connection, state, codeChallenge?)`; `exchangeCode(connection, code, codeVerifier?, clientSecretDecrypted?)`; `fetchUserInfo(connection, accessToken)`; `verifyIdToken(connection, idToken)` (uses `jose.jwtVerify` with the connection's JWKs or symmetric secret as supported). Returns normalized `SsoIdentityClaims`.
 - **`src/routes/sso.ts`** — `ssoRoutes = new Hono()` exporting the public listing/authorize/callback routes **plus** the admin CRUD mounted under `/admin/sso-connections/*`. Imports `requireAuth`/`requirePermission` from `../auth/middleware`, `PP` from `../shared/permissionPoints`. Per spec §4.1 + §7.
-- **`src/sso/consoleCallback.ts`** — `renderConsoleCallbackHtml({ token, redirectTo }): string`. Server-rendered HTML doc with a `<script>` that does `localStorage.setItem('mixcwork.enterprise.auth.token', token); location.assign(redirectTo)`. Pure function; fully unit-testable.
+- **`src/sso/consoleCallback.ts`** — `renderConsoleCallbackHtml({ token, redirectTo }): string`. Server-rendered HTML doc with a `<script>` that does `localStorage.setItem('mixwork.enterprise.auth.token', token); location.assign(redirectTo)`. Pure function; fully unit-testable.
 - **`tests/routes/sso.test.ts`** — pglite in-process tests for the listing/authorize/callback/admin routes. Mirror `tests/routes/auth.test.ts` shape.
 - **`tests/sso/jit.test.ts`** — pure-function tests for the JIT algorithm (email-domain gate, dedup paths, username-collision rejection). No DB needed; mock `pool` via `vi.mock`.
 - **`tests/sso/oauth.test.ts`** — URL building, PKCE attach, JWS verify (against a static `jose.SignJWT` token).
@@ -84,7 +84,7 @@ Each file gets one clear responsibility. Files that change together live togethe
 - **`enterprise_server/src/shared/permissionPoints.ts`** — add `SsoView`/`SsoCreate`/`SsoEdit`; add the `sso` module group; include in `BUILTIN_ROLE_POINTS.org_admin` (Ruling R1, source-of-truth consistency).
 - **`enterprise_server/src/server.ts`** — import `ssoRoutes` and `app.route('/', ssoRoutes);` near the other route mounts (lines 43-76).
 - **`enterprise_server/web/src/i18n.ts`** — add keys in both `en` (line 3+) and `zh` (line 981+) dicts. See §I18n keys below.
-- **`enterprise_server/web/src/auth/store.ts`** — no logic change; documented usage of `mixcwork.enterprise.auth.token` key in the console callback.
+- **`enterprise_server/web/src/auth/store.ts`** — no logic change; documented usage of `mixwork.enterprise.auth.token` key in the console callback.
 - **`enterprise_server/web/src/pages/LoginPage.tsx`** — render SSO buttons block before the password card.
 - **`enterprise_server/web/src/App.tsx`** — add `<Route ...><Shell><SSOConnectionsPage/></Shell></Route>` (mirror MCPManagePage routing at line 102).
 - **`src/shared/enterprise/constants.ts`** — add the two new IPC channel constants.
@@ -1175,14 +1175,14 @@ describe('renderConsoleCallbackHtml', () => {
   test('embeds the JWT in localStorage and redirects', () => {
     const html = renderConsoleCallbackHtml({ token: 'ey.xxx.yyy', redirectTo: '/' });
     expect(html).toContain('<!doctype html>');
-    expect(html).toContain("localStorage.setItem('mixcwork.enterprise.auth.token', 'ey.xxx.yyy')");
+    expect(html).toContain("localStorage.setItem('mixwork.enterprise.auth.token', 'ey.xxx.yyy')");
     expect(html).toContain("location.assign('/')");
   });
 
   test('escapes single quotes in token (defensive)', () => {
     const html = renderConsoleCallbackHtml({ token: "ab'cd", redirectTo: '/' });
-    expect(html).not.toMatch(/setItem\('mixcwork[^']*', 'ab'cd'\)/);
-    expect(html).toMatch(/setItem\('mixcwork[^']*', 'ab\\'cd'\)/);
+    expect(html).not.toMatch(/setItem\('mixwork[^']*', 'ab'cd'\)/);
+    expect(html).toMatch(/setItem\('mixwork[^']*', 'ab\\'cd'\)/);
   });
 });
 ```
@@ -1203,7 +1203,7 @@ export interface ConsoleCallbackArgs {
 }
 
 // The SPA's auth store reads from localStorage key
-// 'mixcwork.enterprise.auth.token' (see web/src/auth/store.ts:44). Setting it
+// 'mixwork.enterprise.auth.token' (see web/src/auth/store.ts:44). Setting it
 // here lets the SPA pick up the JWT on its next render. Per Ruling R3.
 export function renderConsoleCallbackHtml(args: ConsoleCallbackArgs): string {
   const esc = (s: string): string => s.replace(/[\\'<>]/g, (c) => `\\${c}`);
@@ -1216,7 +1216,7 @@ export function renderConsoleCallbackHtml(args: ConsoleCallbackArgs): string {
 <html><head><meta charset="utf-8"><title>Signing in…</title></head>
 <body>${err}<script>
 try {
-  localStorage.setItem('mixcwork.enterprise.auth.token', '${token}');
+  localStorage.setItem('mixwork.enterprise.auth.token', '${token}');
 } catch (e) { document.body.textContent = 'Failed to store session: ' + e; }
 location.assign('${redirect}');
 </script></body></html>`;
@@ -1973,7 +1973,7 @@ git commit -m "feat(sso): desktop callback route redirects to localhost loopback
 
 **Interfaces:**
 - Produces:
-  - `startSsoMemberLogin({ enterpriseBaseUrl, orgName, connectionId, parentWindow }): Promise<string>` — returns the MixCWork JWT.
+  - `startSsoMemberLogin({ enterpriseBaseUrl, orgName, connectionId, parentWindow }): Promise<string>` — returns the MixWork JWT.
   - Reuses `openOauthFlow` (`src/main/mcp/oauthBrowserFlow.ts:24`) and the localhost-callback pattern from `qichachaMcpAuth.ts:75-114`.
 
 Note: desktop main-process tests are blocked by `better-sqlite3.node` ABI in the sandbox. Mirror the spirit of the MCP spec's advice: extract the URL construction + state parsing as pure functions, test those, leave the BrowserWindow wiring uncovered in unit tests.
@@ -2013,7 +2013,7 @@ import { BrowserWindow } from 'electron';
 import { openOauthFlow } from '../mcp/oauthBrowserFlow';
 
 export interface AuthorizeArgs {
-  enterpriseBaseUrl: string;  // e.g. https://api.mixcwork.example
+  enterpriseBaseUrl: string;  // e.g. https://api.mixwork.example
   orgName: string;
   connectionId: string;
   desktopPort: number;  // the loopback port we'll bind.

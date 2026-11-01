@@ -1,12 +1,12 @@
 /**
- * Rename the dev Electron.app bundle to MixCWork on macOS.
+ * Rename the dev Electron.app bundle to MixWork on macOS.
  *
  * In dev, `npm run start:electron` launches the Electron binary from
  * node_modules/electron/dist/Electron.app. macOS derives the top-left menu-bar
  * app name and the Dock tooltip from that bundle's Info.plist (CFBundleName /
  * CFBundleDisplayName), which app.setName() cannot override. This script
- * rewrites those keys to "MixCWork" so the menu bar and Dock tooltip read
- * MixCWork instead of Electron.
+ * rewrites those keys to "MixWork" so the menu bar and Dock tooltip read
+ * MixWork instead of Electron.
  *
  * It ALSO rewrites CFBundleIdentifier to a project-unique value. Electron's
  * default identifier (com.github.Electron) is shared by every Electron app on
@@ -24,10 +24,10 @@ const fs = require('fs');
 const path = require('path');
 const { execFileSync } = require('child_process');
 
-const APP_NAME = 'MixCWork';
+const APP_NAME = 'MixWork';
 // Unique bundle identifier (matches APP_USER_MODEL_ID in appConstants.ts) so
 // this dev bundle is not conflated with other Electron apps on the machine.
-const APP_IDENTIFIER = 'com.mixcwork.app';
+const APP_IDENTIFIER = 'com.mixwork.app';
 const ROOT = path.join(
   __dirname,
   '..',
@@ -47,7 +47,7 @@ const KEY_VALUES = [
 
 // LaunchServices caches bundle identity (name, icon) keyed by path+identifier.
 // After rewriting the plist, force a re-registration so the cached "Electron"
-// name is dropped and the Dock tooltip / top-left menu name pick up "MixCWork".
+// name is dropped and the Dock tooltip / top-left menu name pick up "MixWork".
 // The tool ships with macOS; guard so a failure never breaks the dev launch.
 const LSREGISTER =
   '/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister';
@@ -116,7 +116,7 @@ function main() {
   );
 
   // Force re-registration with LaunchServices so it re-reads the plist and
-  // resolves the (now unique) identifier to MixCWork. Use `-f` only: `-u`
+  // resolves the (now unique) identifier to MixWork. Use `-f` only: `-u`
   // (unregister) removes the healthy entry and can leave a degraded
   // "no-info.plist" registration that falls back to "Electron".
   if (fs.existsSync(LSREGISTER)) {

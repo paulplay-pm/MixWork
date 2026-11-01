@@ -5,7 +5,7 @@ index 0000000000..00049eb73a
 +++ b/src/agents/mcp-stdio-transport.ts
 @@ -0,0 +1,153 @@
 +/**
-+ * MixCWork patch: custom stdio MCP transport with process-tree cleanup.
++ * MixWork patch: custom stdio MCP transport with process-tree cleanup.
 + *
 + * Backported from openclaw v2026.4.22 (commit 5f7b44045d).
 + * The MCP SDK's built-in StdioClientTransport.close() uses process.kill()

@@ -3,7 +3,7 @@
  *
  * ENTERPRISE_SERVER_URL is REQUIRED at startup. The desktop no longer
  * falls back to a publisher host, and `getServerApiBaseUrl` throws
- * a clear error when the env var is unset. The `mixcwork-server.{inner,prod}.youdao.com`
+ * a clear error when the env var is unset. The `mixwork-server.{inner,prod}.youdao.com`
  * fallback has been removed; the desktop routes every server call
  * through the configured enterprise server.
  */

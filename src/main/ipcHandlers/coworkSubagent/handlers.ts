@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-import { MixCWorkIpcChannel } from '../../../shared/mixcwork/constants';
+import { MixWorkIpcChannel } from '../../../shared/mixwork/constants';
 
 export interface CoworkSubagentRuntimeAdapter {
   getSubTaskHistory: (
@@ -22,14 +22,14 @@ export interface CoworkSubagentEngineRouter {
 
 export interface CoworkSubagentHandlerDeps {
   getOpenClawRuntimeAdapter: () => CoworkSubagentRuntimeAdapter | null;
-  getMixCWorkEngineRouter: () => CoworkSubagentEngineRouter;
+  getMixWorkEngineRouter: () => CoworkSubagentEngineRouter;
 }
 
 export function registerCoworkSubagentHandlers(deps: CoworkSubagentHandlerDeps): void {
-  const { getOpenClawRuntimeAdapter, getMixCWorkEngineRouter } = deps;
+  const { getOpenClawRuntimeAdapter, getMixWorkEngineRouter } = deps;
 
   ipcMain.handle(
-    MixCWorkIpcChannel.SubTaskHistory,
+    MixWorkIpcChannel.SubTaskHistory,
     async (
       _event,
       options: {
@@ -58,7 +58,7 @@ export function registerCoworkSubagentHandlers(deps: CoworkSubagentHandlerDeps):
     },
   );
 
-  ipcMain.handle(MixCWorkIpcChannel.SubagentList, async (_event, options: { parentSessionId: string }) => {
+  ipcMain.handle(MixWorkIpcChannel.SubagentList, async (_event, options: { parentSessionId: string }) => {
     const adapter = getOpenClawRuntimeAdapter();
     if (!adapter) return { success: true, runs: [] };
     const runs = adapter.listSubagentRuns(options.parentSessionId);
@@ -66,7 +66,7 @@ export function registerCoworkSubagentHandlers(deps: CoworkSubagentHandlerDeps):
   });
 
   ipcMain.handle(
-    MixCWorkIpcChannel.SubagentListByAgent,
+    MixWorkIpcChannel.SubagentListByAgent,
     async (_event, options: { agentId: string; limit?: number; offset?: number }) => {
       const adapter = getOpenClawRuntimeAdapter();
       if (!adapter) return { success: true, runs: [], hasMore: false };
@@ -80,14 +80,14 @@ export function registerCoworkSubagentHandlers(deps: CoworkSubagentHandlerDeps):
   );
 
   ipcMain.handle(
-    MixCWorkIpcChannel.SubagentDelete,
+    MixWorkIpcChannel.SubagentDelete,
     async (_event, options: { parentSessionId: string; runId: string }) => {
       const adapter = getOpenClawRuntimeAdapter();
       if (!adapter) {
         return { success: false, error: 'Runtime adapter not available' };
       }
       try {
-        const deleted = await getMixCWorkEngineRouter().deleteSubagentSession(
+        const deleted = await getMixWorkEngineRouter().deleteSubagentSession(
           options.parentSessionId,
           options.runId,
         );

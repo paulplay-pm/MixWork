@@ -57,7 +57,7 @@ describe('seedBuiltinKits', () => {
     for (const row of kits.rows) {
       expect(row.enabled).toBe(true);
       expect(row.is_builtin).toBe(true);
-      expect(row.author).toBe('MixcWork');
+      expect(row.author).toBe('MixWork');
       expect(row.scope).toEqual({ allCompany: true, deptIds: [], userIds: [] });
     }
     const cats = await testPool.query(`SELECT category_id FROM kit_categories WHERE org_id = $1`, [orgId]);

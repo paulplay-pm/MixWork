@@ -48,7 +48,7 @@ describe('routes/setupAlias', () => {
     const body = await jsonOf<{ orgId: string; orgName: string; code: string; expiresAt: string }>(r);
     expect(body.orgId).toMatch(/^org-[0-9a-f]{8}$/);
     expect(body.orgName).toBe('Acme Corp');
-    expect(body.code).toMatch(/^MIXCWORK-SETUP-/);
+    expect(body.code).toMatch(/^MIXWORK-SETUP-/);
     expect(typeof body.expiresAt).toBe('string');
   });
 

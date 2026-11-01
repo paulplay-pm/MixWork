@@ -10,7 +10,7 @@ import { EventEmitter } from 'events';
 import { classifyErrorKey } from '../../common/coworkErrorClassify';
 import { t } from '../i18n';
 import type { CoworkRuntime } from '../libs/agentEngine/types';
-import type { MixCWorkStore } from '../mixcworkStore';
+import type { MixWorkStore } from '../mixworkStore';
 import { fetchJsonWithTimeout } from './http';
 import { IMChatHandler } from './imChatHandler';
 import {
@@ -20,7 +20,7 @@ import {
   resolveManagedSessionDeliveryRoute,
   resolveOpenClawDeliveryRouteForSessionKeys,
 } from './imDeliveryRoute';
-import { IMMixcworkHandler } from './imMixcworkHandler';
+import { IMMixWorkHandler } from './imMixWorkHandler';
 import type {
   IMScheduledTaskCreationResult,
   ParsedIMScheduledTaskRequest,
@@ -115,7 +115,7 @@ function isWeixinAlreadyConnectedMessage(message?: string): boolean {
 
 export interface IMGatewayManagerOptions {
   coworkRuntime?: CoworkRuntime;
-  mixcworkStore?: MixCWorkStore;
+  mixworkStore?: MixWorkStore;
   ensureCoworkReady?: () => Promise<void>;
   syncOpenClawConfig?: (
     reason?: string,
@@ -135,7 +135,7 @@ export interface IMGatewayManagerOptions {
 export class IMGatewayManager extends EventEmitter {
   private imStore: IMStore;
   private chatHandler: IMChatHandler | null = null;
-  private mixcworkHandler: IMMixcworkHandler | null = null;
+  private mixworkHandler: IMMixWorkHandler | null = null;
   private getLLMConfig: (() => Promise<any>) | null = null;
   private getSkillsPrompt: (() => Promise<string | null>) | null = null;
   private ensureCoworkReady: (() => Promise<void>) | null = null;
@@ -156,7 +156,7 @@ export class IMGatewayManager extends EventEmitter {
 
   // Cowork dependencies
   private coworkRuntime: CoworkRuntime | null = null;
-  private mixcworkStore: MixCWorkStore | null = null;
+  private mixworkStore: MixWorkStore | null = null;
 
 
   // DingTalk direct HTTP API token cache
@@ -169,9 +169,9 @@ export class IMGatewayManager extends EventEmitter {
     this.imStore = new IMStore(db);
 
     // Store Cowork dependencies if provided
-    if (options?.coworkRuntime && options?.mixcworkStore) {
+    if (options?.coworkRuntime && options?.mixworkStore) {
       this.coworkRuntime = options.coworkRuntime;
-      this.mixcworkStore = options.mixcworkStore;
+      this.mixworkStore = options.mixworkStore;
     }
     this.ensureCoworkReady = options?.ensureCoworkReady ?? null;
     this.syncOpenClawConfig = options?.syncOpenClawConfig ?? null;
@@ -245,12 +245,12 @@ export class IMGatewayManager extends EventEmitter {
         let response: string;
 
         // Always use Cowork mode if handler is available
-        if (this.mixcworkHandler) {
+        if (this.mixworkHandler) {
           if (this.ensureCoworkReady) {
             await this.ensureCoworkReady();
           }
           console.log('[IMGatewayManager] Using Cowork mode for message processing');
-          response = await this.mixcworkHandler.processMessage(message);
+          response = await this.mixworkHandler.processMessage(message);
         } else {
           // Fallback to regular chat handler
           if (!this.chatHandler) {
@@ -346,15 +346,15 @@ export class IMGatewayManager extends EventEmitter {
    */
   private updateCoworkHandler(): void {
     // Always create Cowork handler if we have the required dependencies
-    if (this.coworkRuntime && this.mixcworkStore && !this.mixcworkHandler) {
+    if (this.coworkRuntime && this.mixworkStore && !this.mixworkHandler) {
       const detectScheduledTaskRequest = this.getLLMConfig && this.createScheduledTask
         ? createIMScheduledTaskRequestDetector({
             getLLMConfig: this.getLLMConfig,
           })
         : undefined;
-      this.mixcworkHandler = new IMMixcworkHandler({
+      this.mixworkHandler = new IMMixWorkHandler({
         coworkRuntime: this.coworkRuntime,
-        coworkStore: this.mixcworkStore,
+        coworkStore: this.mixworkStore,
         imStore: this.imStore,
         getSkillsPrompt: this.getSkillsPrompt || undefined,
         detectScheduledTaskRequest,

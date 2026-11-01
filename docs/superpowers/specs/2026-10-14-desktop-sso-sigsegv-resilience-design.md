@@ -14,7 +14,7 @@ When a user clicks "飞书授权登录" on the desktop and the IdP redirect reac
 [22170:1014/103821.007067:ERROR:net/socket/ssl_client_socket_impl.cc:916] handshake failed; returned -1, SSL error code 1, net_error -100
 [22170:1014/103821.009560:ERROR:net/socket/ssl_client_socket_impl.cc:916] handshake failed; returned -1, SSL error code 1, net_error -100
 [22170:1014/103821.009817:ERROR:net/socket/ssl_client_socket_impl.cc:916] handshake failed; returned -1, SSL error code 1, net_error -100
-/Users/paulwang/work/MixCWork/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron exited with signal SIGSEGV
+/Users/paulwang/work/MixWork/node_modules/electron/dist/Electron.app/Contents/MacOS/Electron exited with signal SIGSEGV
 ```
 
 ### Why the crash signature is what it is
@@ -44,13 +44,13 @@ The fix is observable end-to-end via a unit test on the partition selector and a
 
 ```ts
 // src/main/mcp/oauthBrowserFlow.ts (new)
-const SSO_OAUTH_PARTITION = 'mixcwork-sso-oauth';
+const SSO_OAUTH_PARTITION = 'mixwork-sso-oauth';
 
 // inside BrowserWindow webPreferences:
 partition: SSO_OAUTH_PARTITION,
 ```
 
-**Why a named partition, not the default `persist:` partition?** The default partition is shared with the main app's BrowserWindow (where the renderer lives). Mixing SSO session cookies into the main app's session would leak IdP state. A dedicated named partition is isolated and persistent, and `partition: 'mixcwork-sso-oauth'` (without a `persist:` prefix) creates an in-memory session that is wiped on app restart — that is correct: a fresh install / fresh launch must always re-authorize the IdP, even on the same machine.
+**Why a named partition, not the default `persist:` partition?** The default partition is shared with the main app's BrowserWindow (where the renderer lives). Mixing SSO session cookies into the main app's session would leak IdP state. A dedicated named partition is isolated and persistent, and `partition: 'mixwork-sso-oauth'` (without a `persist:` prefix) creates an in-memory session that is wiped on app restart — that is correct: a fresh install / fresh launch must always re-authorize the IdP, even on the same machine.
 
 ### Decision 2 — Bounded `loadURL` timeout
 
@@ -98,7 +98,7 @@ The crash signature is two bursts of `SSL handshake failed; net_error -100` erro
 
 ## Decisions Locked
 
-- **Single stable partition name** `mixcwork-sso-oauth` for all SSO `BrowserWindow`s, defined as a const at the top of `src/main/mcp/oauthBrowserFlow.ts`. Replaces the per-attempt `oauth-${crypto.randomUUID()}`.
+- **Single stable partition name** `mixwork-sso-oauth` for all SSO `BrowserWindow`s, defined as a const at the top of `src/main/mcp/oauthBrowserFlow.ts`. Replaces the per-attempt `oauth-${crypto.randomUUID()}`.
 - **Default `loadURL` deadline** 20 000 ms in `openOauthFlow`. Settles with `sso_authorize_timeout` on deadline expiry. Per-call override via `OAuthFlowOptions.loadTimeoutMs`.
 - **No changes** to the outer 5-minute `timeoutMs`, the `did-fail-load` handler, the `closed` handler, or the `intentionalClose` semantics. The new deadline is additive.
 - **No changes** to other callers of `openOauthFlow` (`startSsoMemberBind`, MCP OAuth, qichacha). They get the new deadline for free via the default.
@@ -121,7 +121,7 @@ The crash signature is two bursts of `SSL handshake failed; net_error -100` erro
 
 ### Modify (existing test update)
 
-- **`src/main/mcp/oauthBrowserFlow.test.ts:115-122`** — the existing assertion `expect(opts.webPreferences.partition).toMatch(/^oauth-/)` pins the OLD per-attempt random partition name. Update the assertion to `expect(opts.webPreferences.partition).toBe('mixcwork-sso-oauth')` so it pins the NEW stable name. This is a one-line change that converts a stale test into a load-bearing pin.
+- **`src/main/mcp/oauthBrowserFlow.test.ts:115-122`** — the existing assertion `expect(opts.webPreferences.partition).toMatch(/^oauth-/)` pins the OLD per-attempt random partition name. Update the assertion to `expect(opts.webPreferences.partition).toBe('mixwork-sso-oauth')` so it pins the NEW stable name. This is a one-line change that converts a stale test into a load-bearing pin.
 - **`src/main/mcp/oauthBrowserFlow.test.ts`** — extend with:
   - Test that the partition name is stable (read the const, assert a known SSO call uses it).
   - Test that the deadline settles the flow with `sso_authorize_timeout` when `did-finish-load` does not fire in time (use a fake `BrowserWindow` that never emits `did-finish-load`; advance fake timers past `loadTimeoutMs`).
@@ -145,7 +145,7 @@ The crash signature is two bursts of `SSL handshake failed; net_error -100` erro
 
 ## Review Focus (5 input classes most likely to bite)
 
-1. **Stable partition leaks cookies across users on the same machine** — a user logs out, another user logs in via Feishu on the same OS account, the second user inherits the first user's Feishu cookies. **Expected:** the `mixcwork-sso-oauth` partition is in-memory (no `persist:` prefix per Electron's [Session API](https://www.electronjs.org/docs/latest/api/session)), so cookies die on app restart. Within a single launch, the next user is on a clean SSO partition. **Pinned by:** a test that constructs the `BrowserWindow` twice in a row and asserts BOTH use the partition name `mixcwork-sso-oauth` (not a random per-attempt name). Path A in Decision 4 also clears the partition on logout, so within a single launch, user B does not inherit user A's cookies even before the next app restart.
+1. **Stable partition leaks cookies across users on the same machine** — a user logs out, another user logs in via Feishu on the same OS account, the second user inherits the first user's Feishu cookies. **Expected:** the `mixwork-sso-oauth` partition is in-memory (no `persist:` prefix per Electron's [Session API](https://www.electronjs.org/docs/latest/api/session)), so cookies die on app restart. Within a single launch, the next user is on a clean SSO partition. **Pinned by:** a test that constructs the `BrowserWindow` twice in a row and asserts BOTH use the partition name `mixwork-sso-oauth` (not a random per-attempt name). Path A in Decision 4 also clears the partition on logout, so within a single launch, user B does not inherit user A's cookies even before the next app restart.
 2. **`loadURL` deadline races with legitimate slow IdPs** — Feishu is fast, but Okta / Azure AD can take 30+ seconds on first-time corporate-MFA enrollment. 20 seconds is too tight. **Expected:** per-call override via `loadTimeoutMs`, and the existing 5-minute `timeoutMs` outer deadline still applies. **Pinned by:** a test that sets `loadTimeoutMs: 5_000` on a call where `did-finish-load` fires at 8s and asserts the flow does NOT settle early. (i.e. `did-finish-load` resets the deadline; the deadline is "page failed to load", not "user took too long".)
 3. **Settling twice on the deadline + `did-fail-load`** — Chromium can fire `did-fail-load` and the `loadURL` deadline in either order under edge cases. `settle()` already has a `if (settled) return` guard. **Pinned by:** a test that emits both events in quick succession and asserts `settle` is called exactly once.
 4. **The default 20s is too short for slow networks** — a user on a slow corporate VPN or a flaky mobile hotspot can take 30+ seconds to load Feishu. **Expected:** logged as a known caveat; the deadline is the IdP **authorize page loading**, not the user interacting with it. **Pinned by:** the deadline test is a test on `loadURL` only — once `did-finish-load` fires (page rendered), the timer is cleared and the user has the full 5 minutes to interact.

@@ -1,6 +1,6 @@
 // enterprise_server/tests/routes/sso.desktopExchange.test.ts
 // Desktop-bridge endpoint the loopback forwards IdP callbacks to.
-// Production bug being fixed: the MixcWork desktop's loopback server only
+// Production bug being fixed: the MixWork desktop's loopback server only
 // resolves `?token=…` / `?error=…`, so when an OIDC IdP (Feishu, Okta,
 // …) redirects the browser back with `?code=…&state=…`, the loopback
 // silently ignores it and the probe never settles. The fix lives here:

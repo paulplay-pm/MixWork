@@ -7,8 +7,8 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 vi.mock('electron', () => ({
   app: {
     getAppPath: () => process.cwd(),
-    getName: () => 'MixCWork',
-    getPath: (name: string) => (name === 'userData' ? path.join(os.tmpdir(), 'mixcwork-test-user-data') : os.tmpdir()),
+    getName: () => 'MixWork',
+    getPath: (name: string) => (name === 'userData' ? path.join(os.tmpdir(), 'mixwork-test-user-data') : os.tmpdir()),
     isPackaged: false,
     isReady: () => false,
   },
@@ -30,7 +30,7 @@ import { packageNodeServiceDeployment } from './nodeServiceDeploymentPackager';
 const tempDirectories: string[] = [];
 
 async function makeTempProject(packageJson: Record<string, unknown>): Promise<string> {
-  const projectDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixcwork-node-packager-test-'));
+  const projectDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixwork-node-packager-test-'));
   tempDirectories.push(projectDirectory);
   await fs.promises.writeFile(
     path.join(projectDirectory, 'package.json'),
@@ -156,7 +156,7 @@ describe('packageNodeServiceDeployment', () => {
         }],
       },
     });
-    const extractedDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixcwork-node-package-extract-'));
+    const extractedDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixwork-node-package-extract-'));
     tempDirectories.push(extractedDirectory);
     await extractZip(result.archivePath, { dir: extractedDirectory });
 
@@ -247,7 +247,7 @@ describe('packageNodeServiceDeployment', () => {
   });
 
   test('packages plain static site directories without package.json', async () => {
-    const projectDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixcwork-static-packager-test-'));
+    const projectDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixwork-static-packager-test-'));
     tempDirectories.push(projectDirectory);
     await writeFile(projectDirectory, 'index.html', '<!doctype html><link rel="stylesheet" href="./style.css">');
     await writeFile(projectDirectory, 'style.css', 'body { margin: 0; }');
@@ -272,7 +272,7 @@ describe('packageNodeServiceDeployment', () => {
   });
 
   test('ignores stale install commands for plain static site directories', async () => {
-    const projectDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixcwork-static-packager-test-'));
+    const projectDirectory = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixwork-static-packager-test-'));
     tempDirectories.push(projectDirectory);
     await writeFile(projectDirectory, 'index.html', '<!doctype html><h1>Static</h1>');
 

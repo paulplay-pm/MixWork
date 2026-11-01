@@ -4,12 +4,12 @@ import {
   BrowserAnnotationAnchorKind,
   BrowserAnnotationScreenshotStatus,
   type CoworkBrowserAnnotationBatch,
-} from '../../../shared/mixcwork/browserAnnotations';
+} from '../../../shared/mixwork/browserAnnotations';
 import reducer, {
   clearDraftBrowserAnnotationBatches,
   removeDraftBrowserAnnotationBatch,
   upsertDraftBrowserAnnotationBatch,
-} from './mixcworkSlice';
+} from './mixworkSlice';
 
 const createBatch = (id: string): CoworkBrowserAnnotationBatch => ({
   version: 1,

@@ -66,8 +66,8 @@ describe('kit capability helpers', () => {
         kind: KitReferenceKind.Kit,
         id: 'design',
         name: 'Design',
-        uri: 'kit://design@mixcwork-kits',
-        source: KitReferenceSource.MixcworkKits,
+        uri: 'kit://design@mixwork-kits',
+        source: KitReferenceSource.MixWorkKits,
       },
     ]);
   });

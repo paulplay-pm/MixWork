@@ -39,11 +39,11 @@ describe('normalizeActiveSkin', () => {
         css: 'body { display: none; }',
         assets: {
           [SkinAssetSlot.WorkspaceBackdrop]: {
-            url: 'mixcwork-skin://asset/sunset-glass/workspace.backdrop',
+            url: 'mixwork-skin://asset/sunset-glass/workspace.backdrop',
             hash: 'backdrop-hash',
           },
-          [SkinAssetSlot.HomeEmblem]: 'mixcwork-skin://asset/sunset-glass/home.emblem',
-          'sidebar.icon': 'mixcwork-skin://asset/sunset-glass/sidebar.icon',
+          [SkinAssetSlot.HomeEmblem]: 'mixwork-skin://asset/sunset-glass/home.emblem',
+          'sidebar.icon': 'mixwork-skin://asset/sunset-glass/sidebar.icon',
         },
       },
     });
@@ -72,11 +72,11 @@ describe('normalizeActiveSkin', () => {
       },
       assets: {
         [SkinAssetSlot.WorkspaceBackdrop]: {
-          url: 'mixcwork-skin://asset/sunset-glass/workspace.backdrop',
+          url: 'mixwork-skin://asset/sunset-glass/workspace.backdrop',
           cacheKey: 'backdrop-hash',
         },
         [SkinAssetSlot.HomeEmblem]: {
-          url: 'mixcwork-skin://asset/sunset-glass/home.emblem',
+          url: 'mixwork-skin://asset/sunset-glass/home.emblem',
         },
       },
     });
@@ -90,8 +90,8 @@ describe('normalizeActiveSkin', () => {
         boundThemeId: 'dawn',
       },
       assetUrls: {
-        [SkinAssetSlot.WorkspaceBackdrop]: 'mixcwork-skin://asset/paper-cut/workspace.backdrop',
-        [SkinAssetSlot.HomeEmblem]: 'mixcwork-skin://asset/paper-cut/home.emblem',
+        [SkinAssetSlot.WorkspaceBackdrop]: 'mixwork-skin://asset/paper-cut/workspace.backdrop',
+        [SkinAssetSlot.HomeEmblem]: 'mixwork-skin://asset/paper-cut/home.emblem',
       },
     });
 
@@ -104,7 +104,7 @@ describe('normalizeActiveSkin', () => {
   test('returns null when no supported image asset is available', () => {
     expect(normalizeActiveSkin({
       id: 'unsafe',
-      assets: { 'sidebar.icon': 'mixcwork-skin://asset/unsafe/sidebar.icon' },
+      assets: { 'sidebar.icon': 'mixwork-skin://asset/unsafe/sidebar.icon' },
     })).toBeNull();
     expect(normalizeActiveSkin({
       id: 'remote',
@@ -125,8 +125,8 @@ describe('normalizeSkinList', () => {
           id: 'three-kingdoms',
           name: '三国蜀汉 Q 版',
           assets: {
-            [SkinAssetSlot.WorkspaceBackdrop]: 'mixcwork-skin://asset/three-kingdoms/workspace.backdrop',
-            [SkinAssetSlot.HomeEmblem]: 'mixcwork-skin://asset/three-kingdoms/home.emblem',
+            [SkinAssetSlot.WorkspaceBackdrop]: 'mixwork-skin://asset/three-kingdoms/workspace.backdrop',
+            [SkinAssetSlot.HomeEmblem]: 'mixwork-skin://asset/three-kingdoms/home.emblem',
           },
         },
         {
@@ -149,9 +149,9 @@ describe('normalizeSkinList', () => {
 describe('buildSkinAssetUrl', () => {
   test('keeps managed skin protocol URLs because they already contain a content hash', () => {
     expect(buildSkinAssetUrl({
-      url: 'mixcwork-skin://asset/demo/workspace.backdrop?v=backdrop-hash',
+      url: 'mixwork-skin://asset/demo/workspace.backdrop?v=backdrop-hash',
       cacheKey: 'sha 256',
-    }, 3)).toBe('mixcwork-skin://asset/demo/workspace.backdrop?v=backdrop-hash');
+    }, 3)).toBe('mixwork-skin://asset/demo/workspace.backdrop?v=backdrop-hash');
   });
 
   test('falls back to the refresh version for generic URLs without mutating inline URLs', () => {

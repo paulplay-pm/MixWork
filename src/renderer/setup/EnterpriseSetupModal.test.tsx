@@ -79,9 +79,9 @@ describe('EnterpriseSetupModal', () => {
 
   test('edit mode renders the initial URL into the input', () => {
     const html = renderToStaticMarkup(
-      <EnterpriseSetupModal {...baseProps} initialUrl="https://prod.mixcwork.com" mode="edit" />,
+      <EnterpriseSetupModal {...baseProps} initialUrl="https://prod.mixwork.com" mode="edit" />,
     );
-    expect(html).toContain('value="https://prod.mixcwork.com"');
+    expect(html).toContain('value="https://prod.mixwork.com"');
   });
 
   test('modal uses theme tokens so it adapts to light and dark', () => {

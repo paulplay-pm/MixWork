@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import MarkdownContent from '@/components/MarkdownContent';
 import type { Artifact } from '@/types/artifact';
 
-import { CoworkSelectedTextSource } from '../../../../shared/mixcwork/selectedText';
+import { CoworkSelectedTextSource } from '../../../../shared/mixwork/selectedText';
 import {
   type ArtifactSelectedTextContext,
   useArtifactSelectedTextAction,

@@ -126,20 +126,20 @@ describe('startCallbackServer', () => {
     expect(status).toBe(200);
     // The post-bind success page mirrors the server's bind-sso design:
     // provider letter tile + G tile, light green check, "登录成功" heading,
-    // a primary "关闭本页面,打开MixcWork" button, and a light green
+    // a primary "关闭本页面,打开MixWork" button, and a light green
     // "safe to close" pill. The page is shown in the OS browser the
-    // user used to bind; clicking the button fires the mixcwork://
+    // user used to bind; clicking the button fires the mixwork://
     // deep link, which the OS routes through its own
     // "Open this application?" prompt. We deliberately do NOT add a
     // second in-page confirm — the OS prompt is the confirm surface,
     // and asking twice forces an extra click on a flow the user just
     // finished authorizing.
     expect(body).toMatch(/登录成功/);
-    expect(body).toMatch(/关闭本页面,打开MixcWork/);
+    expect(body).toMatch(/关闭本页面,打开MixWork/);
     expect(body).toMatch(/绑定已完成,本页面可安全关闭/);
     // The deep link fires from the single primary button. The
     // keyboard hint is present (hidden until close is rejected).
-    expect(body).toMatch(/mixcwork:\/\//);
+    expect(body).toMatch(/mixwork:\/\//);
     expect(body).toMatch(/window\.close/);
     expect(body).toMatch(/close-hint/);
     expect(body).toMatch(/⌘W/);
@@ -463,15 +463,15 @@ describe('startCallbackServer', () => {
     // 1:1 with the reference image.
     expect(body).toMatch(/登录成功/);
     // Provider name appears in the body copy at least once — the
-    // success page substitutes it into the "已完成与 MixcWork 的绑定"
+    // success page substitutes it into the "已完成与 MixWork 的绑定"
     // sentence. After the copy update the trailing sentence is
-    // "回到 MixcWork 客户端继续使用" — the provider name appears once
-    // (in the "已完成与 MixcWork 的绑定" sentence) and the closing
-    // sentence uses the literal product name "MixcWork".
+    // "回到 MixWork 客户端继续使用" — the provider name appears once
+    // (in the "已完成与 MixWork 的绑定" sentence) and the closing
+    // sentence uses the literal product name "MixWork".
     expect(body).toMatch(/飞书 账号/);
-    expect(body).toMatch(/回到 MixcWork 客户端继续使用/);
+    expect(body).toMatch(/回到 MixWork 客户端继续使用/);
     // Primary close button + light green safe-to-close pill.
-    expect(body).toMatch(/关闭本页面,打开MixcWork/);
+    expect(body).toMatch(/关闭本页面,打开MixWork/);
     expect(body).toMatch(/绑定已完成,本页面可安全关闭/);
     // Light green check circle (matches the reference).
     expect(body).toMatch(/check-circle/);
@@ -481,8 +481,8 @@ describe('startCallbackServer', () => {
     // logo assets, so the success page uses a letter fallback — same
     // as the server's brand-fallback in ssoBind.ts:212).
     expect(body).toMatch(/brand-tile--provider[^>]*>[\s\S]*?<span>飞<\/span>/);
-    // G tile for MixcWork.
-    expect(body).toMatch(/brand-tile--mixcwork[^>]*>[\s\S]*?<span>G<\/span>/);
+    // G tile for MixWork.
+    expect(body).toMatch(/brand-tile--mixwork[^>]*>[\s\S]*?<span>G<\/span>/);
     const r = await arrived;
     expect(r).toEqual({ kind: 'token', token: 'eyJ-post-bind' });
   });
@@ -526,11 +526,11 @@ describe('startCallbackServer', () => {
     expect(r).toEqual({ kind: 'error', error: 'transport_error' });
   });
 
-  test('bind success page: single primary button fires mixcwork:// + tries to close (no in-page confirm panel)', async () => {
-    // The OS-level Chrome external-protocol prompt ("要打开 MixcWork
+  test('bind success page: single primary button fires mixwork:// + tries to close (no in-page confirm panel)', async () => {
+    // The OS-level Chrome external-protocol prompt ("要打开 MixWork
     // 吗?") is the single confirm surface for the deep link. The
     // page itself just exposes one primary button: clicking it
-    // fires the mixcwork:// deep link and tries window.close().
+    // fires the mixwork:// deep link and tries window.close().
     // We deliberately do NOT add a second in-page confirm — the
     // OS prompt already covers the decision, and asking twice
     // forces an extra click on a surface the user just finished
@@ -556,8 +556,8 @@ describe('startCallbackServer', () => {
     await arrived;
 
     // Single primary close button — the one and only click target.
-    expect(body).toMatch(/id="close-btn"[^>]*>关闭本页面,打开MixcWork</);
-    // The page's click handler fires the mixcwork:// deep link and
+    expect(body).toMatch(/id="close-btn"[^>]*>关闭本页面,打开MixWork</);
+    // The page's click handler fires the mixwork:// deep link and
     // tries window.close() on the same click. We slice the body
     // around the close-btn handler to assert the contract.
     function handlerBodyAfter(marker: string): string {
@@ -578,7 +578,7 @@ describe('startCallbackServer', () => {
     // The handler fires the deep link AND tries to close on the
     // same click. window.close() is a W3C no-op for tabs not
     // opened by script; the close-hint is revealed as a fallback.
-    expect(closeHandler).toMatch(/window\.location\.href\s*=\s*['"]mixcwork:\/\/['"]/);
+    expect(closeHandler).toMatch(/window\.location\.href\s*=\s*['"]mixwork:\/\/['"]/);
     expect(closeHandler).toMatch(/window\.close/);
     expect(closeHandler).toMatch(/close-hint--visible/);
     // The page must NOT carry any in-page confirm panel — the OS

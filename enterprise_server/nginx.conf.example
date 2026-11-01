@@ -1,9 +1,9 @@
 server {
     listen 443 ssl;
-    server_name api.mixcwork.example.com;
+    server_name api.mixwork.example.com;
 
-    ssl_certificate     /etc/ssl/certs/mixcwork.crt;
-    ssl_certificate_key /etc/ssl/private/mixcwork.key;
+    ssl_certificate     /etc/ssl/certs/mixwork.crt;
+    ssl_certificate_key /etc/ssl/private/mixwork.key;
 
     location / {
         proxy_pass http://127.0.0.1:8787;

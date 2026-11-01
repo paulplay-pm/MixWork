@@ -1,7 +1,7 @@
-// Renders MixCWork provider configuration into the dsh settings file
+// Renders MixWork provider configuration into the dsh settings file
 // ($DSH_HOME/settings.yaml) so a kit-installed dsh boots with the user's
 // models already available. Ownership rules:
-//   - only providers keyed `mixcwork-<id>` are managed (rewritten each sync);
+//   - only providers keyed `mixwork-<id>` are managed (rewritten each sync);
 //     everything else in the file — user-created routes, other namespaces — is
 //     preserved byte-for-byte at the data level;
 //   - API keys never touch disk: routes reference env vars (apiKeyEnv) that
@@ -24,12 +24,12 @@ import * as path from 'path';
 import { ApiFormat } from '../../shared/providers/constants';
 import type { ProviderConfig } from '../../shared/providers/types';
 
-export const DSH_MANAGED_PROVIDER_PREFIX = 'mixcwork-';
+export const DSH_MANAGED_PROVIDER_PREFIX = 'mixwork-';
 
 // dsh groups its model picker by display name, so every synced route carries
-// this marker: without it a MixCWork-managed provider is indistinguishable
+// this marker: without it a MixWork-managed provider is indistinguishable
 // from one the user added inside dsh.
-export const DSH_MANAGED_LABEL_PREFIX = 'MixCWork · ';
+export const DSH_MANAGED_LABEL_PREFIX = 'MixWork · ';
 
 // The billed built-in provider now routes directly to the enterprise server
 // (one upstream provider per route; the local token proxy has been removed).
@@ -39,10 +39,10 @@ export const DSH_MANAGED_LABEL_PREFIX = 'MixCWork · ';
 // the enterprise /proxy/<provider> path selects the upstream by model name,
 // so collapsing them onto one route would misroute one of them.
 export function planOpenAiRouteId(provider: string): string {
-  return `mixcwork-plan-${provider}`;
+  return `mixwork-plan-${provider}`;
 }
 export function planAnthropicRouteId(provider: string): string {
-  return `mixcwork-plan-${provider}-anthropic`;
+  return `mixwork-plan-${provider}-anthropic`;
 }
 
 const PI_AI_NAMESPACE = 'llm-pi-ai';
@@ -126,7 +126,7 @@ export function deriveDshApiKeyEnvRef(routeId: string): string {
 
 export function mapApiFormatToDshProtocol(apiFormat: string | undefined): DshProviderRoute['api'] | null {
   if (apiFormat === ApiFormat.Anthropic) return 'anthropic-messages';
-  // MixCWork's OpenAI-format providers are overwhelmingly third-party
+  // MixWork's OpenAI-format providers are overwhelmingly third-party
   // compatible endpoints; chat-completions is the universally supported wire.
   if (apiFormat === ApiFormat.OpenAI || apiFormat === undefined) return 'openai-completions';
   return null;
@@ -181,7 +181,7 @@ export function renderDshManagedSettings(
     envVars[apiKeyEnv] = apiKey;
     routes[routeId] = {
       // Prefer the canonical label ("DeepSeek") over the raw config key
-      // ("deepseek"), and mark the entry as MixCWork-managed.
+      // ("deepseek"), and mark the entry as MixWork-managed.
       displayName:
         DSH_MANAGED_LABEL_PREFIX
         + (config.displayName?.trim() || providerId),

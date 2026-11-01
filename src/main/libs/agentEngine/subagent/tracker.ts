@@ -4,7 +4,7 @@ import type { SubagentMessageStore } from '../../../subagentMessageStore';
 import type { SubagentRunStore, SubagentRunWithParent } from '../../../subagentRunStore';
 import {
   parseSubagentGatewayHistoryMessages,
-  type SubagentMixCWorkMessage,
+  type SubagentMixWorkMessage,
 } from './historyParser';
 
 const resolveSpawnDisplayLabel = (...sources: Array<Record<string, unknown> | null | undefined>): string | null => {
@@ -63,7 +63,7 @@ export class SubagentTracker {
   /** Maps toolCallId → OpenClaw session key for the subagent session */
   private readonly subagentSessionKeys = new Map<string, string>();
   /** Maps toolCallId → collected conversation messages (CoworkMessage format) */
-  private readonly subagentMessages = new Map<string, SubagentMixCWorkMessage[]>();
+  private readonly subagentMessages = new Map<string, SubagentMixWorkMessage[]>();
   /** Maps toolCallId → agentId for correlating spawn start → result */
   private readonly subagentToolCallIdToAgentId = new Map<string, string>();
   /** Maps toolCallId → lifecycle status */
@@ -396,7 +396,7 @@ export class SubagentTracker {
     parentSessionId: string,
     runId: string,
     sessionKey?: string,
-  ): Promise<SubagentMixCWorkMessage[]> {
+  ): Promise<SubagentMixWorkMessage[]> {
     const storedRun = this.store?.getSubagentRun(runId) ?? null;
     const storedRunBelongsToParent = storedRun?.parentSessionId === parentSessionId;
     const persistedSessionKey = storedRunBelongsToParent ? storedRun?.sessionKey : null;
@@ -742,7 +742,7 @@ export class SubagentTracker {
   private async fetchSubagentHistory(
     sessionKey: string,
     runId: string,
-  ): Promise<SubagentMixCWorkMessage[]> {
+  ): Promise<SubagentMixWorkMessage[]> {
     const client = this.getGatewayClient();
     if (!client) return [];
     try {
@@ -784,7 +784,7 @@ export class SubagentTracker {
    * Load messages from the persisted subagent_messages table.
    * Returns null if no persisted messages are found.
    */
-  private loadPersistedMessages(runId: string): SubagentMixCWorkMessage[] | null {
+  private loadPersistedMessages(runId: string): SubagentMixWorkMessage[] | null {
     if (!this.messageStore) return null;
     if (!this.store) return null;
     if (!this.store.isMessagesPersisted(runId)) return null;
@@ -792,9 +792,9 @@ export class SubagentTracker {
     const rows = this.messageStore.getMessages(runId);
     if (rows.length === 0) return null;
 
-    const messages: SubagentMixCWorkMessage[] = rows.map((row) => ({
+    const messages: SubagentMixWorkMessage[] = rows.map((row) => ({
       id: row.id,
-      type: row.type as SubagentMixCWorkMessage['type'],
+      type: row.type as SubagentMixWorkMessage['type'],
       content: row.content,
       timestamp: row.createdAt,
       metadata: row.metadata ? JSON.parse(row.metadata) : undefined,
@@ -808,7 +808,7 @@ export class SubagentTracker {
   /**
    * Persist fetched messages to local database for instant future reads.
    */
-  private persistMessages(runId: string, messages: SubagentMixCWorkMessage[]): void {
+  private persistMessages(runId: string, messages: SubagentMixWorkMessage[]): void {
     if (!this.messageStore) return;
     if (messages.length === 0) return;
     if (this.store.isMessagesPersisted(runId)) return;

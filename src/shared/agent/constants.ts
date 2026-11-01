@@ -62,5 +62,5 @@ export const LegacyAgentName = {
 } as const;
 
 export const DefaultAgentProfile = {
-  Name: 'MixcWork',
+  Name: 'MixWork',
 } as const;

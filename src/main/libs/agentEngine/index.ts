@@ -1,3 +1,3 @@
-export { MixCWorkEngineRouter } from './mixcworkEngineRouter';
+export { MixWorkEngineRouter } from './mixworkEngineRouter';
 export { OpenClawRuntimeAdapter } from './openclawRuntimeAdapter';
 export * from './types';

@@ -35,7 +35,7 @@ export function mapEnterpriseModelsToModels(
       id: model.id,
       name: model.displayName ?? model.model ?? model.id,
       provider: model.provider,
-      providerKey: ProviderName.MixcworkServer,
+      providerKey: ProviderName.MixWorkServer,
       isServerModel: true,
       supportsImage: caps?.supports_image ?? false,
       supportsVideo: caps?.supports_video ?? false,

@@ -49,7 +49,7 @@
 In `src/main/auth/enterpriseClient.test.ts`, add a new `describe('enterpriseClient.logout', ...)` block. Mock `electron` to provide a fake `session.fromPartition(name).clearStorageData({ storages })` that resolves on call. The test:
 
 1. Calls `enterpriseClient.logout()`.
-2. Asserts the mock was called with `SSO_OAUTH_PARTITION` (the literal string `'mixcwork-sso-oauth'`) and a `storages` array that contains at least `'cookies'`, `'indexdb'`, `'localstorage'`, `'serviceworkers'`, `'cachestorage'`.
+2. Asserts the mock was called with `SSO_OAUTH_PARTITION` (the literal string `'mixwork-sso-oauth'`) and a `storages` array that contains at least `'cookies'`, `'indexdb'`, `'localstorage'`, `'serviceworkers'`, `'cachestorage'`.
 
 To mock `electron`, the file currently has no `vi.mock('electron')` — add one at the top of the test file (above the existing `describe` blocks). The mock returns a `session` object whose `fromPartition` returns an object with a `clearStorageData: vi.fn().mockResolvedValue(undefined)`. The existing test file uses only `globalThis.fetch` mocking, so the new mock does not affect existing tests.
 
@@ -77,7 +77,7 @@ Add the new describe block (append to the file):
 
 ```ts
 describe('enterpriseClient.logout', () => {
-  test('clears the mixcwork-sso-oauth partition with the expected storages', async () => {
+  test('clears the mixwork-sso-oauth partition with the expected storages', async () => {
     await enterpriseClient.logout();
     expect(clearStorageDataMock).toHaveBeenCalledTimes(1);
     const [arg] = clearStorageDataMock.mock.calls[0]!;

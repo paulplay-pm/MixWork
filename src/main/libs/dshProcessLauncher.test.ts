@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import { buildDshProcessLaunch } from './dshProcessLauncher';
 
 const baseOptions = {
-  executablePath: '/Applications/MixCWork.app/Contents/MacOS/MixCWork',
+  executablePath: '/Applications/MixWork.app/Contents/MacOS/MixWork',
   args: ['/runtime/lib/bin.js', 'web', '--port', '31163'],
   cwd: '/work/project',
   env: { DSH_HOME: '/home/user/.dsh', ELECTRON_RUN_AS_NODE: 'stale' },

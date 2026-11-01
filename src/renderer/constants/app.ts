@@ -1,4 +1,4 @@
-export const APP_NAME = 'MixcWork';
-export const APP_ID = 'mixcwork';
-export const EXPORT_FORMAT_TYPE = 'mixcwork.providers';
-export const EXPORT_PASSWORD = 'mixcwork-APP';
+export const APP_NAME = 'MixWork';
+export const APP_ID = 'mixwork';
+export const EXPORT_FORMAT_TYPE = 'mixwork.providers';
+export const EXPORT_PASSWORD = 'mixwork-APP';

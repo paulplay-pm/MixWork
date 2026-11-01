@@ -8,7 +8,7 @@ import { useSelector } from 'react-redux';
 import { agentService } from '../../services/agent';
 import { i18nService } from '../../services/i18n';
 import { imService } from '../../services/im';
-import { mixcworkService } from '../../services/mixcwork';
+import { mixworkService } from '../../services/mixwork';
 import { resolveThinkingLevelForModel } from '../../services/modelThinkingLevelMemory';
 import { RootState } from '../../store';
 import type { Model } from '../../store/slices/modelSlice';
@@ -241,12 +241,12 @@ const AgentSettingsPanel: React.FC<AgentSettingsPanelProps> = ({ agentId, onClos
 
       let nextSystemPrompt = a.systemPrompt;
       let nextIdentity = a.identity;
-      const nextUserInfo = await mixcworkService.readBootstrapFile('USER.md', { agentId });
+      const nextUserInfo = await mixworkService.readBootstrapFile('USER.md', { agentId });
       if (cancelled) return;
       if (isDefaultAgentId(agentId)) {
         const [mainIdentity, mainSoul] = await Promise.all([
-          mixcworkService.readBootstrapFile('IDENTITY.md', { agentId }),
-          mixcworkService.readBootstrapFile('SOUL.md', { agentId }),
+          mixworkService.readBootstrapFile('IDENTITY.md', { agentId }),
+          mixworkService.readBootstrapFile('SOUL.md', { agentId }),
         ]);
         if (cancelled) return;
         nextSystemPrompt = mainSoul;
@@ -519,12 +519,12 @@ const AgentSettingsPanel: React.FC<AgentSettingsPanelProps> = ({ agentId, onClos
       }
       const bootstrapWrites = isMainAgent
         ? [
-            mixcworkService.writeBootstrapFile('IDENTITY.md', identity, { agentId }),
-            mixcworkService.writeBootstrapFile('SOUL.md', systemPrompt, { agentId }),
-            mixcworkService.writeBootstrapFile('USER.md', userInfo, { agentId }),
+            mixworkService.writeBootstrapFile('IDENTITY.md', identity, { agentId }),
+            mixworkService.writeBootstrapFile('SOUL.md', systemPrompt, { agentId }),
+            mixworkService.writeBootstrapFile('USER.md', userInfo, { agentId }),
           ]
         : [
-            mixcworkService.writeBootstrapFile('USER.md', userInfo, { agentId }),
+            mixworkService.writeBootstrapFile('USER.md', userInfo, { agentId }),
           ];
       if (bootstrapWrites.length > 0) {
         const bootstrapSaved = await Promise.all(bootstrapWrites);

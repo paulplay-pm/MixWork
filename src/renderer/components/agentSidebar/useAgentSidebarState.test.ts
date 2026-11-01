@@ -1,10 +1,10 @@
 import { afterEach, expect, test, vi } from 'vitest';
 
 import {
-  type MixCWorkSessionStatus,
-  MixCWorkSessionStatusValue,
-  type MixCWorkSessionSummary,
-} from '../../types/mixcwork';
+  type MixWorkSessionStatus,
+  MixWorkSessionStatusValue,
+  type MixWorkSessionSummary,
+} from '../../types/mixwork';
 import { AgentSidebarIndicator } from './constants';
 import type { AgentSidebarAgentSummary } from './types';
 import {
@@ -27,11 +27,11 @@ const makeSession = (
   id: string,
   createdAt: number,
   updatedAt = createdAt,
-  status: MixCWorkSessionStatus = MixCWorkSessionStatusValue.Completed,
+  status: MixWorkSessionStatus = MixWorkSessionStatusValue.Completed,
   pinned = false,
   pinOrder: number | null = null,
   scheduledTaskId: string | null = null,
-): MixCWorkSessionSummary => ({
+): MixWorkSessionSummary => ({
   id,
   title: id,
   scheduledTaskId,
@@ -80,7 +80,7 @@ test('keeps successful task loading independent from renderer debug logging', ()
 test('sortAgentSidebarTasks keeps unpinned tasks ordered by last update time', () => {
   const sorted = sortAgentSidebarTasks([
     makeSession('newer-created-older-update', 300, 200),
-    makeSession('older-created-newer-update', 100, 500, MixCWorkSessionStatusValue.Running),
+    makeSession('older-created-newer-update', 100, 500, MixWorkSessionStatusValue.Running),
     makeSession('middle', 200, 300),
   ]);
 
@@ -94,9 +94,9 @@ test('sortAgentSidebarTasks keeps unpinned tasks ordered by last update time', (
 test('sortAgentSidebarTasks keeps pinned tasks in first-pinned-first order', () => {
   const sorted = sortAgentSidebarTasks([
     makeSession('newer-unpinned', 100, 400),
-    makeSession('second-pinned', 100, 200, MixCWorkSessionStatusValue.Completed, true, 2),
+    makeSession('second-pinned', 100, 200, MixWorkSessionStatusValue.Completed, true, 2),
     makeSession('middle-unpinned', 200, 300),
-    makeSession('first-pinned', 200, 100, MixCWorkSessionStatusValue.Completed, true, 1),
+    makeSession('first-pinned', 200, 100, MixWorkSessionStatusValue.Completed, true, 1),
   ]);
 
   expect(sorted.map((session) => session.id)).toEqual([
@@ -140,7 +140,7 @@ test('sortAgentSidebarAgents orders agents within pin groups by explicit sort or
 });
 
 test('deriveAgentSidebarIndicator prioritizes pending permission state', () => {
-  const session = makeSession('pending-session', 100, 200, MixCWorkSessionStatusValue.Running);
+  const session = makeSession('pending-session', 100, 200, MixWorkSessionStatusValue.Running);
 
   expect(deriveAgentSidebarIndicator(
     session,
@@ -150,7 +150,7 @@ test('deriveAgentSidebarIndicator prioritizes pending permission state', () => {
 });
 
 test('deriveAgentSidebarIndicator uses unread completion over a stale running preview', () => {
-  const session = makeSession('completed-in-background', 100, 200, MixCWorkSessionStatusValue.Running);
+  const session = makeSession('completed-in-background', 100, 200, MixWorkSessionStatusValue.Running);
 
   expect(deriveAgentSidebarIndicator(
     session,
@@ -160,7 +160,7 @@ test('deriveAgentSidebarIndicator uses unread completion over a stale running pr
 });
 
 test('deriveAgentSidebarIndicator keeps a running task active without completion unread state', () => {
-  const session = makeSession('running-in-background', 100, 200, MixCWorkSessionStatusValue.Running);
+  const session = makeSession('running-in-background', 100, 200, MixWorkSessionStatusValue.Running);
 
   expect(deriveAgentSidebarIndicator(
     session,
@@ -174,7 +174,7 @@ test('toAgentSidebarTaskNode marks sessions linked to scheduled tasks', () => {
     'scheduled-session',
     100,
     200,
-    MixCWorkSessionStatusValue.Completed,
+    MixWorkSessionStatusValue.Completed,
     false,
     null,
     'job-daily-summary',

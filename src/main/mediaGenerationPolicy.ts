@@ -1,6 +1,6 @@
 export const MediaGenerationTool = {
-  Image: 'mixcwork_image_generate',
-  Video: 'mixcwork_video_generate',
+  Image: 'mixwork_image_generate',
+  Video: 'mixwork_video_generate',
 } as const;
 export type MediaGenerationTool = typeof MediaGenerationTool[keyof typeof MediaGenerationTool];
 

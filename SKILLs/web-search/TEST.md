@@ -2,21 +2,21 @@
 
 ## Testing the Complete Integration
 
-This guide walks through testing the entire Web Search Skill integration with MixCWork.
+This guide walks through testing the entire Web Search Skill integration with MixWork.
 
 ## Prerequisites
 
-1. MixCWork built and ready to run
+1. MixWork built and ready to run
 2. Google Chrome installed
 3. Internet connection available
 
 ## Test 1: Service Auto-Start
 
-**Objective:** Verify that the Bridge Server starts automatically with MixCWork.
+**Objective:** Verify that the Bridge Server starts automatically with MixWork.
 
 **Steps:**
 
-1. Start MixCWork in development mode:
+1. Start MixWork in development mode:
    ```bash
    npm run electron:dev
    ```
@@ -45,7 +45,7 @@ This guide walks through testing the entire Web Search Skill integration with Mi
    }
    ```
 
-**Expected Result:** ✅ Bridge Server starts automatically within 3 seconds of MixCWork launch.
+**Expected Result:** ✅ Bridge Server starts automatically within 3 seconds of MixWork launch.
 
 ## Test 2: CLI Search from Terminal
 
@@ -53,7 +53,7 @@ This guide walks through testing the entire Web Search Skill integration with Mi
 
 **Steps:**
 
-1. Open a terminal while MixCWork is running
+1. Open a terminal while MixWork is running
 
 2. Execute a search:
    ```bash
@@ -74,7 +74,7 @@ This guide walks through testing the entire Web Search Skill integration with Mi
 
 **Steps:**
 
-1. Start MixCWork
+1. Start MixWork
 2. Create a new Cowork session
 3. Send the following message:
 
@@ -113,11 +113,11 @@ This guide walks through testing the entire Web Search Skill integration with Mi
 
 ## Test 5: Service Cleanup on Exit
 
-**Objective:** Verify graceful shutdown of services when MixCWork quits.
+**Objective:** Verify graceful shutdown of services when MixWork quits.
 
 **Steps:**
 
-1. With MixCWork running and searches completed, quit the application
+1. With MixWork running and searches completed, quit the application
 2. Check console output for:
    ```
    [SkillServices] Stopping skill services...
@@ -145,7 +145,7 @@ This guide walks through testing the entire Web Search Skill integration with Mi
 
 **Steps:**
 
-1. Start MixCWork
+1. Start MixWork
 2. Manually stop the Bridge Server:
    ```bash
    bash SKILLs/web-search/scripts/stop-server.sh
@@ -174,7 +174,7 @@ This guide walks through testing the entire Web Search Skill integration with Mi
 
 **Steps:**
 
-1. Start MixCWork (ensure headless is false in config)
+1. Start MixWork (ensure headless is false in config)
 2. Execute a search via CLI or Cowork
 3. Observe:
    - Chrome window appears
@@ -309,7 +309,7 @@ rm SKILLs/web-search/.connection
 
 All tests pass when:
 
-- ✅ Server auto-starts with MixCWork
+- ✅ Server auto-starts with MixWork
 - ✅ Searches complete in < 3 seconds
 - ✅ Claude uses skill automatically when appropriate
 - ✅ Connection caching improves performance

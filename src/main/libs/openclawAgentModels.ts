@@ -2,7 +2,7 @@ import path from 'node:path';
 
 import { isDesignedAgentAvatarIcon } from '../../shared/agent/avatar';
 import { OpenClawProviderId } from '../../shared/providers/constants';
-import type { Agent } from '../mixcworkStore';
+import type { Agent } from '../mixworkStore';
 
 type BuildManagedAgentEntriesInput = {
   agents: Agent[];
@@ -239,7 +239,7 @@ export function resolveQualifiedAgentModelRef(options: {
 }
 
 /**
- * Resolve whether a run model reference belongs to mixcwork-server without
+ * Resolve whether a run model reference belongs to mixwork-server without
  * silently assigning a historical bare id to the wrong provider.
  *
  * The candidate callback is intentionally checked before accepting a custom
@@ -260,7 +260,7 @@ export function resolveServerModelRefForRun(options: {
 
   const explicitTarget = parsePrimaryModelRef(modelRef);
   if (explicitTarget) {
-    if (explicitTarget.providerId === OpenClawProviderId.MixcworkServer) {
+    if (explicitTarget.providerId === OpenClawProviderId.MixWorkServer) {
       return {
         status: ServerModelRefResolutionStatus.Server,
         modelId: explicitTarget.modelId,
@@ -277,13 +277,13 @@ export function resolveServerModelRefForRun(options: {
   const matchingProviders = Object.entries(options.availableProviders)
     .filter(([, config]) => config.models.some(model => model.id === modelRef))
     .map(([providerId]) => providerId);
-  const serverMatched = matchingProviders.includes(OpenClawProviderId.MixcworkServer);
+  const serverMatched = matchingProviders.includes(OpenClawProviderId.MixWorkServer);
 
   if (serverMatched && matchingProviders.length === 1) {
     return {
       status: ServerModelRefResolutionStatus.Server,
       modelId: modelRef,
-      primaryModel: `${OpenClawProviderId.MixcworkServer}/${modelRef}`,
+      primaryModel: `${OpenClawProviderId.MixWorkServer}/${modelRef}`,
     };
   }
   if (serverMatched) {
@@ -356,9 +356,9 @@ export function buildManagedAgentEntries({
 // Provider IDs that were renamed in past refactors. Any stored agent model ref
 // using an old ID is rewritten to the current ID on startup.
 const RENAMED_PROVIDER_IDS: Record<string, string> = {
-  'github-copilot': 'mixcwork-copilot',
-  'mixcwork-server': 'mixcwork-server',
-  'mixcwork-copilot': 'mixcwork-copilot',
+  'github-copilot': 'mixwork-copilot',
+  'mixwork-server': 'mixwork-server',
+  'mixwork-copilot': 'mixwork-copilot',
 };
 
 /**
@@ -381,7 +381,7 @@ export function migrateAgentModelRefs(options: {
     if (!normalizedModel) continue;
 
     // Apply explicit provider rename map before qualification so that renamed
-    // provider IDs (e.g. 'github-copilot' → 'mixcwork-copilot') are corrected
+    // provider IDs (e.g. 'github-copilot' → 'mixwork-copilot') are corrected
     // even though resolveQualifiedAgentModelRef treats any slash-ref as valid.
     const slashIdx = normalizedModel.indexOf('/');
     if (slashIdx > 0) {

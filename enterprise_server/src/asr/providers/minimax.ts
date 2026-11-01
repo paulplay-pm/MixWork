@@ -221,7 +221,7 @@ export class MinimaxAsrStream implements AsrStream {
   }
 
   private async postSegment(wav: Buffer, final: boolean): Promise<void> {
-    const boundary = `----mixcwork${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`;
+    const boundary = `----mixwork${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`;
     const parts: Buffer[] = [];
     const field = (name: string, value: string): void => {
       parts.push(

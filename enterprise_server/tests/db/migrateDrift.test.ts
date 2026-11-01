@@ -21,7 +21,7 @@ describe('db/migrate (drift detection)', () => {
 
   beforeEach(async () => {
     await resetSchema();
-    dir = mkdtempSync(join(tmpdir(), 'mixcwork-migrations-'));
+    dir = mkdtempSync(join(tmpdir(), 'mixwork-migrations-'));
   });
 
   afterEach(() => {

@@ -48,7 +48,7 @@ import Modal from '../common/Modal';
 import Cog6ToothIcon from '../icons/Cog6ToothIcon';
 import EllipsisHorizontalIcon from '../icons/EllipsisHorizontalIcon';
 import SidebarToggleIcon from '../icons/SidebarToggleIcon';
-import { MessageCopyButton } from '../mixcwork/MessageActionButton';
+import { MessageCopyButton } from '../mixwork/MessageActionButton';
 import Tooltip, { TooltipAlign, TooltipPosition } from '../ui/Tooltip';
 import SiteAnalyticsChart from './SiteAnalyticsChart';
 import SiteDefaultIcon from './SiteDefaultIcon';
@@ -1200,7 +1200,7 @@ const SitesView: React.FC<SitesViewProps> = ({
                   <h1 className={`truncate ${MANAGEMENT_PAGE_TITLE_TEXT} font-semibold text-foreground`}>
                     {selectedSite.title}
                   </h1>
-                  <div className={`mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 ${MANAGEMENT_META_TEXT} leading-[var(--mixcwork-leading-xs)] text-secondary`}>
+                  <div className={`mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 ${MANAGEMENT_META_TEXT} leading-[var(--mixwork-leading-xs)] text-secondary`}>
                     <span>{i18nService.t('sitesTitle')}</span>
                     <span aria-hidden="true">·</span>
                     <span>{i18nService.t('libraryLastModifiedAt')}: {formatDateTime(selectedSite.updatedAt)}</span>
@@ -1327,7 +1327,7 @@ const SitesView: React.FC<SitesViewProps> = ({
                   <h2 className={`${MANAGEMENT_TITLE_TEXT} font-semibold text-foreground`}>
                     {i18nService.t('sitesPerformance')}
                   </h2>
-                  <p className={`${MANAGEMENT_META_TEXT} mt-1 leading-[var(--mixcwork-leading-xs)] text-secondary`}>
+                  <p className={`${MANAGEMENT_META_TEXT} mt-1 leading-[var(--mixwork-leading-xs)] text-secondary`}>
                     {formatAnalyticsDate(analytics?.meta.from ?? requestedAnalyticsDates.from)}
                     {' – '}
                     {formatAnalyticsDate(analytics?.meta.to ?? requestedAnalyticsDates.to)}
@@ -1355,7 +1355,7 @@ const SitesView: React.FC<SitesViewProps> = ({
                   <>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       <div className="rounded-xl border border-border bg-surface p-4">
-                        <p className={`${MANAGEMENT_META_TEXT} leading-[var(--mixcwork-leading-xs)] text-secondary`}>
+                        <p className={`${MANAGEMENT_META_TEXT} leading-[var(--mixwork-leading-xs)] text-secondary`}>
                           {i18nService.t('sitesUniqueVisitors')}
                         </p>
                         <p className="mt-1.5 text-2xl font-semibold leading-none text-foreground">
@@ -1363,7 +1363,7 @@ const SitesView: React.FC<SitesViewProps> = ({
                         </p>
                       </div>
                       <div className="rounded-xl border border-border bg-surface p-4">
-                        <p className={`${MANAGEMENT_META_TEXT} leading-[var(--mixcwork-leading-xs)] text-secondary`}>
+                        <p className={`${MANAGEMENT_META_TEXT} leading-[var(--mixwork-leading-xs)] text-secondary`}>
                           {i18nService.t('sitesPageViews')}
                         </p>
                         <p className="mt-1.5 text-2xl font-semibold leading-none text-foreground">
@@ -1377,7 +1377,7 @@ const SitesView: React.FC<SitesViewProps> = ({
                         {i18nService.t('sitesPopularPages')}
                       </h2>
                       <div className="mt-2.5">
-                        <div className={`grid grid-cols-[minmax(0,1fr)_96px_96px] border-b border-border pb-2 ${MANAGEMENT_META_TEXT} leading-[var(--mixcwork-leading-xs)] text-secondary sm:grid-cols-[minmax(0,1fr)_120px_120px]`}>
+                        <div className={`grid grid-cols-[minmax(0,1fr)_96px_96px] border-b border-border pb-2 ${MANAGEMENT_META_TEXT} leading-[var(--mixwork-leading-xs)] text-secondary sm:grid-cols-[minmax(0,1fr)_120px_120px]`}>
                           <span>{i18nService.t('sitesPage')}</span>
                           <span className="text-right">{i18nService.t('sitesPageViews')}</span>
                           <span className="text-right">{i18nService.t('sitesUniqueVisitors')}</span>
@@ -1415,12 +1415,12 @@ const SitesView: React.FC<SitesViewProps> = ({
                 <h2 className={`${MANAGEMENT_TITLE_TEXT} font-semibold text-foreground`}>
                   {i18nService.t('libraryShareAccessSetting')}
                 </h2>
-                <p className={`${MANAGEMENT_BODY_TEXT} mt-1 leading-[var(--mixcwork-leading-sm)] text-secondary`}>
+                <p className={`${MANAGEMENT_BODY_TEXT} mt-1 leading-[var(--mixwork-leading-sm)] text-secondary`}>
                   {i18nService.t('sitesUnifiedAccessSettingDescription')}
                 </p>
 
                 <div className="mt-4">
-                  <div className={`${MANAGEMENT_META_TEXT} font-medium leading-[var(--mixcwork-leading-xs)] text-secondary`}>
+                  <div className={`${MANAGEMENT_META_TEXT} font-medium leading-[var(--mixwork-leading-xs)] text-secondary`}>
                     {i18nService.t('libraryShareAccessAddress')}
                   </div>
                   <div className="mt-2 flex min-w-0 items-center gap-3 rounded-lg bg-surface-raised px-3 py-2.5">
@@ -1492,7 +1492,7 @@ const SitesView: React.FC<SitesViewProps> = ({
                           </span>
                           {label}
                         </span>
-                        <span className={`${MANAGEMENT_META_TEXT} mt-2 block leading-[var(--mixcwork-leading-xs)] text-secondary`}>
+                        <span className={`${MANAGEMENT_META_TEXT} mt-2 block leading-[var(--mixwork-leading-xs)] text-secondary`}>
                           {description}
                         </span>
                       </button>
@@ -1547,11 +1547,11 @@ const SitesView: React.FC<SitesViewProps> = ({
                 <h2 className={`${MANAGEMENT_TITLE_TEXT} font-semibold text-foreground`}>
                   {i18nService.t('libraryShareBasicInfo')}
                 </h2>
-                <p className={`${MANAGEMENT_BODY_TEXT} mt-1 leading-[var(--mixcwork-leading-sm)] text-secondary`}>
+                <p className={`${MANAGEMENT_BODY_TEXT} mt-1 leading-[var(--mixwork-leading-sm)] text-secondary`}>
                   {i18nService.t('sitesBasicInfoDescription')}
                 </p>
                 <div className="mt-4">
-                  <label className={`${MANAGEMENT_META_TEXT} font-medium leading-[var(--mixcwork-leading-xs)] text-secondary`} htmlFor="site-name">
+                  <label className={`${MANAGEMENT_META_TEXT} font-medium leading-[var(--mixwork-leading-xs)] text-secondary`} htmlFor="site-name">
                     {i18nService.t('libraryResourceName')}
                   </label>
                   <input
@@ -1565,7 +1565,7 @@ const SitesView: React.FC<SitesViewProps> = ({
                 </div>
                 <dl className="mt-4 grid gap-x-8 gap-y-4 sm:grid-cols-3">
                   <div>
-                    <dt className={`${MANAGEMENT_META_TEXT} leading-[var(--mixcwork-leading-xs)] text-tertiary`}>
+                    <dt className={`${MANAGEMENT_META_TEXT} leading-[var(--mixwork-leading-xs)] text-tertiary`}>
                       {i18nService.t('libraryResourceType')}
                     </dt>
                     <dd className={`${MANAGEMENT_BODY_TEXT} mt-1 text-foreground`}>
@@ -1573,7 +1573,7 @@ const SitesView: React.FC<SitesViewProps> = ({
                     </dd>
                   </div>
                   <div>
-                    <dt className={`${MANAGEMENT_META_TEXT} leading-[var(--mixcwork-leading-xs)] text-tertiary`}>
+                    <dt className={`${MANAGEMENT_META_TEXT} leading-[var(--mixwork-leading-xs)] text-tertiary`}>
                       {i18nService.t('sitesCreatedAt')}
                     </dt>
                     <dd className={`${MANAGEMENT_BODY_TEXT} mt-1 text-foreground`}>
@@ -1581,7 +1581,7 @@ const SitesView: React.FC<SitesViewProps> = ({
                     </dd>
                   </div>
                   <div>
-                    <dt className={`${MANAGEMENT_META_TEXT} leading-[var(--mixcwork-leading-xs)] text-tertiary`}>
+                    <dt className={`${MANAGEMENT_META_TEXT} leading-[var(--mixwork-leading-xs)] text-tertiary`}>
                       {i18nService.t('libraryLastModifiedAt')}
                     </dt>
                     <dd className={`${MANAGEMENT_BODY_TEXT} mt-1 text-foreground`}>
@@ -1593,7 +1593,7 @@ const SitesView: React.FC<SitesViewProps> = ({
 
               <section className="flex items-center justify-between gap-6 rounded-xl border border-red-500/25 p-5">
                 <div className="min-w-0">
-                  <p className={`${MANAGEMENT_BODY_TEXT} leading-[var(--mixcwork-leading-sm)] text-secondary`}>
+                  <p className={`${MANAGEMENT_BODY_TEXT} leading-[var(--mixwork-leading-sm)] text-secondary`}>
                     {canDelete
                       ? i18nService.t('sitesDeleteDescription')
                       : i18nService.t('sitesDeleteRequiresStopped')}
@@ -1813,7 +1813,7 @@ const SitesView: React.FC<SitesViewProps> = ({
                 ? i18nService.t('sitesResumeConfirmTitle')
                 : i18nService.t('sitesSettingsConfirmTitle')}
           </h2>
-          <p className={`${MANAGEMENT_BODY_TEXT} mt-2 leading-[var(--mixcwork-leading-sm)] text-secondary`}>
+          <p className={`${MANAGEMENT_BODY_TEXT} mt-2 leading-[var(--mixwork-leading-sm)] text-secondary`}>
             {confirmAction === 'stop'
               ? requiresResourceRelease
                 ? i18nService.t('sitesReleaseResourcesConfirm')
@@ -1883,7 +1883,7 @@ const SitesView: React.FC<SitesViewProps> = ({
           <h2 className={`${MANAGEMENT_TITLE_TEXT} mt-4 font-semibold text-foreground`}>
             {i18nService.t('sitesDeleteConfirmTitle')}
           </h2>
-          <p className={`${MANAGEMENT_BODY_TEXT} mt-2 leading-[var(--mixcwork-leading-sm)] text-secondary`}>
+          <p className={`${MANAGEMENT_BODY_TEXT} mt-2 leading-[var(--mixwork-leading-sm)] text-secondary`}>
             {i18nService.t('sitesDeleteConfirmDescription')}
           </p>
           {isNode && selectedSite.persistence?.enabled && (
@@ -1892,7 +1892,7 @@ const SitesView: React.FC<SitesViewProps> = ({
             </p>
           )}
           <label
-            className={`${MANAGEMENT_META_TEXT} mt-4 block font-medium leading-[var(--mixcwork-leading-xs)] text-secondary`}
+            className={`${MANAGEMENT_META_TEXT} mt-4 block font-medium leading-[var(--mixwork-leading-xs)] text-secondary`}
             htmlFor="site-delete-confirm"
           >
             {i18nService.t('sitesDeleteConfirmInputLabel').replace('{name}', selectedSite.title)}
@@ -1947,7 +1947,7 @@ const SitesView: React.FC<SitesViewProps> = ({
           <h2 className={`${MANAGEMENT_TITLE_TEXT} font-semibold text-foreground`}>
             {i18nService.t('sitesDiscardConfirmTitle')}
           </h2>
-          <p className={`${MANAGEMENT_BODY_TEXT} mt-2 leading-[var(--mixcwork-leading-sm)] text-secondary`}>
+          <p className={`${MANAGEMENT_BODY_TEXT} mt-2 leading-[var(--mixwork-leading-sm)] text-secondary`}>
             {i18nService.t('sitesDiscardConfirmDescription')}
           </p>
           <div className="mt-6 flex justify-end gap-2">

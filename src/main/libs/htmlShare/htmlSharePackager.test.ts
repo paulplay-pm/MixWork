@@ -4,14 +4,14 @@ import os from 'os';
 import path from 'path';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { MIXCWORK_TEMP_DIR_NAME } from '../../../shared/mixcwork/constants';
+import { MIXWORK_TEMP_DIR_NAME } from '../../../shared/mixwork/constants';
 import { packageHtmlFile } from './htmlSharePackager';
 
 const tempRoots: string[] = [];
 const archiveRoots: string[] = [];
 
 async function createTempRoot(): Promise<string> {
-  const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixcwork-html-share-packager-test-'));
+  const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixwork-html-share-packager-test-'));
   tempRoots.push(root);
   return root;
 }
@@ -118,7 +118,7 @@ describe('htmlSharePackager', () => {
   test('packages HTML files from cowork temp attachments without requiring referenced assets', async () => {
     const root = await createTempRoot();
     await writeFile(path.join(root, 'package.json'), '{"name":"fixture"}');
-    const attachmentDir = path.join(root, MIXCWORK_TEMP_DIR_NAME, 'attachments', 'manual');
+    const attachmentDir = path.join(root, MIXWORK_TEMP_DIR_NAME, 'attachments', 'manual');
     await writeFile(
       path.join(attachmentDir, 'plan.html'),
       '<!doctype html><title>Plan</title><main>ready</main>',
@@ -136,7 +136,7 @@ describe('htmlSharePackager', () => {
   test('keeps cowork temp attachment shares scoped to the HTML directory', async () => {
     const root = await createTempRoot();
     await writeFile(path.join(root, 'package.json'), '{"name":"fixture"}');
-    const attachmentDir = path.join(root, MIXCWORK_TEMP_DIR_NAME, 'attachments', 'manual');
+    const attachmentDir = path.join(root, MIXWORK_TEMP_DIR_NAME, 'attachments', 'manual');
     await writeFile(
       path.join(attachmentDir, 'plan.html'),
       [
@@ -146,7 +146,7 @@ describe('htmlSharePackager', () => {
       ].join('\n'),
     );
     await writeFile(path.join(attachmentDir, 'plan.css'), 'body { color: #111; }');
-    await writeFile(path.join(root, MIXCWORK_TEMP_DIR_NAME, 'secret.md'), 'private');
+    await writeFile(path.join(root, MIXWORK_TEMP_DIR_NAME, 'secret.md'), 'private');
 
     const packaged = await packageHtmlFile(path.join(attachmentDir, 'plan.html'));
     const entries = await getArchiveEntries(packaged.archivePath);

@@ -1,0 +1,31 @@
+{
+  "id": "mixwork-media-generation",
+  "name": "MixWorkMediaGeneration",
+  "description": "Image/video generation and AI skin management tools powered by MixWork.",
+  "contracts": {
+    "tools": [
+      "mixwork_image_generate",
+      "mixwork_video_generate",
+      "mixwork_skin_manage"
+    ]
+  },
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "callbackUrl": {
+        "type": "string",
+        "description": "MixWork HTTP callback URL for media generation requests"
+      },
+      "secret": {
+        "type": "string",
+        "description": "Shared secret for callback authentication"
+      },
+      "requestTimeoutMs": {
+        "type": "number",
+        "minimum": 1000,
+        "description": "Request timeout in milliseconds"
+      }
+    }
+  }
+}

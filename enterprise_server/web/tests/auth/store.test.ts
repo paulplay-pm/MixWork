@@ -58,7 +58,7 @@ describe('auth/store', () => {
 });
 
 describe('auth/store persistence', () => {
-  const TOKEN_KEY = 'mixcwork.enterprise.auth.token';
+  const TOKEN_KEY = 'mixwork.enterprise.auth.token';
   beforeEach(() => {
     localStorage.clear();
     useAuthStore.getState().logout();
@@ -116,7 +116,7 @@ describe('auth/store persistence', () => {
 });
 
 describe('auth/store session-expiry notice', () => {
-  const TOKEN_KEY = 'mixcwork.enterprise.auth.token';
+  const TOKEN_KEY = 'mixwork.enterprise.auth.token';
   beforeEach(() => {
     localStorage.clear();
   });

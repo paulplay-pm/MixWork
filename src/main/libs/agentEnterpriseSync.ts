@@ -1,6 +1,6 @@
 import { OpenClawProviderId } from '../../shared/providers/constants';
 import type { EnterpriseCatalogScope } from '../auth/enterpriseClient';
-import type { CreateAgentRequest, MixCWorkStore } from '../mixcworkStore';
+import type { CreateAgentRequest, MixWorkStore } from '../mixworkStore';
 import type { SkillManager } from '../skills/skillManager';
 import { catalogResolver } from './catalogResolver';
 import type { EnterpriseAgentPrefsStore } from './enterpriseAgentPrefsStore';
@@ -32,7 +32,7 @@ export interface SyncReport {
 
 interface SyncOptions {
   serverView: ServerAgentView[];
-  mixcworkStore: MixCWorkStore;
+  mixworkStore: MixWorkStore;
   prefsStore: EnterpriseAgentPrefsStore;
   skillManager: SkillManager;
   defaultModelRef: string;
@@ -40,7 +40,7 @@ interface SyncOptions {
    * The loaded desktop server-model list (from `enterpriseModelCache`), in the
    * org-catalog shape. When provided, an enterprise agent's server-side model
    * ref (org format `provider/model`) is translated into the desktop ref
-   * (`mixcwork-server/<catalog UUID>`) it must be stored as. Production always
+   * (`mixwork-server/<catalog UUID>`) it must be stored as. Production always
    * provides this (with each entry's catalog `id`); when omitted the legacy
    * `isModelAvailable` + passthrough path is used (unit tests).
    */
@@ -52,8 +52,8 @@ interface SyncOptions {
 /**
  * Translate an enterprise-server model ref (org format `providerSlug/upstream`,
  * the form the org catalog stores on the agent) into the desktop server-model
- * ref it must be persisted as: `mixcwork-server/<catalog UUID>` when the loaded
- * entry carries its catalog `id`, else `mixcwork-server/<displayName ?? upstream>`
+ * ref it must be persisted as: `mixwork-server/<catalog UUID>` when the loaded
+ * entry carries its catalog `id`, else `mixwork-server/<displayName ?? upstream>`
  * (legacy, pre-UUID). This is the same ref `toOpenClawModelRef` produces for
  * server models and that `resolveOpenClawModelRef` / the local model override
  * match against. Carrying the catalog UUID keeps two same-named rows under
@@ -78,7 +78,7 @@ export function translateEnterpriseServerModelRef(
   const match = serverModels.find((m) => m.provider === provider && m.model === modelId);
   if (!match) return { ref: defaultRef, matched: false };
   const identity = match.id || match.displayName || modelId;
-  return { ref: `${OpenClawProviderId.MixcworkServer}/${identity}`, matched: true };
+  return { ref: `${OpenClawProviderId.MixWorkServer}/${identity}`, matched: true };
 }
 
 function defaultIsModelAvailable(modelRef: string): boolean {
@@ -94,7 +94,7 @@ export const agentEnterpriseSync = {
     const isModelAvailable = opts.isModelAvailable ?? defaultIsModelAvailable;
 
     const serverIds = new Set(opts.serverView.map(a => a.agentId));
-    const existingLocal = opts.mixcworkStore.listAgents().filter(a => a.source === 'enterprise');
+    const existingLocal = opts.mixworkStore.listAgents().filter(a => a.source === 'enterprise');
 
     // REMOVE phase
     for (const local of existingLocal) {
@@ -102,7 +102,7 @@ export const agentEnterpriseSync = {
       if (!key || !serverIds.has(key)) {
         // The sync is the authoritative mirror of the server: stale enterprise
         // rows must be deletable even though user edits cannot delete them.
-        opts.mixcworkStore.deleteAgent(local.id, { bypassEnterpriseGuard: true });
+        opts.mixworkStore.deleteAgent(local.id, { bypassEnterpriseGuard: true });
         if (key) opts.prefsStore.remove(key);
         report.removed++;
       }
@@ -114,7 +114,7 @@ export const agentEnterpriseSync = {
 
       // Resolve the agent's default model into the desktop ref space. The server
       // stores it in org format (`provider/model`); the desktop runs server
-      // models as `mixcwork-server/<name>`. When the loaded server-model list is
+      // models as `mixwork-server/<name>`. When the loaded server-model list is
       // available (production) we translate it; otherwise (legacy/tests) fall
       // back to the `isModelAvailable` + passthrough path.
       let effectiveModel: string;
@@ -139,7 +139,7 @@ export const agentEnterpriseSync = {
         .filter((id): id is string => id !== null);
 
       // Map server subagent ids → local agent ids (via enterprise_agent_id).
-      const allLocal = opts.mixcworkStore.listAgents();
+      const allLocal = opts.mixworkStore.listAgents();
       const serverAgentIdToLocal = new Map(
         allLocal
           .filter(a => a.source === 'enterprise' && a.enterpriseAgentId)
@@ -197,10 +197,10 @@ export const agentEnterpriseSync = {
 
       if (existing) {
         // Authoritative mirror write: server edits to scalars must apply.
-        opts.mixcworkStore.updateAgent(existing.id, payload, { bypassEnterpriseGuard: true });
+        opts.mixworkStore.updateAgent(existing.id, payload, { bypassEnterpriseGuard: true });
       } else {
         const req: CreateAgentRequest = { ...payload };
-        opts.mixcworkStore.createAgent(req);
+        opts.mixworkStore.createAgent(req);
       }
       report.upserted++;
     }

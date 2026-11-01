@@ -16,7 +16,7 @@ import {
   getIMSessionPlatformIconClassName,
   getIMSessionPlatformLabel,
   getIMSessionPlatformLogo,
-} from '../mixcwork/imSessionDisplay';
+} from '../mixwork/imSessionDisplay';
 import { AgentSidebarIndicator } from './constants';
 import {
   getScheduledTaskDisplayTitle,

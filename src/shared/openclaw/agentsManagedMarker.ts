@@ -1,23 +1,23 @@
 /**
  * Sentinel marker that separates the user-editable portion of an AGENTS.md
- * file from the section MixCWork owns (system instructions, environment notes,
+ * file from the section MixWork owns (system instructions, environment notes,
  * scheduled-task hints, etc.).
  *
- * Pre-rebrand workspaces may carry a `<!-- MixCWork managed -->` marker from
+ * Pre-rebrand workspaces may carry a `<!-- MixWork managed -->` marker from
  * a prior install; those workspaces retain the legacy marker as user content
- * and are NOT migrated (one-time user-data loss per Phase 2 of the MixCWork
+ * and are NOT migrated (one-time user-data loss per Phase 2 of the MixWork
  * rebrand).
  */
 
-export const MIXCWORK_AGENTS_MARKER =
-  '<!-- MixCWork managed: do not edit below this line -->';
+export const MIXWORK_AGENTS_MARKER =
+  '<!-- MixWork managed: do not edit below this line -->';
 
 /**
  * Returns the index of the first managed marker, or -1.
  * Mirrors `String.prototype.indexOf` semantics.
  */
 export function findAgentsManagedMarker(content: string): number {
-  return content.indexOf(MIXCWORK_AGENTS_MARKER);
+  return content.indexOf(MIXWORK_AGENTS_MARKER);
 }
 
 /**
@@ -25,7 +25,7 @@ export function findAgentsManagedMarker(content: string): number {
  * the marker is not present.
  */
 export function whichAgentsMarker(content: string): string | undefined {
-  return content.includes(MIXCWORK_AGENTS_MARKER) ? MIXCWORK_AGENTS_MARKER : undefined;
+  return content.includes(MIXWORK_AGENTS_MARKER) ? MIXWORK_AGENTS_MARKER : undefined;
 }
 
 /**
@@ -34,5 +34,5 @@ export function whichAgentsMarker(content: string): string | undefined {
  * section on the next sync.
  */
 export function stripAgentsManagedMarkers(content: string): string {
-  return content.split(MIXCWORK_AGENTS_MARKER).join('');
+  return content.split(MIXWORK_AGENTS_MARKER).join('');
 }

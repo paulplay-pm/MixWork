@@ -9,7 +9,7 @@
 
 ## 1. Problem
 
-The MixCWork 工作台 "组织管理" area today is three minimal pages inside the
+The MixWork 工作台 "组织管理" area today is three minimal pages inside the
 admin SPA (`enterprise_server/web`): a 4-column user table, a flat
 create-only department list, and a role list with a flat permission
 checkbox. It cannot express a multi-level org tree, per-department

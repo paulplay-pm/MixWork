@@ -388,14 +388,14 @@ PageHeader: "模型管理" + breadcrumb + "Add provider" button
 ### Phase 1: server compiles
 
 ```bash
-cd /Users/paulwang/work/MixCWork/enterprise_server
+cd /Users/paulwang/work/MixWork/enterprise_server
 npm test -- providerKeysExtended modelsExtended
 ```
 
 ### Phase 2: client compiles
 
 ```bash
-cd /Users/paulwang/work/MixCWork/enterprise_server/web
+cd /Users/paulwang/work/MixWork/enterprise_server/web
 npm run build
 npx vitest run ProvidersModelsPage
 ```
@@ -403,7 +403,7 @@ npx vitest run ProvidersModelsPage
 ### Phase 3: lint clean
 
 ```bash
-cd /Users/paulwang/work/MixCWork
+cd /Users/paulwang/work/MixWork
 npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 \
   enterprise_server/src/routes/admin/providerKeys.ts \
   enterprise_server/src/routes/admin/models.ts \
@@ -417,9 +417,9 @@ npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 \
 
 ```bash
 # Terminal 1
-cd /Users/paulwang/work/MixCWork/enterprise_server && npm run dev
+cd /Users/paulwang/work/MixWork/enterprise_server && npm run dev
 # Terminal 2
-cd /Users/paulwang/work/MixCWork/enterprise_server/web && npm run dev
+cd /Users/paulwang/work/MixWork/enterprise_server/web && npm run dev
 # Browser: http://localhost:5173/config/providers
 ```
 

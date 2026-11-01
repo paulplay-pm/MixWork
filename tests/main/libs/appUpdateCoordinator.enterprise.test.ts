@@ -85,7 +85,7 @@ describe('AppUpdateCoordinator (enterprise mode)', () => {
     mocks.cancelActiveDownload.mockReset();
     mocks.sessionLoad.mockReset();
 
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-enterprise-update-test-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-enterprise-update-test-'));
     mocks.getPath.mockReturnValue(tmpDir);
     mocks.getVersion.mockReturnValue('1.0.0');
     mocks.cancelActiveDownload.mockReturnValue(false);

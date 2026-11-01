@@ -35,11 +35,11 @@ Once `npx` is present, proceed with the wrapper script. A global install of `pla
 ## Skill path (set once)
 
 ```bash
-export SKILLS_ROOT="${MIXCWORK_SKILLS_ROOT:-${SKILLS_ROOT:-$HOME/Library/Application Support/MixCWork/SKILLs}}"
+export SKILLS_ROOT="${MIXWORK_SKILLS_ROOT:-${SKILLS_ROOT:-$HOME/Library/Application Support/MixWork/SKILLs}}"
 export PWCLI="$SKILLS_ROOT/playwright/scripts/playwright_cli.sh"
 ```
 
-Installed skills resolve from `$MIXCWORK_SKILLS_ROOT` / `$SKILLS_ROOT` (production default: app `userData/SKILLs`, macOS usually `~/Library/Application Support/MixCWork/SKILLs`).
+Installed skills resolve from `$MIXWORK_SKILLS_ROOT` / `$SKILLS_ROOT` (production default: app `userData/SKILLs`, macOS usually `~/Library/Application Support/MixWork/SKILLs`).
 
 ## Quick start
 

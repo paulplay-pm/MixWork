@@ -9,16 +9,16 @@ export {
 } from './constants';
 export {
   KIMI_K3_AGENTIC_CAPABILITY,
-  MIXCWORK_CLIENT_CAPABILITIES,
-  MIXCWORK_CLIENT_CAPABILITIES_HEADER,
-  MIXCWORK_CLIENT_VERSION_HEADER,
-  MIXCWORK_REQUEST_OPTIONS_FIELD,
-  MIXCWORK_REQUEST_OPTIONS_VERSION,
-  MixCWorkRequestCapability,
-  parseMixCWorkRequestCapabilities,
-  supportsMixCWorkRequestOptionsV1,
+  MIXWORK_CLIENT_CAPABILITIES,
+  MIXWORK_CLIENT_CAPABILITIES_HEADER,
+  MIXWORK_CLIENT_VERSION_HEADER,
+  MIXWORK_REQUEST_OPTIONS_FIELD,
+  MIXWORK_REQUEST_OPTIONS_VERSION,
+  MixWorkRequestCapability,
+  parseMixWorkRequestCapabilities,
+  supportsMixWorkRequestOptionsV1,
   THINKING_LEVEL_CONTROL_CAPABILITY,
-} from './mixcworkRequestOptions';
+} from './mixworkRequestOptions';
 export type {
   ModelThinkingConfig,
   ModelThinkingOption,

@@ -9,7 +9,7 @@ let tmp: string;
 beforeEach(() => {
   vi.resetModules();
   vi.spyOn(process, 'getuid').mockReturnValue(0);
-  tmp = mkdtempSync(join(tmpdir(), 'mixcwork-upgrade-'));
+  tmp = mkdtempSync(join(tmpdir(), 'mixwork-upgrade-'));
   process.env.COMPOSE_FILE = join(tmp, 'compose.yml');
   process.env.PREVIOUS_VERSION_FILE = join(tmp, 'previous-version');
   process.env.CURRENT_VERSION_FILE = join(tmp, 'current-version');

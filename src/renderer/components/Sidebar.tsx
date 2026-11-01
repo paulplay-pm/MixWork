@@ -5,13 +5,13 @@ import { useSelector } from 'react-redux';
 
 import { agentService } from '../services/agent';
 import { i18nService } from '../services/i18n';
-import { mixcworkService } from '../services/mixcwork';
+import { mixworkService } from '../services/mixwork';
 import { RootState } from '../store';
 import {
   selectCoworkSessions,
   selectCurrentSessionId,
 } from '../store/selectors/coworkSelectors';
-import type { MixCWorkSessionSummary } from '../types/mixcwork';
+import type { MixWorkSessionSummary } from '../types/mixwork';
 import { getAgentDisplayNameById } from '../utils/agentDisplay';
 import {
   type AgentSidebarBatchItem,
@@ -35,8 +35,8 @@ import {
   type CoworkTaskSearchRequestEventDetail,
   CoworkTaskSearchRequestSource,
   CoworkUiEvent,
-} from './mixcwork/constants';
-import CoworkSearchModal from './mixcwork/CoworkSearchModal';
+} from './mixwork/constants';
+import CoworkSearchModal from './mixwork/CoworkSearchModal';
 
 interface SidebarProps {
   onShowSettings: () => void;
@@ -277,17 +277,17 @@ const Sidebar: React.FC<SidebarProps> = ({
     setShowBatchDeleteConfirm(false);
   }, [isCollapsed]);
 
-  const handleSelectSession = async (session: MixCWorkSessionSummary) => {
+  const handleSelectSession = async (session: MixWorkSessionSummary) => {
     const agentId = session.agentId?.trim() || AgentId.Main;
     try {
       if (agentId !== currentAgentId) {
         agentService.switchAgent(agentId, { targetSessionId: session.id });
-        await mixcworkService.loadSessions(agentId);
+        await mixworkService.loadSessions(agentId);
       }
       onShowCowork();
-      await mixcworkService.loadSession(session.id);
+      await mixworkService.loadSession(session.id);
     } finally {
-      mixcworkService.finishSessionNavigation(session.id);
+      mixworkService.finishSessionNavigation(session.id);
     }
   };
 
@@ -432,7 +432,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     let deletedSessions = false;
     if (sessionIds.length > 0) {
-      deletedSessions = await mixcworkService.deleteSessions(sessionIds);
+      deletedSessions = await mixworkService.deleteSessions(sessionIds);
     }
 
     if (!deletedSessions) {
@@ -730,7 +730,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <label className="inline-flex h-7 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-1.5 text-[length:var(--mixcwork-text-sidebarCompact)] font-normal text-foreground transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
+            <label className="inline-flex h-7 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-1.5 text-[length:var(--mixwork-text-sidebarCompact)] font-normal text-foreground transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
               <input
                 type="checkbox"
                 checked={isBatchSelectAllChecked}

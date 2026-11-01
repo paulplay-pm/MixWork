@@ -1,4 +1,4 @@
-import type { Agent } from '../mixcworkStore';
+import type { Agent } from '../mixworkStore';
 
 export interface CwdResolverDeps {
   getAgent: (agentId: string) => Agent | null;

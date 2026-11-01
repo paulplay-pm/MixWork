@@ -38,7 +38,7 @@ import { registerAgentEnterpriseHandlers } from './handlers.enterprise';
 
 function deps(): Parameters<typeof registerAgentEnterpriseHandlers>[0] {
   return {
-    getMixCWorkStore: () => ({}) as never,
+    getMixWorkStore: () => ({}) as never,
     getEnterpriseAgentPrefsStore: () => ({ remove: vi.fn() }) as never,
     getSkillManager: () => ({ getCatalogLocalId: (id: string) => id }) as never,
     getAvailableModelsRef: () => '',
@@ -146,7 +146,7 @@ describe('agents:enterprise agent model override', () => {
   const prefs = { getModel: vi.fn(), setModel: vi.fn() };
   function modelDeps(): Parameters<typeof registerAgentEnterpriseHandlers>[0] {
     return {
-      getMixCWorkStore: () => ({
+      getMixWorkStore: () => ({
         listAgents: () => [{ source: 'enterprise' as const, enterpriseAgentId: 'agent_a1', id: 'agent_a1' }],
       }) as never,
       getEnterpriseAgentPrefsStore: () => prefs as never,
@@ -158,10 +158,10 @@ describe('agents:enterprise agent model override', () => {
   beforeEach(() => { prefs.getModel.mockClear(); prefs.setModel.mockClear(); });
 
   test('GetEnterpriseAgentModel returns the stored override for a known enterprise agent', async () => {
-    prefs.getModel.mockReturnValue('mixcwork/opus-4');
+    prefs.getModel.mockReturnValue('mixwork/opus-4');
     registerAgentEnterpriseHandlers(modelDeps());
     const out = await handlers.get(AgentIpcChannel.GetEnterpriseAgentModel)!(undefined, 'agent_a1') as { success: boolean; modelRef?: string };
-    expect(out).toEqual({ success: true, modelRef: 'mixcwork/opus-4' });
+    expect(out).toEqual({ success: true, modelRef: 'mixwork/opus-4' });
     expect(prefs.getModel).toHaveBeenCalledWith('agent_a1');
   });
 
@@ -173,8 +173,8 @@ describe('agents:enterprise agent model override', () => {
 
   test('SetEnterpriseAgentModel persists via the prefs store', async () => {
     registerAgentEnterpriseHandlers(modelDeps());
-    const out = await handlers.get(AgentIpcChannel.SetEnterpriseAgentModel)!(undefined, { agentId: 'agent_a1', modelRef: 'mixcwork/sonnet-5' }) as { success: boolean };
+    const out = await handlers.get(AgentIpcChannel.SetEnterpriseAgentModel)!(undefined, { agentId: 'agent_a1', modelRef: 'mixwork/sonnet-5' }) as { success: boolean };
     expect(out).toEqual({ success: true });
-    expect(prefs.setModel).toHaveBeenCalledWith('agent_a1', 'mixcwork/sonnet-5');
+    expect(prefs.setModel).toHaveBeenCalledWith('agent_a1', 'mixwork/sonnet-5');
   });
 });

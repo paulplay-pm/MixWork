@@ -52,7 +52,7 @@ export function buildDownloadPaths(
   ext: string,
 ): DownloadPaths {
   const nameKey = crypto.createHash('sha256').update(url).digest('hex').slice(0, 16);
-  const base = `mixcwork-update-${source}-${nameKey}${ext}`;
+  const base = `mixwork-update-${source}-${nameKey}${ext}`;
   return {
     downloadPath: path.join(updateDir, `${base}.download`),
     finalPath: path.join(updateDir, base),
@@ -993,7 +993,7 @@ export const WINDOWS_UAC_DECLINED_EXIT_CODE = 1223;
  * so a slow decision is never mistaken for a hang.
  */
 const WINDOWS_INSTALLER_LAUNCH_TIMEOUT_MS = 300_000;
-const WINDOWS_INSTALLER_PATH_ENV = 'MIXCWORK_UPDATE_INSTALLER_PATH';
+const WINDOWS_INSTALLER_PATH_ENV = 'MIXWORK_UPDATE_INSTALLER_PATH';
 
 export interface WindowsPowerShellCandidateOptions {
   systemRoot: string;
@@ -1161,9 +1161,9 @@ async function installWindowsNsis(
   // offers a retry instead of quitting into nothing.
   //
   // Quitting in parallel with the installer running is safe: the NSIS
-  // customCheckAppRunning macro stops remaining MixCWork processes by image
+  // customCheckAppRunning macro stops remaining MixWork processes by image
   // name and polls until they are gone before replacing files. The installer
-  // process itself is named mixcwork-update-*, so it is not affected by that
+  // process itself is named mixwork-update-*, so it is not affected by that
   // kill.
   console.log(`[AppUpdate] Launching Windows installer in update mode: ${exePath}`);
   const extraArgs = options?.noDefenderExclusion === true

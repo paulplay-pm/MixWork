@@ -188,7 +188,7 @@ export function LoginPage({ onSuccess }: LoginPageProps = {}) {
             AI
           </div>
           <div className="font-semibold text-base text-[var(--text-primary)]">
-            MixCWork
+            MixWork
           </div>
         </div>
         <h1 className="text-base font-semibold text-[var(--text-primary)] mb-1.5">

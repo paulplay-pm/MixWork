@@ -14,15 +14,15 @@ import { SQLITE_BACKUP_DIR_NAME } from '../sqliteBackup/constants';
 import type { DataMigrationVersion } from './constants';
 import {
   adoptLegacySqliteFile,
-  MIXCWORK_REBRAND_MIGRATION_VERSION,
-  runMixcworkRebrandMigration,
-} from './migrations/mixcworkRebrandMigration';
+  MIXWORK_REBRAND_MIGRATION_VERSION,
+  runMixWorkRebrandMigration,
+} from './migrations/mixworkRebrandMigration';
 
 const CURRENT_ARCHIVE_ROOT = APP_NAME;
-const MANIFEST_FILE_NAME = '.mixcwork-migration.json';
-const PENDING_RESTORE_FILE_NAME = '.mixcwork-data-migration-restore-pending.json';
-const LAST_RESTORE_RESULT_FILE_NAME = '.mixcwork-data-migration-restore-result.json';
-const ARCHIVE_FORMAT = 'mixcwork-data-migration';
+const MANIFEST_FILE_NAME = '.mixwork-migration.json';
+const PENDING_RESTORE_FILE_NAME = '.mixwork-data-migration-restore-pending.json';
+const LAST_RESTORE_RESULT_FILE_NAME = '.mixwork-data-migration-restore-result.json';
+const ARCHIVE_FORMAT = 'mixwork-data-migration';
 const ARCHIVE_FORMAT_VERSION = 2;
 const SQLITE_BACKUP_TOP_LEVEL_DIR_NAME = SQLITE_BACKUP_DIR_NAME.split('/')[0] || 'backups';
 const SQLITE_RESTORE_FILE_NAMES = [
@@ -186,23 +186,23 @@ const ALLOWED_ENTRY_TYPES = new Set([
  * operations in try/catch and log via `console.log` with the `[Migration]`
  * prefix.
  */
-export const MIXCWORK_DATA_MIGRATIONS: ReadonlyArray<DataMigrationVersion & {
+export const MIXWORK_DATA_MIGRATIONS: ReadonlyArray<DataMigrationVersion & {
   apply: (db: Database.Database, userDataDir: string) => void;
 }> = [
   {
-    ...MIXCWORK_REBRAND_MIGRATION_VERSION,
+    ...MIXWORK_REBRAND_MIGRATION_VERSION,
     apply: (db, userDataDir) => {
       try {
         const adopted = adoptLegacySqliteFile(userDataDir);
-        const result = runMixcworkRebrandMigration(db, userDataDir);
+        const result = runMixWorkRebrandMigration(db, userDataDir);
         console.log(
-          `[Migration] mixcwork-rebrand-2026-09-04: adoptedDbFile=${adopted} `
+          `[Migration] mixwork-rebrand-2026-09-04: adoptedDbFile=${adopted} `
             + `tables=${result.renamedTables.length} `
             + `columns=${result.renamedColumns.length} `
             + `kvKeys=${result.renamedKvKeys.length}`,
         );
       } catch (error) {
-        console.log('[Migration] mixcwork-rebrand-2026-09-04 failed:', error);
+        console.log('[Migration] mixwork-rebrand-2026-09-04 failed:', error);
       }
     },
   },
@@ -307,10 +307,10 @@ export const formatDataMigrationTimestamp = (date = new Date()): string => (
 );
 
 export const buildDataMigrationBackupFileName = (date = new Date()): string =>
-  `mixcwork-backup-${formatDataMigrationTimestamp(date)}.tar.gz`;
+  `mixwork-backup-${formatDataMigrationTimestamp(date)}.tar.gz`;
 
 export const buildDataMigrationRollbackFileName = (date = new Date()): string =>
-  `mixcwork-rollback-${formatDataMigrationTimestamp(date)}.tar.gz`;
+  `mixwork-rollback-${formatDataMigrationTimestamp(date)}.tar.gz`;
 
 export const ensureTarGzFileName = (filePath: string): string => {
   const trimmed = filePath.trim();
@@ -1173,7 +1173,7 @@ export const createMigrationArchiveSync = (
   const userDataPath = resolvePath(input.userDataPath);
   const outputPath = resolvePath(input.outputPath);
   const archiveKind = input.archiveKind ?? 'backup';
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-data-migration-'));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-data-migration-'));
   const stageParent = path.join(tempRoot, 'stage');
   const stageUserDataRoot = path.join(stageParent, CURRENT_ARCHIVE_ROOT);
 
@@ -1307,7 +1307,7 @@ const inspectArchiveEntry = (
 };
 
 const validateArchiveContentSync = (archivePath: string, root: string): void => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-data-migration-inspect-'));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-data-migration-inspect-'));
   try {
     tar.extract({
       sync: true,
@@ -1367,7 +1367,7 @@ export const inspectMigrationArchiveSync = (
   });
 
   if (!state.root || state.entryCount <= 0) {
-    throw new Error('Backup archive is empty or missing Mixcwork user data.');
+    throw new Error('Backup archive is empty or missing MixWork user data.');
   }
   if (requireSqliteDatabase && !state.hasSqliteDatabase) {
     throw new Error(`Backup archive is missing ${DB_FILENAME}.`);
@@ -1408,7 +1408,7 @@ const extractMigrationArchiveToTempSync = (
     validateSqliteDatabase: false,
     validateManifest: false,
   });
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-data-migration-restore-'));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-data-migration-restore-'));
 
   try {
     tar.extract({
@@ -1435,7 +1435,7 @@ const extractMigrationArchiveToTempSync = (
 
     const sourceRoot = path.join(tempRoot, ...info.root.split('/'));
     if (!fs.existsSync(sourceRoot) || !fs.statSync(sourceRoot).isDirectory()) {
-      throw new Error('Backup archive did not extract a valid Mixcwork user data directory.');
+      throw new Error('Backup archive did not extract a valid MixWork user data directory.');
     }
     if (options.validateArchiveContent ?? true) {
       validateExtractedArchiveContentSync(sourceRoot);

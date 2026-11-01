@@ -273,7 +273,7 @@ export function resolveWecomGroupDeliveryTargetFromSessions(params: {
  * Resolves the agent bound to a delivery-target conversation from IM session
  * mappings (sorted by lastActiveAt DESC). IM conversations can be bound to a
  * non-main agent; a scheduled delivery must run under that agent so the
- * gateway mirrors the result into the same conversation session the MixCWork
+ * gateway mirrors the result into the same conversation session the MixWork
  * record maps to, instead of a main-agent shadow session.
  */
 export function resolveConversationAgentIdFromMappings(

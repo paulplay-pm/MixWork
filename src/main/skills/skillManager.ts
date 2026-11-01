@@ -12,7 +12,7 @@ import { isComputerUseKitInstalled } from '../computerUse/computerUseKit';
 import { cpRecursiveSync } from '../fsCompat';
 import { t } from '../i18n';
 import { getEnterpriseServerUrl } from '../libs/endpoints';
-import { getElectronNodeRuntimePath } from '../libs/mixcworkUtil';
+import { getElectronNodeRuntimePath } from '../libs/mixworkUtil';
 import { resolveNodeRuntimeForSpawn } from '../libs/nodeRuntime';
 import { appendPythonRuntimeToEnv } from '../libs/pythonRuntime';
 import { mergeReports,scanMultipleSkillDirs } from '../libs/skillSecurity/skillSecurityScanner';
@@ -312,7 +312,7 @@ function buildSkillEnv(): Record<string, string | undefined> {
 
   // Expose Electron executable so skill scripts can run JS with ELECTRON_RUN_AS_NODE
   // even when system Node.js is not installed.
-  env.MIXCWORK_ELECTRON_PATH = getElectronNodeRuntimePath();
+  env.MIXWORK_ELECTRON_PATH = getElectronNodeRuntimePath();
   appendPythonRuntimeToEnv(env);
 
   // Re-normalize after appendPythonRuntimeToEnv may have added a PATH key
@@ -985,15 +985,15 @@ const downloadGithubArchive = async (
     archiveUrlCandidates.push(
       {
         url: `https://github.com/${source.owner}/${source.repo}/archive/refs/heads/${encodedRef}.zip`,
-        headers: { 'User-Agent': 'MixCWork Skill Downloader' },
+        headers: { 'User-Agent': 'MixWork Skill Downloader' },
       },
       {
         url: `https://github.com/${source.owner}/${source.repo}/archive/refs/tags/${encodedRef}.zip`,
-        headers: { 'User-Agent': 'MixCWork Skill Downloader' },
+        headers: { 'User-Agent': 'MixWork Skill Downloader' },
       },
       {
         url: `https://github.com/${source.owner}/${source.repo}/archive/${encodedRef}.zip`,
-        headers: { 'User-Agent': 'MixCWork Skill Downloader' },
+        headers: { 'User-Agent': 'MixWork Skill Downloader' },
       }
     );
   }
@@ -1002,7 +1002,7 @@ const downloadGithubArchive = async (
     url: `https://api.github.com/repos/${source.owner}/${source.repo}/zipball${encodedRef ? `/${encodedRef}` : ''}`,
     headers: {
       Accept: 'application/vnd.github+json',
-      'User-Agent': 'MixCWork Skill Downloader',
+      'User-Agent': 'MixWork Skill Downloader',
       'X-GitHub-Api-Version': '2022-11-28',
     },
   });
@@ -1308,7 +1308,7 @@ const isRemoteZipSource = (source: string): boolean =>
   isRemoteZipUrl(source) || catalogSkillIdForSource(source) !== null;
 
 const downloadZipUrl = async (zipUrl: string, tempRoot: string, expectedSha256?: string): Promise<string> => {
-  const headers: Record<string, string> = { 'User-Agent': 'MixCWork Skill Downloader' };
+  const headers: Record<string, string> = { 'User-Agent': 'MixWork Skill Downloader' };
   try {
     if (new URL(zipUrl).origin === getEnterpriseServerUrl()) {
       const token = await enterpriseClient.getToken();
@@ -2042,7 +2042,7 @@ export class SkillManager {
         if (stat.isFile()) {
           if (isZipFile(localSource)) {
             console.log('[SkillManager] downloadSkill: detected local zip file');
-            const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-zip-'));
+            const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixwork-skill-zip-'));
             await extractZip(localSource, { dir: tempRoot });
             localSource = tempRoot;
             cleanupPath = tempRoot;
@@ -2057,19 +2057,19 @@ export class SkillManager {
         }
       } else if (isRemoteZipSource(trimmed)) {
         console.log('[SkillManager] downloadSkill: detected remote zip URL');
-        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-zip-'));
+        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixwork-skill-zip-'));
         cleanupPath = tempRoot;
         localSource = await downloadZipUrl(trimmed, tempRoot, await this.resolveExpectedSha256(trimmed));
       } else if (isNpmPackageSpec(trimmed)) {
         console.log(`[SkillManager] downloadSkill: detected npm package spec "${trimmed}"`);
-        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-npm-'));
+        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixwork-skill-npm-'));
         cleanupPath = tempRoot;
         localSource = await downloadNpmPackage(trimmed, tempRoot);
         console.log(`[SkillManager] downloadSkill: npm package extracted to ${localSource}`);
       } else if (parseClawhubUrl(trimmed)) {
         const clawhubParsed = parseClawhubUrl(trimmed)!;
         console.log(`[SkillManager] downloadSkill: detected ClawHub URL, skill name="${clawhubParsed.name}"`);
-        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-clawhub-'));
+        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixwork-skill-clawhub-'));
         cleanupPath = tempRoot;
         const env = buildSkillEnv();
         await downloadClawhubSkill(clawhubParsed.name, tempRoot, env);
@@ -2079,7 +2079,7 @@ export class SkillManager {
         if (!normalized) {
           return { success: false, error: t('skillErrInvalidSource') };
         }
-        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-'));
+        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixwork-skill-'));
         cleanupPath = tempRoot;
         const repoName = normalizeFolderName(normalized.repoNameHint || deriveRepoName(normalized.repoUrl));
         const clonePath = path.join(tempRoot, repoName);
@@ -2289,7 +2289,7 @@ export class SkillManager {
       const root = this.ensureSkillsRoot();
 
       // Download new version (reuse downloadSkill's download logic)
-      const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-upgrade-'));
+      const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixwork-skill-upgrade-'));
       cleanupPath = tempRoot;
 
       let localSource: string;

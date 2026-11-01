@@ -3,7 +3,7 @@
 // End-to-end gate for the dsh feature foundation:
 //   compile -> build runtime -> pack archive -> serve it from an opaque URL
 //   (the shape a per-file CDN hands out) -> install into a fresh base
-//   -> render MixCWork provider settings -> boot the INSTALLED runtime
+//   -> render MixWork provider settings -> boot the INSTALLED runtime
 //   -> load a profile-local external ESM plugin through the production launcher
 //   -> RPC-assert the provider/model are live (form A surface)
 //   -> boot again with a mock OpenAI upstream and drive the dsh_code_task MCP
@@ -416,7 +416,7 @@ async function main() {
   const fromManifest = resolveDshArtifactFromManifest(distDir, manifestName);
   if (fromManifest.sha256 !== artifact.sha256) fail('manifest and config descriptors disagree');
 
-  // [4/9] Start the mock LLM upstream, then render a MixCWork provider that
+  // [4/9] Start the mock LLM upstream, then render a MixWork provider that
   // points at it — settings.yaml on disk, the API key only in the child env.
   const ANSWER = 'E2E delegation OK: the mock coding agent finished the task.';
   const mock = await startMockLlmServer(ANSWER);
@@ -442,7 +442,7 @@ async function main() {
     { preferredDefault: { providerId: 'E2E Fake', modelId: 'e2e-model' } }
   );
   const routeIds = Object.keys(managed.routes);
-  if (routeIds.length !== 1 || routeIds[0] !== 'mixcwork-e2e-fake') {
+  if (routeIds.length !== 1 || routeIds[0] !== 'mixwork-e2e-fake') {
     fail(`unexpected rendered routes: ${routeIds.join(', ')} (skipped: ${JSON.stringify(managed.skipped)})`);
   }
   const written = await writeDshManagedSettings(dshHome, managed);
@@ -459,7 +459,7 @@ async function main() {
       '--dsh-home',
       dshHome,
       '--expect-provider',
-      'mixcwork-e2e-fake',
+      'mixwork-e2e-fake',
       '--expect-model',
       'e2e-model',
     ],
@@ -489,7 +489,7 @@ async function main() {
   const mcpServer = new DshCodeMcpServer({
     ensureEngineReady: async () => booted.url,
     getDefaultCwd: () => taskCwd,
-    getDefaultModel: () => ({ provider: 'mixcwork-e2e-fake', model: 'e2e-model' }),
+    getDefaultModel: () => ({ provider: 'mixwork-e2e-fake', model: 'e2e-model' }),
   });
   const mcpUrl = await mcpServer.start();
   log(`>> dsh-code MCP server at ${mcpUrl}`);

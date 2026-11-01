@@ -111,7 +111,7 @@ This requires `/me/sso-binding/start` to accept a `returnTarget` discriminator. 
   - `finishCallback` self_binding branch with an externalId already bound to a different user returns `bind_external_id_exists` and does NOT mutate any user's `users.sso_*` columns.
   - `finishCallback` self_binding branch with the same externalId already bound to the SAME user (overwrite case) succeeds and updates the row.
   - `GET /auth/sso/bind-callback` with `?error=access_denied` from the IdP returns HTML that sets `sessionStorage.ssoBindError = 'sso_access_denied'` and redirects to `/account/sso-bindings?error=sso_access_denied`.
-  - `GET /auth/sso/bind-callback` with successful state+code returns HTML that sets `localStorage[mixcwork.enterprise.auth.token]`, `sessionStorage.ssoBindJustSucceeded = '1'`, and redirects to `/account/sso-bindings`.
+  - `GET /auth/sso/bind-callback` with successful state+code returns HTML that sets `localStorage[mixwork.enterprise.auth.token]`, `sessionStorage.ssoBindJustSucceeded = '1'`, and redirects to `/account/sso-bindings`.
 - **Web:** update `SsoBindingsPage.test.tsx`:
   - Test 10 (click 绑定 → assign) must change: instead of asserting `assignSpy` was called with `/auth/sso/c2/authorize?orgName=Acme`, assert that:
     - `apiClient.post('/me/sso-binding/start', { connectionId: 'c2', returnTarget: 'web' })` was called.

@@ -35,7 +35,7 @@ export interface AsrHandlerDeps {
   /**
    * The enterprise org JWT, from the enterprise session.
    *
-   * NOT the consumer `auth_tokens`: MixCWork no longer talks to any youdao
+   * NOT the consumer `auth_tokens`: MixWork no longer talks to any youdao
    * backend, so for an enterprise-only deployment those are always empty and
    * the consumer path answered every ASR request with 401 "Unauthorized" —
    * which the UI rendered as "登录后可使用语音输入" for a user who WAS signed

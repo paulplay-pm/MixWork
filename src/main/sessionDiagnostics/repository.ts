@@ -49,21 +49,21 @@ export function readSessionDiagnosticsData(
         model_override, execution_mode, parent_session_id, forked_from_message_id,
         forked_at, fork_mode, fork_workspace_path, fork_git_branch, fork_git_base_ref,
         goal_json, active_skill_ids, agent_id, created_at, updated_at
-      FROM mixcwork_sessions
+      FROM mixwork_sessions
       WHERE id = ?
     `).get(sessionId) as CoworkSessionDiagnosticsSessionRow | undefined;
     if (!session) return null;
 
     const messages = db.prepare(`
       SELECT id, session_id, type, content, metadata, created_at, sequence
-      FROM mixcwork_messages
+      FROM mixwork_messages
       WHERE session_id = ?
       ORDER BY COALESCE(sequence, created_at) ASC, created_at ASC, ROWID ASC
     `).all(sessionId) as CoworkSessionDiagnosticsMessageRow[];
 
     const capsule = db.prepare(`
       SELECT session_id, version, revision, capsule_json, updated_at, last_source, last_compacted_at
-      FROM mixcwork_session_capsules
+      FROM mixwork_session_capsules
       WHERE session_id = ?
     `).get(sessionId) as CoworkSessionDiagnosticsCapsuleRow | undefined;
 

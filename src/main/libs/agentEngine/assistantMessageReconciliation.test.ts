@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import type { MixCWorkMessage } from '../../mixcworkStore';
+import type { MixWorkMessage } from '../../mixworkStore';
 import {
   extractThinkingFromCurrentTurn,
   findMatchingThinkingMessageIdInCurrentTurn,
@@ -12,10 +12,10 @@ import {
 
 const message = (
   id: string,
-  type: MixCWorkMessage['type'],
+  type: MixWorkMessage['type'],
   content: string,
-  metadata?: MixCWorkMessage['metadata'],
-): MixCWorkMessage => ({
+  metadata?: MixWorkMessage['metadata'],
+): MixWorkMessage => ({
   id,
   type,
   content,

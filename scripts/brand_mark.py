@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Shared brand-mark helpers for the MixCWork icon generators.
+"""Shared brand-mark helpers for the MixWork icon generators.
 
-`public/mixcwork.png` is the master logo: an orange node-network mark above a
-cream "mixcwork" wordmark, both on an opaque dark plate. Icon-sized assets need
+`public/mixwork.png` is the master logo: an orange node-network mark above a
+cream "mixwork" wordmark, both on an opaque dark plate. Icon-sized assets need
 the mark alone on a transparent background, so `load_mark()` lifts it out of the
 master image (alpha from the mark/background colour separation, un-premultiplied
 so anti-aliased edges carry no dark fringe) and the generators compose it onto a
@@ -13,7 +13,7 @@ import os
 from PIL import Image, ImageDraw, ImageFilter
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "public", "mixcwork.png")
+SRC = os.path.join(ROOT, "public", "mixwork.png")
 
 # Plate colours sampled either side of the master logo's own background
 # (#2E2F2F) so composed icons read as the same surface as the master artwork.

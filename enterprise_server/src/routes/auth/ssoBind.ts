@@ -159,7 +159,7 @@ function renderBindSsoHtml(args: {
 <html lang="${args.locale}"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(t('bind.invalid.title'))} — MixcWork</title>
+<title>${esc(t('bind.invalid.title'))} — MixWork</title>
 <style>${SHARED_CSS}</style>
 </head>
 <body>
@@ -177,7 +177,7 @@ function renderBindSsoHtml(args: {
 <html lang="${args.locale}"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(t('bind.title'))} — MixcWork</title>
+<title>${esc(t('bind.title'))} — MixWork</title>
 <style>${SHARED_CSS}
 .view-id[open] .view-id-summary .chev { transform: rotate(180deg); }
 .view-id-body { padding: 12px 16px 16px 16px; }
@@ -212,7 +212,7 @@ function renderBindSsoHtml(args: {
           : `<span class="brand-fallback">${providerName.slice(0, 1)}</span>`}
       </div>
       <span class="brand-arrow">→</span>
-      <div class="brand-tile brand-tile--mixcwork"><span>G</span></div>
+      <div class="brand-tile brand-tile--mixwork"><span>G</span></div>
     </div>
 
     <h1 class="title">${esc(t('bind.title'))}</h1>
@@ -253,7 +253,7 @@ function renderBindSsoHtml(args: {
         <span class="field-icon" aria-hidden="true">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </span>
-        <input name="username" type="text" autocomplete="username" required placeholder="${esc(t('bind.mixcworkAccount'))}" />
+        <input name="username" type="text" autocomplete="username" required placeholder="${esc(t('bind.mixworkAccount'))}" />
       </label>
 
       <label class="field">
@@ -388,7 +388,7 @@ body {
 }
 .brand-tile img { width: 100%; height: 100%; object-fit: contain; }
 .brand-tile--provider { background: #fff; }
-.brand-tile--mixcwork { background: #1f2937; color: #fff; font-weight: 700; font-size: 22px; }
+.brand-tile--mixwork { background: #1f2937; color: #fff; font-weight: 700; font-size: 22px; }
 .brand-fallback { font-weight: 700; font-size: 20px; color: #1f2937; }
 .brand-arrow { color: #94a3b8; font-size: 18px; }
 

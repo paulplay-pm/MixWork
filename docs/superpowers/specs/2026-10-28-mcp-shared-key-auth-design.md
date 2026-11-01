@@ -138,7 +138,7 @@
 >
 > 也就是说，把会轮换的凭据写进 `mcp.servers.*.headers`，等于让**每个企业用户的网关每 4 分钟重启一次**。而且企业 JWT 只有 1 小时有效期，写死在配置里的那份必然过期。
 >
-> 对照组：今天企业 JWT 就**明文**写在 `openclaw.json` 的 `models.providers["mixcwork-server"].apiKey` 里（`openclawConfigSync.ts:1574` → `buildProviderSelection` 的 `apiKey` 是字面量），它同样 4 分钟一变 —— 但 `models` 段变化**不**触发重启判定（重启条件只有 `changedTopLevelKeys.includes('mcp')` 与 `modelCompatRestartRequired`），所以现状是"配置变了 → `config.set` 热应用 → 不重启"。差别只在 `mcp` 段：它一变就重启。
+> 对照组：今天企业 JWT 就**明文**写在 `openclaw.json` 的 `models.providers["mixwork-server"].apiKey` 里（`openclawConfigSync.ts:1574` → `buildProviderSelection` 的 `apiKey` 是字面量），它同样 4 分钟一变 —— 但 `models` 段变化**不**触发重启判定（重启条件只有 `changedTopLevelKeys.includes('mcp')` 与 `modelCompatRestartRequired`），所以现状是"配置变了 → `config.set` 热应用 → 不重启"。差别只在 `mcp` 段：它一变就重启。
 
 结论：**写进 OpenClaw 配置的凭据必须稳定**。所以引入 GSJ：
 

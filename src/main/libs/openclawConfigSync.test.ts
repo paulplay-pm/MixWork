@@ -8,24 +8,24 @@ import {
 
 const providerApiKeyEnvVar = (providerName: string): string => {
   const envName = providerName.toUpperCase().replace(/[^A-Z0-9]/g, '_');
-  return `MIXCWORK_APIKEY_${envName}`;
+  return `MIXWORK_APIKEY_${envName}`;
 };
 
 describe('providerApiKeyEnvVar', () => {
   test('converts simple provider names', () => {
-    expect(providerApiKeyEnvVar(ProviderName.Moonshot)).toBe('MIXCWORK_APIKEY_MOONSHOT');
-    expect(providerApiKeyEnvVar(ProviderName.Anthropic)).toBe('MIXCWORK_APIKEY_ANTHROPIC');
-    expect(providerApiKeyEnvVar(ProviderName.OpenAI)).toBe('MIXCWORK_APIKEY_OPENAI');
-    expect(providerApiKeyEnvVar(ProviderName.Ollama)).toBe('MIXCWORK_APIKEY_OLLAMA');
+    expect(providerApiKeyEnvVar(ProviderName.Moonshot)).toBe('MIXWORK_APIKEY_MOONSHOT');
+    expect(providerApiKeyEnvVar(ProviderName.Anthropic)).toBe('MIXWORK_APIKEY_ANTHROPIC');
+    expect(providerApiKeyEnvVar(ProviderName.OpenAI)).toBe('MIXWORK_APIKEY_OPENAI');
+    expect(providerApiKeyEnvVar(ProviderName.Ollama)).toBe('MIXWORK_APIKEY_OLLAMA');
   });
 
   test('replaces hyphens and special chars with underscores', () => {
-    expect(providerApiKeyEnvVar(ProviderName.MixcworkServer)).toBe('MIXCWORK_APIKEY_MIXCWORK_SERVER');
-    expect(providerApiKeyEnvVar('my.provider')).toBe('MIXCWORK_APIKEY_MY_PROVIDER');
+    expect(providerApiKeyEnvVar(ProviderName.MixWorkServer)).toBe('MIXWORK_APIKEY_MIXWORK_SERVER');
+    expect(providerApiKeyEnvVar('my.provider')).toBe('MIXWORK_APIKEY_MY_PROVIDER');
   });
 
   test('server key matches hardcoded convention', () => {
-    expect(providerApiKeyEnvVar('server')).toBe('MIXCWORK_APIKEY_SERVER');
+    expect(providerApiKeyEnvVar('server')).toBe('MIXWORK_APIKEY_SERVER');
   });
 });
 
@@ -34,13 +34,13 @@ describe('env var stability on model switch', () => {
     const env: Record<string, string> = {};
 
     if (serverToken) {
-      env.MIXCWORK_APIKEY_SERVER = serverToken;
+      env.MIXWORK_APIKEY_SERVER = serverToken;
     }
 
     for (const [name, config] of Object.entries(providers)) {
       if (!config.enabled) continue;
       const envName = name.toUpperCase().replace(/[^A-Z0-9]/g, '_');
-      env[`MIXCWORK_APIKEY_${envName}`] = config.apiKey;
+      env[`MIXWORK_APIKEY_${envName}`] = config.apiKey;
     }
 
     return env;
@@ -68,8 +68,8 @@ describe('env var stability on model switch', () => {
     const envAfter = simulateCollectEnvVars(providers);
 
     expect(JSON.stringify(envBefore)).toBe(JSON.stringify(envAfter));
-    expect(envBefore.MIXCWORK_APIKEY_MOONSHOT).toBe('sk-moon-123');
-    expect(envBefore.MIXCWORK_APIKEY_ANTHROPIC).toBe('sk-ant-456');
+    expect(envBefore.MIXWORK_APIKEY_MOONSHOT).toBe('sk-moon-123');
+    expect(envBefore.MIXWORK_APIKEY_ANTHROPIC).toBe('sk-ant-456');
   });
 
   test('only editing apiKey value causes env var change', () => {
@@ -224,7 +224,7 @@ const PROVIDER_REGISTRY: Record<string, ProviderDescriptor> = {
 };
 
 const DEFAULT_DESCRIPTOR: ProviderDescriptor = {
-  providerId: OpenClawProviderId.Mixcwork,
+  providerId: OpenClawProviderId.MixWork,
   resolveApi: ({ apiType }) => mapApiTypeToOpenClawApi(apiType),
   normalizeBaseUrl: stripChatCompletionsSuffix,
 };
@@ -244,7 +244,7 @@ const resolveDescriptor = (
   }
   return {
     ...DEFAULT_DESCRIPTOR,
-    providerId: providerName || OpenClawProviderId.Mixcwork,
+    providerId: providerName || OpenClawProviderId.MixWork,
   };
 };
 
@@ -317,14 +317,14 @@ describe('resolveDescriptor', () => {
     expect(d.resolveApi({ apiType: undefined, baseURL: '' })).toBe(OpenClawApi.OpenAICompletions);
   });
 
-  test('unknown provider falls back to mixcwork providerId', () => {
+  test('unknown provider falls back to mixwork providerId', () => {
     const d = resolveDescriptor('some-unknown', false);
     expect(d.providerId).toBe('some-unknown');
   });
 
-  test('empty provider name falls back to mixcwork', () => {
+  test('empty provider name falls back to mixwork', () => {
     const d = resolveDescriptor('', false);
-    expect(d.providerId).toBe(OpenClawProviderId.Mixcwork);
+    expect(d.providerId).toBe(OpenClawProviderId.MixWork);
   });
 
   test('codingPlan flag is ignored for providers without codingPlan entry', () => {
@@ -367,10 +367,10 @@ describe('provider registry coverage', () => {
     }
   });
 
-  test('no provider resolves to mixcwork fallback', () => {
+  test('no provider resolves to mixwork fallback', () => {
     for (const name of allRegistryProviders) {
       const d = resolveDescriptor(name, false);
-      expect(d.providerId).not.toBe(OpenClawProviderId.Mixcwork);
+      expect(d.providerId).not.toBe(OpenClawProviderId.MixWork);
     }
   });
 
@@ -389,7 +389,7 @@ describe('provider registry coverage', () => {
 // `openclawConfigSync.ts`. The desktop must accept BOTH a v4 UUID
 // (user-added provider_key row id) AND the `builtin:<orgId>:<slug>:<modelId>`
 // id (plan/built-in row seeded by enterprise_server). Anything else makes
-// the OpenClaw gateway reply "Unknown model: mixcwork-server/<id>".
+// the OpenClaw gateway reply "Unknown model: mixwork-server/<id>".
 // ═══════════════════════════════════════════════════════
 
 describe('isCatalogUuid identity shape', () => {
@@ -437,7 +437,7 @@ describe('isCatalogUuid identity shape', () => {
 // Read `openclawConfigSync.ts` directly and assert the predicate accepts
 // `builtin:` plan ids in addition to v4 UUIDs. This protects against the
 // exact Windows/M3 bug where the OpenClaw gateway reports
-// `Unknown model: mixcwork-server/builtin:org-...:MiniMax-M3` because the
+// `Unknown model: mixwork-server/builtin:org-...:MiniMax-M3` because the
 // desktop dropped the `builtin:` branch when it was added to the
 // enterprise-server proxy.
 // ═══════════════════════════════════════════════════════
@@ -471,7 +471,7 @@ describe('openclawConfigSync.isCatalogUuid source guard', () => {
 
   test('predicate accepts builtin: plan ids', () => {
     // The predicate (or a helper it uses) must reference the `builtin:`
-    // prefix so `mixcwork-server/builtin:org-...:MiniMax-M3` is treated
+    // prefix so `mixwork-server/builtin:org-...:MiniMax-M3` is treated
     // as a valid catalog id and routed through the enterprise proxy
     // rather than collapsed onto the display name.
     expect(predicateWindow).toContain('builtin:');

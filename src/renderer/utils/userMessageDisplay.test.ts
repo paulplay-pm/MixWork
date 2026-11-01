@@ -4,8 +4,8 @@ import { parseUserMessageForDisplay } from './userMessageDisplay';
 
 // ─── Helpers ────────────────────────────────────────────────
 
-const WIN_INBOUND = String.raw`C:\Users\zhangsan\AppData\Roaming\MixCWork\openclaw\state\media\inbound`;
-const MAC_INBOUND = '/Users/zhangsan/Library/Application Support/MixCWork/openclaw/state/media/inbound';
+const WIN_INBOUND = String.raw`C:\Users\zhangsan\AppData\Roaming\MixWork\openclaw\state\media\inbound`;
+const MAC_INBOUND = '/Users/zhangsan/Library/Application Support/MixWork/openclaw/state/media/inbound';
 
 const fileImg = (dir: string, name: string) => `${dir}${dir.includes('\\') ? '\\' : '/'}${name}`;
 
@@ -44,9 +44,9 @@ describe('passthrough (no transformation)', () => {
   });
 });
 
-// ─── MixCWork goal mode ────────────────────────────────────
+// ─── MixWork goal mode ────────────────────────────────────
 
-describe('MixCWork goal mode command display', () => {
+describe('MixWork goal mode command display', () => {
   test('strips /goal start prefix from displayed user text', () => {
     const input = '/goal start 帮我做一个烘焙工作室的展示网页';
     expect(parseUserMessageForDisplay(input)).toBe('帮我做一个烘焙工作室的展示网页');

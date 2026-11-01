@@ -237,12 +237,12 @@ export function LoginPage(): JSX.Element {
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-6">
           <img
-            src="/brand/mixcwork-small.png"
-            alt="MixcWork"
+            src="/brand/mixwork-small.png"
+            alt="MixWork"
             draggable={false}
             className="w-12 h-12 rounded-[var(--radius-lg)] object-contain"
           />
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">MixcWork</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">MixWork</h1>
         </div>
         <div className="w-full p-8 bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] shadow border border-[var(--border-subtle)]">
           <h2 className="text-base font-semibold mb-4 text-[var(--text-primary)]">{t('auth.login.title')}</h2>

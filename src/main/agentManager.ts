@@ -1,14 +1,14 @@
-import type { Agent, CreateAgentRequest, MixCWorkStore, UpdateAgentRequest } from './mixcworkStore';
+import type { Agent, CreateAgentRequest, MixWorkStore, UpdateAgentRequest } from './mixworkStore';
 import { PRESET_AGENTS, type PresetAgent,presetToCreateRequest } from './presetAgents';
 
 /**
  * AgentManager handles CRUD operations for agents and preset agent installation.
- * Agents are stored in the SQLite `agents` table via MixCWorkStore.
+ * Agents are stored in the SQLite `agents` table via MixWorkStore.
  */
 export class AgentManager {
-  private store: MixCWorkStore;
+  private store: MixWorkStore;
 
-  constructor(store: MixCWorkStore) {
+  constructor(store: MixWorkStore) {
     this.store = store;
   }
 

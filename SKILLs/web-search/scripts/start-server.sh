@@ -24,8 +24,8 @@ resolve_node_runtime() {
     return 0
   fi
 
-  if [ -n "${MIXCWORK_ELECTRON_PATH:-}" ] && [ -x "${MIXCWORK_ELECTRON_PATH}" ]; then
-    NODE_CMD="$MIXCWORK_ELECTRON_PATH"
+  if [ -n "${MIXWORK_ELECTRON_PATH:-}" ] && [ -x "${MIXWORK_ELECTRON_PATH}" ]; then
+    NODE_CMD="$MIXWORK_ELECTRON_PATH"
     NODE_ARGS=()
     NODE_ENV_PREFIX=("ELECTRON_RUN_AS_NODE=1")
     return 0
@@ -76,7 +76,7 @@ ensure_npm_available() {
   fi
 
   echo "✗ npm is unavailable, cannot repair web-search runtime"
-  echo "  Please reinstall the web-search skill runtime from MixCWork."
+  echo "  Please reinstall the web-search skill runtime from MixWork."
   return 1
 }
 
@@ -216,7 +216,7 @@ cd "$PROJECT_DIR"
 if ! resolve_node_runtime; then
   echo "✗ Failed to start Bridge Server"
   echo "  Node.js runtime not found."
-  echo "  Please install Node.js, or run from MixCWork so scripts can use Electron runtime."
+  echo "  Please install Node.js, or run from MixWork so scripts can use Electron runtime."
   exit 1
 fi
 

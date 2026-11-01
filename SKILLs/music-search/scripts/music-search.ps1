@@ -14,11 +14,11 @@ $EnvVars = @{}
 $nodePath = Get-Command node -ErrorAction SilentlyContinue
 if ($nodePath) {
     $NodeBin = $nodePath.Path
-} elseif ($env:MIXCWORK_ELECTRON_PATH -and (Test-Path $env:MIXCWORK_ELECTRON_PATH)) {
-    $NodeBin = $env:MIXCWORK_ELECTRON_PATH
+} elseif ($env:MIXWORK_ELECTRON_PATH -and (Test-Path $env:MIXWORK_ELECTRON_PATH)) {
+    $NodeBin = $env:MIXWORK_ELECTRON_PATH
     $EnvVars["ELECTRON_RUN_AS_NODE"] = "1"
 } else {
-    Write-Output '{"success":false,"error":"未找到 Node.js 运行时。请安装 Node.js 或确保 MixCWork Electron 可用。"}'
+    Write-Output '{"success":false,"error":"未找到 Node.js 运行时。请安装 Node.js 或确保 MixWork Electron 可用。"}'
     exit 1
 }
 

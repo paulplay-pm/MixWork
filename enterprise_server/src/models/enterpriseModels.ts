@@ -130,7 +130,7 @@ export const enterpriseModels = {
         // Skip models whose key can't decrypt; the model entry still appears
         // in the catalog with `_k: null` (see /enterprise-models handler).
         // Log the failure explicitly — the silent skip above means a missing
-        // or mismatched MIXCWORK_VAULT_MASTER_KEY surfaces downstream only as a
+        // or mismatched MIXWORK_VAULT_MASTER_KEY surfaces downstream only as a
         // desktop "model unavailable" prompt with no server-side trace.
         console.error('[enterpriseModels] failed to decrypt provider key', {
           modelId: row.id,

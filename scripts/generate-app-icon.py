@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Generate the MixCWork app icon for macOS and Windows.
+"""Generate the MixWork app icon for macOS and Windows.
 
 Lifts the orange node-network mark out of the master logo
-(`public/mixcwork.png`, mark + wordmark on an opaque dark plate) and composites
+(`public/mixwork.png`, mark + wordmark on an opaque dark plate) and composites
 it onto a rounded-square plate whose colours match that master background
 (superellipse/squircle corners, subtle vertical gradient). Emits:
   resources/app-icon/app-icon.png    1024x1024 macOS icon (inset squircle, dev
@@ -54,7 +54,7 @@ def main():
     print(f"wrote {OUT_PNG}")
 
     # Build the .iconset for a native .icns (macOS sizes).
-    iconset = os.path.join(OUT_DIR, "MixCWork.iconset")
+    iconset = os.path.join(OUT_DIR, "MixWork.iconset")
     os.makedirs(iconset, exist_ok=True)
     # (filename, pixel size)
     specs = [

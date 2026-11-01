@@ -22,7 +22,7 @@ describe('agentTile', () => {
     // silently replaced with the default one on that side.
     expect(AGENT_AVATARS.length).toBe(30);
     expect(AGENT_AVATARS).toContain('code');
-    expect(AGENT_AVATARS).toContain('mixcwork');
+    expect(AGENT_AVATARS).toContain('mixwork');
   });
 
   test('encodes the value in the form the desktop parses', () => {

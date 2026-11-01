@@ -1,4 +1,4 @@
-# SSO 用户自助绑定 + 白名单模式 — 设计（MixCWork 企业版）
+# SSO 用户自助绑定 + 白名单模式 — 设计（MixWork 企业版）
 
 > **接续:** 本 spec 建立在
 > [`2026-09-27-enterprise-sso-member-login-federation-design.md`](./2026-09-27-enterprise-sso-member-login-federation-design.md)
@@ -26,9 +26,9 @@
 v1 JIT(见 09-27 spec §5)的行为是:**任何能完成 IdP 授权的人,都会自动生成一个
 本地 user**。当 IdP 是企业全员都能进的飞书、Okta 时,意味着:
 
-- 任何飞书账号都能登进 MixCWork → 不在 MixCWork 名册上的人也能进来。
+- 任何飞书账号都能登进 MixWork → 不在 MixWork 名册上的人也能进来。
 - 用户名自动用 `sso-${external_id 前 8 位}` 之类生成,组织盘点困难(看不到"谁是谁")。
-- audit 记录里只有一个外部 id,没有"属于 MixCWork 哪个 user"的语义挂钩。
+- audit 记录里只有一个外部 id,没有"属于 MixWork 哪个 user"的语义挂钩。
 
 v1 admin 预绑定的设计(spec 之前的版本)虽然解决了"谁有资格",但要求 admin
 在后台逐人填 `union_id` / `sub` —— 这在百人以下小公司行得通,千人以上需要每
@@ -37,12 +37,12 @@ v1 admin 预绑定的设计(spec 之前的版本)虽然解决了"谁有资格",�
 独立工程。
 
 **用户自助绑定**换一种思路:**让 user 自己证明"我既是飞书那边的人,也是
-MixCWork 那个账号的主人"**。证明方式是"我能登进自己的 MixCWork 账号密码"——
-这道门只对账号主人开,绑上之后飞书那边的 union_id 跟 MixCWork user 就锁
+MixWork 那个账号的主人"**。证明方式是"我能登进自己的 MixWork 账号密码"——
+这道门只对账号主人开,绑上之后飞书那边的 union_id 跟 MixWork user 就锁
 死了。
 
 注意:本 spec **不**改 `email_domain_whitelist` 的语义(它只校验"邮箱后缀是否
-落在允许的域名集合里",和"该 IdP 身份是否对应到 MixCWork 名册上的某个 user"是两
+落在允许的域名集合里",和"该 IdP 身份是否对应到 MixWork 名册上的某个 user"是两
 个不同维度的问题;两者独立,可叠加)。
 
 ---
@@ -71,7 +71,7 @@ MixCWork 那个账号的主人"**。证明方式是"我能登进自己的 MixCWo
 ### 2.2 非目标 (Out of scope)
 
 - **不做**任何"自动匹配":既不通过手机号、也不通过邮箱、也不通过姓名做
-  MixCWork user ↔ IdP 身份的自动关联(必然错配)。**只接受"账号密码 + SSO
+  MixWork user ↔ IdP 身份的自动关联(必然错配)。**只接受"账号密码 + SSO
   授权"双因素自助**或 admin 解绑(走显式路径)。
 - **不**做"admin 替 user 预绑定"路径(之前的 spec 是这条,本版砍掉)。防
   社工,且解决"admin 怎么拿到 union_id"的运营痛点。
@@ -239,16 +239,16 @@ export async function finishSsoCallback(args: FinishArgs): Promise<FinishResult>
 ### 4.2 二段路径(`pending_bind` → 账号密码 → 首次登录 + 绑定)
 
 state 在 `ssoLoginContextStore[state].kind === 'pending_bind'` 时,user
-必须**走 `/bind-sso` 页面**证明他是某个 MixCWork 账号的主人。
+必须**走 `/bind-sso` 页面**证明他是某个 MixWork 账号的主人。
 
 流程:
 
 1. **`/bind-sso` 页面**(GET `?state=xxx`):
    - 服务端读 `ssoLoginContextStore[state]`,若不在 `pending_bind` →
      显示 "会话已过期或无效,请重试"(同现有 sso_state_invalid 文案)。
-   - 否则渲染提示: "你的 [feishu/okta] 账号尚未绑定 MixCWork。请用你的
-     MixCWork 账号和密码登录,首次绑定后,该飞书账号会自动关联到你的
-     MixCWork 账号。"
+   - 否则渲染提示: "你的 [feishu/okta] 账号尚未绑定 MixWork。请用你的
+     MixWork 账号和密码登录,首次绑定后,该飞书账号会自动关联到你的
+     MixWork 账号。"
    - 列出 SSO 连接名(`conn.name`)和 union_id 截断(让 user 知道是哪
      个具体账号)。
    - 表单: `username` + `password` + 隐藏 `state`。
@@ -514,7 +514,7 @@ ssoRoutes.get('/auth/sso/callback', async (c) => {
   拿 token,`finishSsoCallback` 在 server 端跑,**但**不通过浏览器重
   定向到 `/auth-sso` —— 它通过 `state` 在 `ssoLoginContextStore`
   里挂"等待账号密码"。
-- 桌面 UI 弹一个**模态**("你的飞书账号未绑定,请输入 MixCWork 账号
+- 桌面 UI 弹一个**模态**("你的飞书账号未绑定,请输入 MixWork 账号
   密码"),user 在桌面里输,桌面 POST `/auth/sso/bind`,server 写绑
   定 + 设 `ready_to_finalize`,**然后** desktop 进程继续 probe,
   探测到 `ready_to_finalize` → 服务端 finalize → 出 token。
@@ -542,9 +542,9 @@ ssoRoutes.get('/auth/sso/callback', async (c) => {
 
 新页面 `pages/auth/BindSsoPage.tsx`(`/bind-sso?state=xxx`):
 
-- 顶部 banner: "你的 [feishu/okta/dingtalk] 账号尚未绑定 MixCWork。"
-- 中段: "请用你的 MixCWork 账号和密码登录,首次绑定后,该飞书账号会自
-  动关联到你的 MixCWork 账号。" + 显示 `connectionName` + `externalId`
+- 顶部 banner: "你的 [feishu/okta/dingtalk] 账号尚未绑定 MixWork。"
+- 中段: "请用你的 MixWork 账号和密码登录,首次绑定后,该飞书账号会自
+  动关联到你的 MixWork 账号。" + 显示 `connectionName` + `externalId`
   截断(让 user 确认"我要绑的是这个飞书账号")。
 - 表单: `username` + `password` + 隐藏 `state`。
 - 提交 → 调 `POST /auth/sso/bind`。
@@ -560,8 +560,8 @@ ssoRoutes.get('/auth/sso/callback', async (c) => {
 
 i18n 新增 5 键:
 - `sso.bind.title` "绑定 SSO 账号" / "Bind SSO account"
-- `sso.bind.subtitle` "你的 {provider} 账号尚未绑定 MixCWork。请用账号密码登录以完成绑定。" / "Your {provider} account is not bound to MixCWork yet. Sign in with your account password to bind."
-- `sso.bind.username.label` "MixCWork 账号" / "MixCWork account"
+- `sso.bind.subtitle` "你的 {provider} 账号尚未绑定 MixWork。请用账号密码登录以完成绑定。" / "Your {provider} account is not bound to MixWork yet. Sign in with your account password to bind."
+- `sso.bind.username.label` "MixWork 账号" / "MixWork account"
 - `sso.bind.password.label` "密码" / "Password"
 - `sso.bind.submit` "绑定并登录" / "Bind and sign in"
 
@@ -815,7 +815,7 @@ fd 耗尽。Lint:`npx eslint --ext ts,tsx --report-unused-disable-directives
    external_id)`,**不**支持"绑多个 IdP 都能登"。P2 再说。
 3. **审计 retention**: 现有 `audit_events` retention 沿用,本 spec
    新增的 5 个 action 不需要特殊保留。
-4. **`ssoLoginContextStore` 单实例 vs 跨实例**: 当前 MixCWork SSO 是
+4. **`ssoLoginContextStore` 单实例 vs 跨实例**: 当前 MixWork SSO 是
    单实例部署,内存 map 够用;多实例需迁 DB / Redis。迁移成本低
    (只是把 map 改成 `pool.query`)。
 5. **Desktop 二段路径**: P1 只实现 console 模式;desktop 模式显示

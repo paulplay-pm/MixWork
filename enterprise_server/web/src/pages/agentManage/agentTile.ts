@@ -31,7 +31,7 @@ export const GLYPH_ICON: Record<string, LucideIcon> = {
  *  `agent-avatar-svg:` prefix the desktop already parses, so an icon chosen
  *  here renders there without another mapping. */
 export const AGENT_AVATARS: string[] = [
-  'mixcwork', 'code', 'repair', 'briefcase', 'shopping-cart', 'data', 'document',
+  'mixwork', 'code', 'repair', 'briefcase', 'shopping-cart', 'data', 'document',
   'folder', 'tag', 'brain', 'graduation-cap', 'books', 'experiment', 'diagnosis',
   'scales', 'translation', 'translation-alt', 'creation', 'artboard', 'music',
   'entertainment', 'headphones', 'inspiration', 'lightning', 'travel', 'fitness',

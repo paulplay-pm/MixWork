@@ -14,7 +14,7 @@
 --
 --   (b) WeCom needs BOTH a CorpID and an AgentId for 企业内部自建应用
 --       ("自建应用" — scope snsapi_base/userinfo requires `agentid` in
---       the authorize URL). MixCWork's `sso_connections` only had a
+--       the authorize URL). MixWork's `sso_connections` only had a
 --       `client_id` column, so admins pasted their AgentId there (the
 --       dev row held `1000017`, a 7-digit AgentId, not a CorpID —
 --       CorpIDs look like `ww` + 16 alphanumerics). There was nowhere

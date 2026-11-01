@@ -21,17 +21,17 @@ export type ComputerUseMcpServerName =
   typeof ComputerUseMcpServerName[keyof typeof ComputerUseMcpServerName];
 
 export const ComputerUseMcpEnv = {
-  AskUserUrl: 'MIXCWORK_COMPUTER_USE_ASKUSER_URL',
-  BridgeSecret: 'MIXCWORK_MCP_BRIDGE_SECRET',
-  ClientModulePath: 'MIXCWORK_COMPUTER_USE_CLIENT_MODULE',
-  ExePath: 'MIXCWORK_COMPUTER_USE_EXE',
+  AskUserUrl: 'MIXWORK_COMPUTER_USE_ASKUSER_URL',
+  BridgeSecret: 'MIXWORK_MCP_BRIDGE_SECRET',
+  ClientModulePath: 'MIXWORK_COMPUTER_USE_CLIENT_MODULE',
+  ExePath: 'MIXWORK_COMPUTER_USE_EXE',
   HelperStateHome: 'LOBSTER_COMPUTER_USE_HOME',
   LogDir: 'LOBSTER_COMPUTER_USE_LOG_DIR',
   LogLevel: 'LOBSTER_COMPUTER_USE_LOG_LEVEL',
   LogRetentionDays: 'LOBSTER_COMPUTER_USE_LOG_RETENTION_DAYS',
-  RuntimePackageRoot: 'MIXCWORK_COMPUTER_USE_RUNTIME_PACKAGE_ROOT',
-  SdkRoot: 'MIXCWORK_COMPUTER_USE_MCP_SDK_ROOT',
-  ZodRoot: 'MIXCWORK_COMPUTER_USE_ZOD_ROOT',
+  RuntimePackageRoot: 'MIXWORK_COMPUTER_USE_RUNTIME_PACKAGE_ROOT',
+  SdkRoot: 'MIXWORK_COMPUTER_USE_MCP_SDK_ROOT',
+  ZodRoot: 'MIXWORK_COMPUTER_USE_ZOD_ROOT',
 } as const;
 export type ComputerUseMcpEnv =
   typeof ComputerUseMcpEnv[keyof typeof ComputerUseMcpEnv];
@@ -176,12 +176,12 @@ function moduleUrl(...parts) {
   return pathToFileURL(path.join(...parts)).href;
 }
 
-const sdkRoot = requireEnv('MIXCWORK_COMPUTER_USE_MCP_SDK_ROOT');
-const zodRoot = requireEnv('MIXCWORK_COMPUTER_USE_ZOD_ROOT');
-const clientModulePath = requireEnv('MIXCWORK_COMPUTER_USE_CLIENT_MODULE');
-const helperExePath = requireEnv('MIXCWORK_COMPUTER_USE_EXE');
-const askUserUrl = requireEnv('MIXCWORK_COMPUTER_USE_ASKUSER_URL');
-const bridgeSecret = requireEnv('MIXCWORK_MCP_BRIDGE_SECRET');
+const sdkRoot = requireEnv('MIXWORK_COMPUTER_USE_MCP_SDK_ROOT');
+const zodRoot = requireEnv('MIXWORK_COMPUTER_USE_ZOD_ROOT');
+const clientModulePath = requireEnv('MIXWORK_COMPUTER_USE_CLIENT_MODULE');
+const helperExePath = requireEnv('MIXWORK_COMPUTER_USE_EXE');
+const askUserUrl = requireEnv('MIXWORK_COMPUTER_USE_ASKUSER_URL');
+const bridgeSecret = requireEnv('MIXWORK_MCP_BRIDGE_SECRET');
 const helperStateHome = requireEnv('LOBSTER_COMPUTER_USE_HOME');
 
 const { McpServer } = await import(moduleUrl(sdkRoot, 'dist', 'esm', 'server', 'mcp.js'));
@@ -216,7 +216,7 @@ function createHelperTurnId() {
 }
 const requestMeta = {
   computerUseHome: helperStateHome,
-  session_id: 'mixcwork-computer-use',
+  session_id: 'mixwork-computer-use',
   turn_id: createHelperTurnId(),
 };
 

@@ -19,7 +19,7 @@ require('child_process').execFileSync(
 
 // Opt-in web installer (small NSIS stub that downloads the app package from a
 // CDN at install time). Default builds are full offline installers; nothing
-// changes unless MIXCWORK_WEB_INSTALLER=1 is set explicitly.
+// changes unless MIXWORK_WEB_INSTALLER=1 is set explicitly.
 const WEB_INSTALLER_ENV = BuildEnv.WebInstaller;
 const WEB_PKG_BASE_URL_ENV = BuildEnv.WebPkgBaseUrl;
 const WEB_PKG_URL_ENV = BuildEnv.WebPkgUrl;
@@ -62,7 +62,7 @@ function resolveWebPackageUrl(keyfrom) {
   if (!raw) {
     throw new Error(
       `[WebInstaller] either ${WEB_PKG_URL_ENV} (exact package URL from object storage) or ` +
-        `${WEB_PKG_BASE_URL_ENV} (CDN base directory, e.g. https://cdn.example.com/mixcwork/win) ` +
+        `${WEB_PKG_BASE_URL_ENV} (CDN base directory, e.g. https://cdn.example.com/mixwork/win) ` +
         `is required when ${WEB_INSTALLER_ENV}=1.`,
     );
   }
@@ -106,7 +106,7 @@ for (const platformName of ['mac', 'win', 'linux']) {
   mergeExtraResources(platformName);
 }
 
-// Sign every Windows binary electron-builder produces (MixCWork.exe, the
+// Sign every Windows binary electron-builder produces (MixWork.exe, the
 // uninstaller, the installer) through the internal Youdao signing service,
 // not just the final Setup.exe: the unsigned inner exe is what security
 // software freezes on first execution. The hook skips with a warning when
@@ -120,12 +120,12 @@ delete config.extraResources;
 
 config.dmg = {
   ...(config.dmg || {}),
-  artifactName: `MixCWork-darwin-\${arch}-\${version}-${keyfrom}.\${ext}`,
+  artifactName: `MixWork-darwin-\${arch}-\${version}-${keyfrom}.\${ext}`,
 };
 
 config.nsis = {
   ...(config.nsis || {}),
-  artifactName: `MixCWork-Setup-\${arch}-\${version}-${keyfrom}.\${ext}`,
+  artifactName: `MixWork-Setup-\${arch}-\${version}-${keyfrom}.\${ext}`,
 };
 
 if (isWebInstallerEnabled()) {
@@ -138,7 +138,7 @@ if (isWebInstallerEnabled()) {
   };
   config.nsisWeb = {
     appPackageUrl: resolveWebPackageUrl(keyfrom),
-    artifactName: `MixCWork-WebSetup-\${arch}-\${version}-${keyfrom}.\${ext}`,
+    artifactName: `MixWork-WebSetup-\${arch}-\${version}-${keyfrom}.\${ext}`,
   };
   console.log(`[WebInstaller] nsis-web target enabled, app package url: ${config.nsisWeb.appPackageUrl}`);
 }

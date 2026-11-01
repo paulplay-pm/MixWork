@@ -60,7 +60,7 @@ describe('pages/SetupPage', () => {
       )
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({ orgId: 'o1', orgName: 'Acme', code: 'MIXCWORK-SETUP-AAA-BBB-CCC', expiresAt: '2030-01-01T00:00:00Z' }),
+          JSON.stringify({ orgId: 'o1', orgName: 'Acme', code: 'MIXWORK-SETUP-AAA-BBB-CCC', expiresAt: '2030-01-01T00:00:00Z' }),
           { status: 200 }
         )
       );
@@ -73,7 +73,7 @@ describe('pages/SetupPage', () => {
     const continueBtn = await screen.findByRole('button', { name: /Continue/i });
     fireEvent.change(screen.getByPlaceholderText(/Acme Corp/i), { target: { value: 'Acme' } });
     fireEvent.click(continueBtn);
-    await waitFor(() => expect(screen.getByText(/MIXCWORK-SETUP-AAA-BBB-CCC/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/MIXWORK-SETUP-AAA-BBB-CCC/)).toBeInTheDocument());
     expect(screen.getByPlaceholderText(/Username/i)).toBeInTheDocument();
   });
 });

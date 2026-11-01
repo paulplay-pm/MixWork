@@ -69,7 +69,7 @@ export const SkinAssetMimeType = {
 export type SkinAssetMimeType = typeof SkinAssetMimeType[keyof typeof SkinAssetMimeType];
 
 export const SkinProtocol = {
-  Scheme: 'mixcwork-skin',
+  Scheme: 'mixwork-skin',
   Host: 'asset',
 } as const;
 
@@ -86,7 +86,7 @@ export const SkinIpc = {
 export type SkinIpc = typeof SkinIpc[keyof typeof SkinIpc];
 
 export const SkinToolName = {
-  Manage: 'mixcwork_skin_manage',
+  Manage: 'mixwork_skin_manage',
 } as const;
 
 export type SkinToolName = typeof SkinToolName[keyof typeof SkinToolName];

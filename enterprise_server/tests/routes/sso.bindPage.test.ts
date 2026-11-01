@@ -55,24 +55,24 @@ describe('GET /bind-sso redesigned page', () => {
     ssoLoginContextStore.delete('st-pb');
   });
 
-  test('zh locale (default): renders 绑定 MixcWork 账号 title, 待绑定 badge, and both input placeholders', async () => {
+  test('zh locale (default): renders 绑定 MixWork 账号 title, 待绑定 badge, and both input placeholders', async () => {
     ctxReady();
     const res = await buildApp().request('/bind-sso?state=st-pb');
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toMatch(/<html lang="zh">/);
     // Title and the new headline (Big H1 in the prototype).
-    expect(html).toMatch(/绑定 MixcWork 账号/);
+    expect(html).toMatch(/绑定 MixWork 账号/);
     // The 待绑定 badge in the provider card.
     expect(html).toMatch(/待绑定/);
     // Provider card name uses the connection's actual name (here "Feishu")
     // interpolated into "{provider}账号", so we check the template suffix.
     expect(html).toMatch(/Feishu账号/);
-    expect(html).toMatch(/尚未关联 MixcWork 身份/);
+    expect(html).toMatch(/尚未关联 MixWork 身份/);
     // Subtitle and submit. The connection is named "Feishu" (English) in
     // the fixture, so the provider is interpolated verbatim into the
-    // template "{provider}账号尚未绑定 MixcWork".
-    expect(html).toMatch(/Feishu账号尚未绑定 MixcWork/);
+    // template "{provider}账号尚未绑定 MixWork".
+    expect(html).toMatch(/Feishu账号尚未绑定 MixWork/);
     expect(html).toMatch(/绑定并登录/);
     // View-account-id expandable row.
     expect(html).toMatch(/查看账号标识/);
@@ -95,10 +95,10 @@ describe('GET /bind-sso redesigned page', () => {
     expect(res.status).toBe(200);
     const html = await res.text();
     expect(html).toMatch(/<html lang="en">/);
-    expect(html).toMatch(/Bind MixcWork account/);
+    expect(html).toMatch(/Bind MixWork account/);
     expect(html).toMatch(/Pending bind/);
     expect(html).toMatch(/Feishu account/);
-    expect(html).toMatch(/Not linked to a MixcWork identity/);
+    expect(html).toMatch(/Not linked to a MixWork identity/);
     expect(html).toMatch(/Bind and sign in/);
     expect(html).toMatch(/View account ID/);
     expect(html).toMatch(/Copy/);

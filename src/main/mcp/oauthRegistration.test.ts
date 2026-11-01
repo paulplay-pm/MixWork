@@ -21,7 +21,7 @@ function stubFetch(response: { status?: number; body: unknown }): { fetch: Fetch
 
 describe('registerPublicClient (RFC 7591)', () => {
   test('posts the public-client registration for the exact loopback redirect', async () => {
-    const { fetch, init, urls } = stubFetch({ body: { client_id: 'mixcwork-abc', token_endpoint_auth_method: 'none' } });
+    const { fetch, init, urls } = stubFetch({ body: { client_id: 'mixwork-abc', token_endpoint_auth_method: 'none' } });
 
     const client = await registerPublicClient({
       registrationEndpoint: REGISTRATION,
@@ -29,12 +29,12 @@ describe('registerPublicClient (RFC 7591)', () => {
       fetchImpl: fetch,
     });
 
-    expect(client).toEqual({ clientId: 'mixcwork-abc', tokenEndpointAuthMethod: 'none' });
+    expect(client).toEqual({ clientId: 'mixwork-abc', tokenEndpointAuthMethod: 'none' });
     expect(urls).toEqual([REGISTRATION]);
     expect(init[0].method).toBe('POST');
     expect((init[0].headers as Record<string, string>)['content-type']).toBe('application/json');
     expect(JSON.parse(String(init[0].body))).toEqual({
-      client_name: 'MixCWork Desktop',
+      client_name: 'MixWork Desktop',
       redirect_uris: [REDIRECT],
       grant_types: ['authorization_code'],
       response_types: ['code'],

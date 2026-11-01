@@ -1,6 +1,6 @@
 // Enterprise JWT self-heal for the enterprise-direct LLM path.
 //
-// Plan models (mixcwork-server) route straight at the enterprise server with the
+// Plan models (mixwork-server) route straight at the enterprise server with the
 // user's JWT baked into the OpenClaw config and the dsh engine environment. The
 // enterprise JWT is short-lived (~1h) and, unlike the consumer token, cannot be
 // refreshed after it has already expired — the /auth/refresh endpoint requires

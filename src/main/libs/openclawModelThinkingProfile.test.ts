@@ -1,11 +1,11 @@
 import { describe, expect, test } from 'vitest';
 
-import { parseThinkingProfileMap } from '../../../openclaw-extensions/mixcwork-model-compat/thinkingProfileMapping';
+import { parseThinkingProfileMap } from '../../../openclaw-extensions/mixwork-model-compat/thinkingProfileMapping';
 
 describe('parseThinkingProfileMap', () => {
   test('keeps valid model profiles and drops malformed entries', () => {
     expect(parseThinkingProfileMap({
-      'mixcwork-server/deepseek-v4-flash': {
+      'mixwork-server/deepseek-v4-flash': {
         options: [
           { level: 'off', openclawLevel: 'off' },
           { level: 'high', openclawLevel: 'high' },
@@ -18,7 +18,7 @@ describe('parseThinkingProfileMap', () => {
         options: [{ level: 'high', openclawLevel: 'high' }],
         defaultLevel: 'high',
       },
-      'mixcwork-server/invalid': {
+      'mixwork-server/invalid': {
         options: [
           { level: 'off', openclawLevel: 'off' },
           { level: 'future', openclawLevel: 'xhigh' },
@@ -26,7 +26,7 @@ describe('parseThinkingProfileMap', () => {
         defaultLevel: 'future',
       },
     })).toEqual({
-      'mixcwork-server/deepseek-v4-flash': {
+      'mixwork-server/deepseek-v4-flash': {
         options: [
           { level: 'off', openclawLevel: 'off' },
           { level: 'high', openclawLevel: 'high' },

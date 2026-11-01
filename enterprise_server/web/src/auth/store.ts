@@ -30,7 +30,7 @@ function decode(token: string): Claims {
 }
 
 /** localStorage key for the session JWT. */
-const TOKEN_KEY = 'mixcwork.enterprise.auth.token';
+const TOKEN_KEY = 'mixwork.enterprise.auth.token';
 
 /**
  * True when the JWT's `exp` claim (seconds, per RFC 7519) is in the past. A

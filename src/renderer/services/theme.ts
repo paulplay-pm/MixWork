@@ -14,12 +14,12 @@ export interface ThemeSelection {
 type PersistedThemeSelection = Omit<ThemeSelection, 'themeId'> & { themeId?: string };
 
 export const ThemeServiceEvent = {
-  DefaultChanged: 'mixcwork-default-theme-changed',
+  DefaultChanged: 'mixwork-default-theme-changed',
 } as const;
 
 export type ThemeDefaultChangedDetail = ThemeSelection;
 
-const THEME_ID_STORAGE_KEY = 'mixcwork-theme-id';
+const THEME_ID_STORAGE_KEY = 'mixwork-theme-id';
 const DEFAULT_THEME_ID = 'classic-light';
 
 const isThemeMode = (value: string): value is ThemeMode => (

@@ -12,7 +12,7 @@ import { Client } from 'pg';
 
 import { assertDockerOnPath, assertRoot } from './lib/preflight.js';
 
-const DEFAULT_DATA_DIR = '/etc/mixcwork';
+const DEFAULT_DATA_DIR = '/etc/mixwork';
 const DEFAULT_INSTALL_DIR =
   process.env.INSTALL_DIR ?? dirname(new URL(import.meta.url).pathname);
 
@@ -80,7 +80,7 @@ async function dbBootstrap(): Promise<void> {
 }
 
 /**
- * Resolve the host-side binary path that the `mixcwork-server` symlink should
+ * Resolve the host-side binary path that the `mixwork-server` symlink should
  * point at. Derived from the install dir (the directory containing
  * docker-compose.yml / caddyfile.example) plus the conventional
  * `<install>/cli/dist/index.js` location. Exposed for tests.
@@ -97,12 +97,12 @@ function writeFiles(installDir: string, dataDir: string, imageTag: string): void
   // Host-side binary symlink — best-effort. Skip in test envs (where the
   // install dir is a temp dir and /usr/local/bin is not writable).
   if (process.env.INIT_SKIP_SYMLINK === '1') return;
-  const link = '/usr/local/bin/mixcwork-server';
+  const link = '/usr/local/bin/mixwork-server';
   const target = resolveInstallBin(installDir);
   if (!existsSync(target)) {
     console.warn(
       `[init] could not create ${link}: target ${target} does not exist. ` +
-        `Re-run after installing the mixcwork-server package.`,
+        `Re-run after installing the mixwork-server package.`,
     );
     return;
   }
@@ -130,7 +130,7 @@ function printEnvTemplate(): void {
       'Required .env keys (fill in, do not commit):',
       '  DATABASE_URL=postgres://<role>:<password>@<host>:<port>/<db>',
       '  JWT_SECRET=<openssl rand -hex 32>',
-      '  MIXCWORK_VAULT_MASTER_KEY=<openssl rand -base64 32>',
+      '  MIXWORK_VAULT_MASTER_KEY=<openssl rand -base64 32>',
       '  PORT=8787',
       '  IMAGE_TAG=latest',
       '  DATA_DIR=/data',
@@ -145,10 +145,10 @@ function validateEnvStrength(): void {
   if (jwt.length < 32) {
     throw new Error('JWT_SECRET must be ≥32 chars. Generate with: openssl rand -hex 32');
   }
-  const vault = process.env.MIXCWORK_VAULT_MASTER_KEY ?? '';
+  const vault = process.env.MIXWORK_VAULT_MASTER_KEY ?? '';
   if (!vault) {
     throw new Error(
-      'MIXCWORK_VAULT_MASTER_KEY is required. Generate with: openssl rand -base64 32',
+      'MIXWORK_VAULT_MASTER_KEY is required. Generate with: openssl rand -base64 32',
     );
   }
 }
@@ -190,6 +190,6 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
     process.exit(1);
   }
   console.log(
-    '[init] done. Next: edit .env, then `mixcwork-server start` (or `docker compose -f /etc/mixcwork/compose.yml up -d`).',
+    '[init] done. Next: edit .env, then `mixwork-server start` (or `docker compose -f /etc/mixwork/compose.yml up -d`).',
   );
 }

@@ -4,9 +4,9 @@ Read and send email via IMAP/SMTP protocol. Works with any IMAP/SMTP server incl
 
 ## Quick Setup
 
-1. **Configure accounts in MixCWork Settings > Email.**
+1. **Configure accounts in MixWork Settings > Email.**
 
-   MixCWork writes `accounts.json` for multi-account setups. Existing `.env` files are still read as a legacy single-account fallback.
+   MixWork writes `accounts.json` for multi-account setups. Existing `.env` files are still read as a legacy single-account fallback.
 
    Optional legacy `.env` format:
 
@@ -192,11 +192,11 @@ Sending is blocked unless `--confirmed` is passed after the user confirms recipi
 
 ## Files
 
-- `SKILL.md` - Skill documentation for the MixCWork agent
-- `accounts.json` - Multi-account credentials managed by MixCWork Settings
+- `SKILL.md` - Skill documentation for the MixWork agent
+- `accounts.json` - Multi-account credentials managed by MixWork Settings
 - `scripts/imap.js` - IMAP CLI tool
 - `scripts/smtp.js` - SMTP CLI tool
 - `package.json` - Node.js dependencies
 - `.env` - Legacy single-account credentials fallback
 - `setup.sh` - One-shot setup helper
-- `_meta.json` - Skill manifest consumed by MixCWork
+- `_meta.json` - Skill manifest consumed by MixWork

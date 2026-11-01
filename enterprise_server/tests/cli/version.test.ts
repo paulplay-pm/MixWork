@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest';
 
-describe('mixcwork-server version', () => {
+describe('mixwork-server version', () => {
   let prevVersion: string | undefined;
   let log: MockInstance<[message?: any, ...optionalParams: any[]], void>;
 
@@ -20,6 +20,6 @@ describe('mixcwork-server version', () => {
   test('prints VERSION env when set', async () => {
     const { run } = await import('../../src/cli/version');
     run();
-    expect(log).toHaveBeenCalledWith('mixcwork-server v2026.10.15-test');
+    expect(log).toHaveBeenCalledWith('mixwork-server v2026.10.15-test');
   });
 });

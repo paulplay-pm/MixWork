@@ -100,7 +100,7 @@ export function lowercaseHeaderKeys(headers: Record<string, string>): Record<str
 // not start with a letter gets an `mcp-` prefix, and the result is cut to 30
 // characters.
 //
-// MixCWork pre-applies the same rule so the key it writes IS the final
+// MixWork pre-applies the same rule so the key it writes IS the final
 // tool-name prefix. Without that, the desktop could not tell which tool names
 // belong to which connector, and neither the AGENTS.md "connected data
 // sources" policy nor the chat transcript could name a connector's tools.
@@ -160,7 +160,7 @@ export function resolveMcpServerKey(input: { serverKey?: string | null; name: st
  *
  * OpenClaw disambiguates colliding keys itself (`sanitizeServerName` appends
  * `-2`, `-3`, …), but the desktop has to know the FINAL key to name a
- * connector's tools. MixCWork therefore disambiguates first, with the same
+ * connector's tools. MixWork therefore disambiguates first, with the same
  * algorithm and the same order OpenClaw would use, so the two agree.
  *
  * The one case where they can still disagree is a plugin-provided MCP server

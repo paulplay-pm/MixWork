@@ -1,66 +1,66 @@
 !include "FileFunc.nsh"
 
-Var mixcworkCurrentProcessPid
-Var mixcworkInstallerAttemptId
-Var mixcworkTargetProcessesStopStatus
-Var mixcworkResolveToolKind
-Var mixcworkResolvedToolPath
-Var mixcworkResolvedToolStatus
-Var mixcworkResolvedToolSource
-Var mixcworkTrustedPowerShellPath
-Var mixcworkTrustedPowerShellStatus
-Var mixcworkTrustedPowerShellSource
+Var mixworkCurrentProcessPid
+Var mixworkInstallerAttemptId
+Var mixworkTargetProcessesStopStatus
+Var mixworkResolveToolKind
+Var mixworkResolvedToolPath
+Var mixworkResolvedToolStatus
+Var mixworkResolvedToolSource
+Var mixworkTrustedPowerShellPath
+Var mixworkTrustedPowerShellStatus
+Var mixworkTrustedPowerShellSource
 
 !ifndef BUILD_UNINSTALLER
   ; Cross-hook state used by the update fast path and the electron-builder
   ; template timing hooks. These are installer variables (not registers) so
   ; nested NSIS macros cannot accidentally overwrite an in-flight timer.
-  Var mixcworkInstallScenario
-  Var mixcworkInvocationSource
-  Var mixcworkUpdatedFlag
-  Var mixcworkUiMode
-  Var mixcworkLauncherFallback
-  Var mixcworkLegacySkillsStatus
-  Var mixcworkLegacySkillsRestoreStatus
-  Var mixcworkOldAppRelaunchStatus
-  Var mixcworkOldAppRelaunchError
-  Var mixcworkOldAppExecutablePath
-  Var mixcworkOldUninstallerPath
-  Var mixcworkOldAppAsarPath
-  Var mixcworkTrustedTarPath
-  Var mixcworkTrustedTarStatus
-  Var mixcworkTrustedTarSource
-  Var mixcworkOldInstallOriginalPath
-  Var mixcworkOldInstallOriginalPathNormalized
-  Var mixcworkOldInstallRegisteredPath
-  Var mixcworkOldInstallRegisteredPathNormalized
-  Var mixcworkOldInstallAlternateRegisteredPath
-  Var mixcworkOldInstallAlternateRegisteredPathNormalized
-  Var mixcworkOldInstallBackupPath
-  Var mixcworkOldInstallFailedPath
-  Var mixcworkOldInstallRenameStatus
-  Var mixcworkOldInstallRenameReason
-  Var mixcworkOldInstallRenameError
-  Var mixcworkOldInstallRenameAttempts
-  Var mixcworkOldInstallRollbackReason
-  Var mixcworkOldInstallRollbackStatus
-  Var mixcworkOldInstallRollbackError
-  Var mixcworkOldInstallCurrentDirectory
-  Var mixcworkOldUninstallCandidatePath
-  Var mixcworkOldUninstallCandidatePathNormalized
-  Var mixcworkOldUninstallStartTick
-  Var mixcworkOldUninstallLaunchStatus
-  Var mixcworkNewInstallValidationStatus
-  Var mixcworkNewInstallValidationReason
+  Var mixworkInstallScenario
+  Var mixworkInvocationSource
+  Var mixworkUpdatedFlag
+  Var mixworkUiMode
+  Var mixworkLauncherFallback
+  Var mixworkLegacySkillsStatus
+  Var mixworkLegacySkillsRestoreStatus
+  Var mixworkOldAppRelaunchStatus
+  Var mixworkOldAppRelaunchError
+  Var mixworkOldAppExecutablePath
+  Var mixworkOldUninstallerPath
+  Var mixworkOldAppAsarPath
+  Var mixworkTrustedTarPath
+  Var mixworkTrustedTarStatus
+  Var mixworkTrustedTarSource
+  Var mixworkOldInstallOriginalPath
+  Var mixworkOldInstallOriginalPathNormalized
+  Var mixworkOldInstallRegisteredPath
+  Var mixworkOldInstallRegisteredPathNormalized
+  Var mixworkOldInstallAlternateRegisteredPath
+  Var mixworkOldInstallAlternateRegisteredPathNormalized
+  Var mixworkOldInstallBackupPath
+  Var mixworkOldInstallFailedPath
+  Var mixworkOldInstallRenameStatus
+  Var mixworkOldInstallRenameReason
+  Var mixworkOldInstallRenameError
+  Var mixworkOldInstallRenameAttempts
+  Var mixworkOldInstallRollbackReason
+  Var mixworkOldInstallRollbackStatus
+  Var mixworkOldInstallRollbackError
+  Var mixworkOldInstallCurrentDirectory
+  Var mixworkOldUninstallCandidatePath
+  Var mixworkOldUninstallCandidatePathNormalized
+  Var mixworkOldUninstallStartTick
+  Var mixworkOldUninstallLaunchStatus
+  Var mixworkNewInstallValidationStatus
+  Var mixworkNewInstallValidationReason
   !ifndef APP_PACKAGE_URL
-    Var mixcworkPackageMaterializeStartTick
+    Var mixworkPackageMaterializeStartTick
   !endif
-  Var mixcworkPackageExtractStartTick
-  Var mixcworkPackageCopyStartTick
-  Var mixcworkInstallerCacheCopyStartTick
+  Var mixworkPackageExtractStartTick
+  Var mixworkPackageCopyStartTick
+  Var mixworkInstallerCacheCopyStartTick
   !ifndef ESTIMATED_SIZE
-    Var mixcworkEstimatedSizeScanStartTick
-    Var mixcworkEstimatedSizeValue
+    Var mixworkEstimatedSizeScanStartTick
+    Var mixworkEstimatedSizeValue
   !endif
 !endif
 
@@ -71,11 +71,11 @@ Var mixcworkTrustedPowerShellSource
 ; CRLF attached, so an exact stdout comparison silently fails (this once
 ; misclassified "no user skills" as "backup succeeded" and produced a spurious
 ; legacy-restore-backup-missing degraded install).
-!define MIXCWORK_SKILL_BACKUP_EXIT_VERIFIED "0"
-!define MIXCWORK_SKILL_BACKUP_EXIT_INSPECT_FAILED "10"
-!define MIXCWORK_SKILL_BACKUP_EXIT_COPY_FAILED "11"
-!define MIXCWORK_SKILL_BACKUP_EXIT_VERIFY_FAILED "12"
-!define MIXCWORK_SKILL_BACKUP_EXIT_NO_USER_SKILLS "13"
+!define MIXWORK_SKILL_BACKUP_EXIT_VERIFIED "0"
+!define MIXWORK_SKILL_BACKUP_EXIT_INSPECT_FAILED "10"
+!define MIXWORK_SKILL_BACKUP_EXIT_COPY_FAILED "11"
+!define MIXWORK_SKILL_BACKUP_EXIT_VERIFY_FAILED "12"
+!define MIXWORK_SKILL_BACKUP_EXIT_NO_USER_SKILLS "13"
 
 ; -- Design invariant --
 ; Nothing destructive may run before the user confirms the wizard (or the
@@ -129,21 +129,21 @@ Var mixcworkTrustedPowerShellSource
 ; attemptId is a correlation identifier only. It is intentionally generated by
 ; Windows and is never used as a security nonce or authorization token.
 !ifdef BUILD_UNINSTALLER
-Function un.mixcworkEnsureInstallerAttemptId
+Function un.mixworkEnsureInstallerAttemptId
 !else
-Function mixcworkEnsureInstallerAttemptId
+Function mixworkEnsureInstallerAttemptId
 !endif
-  StrCmp $mixcworkInstallerAttemptId "" 0 MixcworkAttemptIdReady
+  StrCmp $mixworkInstallerAttemptId "" 0 MixWorkAttemptIdReady
   System::Call 'ole32::CoCreateGuid(g .s)'
-  Pop $mixcworkInstallerAttemptId
-  MixcworkAttemptIdReady:
+  Pop $mixworkInstallerAttemptId
+  MixWorkAttemptIdReady:
 FunctionEnd
 
 !macro EnsureInstallerAttemptId
   !ifdef BUILD_UNINSTALLER
-    Call un.mixcworkEnsureInstallerAttemptId
+    Call un.mixworkEnsureInstallerAttemptId
   !else
-    Call mixcworkEnsureInstallerAttemptId
+    Call mixworkEnsureInstallerAttemptId
   !endif
 !macroend
 
@@ -151,92 +151,92 @@ FunctionEnd
 ; PowerShell and tar use this single resolver entry so the existence check and
 ; the eventual execution refer to the exact same absolute path.
 !ifdef BUILD_UNINSTALLER
-Function un.mixcworkResolveTrustedSystemTool
+Function un.mixworkResolveTrustedSystemTool
 !else
-Function mixcworkResolveTrustedSystemTool
+Function mixworkResolveTrustedSystemTool
 !endif
   Push $0
   Push $1
 
-  StrCpy $mixcworkResolvedToolPath ""
-  StrCpy $mixcworkResolvedToolStatus "helper-not-found"
-  StrCpy $mixcworkResolvedToolSource "none"
+  StrCpy $mixworkResolvedToolPath ""
+  StrCpy $mixworkResolvedToolStatus "helper-not-found"
+  StrCpy $mixworkResolvedToolSource "none"
 
-  StrCmp $mixcworkResolveToolKind "powershell" MixcworkResolvePowerShell
-  StrCmp $mixcworkResolveToolKind "tar" MixcworkResolveTar
-  StrCpy $mixcworkResolvedToolStatus "unsupported-tool"
-  Goto MixcworkResolveToolDone
+  StrCmp $mixworkResolveToolKind "powershell" MixWorkResolvePowerShell
+  StrCmp $mixworkResolveToolKind "tar" MixWorkResolveTar
+  StrCpy $mixworkResolvedToolStatus "unsupported-tool"
+  Goto MixWorkResolveToolDone
 
-  MixcworkResolvePowerShell:
+  MixWorkResolvePowerShell:
     System::Call 'kernel32::GetFileAttributesW(w "$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe") i .r0'
-    IntCmp $0 -1 MixcworkResolvePowerShellSystem32 0 0
+    IntCmp $0 -1 MixWorkResolvePowerShellSystem32 0 0
     IntOp $1 $0 & 0x410
-    IntCmp $1 0 MixcworkResolvePowerShellSysnativeReady MixcworkResolvePowerShellSystem32 MixcworkResolvePowerShellSystem32
-    MixcworkResolvePowerShellSysnativeReady:
-      StrCpy $mixcworkResolvedToolPath "$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe"
-      StrCpy $mixcworkResolvedToolStatus "resolved"
-      StrCpy $mixcworkResolvedToolSource "sysnative"
-      Goto MixcworkResolveToolDone
+    IntCmp $1 0 MixWorkResolvePowerShellSysnativeReady MixWorkResolvePowerShellSystem32 MixWorkResolvePowerShellSystem32
+    MixWorkResolvePowerShellSysnativeReady:
+      StrCpy $mixworkResolvedToolPath "$WINDIR\Sysnative\WindowsPowerShell\v1.0\powershell.exe"
+      StrCpy $mixworkResolvedToolStatus "resolved"
+      StrCpy $mixworkResolvedToolSource "sysnative"
+      Goto MixWorkResolveToolDone
 
-    MixcworkResolvePowerShellSystem32:
+    MixWorkResolvePowerShellSystem32:
     System::Call 'kernel32::GetFileAttributesW(w "$WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe") i .r0'
-    IntCmp $0 -1 MixcworkResolveToolDone 0 0
+    IntCmp $0 -1 MixWorkResolveToolDone 0 0
     IntOp $1 $0 & 0x410
-    IntCmp $1 0 MixcworkResolvePowerShellSystem32Ready MixcworkResolveToolDone MixcworkResolveToolDone
-    MixcworkResolvePowerShellSystem32Ready:
-      StrCpy $mixcworkResolvedToolPath "$WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe"
-      StrCpy $mixcworkResolvedToolStatus "resolved"
-      StrCpy $mixcworkResolvedToolSource "system32"
-      Goto MixcworkResolveToolDone
+    IntCmp $1 0 MixWorkResolvePowerShellSystem32Ready MixWorkResolveToolDone MixWorkResolveToolDone
+    MixWorkResolvePowerShellSystem32Ready:
+      StrCpy $mixworkResolvedToolPath "$WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe"
+      StrCpy $mixworkResolvedToolStatus "resolved"
+      StrCpy $mixworkResolvedToolSource "system32"
+      Goto MixWorkResolveToolDone
 
-  MixcworkResolveTar:
+  MixWorkResolveTar:
     System::Call 'kernel32::GetFileAttributesW(w "$WINDIR\Sysnative\tar.exe") i .r0'
-    IntCmp $0 -1 MixcworkResolveTarSystem32 0 0
+    IntCmp $0 -1 MixWorkResolveTarSystem32 0 0
     IntOp $1 $0 & 0x410
-    IntCmp $1 0 MixcworkResolveTarSysnativeReady MixcworkResolveTarSystem32 MixcworkResolveTarSystem32
-    MixcworkResolveTarSysnativeReady:
-      StrCpy $mixcworkResolvedToolPath "$WINDIR\Sysnative\tar.exe"
-      StrCpy $mixcworkResolvedToolStatus "resolved"
-      StrCpy $mixcworkResolvedToolSource "sysnative"
-      Goto MixcworkResolveToolDone
+    IntCmp $1 0 MixWorkResolveTarSysnativeReady MixWorkResolveTarSystem32 MixWorkResolveTarSystem32
+    MixWorkResolveTarSysnativeReady:
+      StrCpy $mixworkResolvedToolPath "$WINDIR\Sysnative\tar.exe"
+      StrCpy $mixworkResolvedToolStatus "resolved"
+      StrCpy $mixworkResolvedToolSource "sysnative"
+      Goto MixWorkResolveToolDone
 
-    MixcworkResolveTarSystem32:
+    MixWorkResolveTarSystem32:
     System::Call 'kernel32::GetFileAttributesW(w "$WINDIR\System32\tar.exe") i .r0'
-    IntCmp $0 -1 MixcworkResolveToolDone 0 0
+    IntCmp $0 -1 MixWorkResolveToolDone 0 0
     IntOp $1 $0 & 0x410
-    IntCmp $1 0 MixcworkResolveTarSystem32Ready MixcworkResolveToolDone MixcworkResolveToolDone
-    MixcworkResolveTarSystem32Ready:
-      StrCpy $mixcworkResolvedToolPath "$WINDIR\System32\tar.exe"
-      StrCpy $mixcworkResolvedToolStatus "resolved"
-      StrCpy $mixcworkResolvedToolSource "system32"
+    IntCmp $1 0 MixWorkResolveTarSystem32Ready MixWorkResolveToolDone MixWorkResolveToolDone
+    MixWorkResolveTarSystem32Ready:
+      StrCpy $mixworkResolvedToolPath "$WINDIR\System32\tar.exe"
+      StrCpy $mixworkResolvedToolStatus "resolved"
+      StrCpy $mixworkResolvedToolSource "system32"
 
-  MixcworkResolveToolDone:
+  MixWorkResolveToolDone:
   Pop $1
   Pop $0
 FunctionEnd
 
 !macro ResolveTrustedPowerShell
-  StrCpy $mixcworkResolveToolKind "powershell"
+  StrCpy $mixworkResolveToolKind "powershell"
   !ifdef BUILD_UNINSTALLER
-    Call un.mixcworkResolveTrustedSystemTool
+    Call un.mixworkResolveTrustedSystemTool
   !else
-    Call mixcworkResolveTrustedSystemTool
+    Call mixworkResolveTrustedSystemTool
   !endif
-  StrCpy $mixcworkTrustedPowerShellPath $mixcworkResolvedToolPath
-  StrCpy $mixcworkTrustedPowerShellStatus $mixcworkResolvedToolStatus
-  StrCpy $mixcworkTrustedPowerShellSource $mixcworkResolvedToolSource
+  StrCpy $mixworkTrustedPowerShellPath $mixworkResolvedToolPath
+  StrCpy $mixworkTrustedPowerShellStatus $mixworkResolvedToolStatus
+  StrCpy $mixworkTrustedPowerShellSource $mixworkResolvedToolSource
 !macroend
 
 !macro ResolveTrustedTar
-  StrCpy $mixcworkResolveToolKind "tar"
+  StrCpy $mixworkResolveToolKind "tar"
   !ifdef BUILD_UNINSTALLER
-    Call un.mixcworkResolveTrustedSystemTool
+    Call un.mixworkResolveTrustedSystemTool
   !else
-    Call mixcworkResolveTrustedSystemTool
+    Call mixworkResolveTrustedSystemTool
   !endif
-  StrCpy $mixcworkTrustedTarPath $mixcworkResolvedToolPath
-  StrCpy $mixcworkTrustedTarStatus $mixcworkResolvedToolStatus
-  StrCpy $mixcworkTrustedTarSource $mixcworkResolvedToolSource
+  StrCpy $mixworkTrustedTarPath $mixworkResolvedToolPath
+  StrCpy $mixworkTrustedTarStatus $mixworkResolvedToolStatus
+  StrCpy $mixworkTrustedTarSource $mixworkResolvedToolSource
 !macroend
 
 !macro customHeader
@@ -244,7 +244,7 @@ FunctionEnd
     ; The custom include can be parsed before electron-builder's asynchronous
     ; !addplugindir output. Define the relaunch function here, after the
     ; generated shared header has registered StdUtils.
-    !insertmacro DefineMixcworkOldAppRelaunchFunction
+    !insertmacro DefineMixWorkOldAppRelaunchFunction
   !endif
 
   ; Request admin privileges for script execution (tar extract, etc.)
@@ -258,8 +258,8 @@ FunctionEnd
 
 ; -- Stop every process that might hold file handles in the install dir --
 ;
-; 1. MixCWork.exe -- the main app AND the OpenClaw gateway (ELECTRON_RUN_AS_NODE)
-; 2. node.exe whose binary lives inside the MixCWork install tree
+; 1. MixWork.exe -- the main app AND the OpenClaw gateway (ELECTRON_RUN_AS_NODE)
+; 2. node.exe whose binary lives inside the MixWork install tree
 ;    (Web Search bridge server, MCP servers spawned with detached:true)
 ;
 ; Stop-Process -Force is equivalent to taskkill /F -- the processes have no
@@ -273,21 +273,21 @@ FunctionEnd
 ; healthy path still converges on the first or second round.
 ;
 ; Shared between the installer and the uninstaller via customCheckAppRunning.
-!macro stopMixCWorkProcesses
-  DetailPrint "[Installer] Stopping running MixCWork processes"
-  StrCpy $mixcworkTargetProcessesStopStatus "helper-not-found"
+!macro stopMixWorkProcesses
+  DetailPrint "[Installer] Stopping running MixWork processes"
+  StrCpy $mixworkTargetProcessesStopStatus "helper-not-found"
   System::Call 'kernel32::GetCurrentProcessId()i .r4'
-  StrCpy $mixcworkCurrentProcessPid $4
+  StrCpy $mixworkCurrentProcessPid $4
   System::Call 'kernel32::GetTickCount()i .r7'
   ; The survivor helper below and every log write in this macro need the
   ; directory, including on the helper-not-found path.
-  CreateDirectory "$APPDATA\MixCWork"
-  StrCmp $mixcworkTrustedPowerShellPath "" StopMixCWorkProcessesDone
-  nsExec::ExecToLog '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
+  CreateDirectory "$APPDATA\MixWork"
+  StrCmp $mixworkTrustedPowerShellPath "" StopMixWorkProcessesDone
+  nsExec::ExecToLog '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
     for ($$i = 0; $$i -lt 30; $$i++) {\
       $$procs = @();\
-      $$procs += Get-Process -Name MixCWork -ErrorAction SilentlyContinue;\
-      $$procs += Get-Process node -ErrorAction SilentlyContinue | Where-Object { $$_.Path -like \"*MixCWork*\" };\
+      $$procs += Get-Process -Name MixWork -ErrorAction SilentlyContinue;\
+      $$procs += Get-Process node -ErrorAction SilentlyContinue | Where-Object { $$_.Path -like \"*MixWork*\" };\
       if ($$procs.Count -eq 0) { exit 0 };\
       $$procs | Stop-Process -Force -ErrorAction SilentlyContinue;\
       Start-Sleep -Milliseconds 500;\
@@ -295,58 +295,58 @@ FunctionEnd
     exit 3"'
   Pop $0
   StrCpy $R2 $0
-  StrCpy $mixcworkTargetProcessesStopStatus "numeric-exit-code"
+  StrCpy $mixworkTargetProcessesStopStatus "numeric-exit-code"
   StrCmp $R2 "error" 0 +2
-    StrCpy $mixcworkTargetProcessesStopStatus "process-start-blocked"
+    StrCpy $mixworkTargetProcessesStopStatus "process-start-blocked"
   StrCmp $R2 "0" 0 +2
-    StrCpy $mixcworkTargetProcessesStopStatus "success"
-  StrCmp $R2 "3" 0 StopMixCWorkProcessesLog
+    StrCpy $mixworkTargetProcessesStopStatus "success"
+  StrCmp $R2 "3" 0 StopMixWorkProcessesLog
   ; The exit-3 verdict alone never says WHICH process refused to die. Re-snapshot
   ; and append one process-stop-survivor line per remaining process before the
   ; completion line below. Inputs travel through the child environment, not
   ; string interpolation: the log path contains the user profile directory,
   ; which may hold shell metacharacters. Helper exit code = survivor count at
   ; re-check time; 0 means the blockers died right after the verdict.
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_STOP_LOG_PATH", t "$APPDATA\MixCWork\install-timing.log")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_STOP_ATTEMPT_ID", t "$mixcworkInstallerAttemptId")i'
-  nsExec::ExecToLog '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_STOP_LOG_PATH", t "$APPDATA\MixWork\install-timing.log")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_STOP_ATTEMPT_ID", t "$mixworkInstallerAttemptId")i'
+  nsExec::ExecToLog '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
     $$ts = Get-Date -Format \"yyyy-MM-dd HH:mm:ss\";\
     $$procs = @();\
-    $$procs += Get-Process -Name MixCWork -ErrorAction SilentlyContinue;\
-    $$procs += Get-Process node -ErrorAction SilentlyContinue | Where-Object { $$_.Path -like \"*MixCWork*\" };\
+    $$procs += Get-Process -Name MixWork -ErrorAction SilentlyContinue;\
+    $$procs += Get-Process node -ErrorAction SilentlyContinue | Where-Object { $$_.Path -like \"*MixWork*\" };\
     foreach ($$p in $$procs) {\
       $$fp = \"unknown\";\
       try { if ($$p.Path) { $$fp = $$p.Path } } catch { };\
-      Add-Content -LiteralPath $$env:MIXCWORK_STOP_LOG_PATH -Value \"$$ts phase=process-stop-survivor attempt_id=$$env:MIXCWORK_STOP_ATTEMPT_ID name=$$($$p.ProcessName) pid=$$($$p.Id) path=$$fp\" -ErrorAction SilentlyContinue;\
+      Add-Content -LiteralPath $$env:MIXWORK_STOP_LOG_PATH -Value \"$$ts phase=process-stop-survivor attempt_id=$$env:MIXWORK_STOP_ATTEMPT_ID name=$$($$p.ProcessName) pid=$$($$p.Id) path=$$fp\" -ErrorAction SilentlyContinue;\
     };\
     exit $$procs.Count"'
   Pop $1
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_STOP_LOG_PATH", t "")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_STOP_ATTEMPT_ID", t "")i'
-  FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_STOP_LOG_PATH", t "")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_STOP_ATTEMPT_ID", t "")i'
+  FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $9 0 END
   !insertmacro GetTimestamp $8
   !ifdef BUILD_UNINSTALLER
-    FileWrite $9 "$8 phase=process-stop-survivors-logged attempt_id=$mixcworkInstallerAttemptId role=uninstaller helper_exit=$1$\r$\n"
+    FileWrite $9 "$8 phase=process-stop-survivors-logged attempt_id=$mixworkInstallerAttemptId role=uninstaller helper_exit=$1$\r$\n"
   !else
-    FileWrite $9 "$8 phase=process-stop-survivors-logged attempt_id=$mixcworkInstallerAttemptId role=installer helper_exit=$1$\r$\n"
+    FileWrite $9 "$8 phase=process-stop-survivors-logged attempt_id=$mixworkInstallerAttemptId role=installer helper_exit=$1$\r$\n"
   !endif
   FileClose $9
-  Goto StopMixCWorkProcessesLog
+  Goto StopMixWorkProcessesLog
 
-  StopMixCWorkProcessesDone:
+  StopMixWorkProcessesDone:
   StrCpy $R2 "helper-not-found"
 
-  StopMixCWorkProcessesLog:
+  StopMixWorkProcessesLog:
   System::Call 'kernel32::GetTickCount()i .r6'
   IntOp $5 $6 - $7
-  FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $9 0 END
   !insertmacro GetTimestamp $8
   !ifdef BUILD_UNINSTALLER
-    FileWrite $9 "$8 phase=process-stop-complete attempt_id=$mixcworkInstallerAttemptId role=uninstaller pid=$mixcworkCurrentProcessPid status=$mixcworkTargetProcessesStopStatus exit=$R2 elapsed_ms=$5$\r$\n"
+    FileWrite $9 "$8 phase=process-stop-complete attempt_id=$mixworkInstallerAttemptId role=uninstaller pid=$mixworkCurrentProcessPid status=$mixworkTargetProcessesStopStatus exit=$R2 elapsed_ms=$5$\r$\n"
   !else
-    FileWrite $9 "$8 phase=process-stop-complete attempt_id=$mixcworkInstallerAttemptId role=installer pid=$mixcworkCurrentProcessPid status=$mixcworkTargetProcessesStopStatus exit=$R2 elapsed_ms=$5$\r$\n"
+    FileWrite $9 "$8 phase=process-stop-complete attempt_id=$mixworkInstallerAttemptId role=installer pid=$mixworkCurrentProcessPid status=$mixworkTargetProcessesStopStatus exit=$R2 elapsed_ms=$5$\r$\n"
   !endif
   FileClose $9
 !macroend
@@ -355,26 +355,26 @@ FunctionEnd
   ; Diagnostics only -- .onInit runs before the user has confirmed anything,
   ; so this macro must stay non-destructive.
   !insertmacro EnsureInstallerAttemptId
-  StrCpy $mixcworkInvocationSource "unknown"
-  StrCpy $mixcworkUpdatedFlag "absent"
-  StrCpy $mixcworkUiMode "interactive"
-  StrCpy $mixcworkLauncherFallback "unknown"
+  StrCpy $mixworkInvocationSource "unknown"
+  StrCpy $mixworkUpdatedFlag "absent"
+  StrCpy $mixworkUiMode "interactive"
+  StrCpy $mixworkLauncherFallback "unknown"
   ${If} ${isUpdated}
-    StrCpy $mixcworkUpdatedFlag "present"
+    StrCpy $mixworkUpdatedFlag "present"
   ${EndIf}
   ${If} ${isUpdated}
   ${AndIf} ${isForceRun}
-    StrCpy $mixcworkInvocationSource "app-update"
-    StrCpy $mixcworkLauncherFallback "none"
+    StrCpy $mixworkInvocationSource "app-update"
+    StrCpy $mixworkLauncherFallback "none"
   ${EndIf}
   ${If} ${Silent}
-    StrCpy $mixcworkUiMode "silent"
+    StrCpy $mixworkUiMode "silent"
   ${EndIf}
-  CreateDirectory "$APPDATA\MixCWork"
-  FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+  CreateDirectory "$APPDATA\MixWork"
+  FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $9 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $9 "$8 phase=custom-init-start attempt_id=$mixcworkInstallerAttemptId installer_version=${VERSION} invocation_source=$mixcworkInvocationSource updated_flag=$mixcworkUpdatedFlag ui_mode=$mixcworkUiMode launcher_fallback=$mixcworkLauncherFallback instdir=$INSTDIR appdata=$APPDATA$\r$\n"
+  FileWrite $9 "$8 phase=custom-init-start attempt_id=$mixworkInstallerAttemptId installer_version=${VERSION} invocation_source=$mixworkInvocationSource updated_flag=$mixworkUpdatedFlag ui_mode=$mixworkUiMode launcher_fallback=$mixworkLauncherFallback instdir=$INSTDIR appdata=$APPDATA$\r$\n"
   FileClose $9
 !macroend
 
@@ -391,16 +391,16 @@ FunctionEnd
     Push $5
     Push $6
 
-    StrCpy $mixcworkInstallScenario "possible-existing"
+    StrCpy $mixworkInstallScenario "possible-existing"
     ReadRegStr $0 HKEY_CURRENT_USER "${INSTALL_REGISTRY_KEY}" InstallLocation
     ReadRegStr $1 HKEY_LOCAL_MACHINE "${INSTALL_REGISTRY_KEY}" InstallLocation
     ReadRegStr $2 HKEY_CURRENT_USER "${UNINSTALL_REGISTRY_KEY}" UninstallString
     ReadRegStr $3 HKEY_LOCAL_MACHINE "${UNINSTALL_REGISTRY_KEY}" UninstallString
 
-    StrCmp $0 "" 0 MixcworkInstallPreflightDone
-    StrCmp $1 "" 0 MixcworkInstallPreflightDone
-    StrCmp $2 "" 0 MixcworkInstallPreflightDone
-    StrCmp $3 "" 0 MixcworkInstallPreflightDone
+    StrCmp $0 "" 0 MixWorkInstallPreflightDone
+    StrCmp $1 "" 0 MixWorkInstallPreflightDone
+    StrCmp $2 "" 0 MixWorkInstallPreflightDone
+    StrCmp $3 "" 0 MixWorkInstallPreflightDone
 
     ; .onInit already called SetOutPath, which creates an empty $INSTDIR.
     ; Enumerate its contents instead of using IfFileExists with a wildcard:
@@ -408,34 +408,34 @@ FunctionEnd
     ; an old install. Only a real child entry is existing evidence.
     ClearErrors
     FindFirst $4 $5 "$INSTDIR\*"
-    IfErrors MixcworkInstallPreflightFindFirstFailed
-    MixcworkInstallPreflightEntryLoop:
-      StrCmp $5 "." MixcworkInstallPreflightNextEntry
-      StrCmp $5 ".." MixcworkInstallPreflightNextEntry
+    IfErrors MixWorkInstallPreflightFindFirstFailed
+    MixWorkInstallPreflightEntryLoop:
+      StrCmp $5 "." MixWorkInstallPreflightNextEntry
+      StrCmp $5 ".." MixWorkInstallPreflightNextEntry
       FindClose $4
-      Goto MixcworkInstallPreflightDone
-    MixcworkInstallPreflightNextEntry:
+      Goto MixWorkInstallPreflightDone
+    MixWorkInstallPreflightNextEntry:
       ClearErrors
       FindNext $4 $5
-      IfErrors MixcworkInstallPreflightFindNextFailed
-      Goto MixcworkInstallPreflightEntryLoop
+      IfErrors MixWorkInstallPreflightFindNextFailed
+      Goto MixWorkInstallPreflightEntryLoop
 
-    MixcworkInstallPreflightFindNextFailed:
+    MixWorkInstallPreflightFindNextFailed:
       System::Call 'kernel32::GetLastError()i .r6'
       FindClose $4
-      IntCmp $6 18 MixcworkInstallPreflightFresh
-      Goto MixcworkInstallPreflightDone
+      IntCmp $6 18 MixWorkInstallPreflightFresh
+      Goto MixWorkInstallPreflightDone
 
-    MixcworkInstallPreflightFindFirstFailed:
+    MixWorkInstallPreflightFindFirstFailed:
       System::Call 'kernel32::GetLastError()i .r6'
-      IntCmp $6 2 MixcworkInstallPreflightFresh
-      IntCmp $6 18 MixcworkInstallPreflightFresh
-      Goto MixcworkInstallPreflightDone
+      IntCmp $6 2 MixWorkInstallPreflightFresh
+      IntCmp $6 18 MixWorkInstallPreflightFresh
+      Goto MixWorkInstallPreflightDone
 
-    MixcworkInstallPreflightFresh:
-    StrCpy $mixcworkInstallScenario "fresh-install"
+    MixWorkInstallPreflightFresh:
+    StrCpy $mixworkInstallScenario "fresh-install"
 
-    MixcworkInstallPreflightDone:
+    MixWorkInstallPreflightDone:
     Pop $6
     Pop $5
     Pop $4
@@ -449,71 +449,71 @@ FunctionEnd
   ; app-update invocation (--updated + --force-run), after a confirmed process
   ; stop and with an unchanged/restored regular old executable, is eligible.
   ; The restored app is launched with no --updated argument.
-  !macro DefineMixcworkOldAppRelaunchFunction
-  Function mixcworkTryRelaunchOldApp
+  !macro DefineMixWorkOldAppRelaunchFunction
+  Function mixworkTryRelaunchOldApp
     Push $0
     Push $1
     Push $8
     Push $9
 
-    StrCmp $mixcworkOldAppRelaunchStatus "not-attempted" 0 MixcworkOldAppRelaunchDone
-    StrCpy $mixcworkOldAppRelaunchStatus "blocked"
-    StrCpy $mixcworkOldAppRelaunchError "intent-not-trusted"
+    StrCmp $mixworkOldAppRelaunchStatus "not-attempted" 0 MixWorkOldAppRelaunchDone
+    StrCpy $mixworkOldAppRelaunchStatus "blocked"
+    StrCpy $mixworkOldAppRelaunchError "intent-not-trusted"
 
     ; Read the generated command-line flags at relaunch time. This function is
     ; emitted by customHeader only after StdUtils has been registered.
     ${StdUtils.TestParameter} $0 "updated"
-    StrCmp $0 "true" 0 MixcworkOldAppRelaunchLog
+    StrCmp $0 "true" 0 MixWorkOldAppRelaunchLog
     ${StdUtils.TestParameter} $0 "force-run"
-    StrCmp $0 "true" 0 MixcworkOldAppRelaunchLog
-    IfSilent 0 MixcworkOldAppRelaunchInteractive
-      StrCpy $mixcworkOldAppRelaunchError "silent-invocation"
-      Goto MixcworkOldAppRelaunchLog
-    MixcworkOldAppRelaunchInteractive:
-    StrCmp $mixcworkTargetProcessesStopStatus "success" 0 MixcworkOldAppRelaunchProcessStateBlocked
-    StrCmp $mixcworkOldAppExecutablePath "" 0 +3
-      StrCpy $mixcworkOldAppRelaunchError "old-source-missing"
-      Goto MixcworkOldAppRelaunchLog
+    StrCmp $0 "true" 0 MixWorkOldAppRelaunchLog
+    IfSilent 0 MixWorkOldAppRelaunchInteractive
+      StrCpy $mixworkOldAppRelaunchError "silent-invocation"
+      Goto MixWorkOldAppRelaunchLog
+    MixWorkOldAppRelaunchInteractive:
+    StrCmp $mixworkTargetProcessesStopStatus "success" 0 MixWorkOldAppRelaunchProcessStateBlocked
+    StrCmp $mixworkOldAppExecutablePath "" 0 +3
+      StrCpy $mixworkOldAppRelaunchError "old-source-missing"
+      Goto MixWorkOldAppRelaunchLog
 
-    System::Call 'kernel32::GetFileAttributesW(w "$mixcworkOldAppExecutablePath") i .r0'
-    IntCmp $0 -1 MixcworkOldAppRelaunchFootprintBlocked 0 0
+    System::Call 'kernel32::GetFileAttributesW(w "$mixworkOldAppExecutablePath") i .r0'
+    IntCmp $0 -1 MixWorkOldAppRelaunchFootprintBlocked 0 0
     IntOp $1 $0 & 0x410
-    IntCmp $1 0 0 MixcworkOldAppRelaunchFootprintBlocked MixcworkOldAppRelaunchFootprintBlocked
-    System::Call 'kernel32::GetFileAttributesW(w "$mixcworkOldUninstallerPath") i .r0'
-    IntCmp $0 -1 MixcworkOldAppRelaunchFootprintBlocked 0 0
+    IntCmp $1 0 0 MixWorkOldAppRelaunchFootprintBlocked MixWorkOldAppRelaunchFootprintBlocked
+    System::Call 'kernel32::GetFileAttributesW(w "$mixworkOldUninstallerPath") i .r0'
+    IntCmp $0 -1 MixWorkOldAppRelaunchFootprintBlocked 0 0
     IntOp $1 $0 & 0x410
-    IntCmp $1 0 0 MixcworkOldAppRelaunchFootprintBlocked MixcworkOldAppRelaunchFootprintBlocked
-    System::Call 'kernel32::GetFileAttributesW(w "$mixcworkOldAppAsarPath") i .r0'
-    IntCmp $0 -1 MixcworkOldAppRelaunchFootprintBlocked 0 0
+    IntCmp $1 0 0 MixWorkOldAppRelaunchFootprintBlocked MixWorkOldAppRelaunchFootprintBlocked
+    System::Call 'kernel32::GetFileAttributesW(w "$mixworkOldAppAsarPath") i .r0'
+    IntCmp $0 -1 MixWorkOldAppRelaunchFootprintBlocked 0 0
     IntOp $1 $0 & 0x410
-    IntCmp $1 0 0 MixcworkOldAppRelaunchFootprintBlocked MixcworkOldAppRelaunchFootprintBlocked
+    IntCmp $1 0 0 MixWorkOldAppRelaunchFootprintBlocked MixWorkOldAppRelaunchFootprintBlocked
 
-    StrCpy $mixcworkOldAppRelaunchStatus "attempted"
-    StrCpy $mixcworkOldAppRelaunchError "none"
-    ${StdUtils.ExecShellAsUser} $0 "$mixcworkOldAppExecutablePath" "open" ""
-    StrCpy $mixcworkOldAppRelaunchError $0
-    StrCmp $0 "0" MixcworkOldAppRelaunchSucceeded
-      StrCpy $mixcworkOldAppRelaunchStatus "old-app-relaunch-failed"
-      Goto MixcworkOldAppRelaunchLog
-    MixcworkOldAppRelaunchSucceeded:
-      StrCpy $mixcworkOldAppRelaunchStatus "dispatched"
-    Goto MixcworkOldAppRelaunchLog
+    StrCpy $mixworkOldAppRelaunchStatus "attempted"
+    StrCpy $mixworkOldAppRelaunchError "none"
+    ${StdUtils.ExecShellAsUser} $0 "$mixworkOldAppExecutablePath" "open" ""
+    StrCpy $mixworkOldAppRelaunchError $0
+    StrCmp $0 "0" MixWorkOldAppRelaunchSucceeded
+      StrCpy $mixworkOldAppRelaunchStatus "old-app-relaunch-failed"
+      Goto MixWorkOldAppRelaunchLog
+    MixWorkOldAppRelaunchSucceeded:
+      StrCpy $mixworkOldAppRelaunchStatus "dispatched"
+    Goto MixWorkOldAppRelaunchLog
 
-    MixcworkOldAppRelaunchProcessStateBlocked:
-      StrCpy $mixcworkOldAppRelaunchError "process-state-not-confirmed-stopped"
-      Goto MixcworkOldAppRelaunchLog
+    MixWorkOldAppRelaunchProcessStateBlocked:
+      StrCpy $mixworkOldAppRelaunchError "process-state-not-confirmed-stopped"
+      Goto MixWorkOldAppRelaunchLog
 
-    MixcworkOldAppRelaunchFootprintBlocked:
-      StrCpy $mixcworkOldAppRelaunchError "old-footprint-not-verified"
+    MixWorkOldAppRelaunchFootprintBlocked:
+      StrCpy $mixworkOldAppRelaunchError "old-footprint-not-verified"
 
-    MixcworkOldAppRelaunchLog:
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    MixWorkOldAppRelaunchLog:
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=old-app-relaunch attempt_id=$mixcworkInstallerAttemptId status=$mixcworkOldAppRelaunchStatus result=$mixcworkOldAppRelaunchError source=$mixcworkOldInstallOriginalPath args=none$\r$\n"
+    FileWrite $9 "$8 phase=old-app-relaunch attempt_id=$mixworkInstallerAttemptId status=$mixworkOldAppRelaunchStatus result=$mixworkOldAppRelaunchError source=$mixworkOldInstallOriginalPath args=none$\r$\n"
     FileClose $9
 
-    MixcworkOldAppRelaunchDone:
+    MixWorkOldAppRelaunchDone:
     Pop $9
     Pop $8
     Pop $1
@@ -526,7 +526,7 @@ FunctionEnd
   ; Direct NSIS Quit calls bypass callbacks, so patched template exit sites call
   ; customBeforeInstallerQuit explicitly; interactive failure/cancel callbacks
   ; use the same function as a second line of defence.
-  Function mixcworkRollbackOldInstall
+  Function mixworkRollbackOldInstall
     Push $0
     Push $1
     Push $2
@@ -538,111 +538,111 @@ FunctionEnd
     Push $8
     Push $9
 
-    StrCmp $mixcworkOldInstallRenameStatus "success" MixcworkRollbackEligible
-    StrCmp $mixcworkOldInstallRenameStatus "prevalidated" 0 MixcworkRollbackDone
-    MixcworkRollbackEligible:
-    StrCpy $mixcworkOldInstallRollbackStatus "started"
-    StrCpy $mixcworkOldInstallRollbackError "0"
-    StrCpy $mixcworkOldInstallRenameStatus "rollback-in-progress"
+    StrCmp $mixworkOldInstallRenameStatus "success" MixWorkRollbackEligible
+    StrCmp $mixworkOldInstallRenameStatus "prevalidated" 0 MixWorkRollbackDone
+    MixWorkRollbackEligible:
+    StrCpy $mixworkOldInstallRollbackStatus "started"
+    StrCpy $mixworkOldInstallRollbackError "0"
+    StrCpy $mixworkOldInstallRenameStatus "rollback-in-progress"
     System::Call 'kernel32::GetTickCount()i .r7'
     System::Call 'kernel32::GetCurrentProcessId()i .r4'
-    StrCpy $mixcworkOldInstallFailedPath "$mixcworkOldInstallOriginalPath.failed.$4.$7"
+    StrCpy $mixworkOldInstallFailedPath "$mixworkOldInstallOriginalPath.failed.$4.$7"
 
     InitPluginsDir
     SetOutPath "$PLUGINSDIR"
 
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=old-install-rollback-start attempt_id=$mixcworkInstallerAttemptId reason=$mixcworkOldInstallRollbackReason source=$mixcworkOldInstallOriginalPath backup=$mixcworkOldInstallBackupPath displaced=$mixcworkOldInstallFailedPath$\r$\n"
+    FileWrite $9 "$8 phase=old-install-rollback-start attempt_id=$mixworkInstallerAttemptId reason=$mixworkOldInstallRollbackReason source=$mixworkOldInstallOriginalPath backup=$mixworkOldInstallBackupPath displaced=$mixworkOldInstallFailedPath$\r$\n"
     FileClose $9
 
     ; Remove an empty target directory first. If the new payload already wrote
     ; files, move the partial tree aside so the complete backup can return to
     ; the exact registered path without destructive deletion.
-    RMDir "$mixcworkOldInstallOriginalPath"
+    RMDir "$mixworkOldInstallOriginalPath"
     StrCpy $2 "false"
-    System::Call 'kernel32::MoveFileW(w "$mixcworkOldInstallOriginalPath", w "$mixcworkOldInstallFailedPath") i .r0 ?e'
+    System::Call 'kernel32::MoveFileW(w "$mixworkOldInstallOriginalPath", w "$mixworkOldInstallFailedPath") i .r0 ?e'
     Pop $1
-    IntCmp $0 0 MixcworkRollbackTargetMoveFailed MixcworkRollbackTargetMoved MixcworkRollbackTargetMoved
+    IntCmp $0 0 MixWorkRollbackTargetMoveFailed MixWorkRollbackTargetMoved MixWorkRollbackTargetMoved
 
-    MixcworkRollbackTargetMoved:
+    MixWorkRollbackTargetMoved:
       StrCpy $2 "true"
-      Goto MixcworkRollbackRestoreBackup
+      Goto MixWorkRollbackRestoreBackup
 
-    MixcworkRollbackTargetMoveFailed:
+    MixWorkRollbackTargetMoveFailed:
       ; ERROR_FILE_NOT_FOUND / ERROR_PATH_NOT_FOUND is expected when payload
       ; extraction had not created the target yet. The restore attempt below
       ; is the authority on whether rollback can complete.
-      StrCpy $mixcworkOldInstallRollbackError "target-move:$1"
+      StrCpy $mixworkOldInstallRollbackError "target-move:$1"
 
-    MixcworkRollbackRestoreBackup:
-    System::Call 'kernel32::MoveFileW(w "$mixcworkOldInstallBackupPath", w "$mixcworkOldInstallOriginalPath") i .r0 ?e'
+    MixWorkRollbackRestoreBackup:
+    System::Call 'kernel32::MoveFileW(w "$mixworkOldInstallBackupPath", w "$mixworkOldInstallOriginalPath") i .r0 ?e'
     Pop $1
-    IntCmp $0 0 MixcworkRollbackRestoreFailed MixcworkRollbackRestoreSucceeded MixcworkRollbackRestoreSucceeded
+    IntCmp $0 0 MixWorkRollbackRestoreFailed MixWorkRollbackRestoreSucceeded MixWorkRollbackRestoreSucceeded
 
-    MixcworkRollbackRestoreSucceeded:
-      StrCpy $mixcworkOldInstallRollbackStatus "success"
-      StrCpy $mixcworkOldInstallRollbackError "0"
-      StrCpy $mixcworkOldInstallRenameStatus "rolled-back"
+    MixWorkRollbackRestoreSucceeded:
+      StrCpy $mixworkOldInstallRollbackStatus "success"
+      StrCpy $mixworkOldInstallRollbackError "0"
+      StrCpy $mixworkOldInstallRenameStatus "rolled-back"
 
       ; A failed update must not leave its broad, install-scope Defender
       ; exclusion protecting the restored application indefinitely.
-      StrCmp $mixcworkTrustedPowerShellPath "" MixcworkRollbackDefenderCleanupDone
-      System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_DEFENDER_TARGET", t "$mixcworkOldInstallOriginalPath")i'
-      nsExec::ExecToStack '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "try { Remove-MpPreference -ExclusionPath $$env:MIXCWORK_DEFENDER_TARGET -ErrorAction SilentlyContinue } catch {}"'
+      StrCmp $mixworkTrustedPowerShellPath "" MixWorkRollbackDefenderCleanupDone
+      System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_DEFENDER_TARGET", t "$mixworkOldInstallOriginalPath")i'
+      nsExec::ExecToStack '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "try { Remove-MpPreference -ExclusionPath $$env:MIXWORK_DEFENDER_TARGET -ErrorAction SilentlyContinue } catch {}"'
       Pop $0
       Pop $1
-      System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_DEFENDER_TARGET", t "")i'
-      MixcworkRollbackDefenderCleanupDone:
+      System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_DEFENDER_TARGET", t "")i'
+      MixWorkRollbackDefenderCleanupDone:
 
       ; The displaced tree is never needed after a verified restore. Pass its
       ; exact path through the child environment instead of interpolating it
       ; into cmd/PowerShell code: custom install directories may contain shell
       ; metacharacters. Exec is deliberately non-blocking.
-      StrCmp $2 "true" 0 MixcworkRollbackLog
-      System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_FAILED_CLEANUP_PATH", t "$mixcworkOldInstallFailedPath")i'
+      StrCmp $2 "true" 0 MixWorkRollbackLog
+      System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_FAILED_CLEANUP_PATH", t "$mixworkOldInstallFailedPath")i'
       ClearErrors
-      StrCmp $mixcworkTrustedPowerShellPath "" MixcworkRollbackFailedTreeCleanupDone
-      Exec '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -WindowStyle Hidden -Command "Remove-Item -LiteralPath $$env:MIXCWORK_FAILED_CLEANUP_PATH -Recurse -Force -ErrorAction SilentlyContinue"'
-      MixcworkRollbackFailedTreeCleanupDone:
-      System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_FAILED_CLEANUP_PATH", t "")i'
-      Goto MixcworkRollbackLog
+      StrCmp $mixworkTrustedPowerShellPath "" MixWorkRollbackFailedTreeCleanupDone
+      Exec '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -WindowStyle Hidden -Command "Remove-Item -LiteralPath $$env:MIXWORK_FAILED_CLEANUP_PATH -Recurse -Force -ErrorAction SilentlyContinue"'
+      MixWorkRollbackFailedTreeCleanupDone:
+      System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_FAILED_CLEANUP_PATH", t "")i'
+      Goto MixWorkRollbackLog
 
-    MixcworkRollbackRestoreFailed:
-      StrCpy $mixcworkOldInstallRollbackStatus "failed"
-      StrCpy $mixcworkOldInstallRollbackError "backup-restore:$1"
-      StrCpy $mixcworkOldInstallRenameStatus "rollback-failed"
+    MixWorkRollbackRestoreFailed:
+      StrCpy $mixworkOldInstallRollbackStatus "failed"
+      StrCpy $mixworkOldInstallRollbackError "backup-restore:$1"
+      StrCpy $mixworkOldInstallRenameStatus "rollback-failed"
 
       ; If the partial tree was displaced but the complete backup could not be
       ; restored, put the partial tree back. Never delete either tree when the
       ; recovery state is ambiguous.
-      StrCmp $2 "true" 0 MixcworkRollbackLog
-      System::Call 'kernel32::MoveFileW(w "$mixcworkOldInstallFailedPath", w "$mixcworkOldInstallOriginalPath") i .r0 ?e'
+      StrCmp $2 "true" 0 MixWorkRollbackLog
+      System::Call 'kernel32::MoveFileW(w "$mixworkOldInstallFailedPath", w "$mixworkOldInstallOriginalPath") i .r0 ?e'
       Pop $3
-      IntCmp $0 0 0 MixcworkRollbackLog MixcworkRollbackLog
-      StrCpy $mixcworkOldInstallRollbackError "$mixcworkOldInstallRollbackError;partial-restore:$3"
+      IntCmp $0 0 0 MixWorkRollbackLog MixWorkRollbackLog
+      StrCpy $mixworkOldInstallRollbackError "$mixworkOldInstallRollbackError;partial-restore:$3"
 
-    MixcworkRollbackLog:
+    MixWorkRollbackLog:
     System::Call 'kernel32::GetTickCount()i .r6'
     IntOp $5 $6 - $7
     StrCpy $2 "false"
     StrCpy $3 "false"
-    IfFileExists "$mixcworkOldInstallOriginalPath\*.*" 0 MixcworkRollbackSourceChecked
+    IfFileExists "$mixworkOldInstallOriginalPath\*.*" 0 MixWorkRollbackSourceChecked
       StrCpy $2 "true"
-    MixcworkRollbackSourceChecked:
-    IfFileExists "$mixcworkOldInstallBackupPath\*.*" 0 MixcworkRollbackBackupChecked
+    MixWorkRollbackSourceChecked:
+    IfFileExists "$mixworkOldInstallBackupPath\*.*" 0 MixWorkRollbackBackupChecked
       StrCpy $3 "true"
-    MixcworkRollbackBackupChecked:
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    MixWorkRollbackBackupChecked:
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=old-install-rollback-complete attempt_id=$mixcworkInstallerAttemptId status=$mixcworkOldInstallRollbackStatus reason=$mixcworkOldInstallRollbackReason error=$mixcworkOldInstallRollbackError elapsed_ms=$5 source_exists=$2 backup_exists=$3 displaced=$mixcworkOldInstallFailedPath$\r$\n"
+    FileWrite $9 "$8 phase=old-install-rollback-complete attempt_id=$mixworkInstallerAttemptId status=$mixworkOldInstallRollbackStatus reason=$mixworkOldInstallRollbackReason error=$mixworkOldInstallRollbackError elapsed_ms=$5 source_exists=$2 backup_exists=$3 displaced=$mixworkOldInstallFailedPath$\r$\n"
     FileClose $9
-    StrCmp $mixcworkOldInstallRollbackStatus "success" 0 MixcworkRollbackDone
-    Call mixcworkTryRelaunchOldApp
+    StrCmp $mixworkOldInstallRollbackStatus "success" 0 MixWorkRollbackDone
+    Call mixworkTryRelaunchOldApp
 
-    MixcworkRollbackDone:
+    MixWorkRollbackDone:
     Pop $9
     Pop $8
     Pop $7
@@ -656,8 +656,8 @@ FunctionEnd
   FunctionEnd
 
   !macro customRollbackOldInstall REASON
-    StrCpy $mixcworkOldInstallRollbackReason "${REASON}"
-    Call mixcworkRollbackOldInstall
+    StrCpy $mixworkOldInstallRollbackReason "${REASON}"
+    Call mixworkRollbackOldInstall
   !macroend
 
   !macro customBeforeInstallerQuit REASON
@@ -686,61 +686,61 @@ FunctionEnd
     ; silent mode. The window dies with the installer process, so no failure
     ; path can leave it behind.
     ;
-    ; The text is "Updating MixCWork, please wait..." in Chinese, written as
+    ; The text is "Updating MixWork, please wait..." in Chinese, written as
     ; ${U+xxxx} escapes because this file must stay pure ASCII: the darwin
     ; makensis builds used for local syntax checks reject any non-ASCII byte
     ; (the escapes are fine on the Windows build machine -- the webPackage
     ; patch ships them in production already).
     ${If} ${Silent}
-      Banner::show /NOUNLOAD "${U+6B63}${U+5728}${U+66F4}${U+65B0} MixCWork${U+FF0C}${U+8BF7}${U+7A0D}${U+5019}${U+2026}"
+      Banner::show /NOUNLOAD "${U+6B63}${U+5728}${U+66F4}${U+65B0} MixWork${U+FF0C}${U+8BF7}${U+7A0D}${U+5019}${U+2026}"
     ${EndIf}
   !endif
 
   !ifndef BUILD_UNINSTALLER
     !insertmacro EnsureInstallerAttemptId
-    StrCpy $mixcworkOldInstallOriginalPath "$INSTDIR"
-    GetFullPathName $mixcworkOldInstallOriginalPathNormalized "$INSTDIR"
-    StrCpy $mixcworkOldAppExecutablePath "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
-    StrCpy $mixcworkOldUninstallerPath "$INSTDIR\${UNINSTALL_FILENAME}"
-    StrCpy $mixcworkOldAppAsarPath "$INSTDIR\resources\app.asar"
-    StrCpy $mixcworkOldInstallRegisteredPath ""
-    StrCpy $mixcworkOldInstallRegisteredPathNormalized ""
-    StrCpy $mixcworkOldInstallAlternateRegisteredPath ""
-    StrCpy $mixcworkOldInstallAlternateRegisteredPathNormalized ""
-    StrCpy $mixcworkOldInstallBackupPath ""
-    StrCpy $mixcworkOldInstallFailedPath ""
-    StrCpy $mixcworkOldInstallRenameStatus "preflight"
-    StrCpy $mixcworkOldInstallRenameReason "not-evaluated"
-    StrCpy $mixcworkOldInstallRenameError "0"
-    StrCpy $mixcworkOldInstallRenameAttempts "0"
-    StrCpy $mixcworkOldInstallRollbackReason ""
-    StrCpy $mixcworkOldInstallRollbackStatus "not-needed"
-    StrCpy $mixcworkOldInstallRollbackError "0"
-    StrCpy $mixcworkNewInstallValidationStatus "not-started"
-    StrCpy $mixcworkNewInstallValidationReason "not-evaluated"
-    StrCpy $mixcworkTargetProcessesStopStatus "not-started"
-    StrCpy $mixcworkLegacySkillsStatus "not-inspected"
-    StrCpy $mixcworkLegacySkillsRestoreStatus "not-required"
-    StrCpy $mixcworkOldAppRelaunchStatus "not-attempted"
-    StrCpy $mixcworkOldAppRelaunchError "none"
+    StrCpy $mixworkOldInstallOriginalPath "$INSTDIR"
+    GetFullPathName $mixworkOldInstallOriginalPathNormalized "$INSTDIR"
+    StrCpy $mixworkOldAppExecutablePath "$INSTDIR\${APP_EXECUTABLE_FILENAME}"
+    StrCpy $mixworkOldUninstallerPath "$INSTDIR\${UNINSTALL_FILENAME}"
+    StrCpy $mixworkOldAppAsarPath "$INSTDIR\resources\app.asar"
+    StrCpy $mixworkOldInstallRegisteredPath ""
+    StrCpy $mixworkOldInstallRegisteredPathNormalized ""
+    StrCpy $mixworkOldInstallAlternateRegisteredPath ""
+    StrCpy $mixworkOldInstallAlternateRegisteredPathNormalized ""
+    StrCpy $mixworkOldInstallBackupPath ""
+    StrCpy $mixworkOldInstallFailedPath ""
+    StrCpy $mixworkOldInstallRenameStatus "preflight"
+    StrCpy $mixworkOldInstallRenameReason "not-evaluated"
+    StrCpy $mixworkOldInstallRenameError "0"
+    StrCpy $mixworkOldInstallRenameAttempts "0"
+    StrCpy $mixworkOldInstallRollbackReason ""
+    StrCpy $mixworkOldInstallRollbackStatus "not-needed"
+    StrCpy $mixworkOldInstallRollbackError "0"
+    StrCpy $mixworkNewInstallValidationStatus "not-started"
+    StrCpy $mixworkNewInstallValidationReason "not-evaluated"
+    StrCpy $mixworkTargetProcessesStopStatus "not-started"
+    StrCpy $mixworkLegacySkillsStatus "not-inspected"
+    StrCpy $mixworkLegacySkillsRestoreStatus "not-required"
+    StrCpy $mixworkOldAppRelaunchStatus "not-attempted"
+    StrCpy $mixworkOldAppRelaunchError "none"
 
     ; The fresh decision is read-only and precedes every external helper,
     ; process stop, legacy Skills action, old uninstaller and directory rename.
     !insertmacro DetectFreshOrPossibleExisting
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=install-preflight-complete attempt_id=$mixcworkInstallerAttemptId installer_version=${VERSION} invocation_source=$mixcworkInvocationSource updated_flag=$mixcworkUpdatedFlag ui_mode=$mixcworkUiMode launcher_fallback=$mixcworkLauncherFallback scenario=$mixcworkInstallScenario instdir=$INSTDIR$\r$\n"
+    FileWrite $9 "$8 phase=install-preflight-complete attempt_id=$mixworkInstallerAttemptId installer_version=${VERSION} invocation_source=$mixworkInvocationSource updated_flag=$mixworkUpdatedFlag ui_mode=$mixworkUiMode launcher_fallback=$mixworkLauncherFallback scenario=$mixworkInstallScenario instdir=$INSTDIR$\r$\n"
     FileClose $9
 
-    StrCmp $mixcworkInstallScenario "fresh-install" CustomCheckFreshInstall
+    StrCmp $mixworkInstallScenario "fresh-install" CustomCheckFreshInstall
 
     ; Record the legacy source with a native, non-following attribute check
     ; before any external helper or process stop. This is advisory only: an
     ; existing installation still has to stop its processes even when the
     ; legacy source is absent, and the source is checked again after the stop
     ; before any backup is authorized.
-    StrCpy $mixcworkLegacySkillsStatus "legacy-source-present"
+    StrCpy $mixworkLegacySkillsStatus "legacy-source-present"
     System::Call 'kernel32::GetFileAttributesW(w "$INSTDIR\resources\SKILLs") i .r0'
     IntCmp $0 -1 LegacySkillsSourcePreflightAbsent 0 0
     IntOp $1 $0 & 0x10
@@ -749,41 +749,41 @@ FunctionEnd
     IntOp $1 $0 & 0x400
     IntCmp $1 0 LegacySkillsSourcePreflightLogged LegacySkillsSourcePreflightInvalid LegacySkillsSourcePreflightInvalid
     LegacySkillsSourcePreflightAbsent:
-      StrCpy $mixcworkLegacySkillsStatus "legacy-source-not-present"
+      StrCpy $mixworkLegacySkillsStatus "legacy-source-not-present"
       Goto LegacySkillsSourcePreflightLogged
     LegacySkillsSourcePreflightInvalid:
-      StrCpy $mixcworkLegacySkillsStatus "legacy-source-invalid"
+      StrCpy $mixworkLegacySkillsStatus "legacy-source-invalid"
     LegacySkillsSourcePreflightLogged:
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=legacy-skills-source-preflight attempt_id=$mixcworkInstallerAttemptId status=$mixcworkLegacySkillsStatus source=$INSTDIR\resources\SKILLs$\r$\n"
+    FileWrite $9 "$8 phase=legacy-skills-source-preflight attempt_id=$mixworkInstallerAttemptId status=$mixworkLegacySkillsStatus source=$INSTDIR\resources\SKILLs$\r$\n"
     FileClose $9
 
     !insertmacro ResolveTrustedPowerShell
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=system-tool-resolved attempt_id=$mixcworkInstallerAttemptId tool=powershell status=$mixcworkTrustedPowerShellStatus source=$mixcworkTrustedPowerShellSource path=$mixcworkTrustedPowerShellPath$\r$\n"
+    FileWrite $9 "$8 phase=system-tool-resolved attempt_id=$mixworkInstallerAttemptId tool=powershell status=$mixworkTrustedPowerShellStatus source=$mixworkTrustedPowerShellSource path=$mixworkTrustedPowerShellPath$\r$\n"
     FileClose $9
 
-    !insertmacro stopMixCWorkProcesses
-    StrCmp $mixcworkTargetProcessesStopStatus "success" TargetProcessesStopped
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    !insertmacro stopMixWorkProcesses
+    StrCmp $mixworkTargetProcessesStopStatus "success" TargetProcessesStopped
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=install-failed-before-mutation attempt_id=$mixcworkInstallerAttemptId failure_kind=process-stop-failed raw_status=$mixcworkTargetProcessesStopStatus exit=$R2 action=old-install-untouched$\r$\n"
+      FileWrite $9 "$8 phase=install-failed-before-mutation attempt_id=$mixworkInstallerAttemptId failure_kind=process-stop-failed raw_status=$mixworkTargetProcessesStopStatus exit=$R2 action=old-install-untouched$\r$\n"
       FileClose $9
       ${If} ${Silent}
         Banner::destroy
       ${EndIf}
-      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork update stopped before replacing the previous version because the old application processes could not be confirmed stopped. Please close MixCWork and retry. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork update stopped before replacing the previous version because the old application processes could not be confirmed stopped. Please close MixWork and retry. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
       SetErrorLevel 2
       Quit
     TargetProcessesStopped:
 
     ; -- Backup user-created skills to AppData before extraction overwrites them --
-    ; Copy non-bundled skills to %APPDATA%\MixCWork\skills-backup\ so they are
+    ; Copy non-bundled skills to %APPDATA%\MixWork\skills-backup\ so they are
     ; preserved when NSIS extracts the new version over the existing install.
     ; The backup is restored in customInstall after extraction completes.
     ; Must run before the $INSTDIR rename below -- it reads from $INSTDIR.
@@ -803,38 +803,38 @@ FunctionEnd
     IntCmp $1 0 SkillBackupSourceReady SkillBackupInspectFailed SkillBackupInspectFailed
 
     SkillBackupSourceAbsent:
-      StrCpy $mixcworkLegacySkillsStatus "legacy-source-not-present"
+      StrCpy $mixworkLegacySkillsStatus "legacy-source-not-present"
       StrCpy $R2 "0"
       Goto SkillBackupResultLog
 
     SkillBackupInspectFailed:
-      StrCpy $mixcworkLegacySkillsStatus "legacy-inspect-failed"
+      StrCpy $mixworkLegacySkillsStatus "legacy-inspect-failed"
       StrCpy $R2 "invalid-source-attributes"
       Goto SkillBackupResultLog
 
     SkillBackupSourceReady:
     DetailPrint "[Installer] Backing up user-created skills"
     ClearErrors
-    FileOpen $R0 "$APPDATA\MixCWork\skill-migrate.log" w
+    FileOpen $R0 "$APPDATA\MixWork\skill-migrate.log" w
     IfErrors BackupLogOpenFailed
       !insertmacro GetTimestamp $8
-      FileWrite $R0 "$8 phase=backup-start attempt_id=$mixcworkInstallerAttemptId instdir=$INSTDIR appdata=$APPDATA$\r$\n"
+      FileWrite $R0 "$8 phase=backup-start attempt_id=$mixworkInstallerAttemptId instdir=$INSTDIR appdata=$APPDATA$\r$\n"
       Goto BackupDoExec
     BackupLogOpenFailed:
       StrCpy $R0 ""
     BackupDoExec:
 
     ReadRegStr $4 SHELL_CONTEXT "${UNINSTALL_REGISTRY_KEY}" DisplayVersion
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_SKILL_SOURCE", t "$INSTDIR\resources\SKILLs")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_SKILL_BACKUP_ROOT", t "$APPDATA\MixCWork\skills-backup")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ATTEMPT_ID", t "$mixcworkInstallerAttemptId")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_OLD_VERSION", t "$4")i'
-    nsExec::ExecToStack '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_SKILL_SOURCE", t "$INSTDIR\resources\SKILLs")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_SKILL_BACKUP_ROOT", t "$APPDATA\MixWork\skills-backup")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ATTEMPT_ID", t "$mixworkInstallerAttemptId")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_OLD_VERSION", t "$4")i'
+    nsExec::ExecToStack '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
       $$ErrorActionPreference = \"Stop\";\
-      $$src       = $$env:MIXCWORK_SKILL_SOURCE;\
-      $$root      = $$env:MIXCWORK_SKILL_BACKUP_ROOT;\
-      $$attempt   = $$env:MIXCWORK_INSTALL_ATTEMPT_ID;\
-      $$oldVer    = $$env:MIXCWORK_OLD_VERSION;\
+      $$src       = $$env:MIXWORK_SKILL_SOURCE;\
+      $$root      = $$env:MIXWORK_SKILL_BACKUP_ROOT;\
+      $$attempt   = $$env:MIXWORK_INSTALL_ATTEMPT_ID;\
+      $$oldVer    = $$env:MIXWORK_OLD_VERSION;\
       $$backup    = Join-Path $$root $$attempt;\
       $$staging   = $$backup + \".new\";\
       $$manifest  = Join-Path $$staging \"backup-manifest.json\";\
@@ -849,7 +849,7 @@ FunctionEnd
           }\
         } catch { });\
         $$userSkills = @(Get-ChildItem -LiteralPath $$src -Directory -ErrorAction Stop | Where-Object { $$bundled -notcontains $$_.Name });\
-        if ($$userSkills.Count -eq 0) { Write-Output \"legacy-no-user-skills\"; exit ${MIXCWORK_SKILL_BACKUP_EXIT_NO_USER_SKILLS} };\
+        if ($$userSkills.Count -eq 0) { Write-Output \"legacy-no-user-skills\"; exit ${MIXWORK_SKILL_BACKUP_EXIT_NO_USER_SKILLS} };\
         $$phase = \"backup-copy\";\
         if (Test-Path -LiteralPath $$staging) { Remove-Item -LiteralPath $$staging -Recurse -Force -ErrorAction Stop };\
         if (Test-Path -LiteralPath $$backup) { throw \"attempt backup already exists\" };\
@@ -908,89 +908,89 @@ FunctionEnd
         $$finalManifest = Get-Content -LiteralPath $$manifest -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop;\
         if (($$finalManifest.attemptId -ne $$attempt) -or ($$finalManifest.validation.status -ne \"verified\")) { throw \"manifest final validation mismatch\" };\
         Write-Output (\"legacy-backup-succeeded skills=\" + $$finalManifest.statistics.skillCount + \" files=\" + $$finalManifest.statistics.fileCount + \" directories=\" + $$finalManifest.statistics.directoryCount + \" bytes=\" + $$finalManifest.statistics.totalBytes);\
-        exit ${MIXCWORK_SKILL_BACKUP_EXIT_VERIFIED}\
+        exit ${MIXWORK_SKILL_BACKUP_EXIT_VERIFIED}\
       } catch {\
         if (Test-Path -LiteralPath $$staging) { Remove-Item -LiteralPath $$staging -Recurse -Force -ErrorAction SilentlyContinue };\
-        if ($$phase -eq \"inspect\") { Write-Output \"legacy-inspect-failed\"; exit ${MIXCWORK_SKILL_BACKUP_EXIT_INSPECT_FAILED} };\
-        if ($$phase -eq \"backup-verify\") { Write-Output \"legacy-backup-verify-failed\"; exit ${MIXCWORK_SKILL_BACKUP_EXIT_VERIFY_FAILED} };\
+        if ($$phase -eq \"inspect\") { Write-Output \"legacy-inspect-failed\"; exit ${MIXWORK_SKILL_BACKUP_EXIT_INSPECT_FAILED} };\
+        if ($$phase -eq \"backup-verify\") { Write-Output \"legacy-backup-verify-failed\"; exit ${MIXWORK_SKILL_BACKUP_EXIT_VERIFY_FAILED} };\
         Write-Output \"legacy-backup-copy-failed\";\
-        exit ${MIXCWORK_SKILL_BACKUP_EXIT_COPY_FAILED}\
+        exit ${MIXWORK_SKILL_BACKUP_EXIT_COPY_FAILED}\
       }"'
     Pop $0
     Pop $1
     StrCpy $R2 $0
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_SKILL_SOURCE", t "")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_SKILL_BACKUP_ROOT", t "")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ATTEMPT_ID", t "")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_OLD_VERSION", t "")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_SKILL_SOURCE", t "")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_SKILL_BACKUP_ROOT", t "")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ATTEMPT_ID", t "")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_OLD_VERSION", t "")i'
     System::Call 'kernel32::GetTickCount()i .r6'
     IntOp $5 $6 - $7
 
     StrCmp $R0 "" BackupSkipCloseLog
       !insertmacro GetTimestamp $8
-      FileWrite $R0 "$8 phase=backup-end attempt_id=$mixcworkInstallerAttemptId exit=$R2 elapsed_ms=$5$\r$\n"
-      FileWrite $R0 "$8 phase=backup-output attempt_id=$mixcworkInstallerAttemptId text=$1$\r$\n"
+      FileWrite $R0 "$8 phase=backup-end attempt_id=$mixworkInstallerAttemptId exit=$R2 elapsed_ms=$5$\r$\n"
+      FileWrite $R0 "$8 phase=backup-output attempt_id=$mixworkInstallerAttemptId text=$1$\r$\n"
       FileClose $R0
     BackupSkipCloseLog:
     ; Status is derived from the helper exit code alone. stdout ($1) is
     ; logged above for diagnosis only: ExecToStack keeps the helper's
     ; trailing CRLF, so an exact text match here silently fails. Unknown
     ; exit codes keep the fail-closed copy-failed default.
-    StrCpy $mixcworkLegacySkillsStatus "legacy-backup-copy-failed"
+    StrCpy $mixworkLegacySkillsStatus "legacy-backup-copy-failed"
     StrCmp $R2 "error" 0 +3
-      StrCpy $mixcworkLegacySkillsStatus "legacy-helper-launch-failed"
+      StrCpy $mixworkLegacySkillsStatus "legacy-helper-launch-failed"
       Goto SkillBackupResultLog
-    StrCmp $R2 "${MIXCWORK_SKILL_BACKUP_EXIT_VERIFIED}" 0 +3
-      StrCpy $mixcworkLegacySkillsStatus "legacy-backup-succeeded"
+    StrCmp $R2 "${MIXWORK_SKILL_BACKUP_EXIT_VERIFIED}" 0 +3
+      StrCpy $mixworkLegacySkillsStatus "legacy-backup-succeeded"
       Goto SkillBackupResultLog
-    StrCmp $R2 "${MIXCWORK_SKILL_BACKUP_EXIT_NO_USER_SKILLS}" 0 +3
-      StrCpy $mixcworkLegacySkillsStatus "legacy-no-user-skills"
+    StrCmp $R2 "${MIXWORK_SKILL_BACKUP_EXIT_NO_USER_SKILLS}" 0 +3
+      StrCpy $mixworkLegacySkillsStatus "legacy-no-user-skills"
       Goto SkillBackupResultLog
-    StrCmp $R2 "${MIXCWORK_SKILL_BACKUP_EXIT_INSPECT_FAILED}" 0 +2
-      StrCpy $mixcworkLegacySkillsStatus "legacy-inspect-failed"
-    StrCmp $R2 "${MIXCWORK_SKILL_BACKUP_EXIT_COPY_FAILED}" 0 +2
-      StrCpy $mixcworkLegacySkillsStatus "legacy-backup-copy-failed"
-    StrCmp $R2 "${MIXCWORK_SKILL_BACKUP_EXIT_VERIFY_FAILED}" 0 +2
-      StrCpy $mixcworkLegacySkillsStatus "legacy-backup-verify-failed"
+    StrCmp $R2 "${MIXWORK_SKILL_BACKUP_EXIT_INSPECT_FAILED}" 0 +2
+      StrCpy $mixworkLegacySkillsStatus "legacy-inspect-failed"
+    StrCmp $R2 "${MIXWORK_SKILL_BACKUP_EXIT_COPY_FAILED}" 0 +2
+      StrCpy $mixworkLegacySkillsStatus "legacy-backup-copy-failed"
+    StrCmp $R2 "${MIXWORK_SKILL_BACKUP_EXIT_VERIFY_FAILED}" 0 +2
+      StrCpy $mixworkLegacySkillsStatus "legacy-backup-verify-failed"
 
     SkillBackupResultLog:
     System::Call 'kernel32::GetTickCount()i .r6'
     IntOp $5 $6 - $7
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=skill-backup-complete attempt_id=$mixcworkInstallerAttemptId status=$mixcworkLegacySkillsStatus exit=$R2 elapsed_ms=$5 backup=$APPDATA\MixCWork\skills-backup\$mixcworkInstallerAttemptId$\r$\n"
+    FileWrite $9 "$8 phase=skill-backup-complete attempt_id=$mixworkInstallerAttemptId status=$mixworkLegacySkillsStatus exit=$R2 elapsed_ms=$5 backup=$APPDATA\MixWork\skills-backup\$mixworkInstallerAttemptId$\r$\n"
     FileClose $9
 
     ; User-created skills live inside the installation tree. If their backup
     ; did not complete, stop before the directory swap so the only authoritative
     ; copy remains untouched. An update that fails closed is recoverable; a
     ; fast update that silently drops user data is not.
-    StrCmp $mixcworkLegacySkillsStatus "legacy-source-not-present" SkillBackupValidated
-    StrCmp $mixcworkLegacySkillsStatus "legacy-no-user-skills" SkillBackupValidated
-    StrCmp $mixcworkLegacySkillsStatus "legacy-backup-succeeded" 0 SkillBackupFailedAbort
+    StrCmp $mixworkLegacySkillsStatus "legacy-source-not-present" SkillBackupValidated
+    StrCmp $mixworkLegacySkillsStatus "legacy-no-user-skills" SkillBackupValidated
+    StrCmp $mixworkLegacySkillsStatus "legacy-backup-succeeded" 0 SkillBackupFailedAbort
       ; Post-condition for a verified backup: the manifest must still exist on
       ; disk immediately before any destructive step. If it vanished (e.g.
       ; antivirus quarantine), fail closed now while the old install is still
       ; intact instead of discovering the loss at restore time.
-      IfFileExists "$APPDATA\MixCWork\skills-backup\$mixcworkInstallerAttemptId\backup-manifest.json" SkillBackupValidated
-      StrCpy $mixcworkLegacySkillsStatus "legacy-backup-verify-failed"
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+      IfFileExists "$APPDATA\MixWork\skills-backup\$mixworkInstallerAttemptId\backup-manifest.json" SkillBackupValidated
+      StrCpy $mixworkLegacySkillsStatus "legacy-backup-verify-failed"
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=skill-backup-manifest-postcheck-missing attempt_id=$mixcworkInstallerAttemptId manifest=$APPDATA\MixCWork\skills-backup\$mixcworkInstallerAttemptId\backup-manifest.json$\r$\n"
+      FileWrite $9 "$8 phase=skill-backup-manifest-postcheck-missing attempt_id=$mixworkInstallerAttemptId manifest=$APPDATA\MixWork\skills-backup\$mixworkInstallerAttemptId\backup-manifest.json$\r$\n"
       FileClose $9
     SkillBackupFailedAbort:
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=skill-backup-failed-abort attempt_id=$mixcworkInstallerAttemptId status=$mixcworkLegacySkillsStatus exit=$R2 action=old-install-preserved$\r$\n"
+      FileWrite $9 "$8 phase=skill-backup-failed-abort attempt_id=$mixworkInstallerAttemptId status=$mixworkLegacySkillsStatus exit=$R2 action=old-install-preserved$\r$\n"
       FileClose $9
-      Call mixcworkTryRelaunchOldApp
+      Call mixworkTryRelaunchOldApp
       ${If} ${Silent}
         Banner::destroy
       ${EndIf}
-      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork update stopped because legacy user skills could not be safely inspected or backed up (status=$mixcworkLegacySkillsStatus). The previous installation was not replaced. Please retry the update. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork update stopped because legacy user skills could not be safely inspected or backed up (status=$mixworkLegacySkillsStatus). The previous installation was not replaced. Please retry the update. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
       SetErrorLevel 2
       Quit
     SkillBackupValidated:
@@ -1009,47 +1009,47 @@ FunctionEnd
     ; so extraction does not compete with a recursive old-tree deletion.
     DetailPrint "[Installer] Preparing previous installation for replacement"
     System::Call 'kernel32::GetTickCount()i .r7'
-    StrCpy $mixcworkOldInstallOriginalPath "$INSTDIR"
-    GetFullPathName $mixcworkOldInstallOriginalPathNormalized "$INSTDIR"
-    StrCpy $mixcworkOldInstallRegisteredPath ""
-    StrCpy $mixcworkOldInstallRegisteredPathNormalized ""
-    StrCpy $mixcworkOldInstallAlternateRegisteredPath ""
-    StrCpy $mixcworkOldInstallAlternateRegisteredPathNormalized ""
-    StrCpy $mixcworkOldInstallBackupPath ""
-    StrCpy $mixcworkOldInstallFailedPath ""
-    StrCpy $mixcworkOldInstallRenameStatus "not-applicable"
-    StrCpy $mixcworkOldInstallRenameReason "not-updated"
-    StrCpy $mixcworkOldInstallRenameError "0"
-    StrCpy $mixcworkOldInstallRenameAttempts "0"
-    StrCpy $mixcworkOldInstallRollbackReason ""
-    StrCpy $mixcworkOldInstallRollbackStatus "not-needed"
-    StrCpy $mixcworkOldInstallRollbackError "0"
+    StrCpy $mixworkOldInstallOriginalPath "$INSTDIR"
+    GetFullPathName $mixworkOldInstallOriginalPathNormalized "$INSTDIR"
+    StrCpy $mixworkOldInstallRegisteredPath ""
+    StrCpy $mixworkOldInstallRegisteredPathNormalized ""
+    StrCpy $mixworkOldInstallAlternateRegisteredPath ""
+    StrCpy $mixworkOldInstallAlternateRegisteredPathNormalized ""
+    StrCpy $mixworkOldInstallBackupPath ""
+    StrCpy $mixworkOldInstallFailedPath ""
+    StrCpy $mixworkOldInstallRenameStatus "not-applicable"
+    StrCpy $mixworkOldInstallRenameReason "not-updated"
+    StrCpy $mixworkOldInstallRenameError "0"
+    StrCpy $mixworkOldInstallRenameAttempts "0"
+    StrCpy $mixworkOldInstallRollbackReason ""
+    StrCpy $mixworkOldInstallRollbackStatus "not-needed"
+    StrCpy $mixworkOldInstallRollbackError "0"
 
     ClearErrors
-    ReadRegStr $mixcworkOldInstallRegisteredPath SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" InstallLocation
-    StrCmp $mixcworkOldInstallRegisteredPath "" OldInstallRegisteredPathReady
-      GetFullPathName $mixcworkOldInstallRegisteredPathNormalized "$mixcworkOldInstallRegisteredPath"
+    ReadRegStr $mixworkOldInstallRegisteredPath SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" InstallLocation
+    StrCmp $mixworkOldInstallRegisteredPath "" OldInstallRegisteredPathReady
+      GetFullPathName $mixworkOldInstallRegisteredPathNormalized "$mixworkOldInstallRegisteredPath"
     OldInstallRegisteredPathReady:
 
-    GetFullPathName $mixcworkOldInstallCurrentDirectory "."
+    GetFullPathName $mixworkOldInstallCurrentDirectory "."
     InitPluginsDir
     SetOutPath "$PLUGINSDIR"
 
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=old-install-rename-start attempt_id=$mixcworkInstallerAttemptId instdir=$mixcworkOldInstallOriginalPath registered_instdir=$mixcworkOldInstallRegisteredPath current_directory=$mixcworkOldInstallCurrentDirectory install_mode=$installMode$\r$\n"
+    FileWrite $9 "$8 phase=old-install-rename-start attempt_id=$mixworkInstallerAttemptId instdir=$mixworkOldInstallOriginalPath registered_instdir=$mixworkOldInstallRegisteredPath current_directory=$mixworkOldInstallCurrentDirectory install_mode=$installMode$\r$\n"
     FileClose $9
 
     ${IfNot} ${isUpdated}
       Goto OldInstallRenameComplete
     ${EndIf}
 
-    StrCpy $mixcworkOldInstallRenameReason "registered-install-missing"
-    StrCmp $mixcworkOldInstallRegisteredPathNormalized "" OldInstallRenameComplete
+    StrCpy $mixworkOldInstallRenameReason "registered-install-missing"
+    StrCmp $mixworkOldInstallRegisteredPathNormalized "" OldInstallRenameComplete
 
-    StrCpy $mixcworkOldInstallRenameReason "install-location-mismatch"
-    StrCmp $mixcworkOldInstallRegisteredPathNormalized $mixcworkOldInstallOriginalPathNormalized 0 OldInstallRenameComplete
+    StrCpy $mixworkOldInstallRenameReason "install-location-mismatch"
+    StrCmp $mixworkOldInstallRegisteredPathNormalized $mixworkOldInstallOriginalPathNormalized 0 OldInstallRenameComplete
 
     ; A machine install can have a stale per-user registration pointing at the
     ; same directory. Fast-path skipping both roots would preserve a duplicate
@@ -1057,75 +1057,75 @@ FunctionEnd
     ; install, so treat this ambiguous state as fallback-only.
     ${If} $installMode == "all"
       ClearErrors
-      ReadRegStr $mixcworkOldInstallAlternateRegisteredPath HKEY_CURRENT_USER "${INSTALL_REGISTRY_KEY}" InstallLocation
-      StrCmp $mixcworkOldInstallAlternateRegisteredPath "" OldInstallAlternateRegisteredPathReady
-        GetFullPathName $mixcworkOldInstallAlternateRegisteredPathNormalized "$mixcworkOldInstallAlternateRegisteredPath"
+      ReadRegStr $mixworkOldInstallAlternateRegisteredPath HKEY_CURRENT_USER "${INSTALL_REGISTRY_KEY}" InstallLocation
+      StrCmp $mixworkOldInstallAlternateRegisteredPath "" OldInstallAlternateRegisteredPathReady
+        GetFullPathName $mixworkOldInstallAlternateRegisteredPathNormalized "$mixworkOldInstallAlternateRegisteredPath"
       OldInstallAlternateRegisteredPathReady:
-      StrCpy $mixcworkOldInstallRenameReason "ambiguous-dual-registration"
-      StrCmp $mixcworkOldInstallAlternateRegisteredPathNormalized $mixcworkOldInstallOriginalPathNormalized OldInstallRenameComplete
+      StrCpy $mixworkOldInstallRenameReason "ambiguous-dual-registration"
+      StrCmp $mixworkOldInstallAlternateRegisteredPathNormalized $mixworkOldInstallOriginalPathNormalized OldInstallRenameComplete
     ${EndIf}
 
-    StrCpy $mixcworkOldInstallRenameReason "install-files-missing"
-    IfFileExists "$mixcworkOldInstallOriginalPath\${APP_EXECUTABLE_FILENAME}" OldInstallRenameEligible
-    IfFileExists "$mixcworkOldInstallOriginalPath\${UNINSTALL_FILENAME}" OldInstallRenameEligible
+    StrCpy $mixworkOldInstallRenameReason "install-files-missing"
+    IfFileExists "$mixworkOldInstallOriginalPath\${APP_EXECUTABLE_FILENAME}" OldInstallRenameEligible
+    IfFileExists "$mixworkOldInstallOriginalPath\${UNINSTALL_FILENAME}" OldInstallRenameEligible
     Goto OldInstallRenameComplete
 
     OldInstallRenameEligible:
-      StrCpy $mixcworkOldInstallRenameStatus "failed"
-      StrCpy $mixcworkOldInstallRenameReason "rename-failed"
+      StrCpy $mixworkOldInstallRenameStatus "failed"
+      StrCpy $mixworkOldInstallRenameReason "rename-failed"
       System::Call 'kernel32::GetCurrentProcessId()i .r4'
-      StrCpy $mixcworkCurrentProcessPid $4
+      StrCpy $mixworkCurrentProcessPid $4
       System::Call 'kernel32::GetTickCount()i .r4'
-      StrCpy $mixcworkOldInstallBackupPath "$mixcworkOldInstallOriginalPath.old.$mixcworkCurrentProcessPid.$4"
+      StrCpy $mixworkOldInstallBackupPath "$mixworkOldInstallOriginalPath.old.$mixworkCurrentProcessPid.$4"
 
     OldInstallRenameAttempt:
-      IntOp $mixcworkOldInstallRenameAttempts $mixcworkOldInstallRenameAttempts + 1
+      IntOp $mixworkOldInstallRenameAttempts $mixworkOldInstallRenameAttempts + 1
       ; Capture the Win32 error in the same System plug-in invocation as the
       ; move. GetLastError after an NSIS Rename/logging call can be stale.
-      System::Call 'kernel32::MoveFileW(w "$mixcworkOldInstallOriginalPath", w "$mixcworkOldInstallBackupPath") i .r4 ?e'
-      Pop $mixcworkOldInstallRenameError
+      System::Call 'kernel32::MoveFileW(w "$mixworkOldInstallOriginalPath", w "$mixworkOldInstallBackupPath") i .r4 ?e'
+      Pop $mixworkOldInstallRenameError
       IntCmp $4 0 OldInstallRenameAttemptFailed OldInstallRenameAttemptSucceeded OldInstallRenameAttemptSucceeded
 
     OldInstallRenameAttemptSucceeded:
-      StrCpy $mixcworkOldInstallRenameStatus "success"
+      StrCpy $mixworkOldInstallRenameStatus "success"
 
       ; Rename success is only accepted when the source tree is gone and the
       ; complete backup tree is visible at the unique destination.
-      IfFileExists "$mixcworkOldInstallOriginalPath\*.*" OldInstallRenameVerificationFailed
-      IfFileExists "$mixcworkOldInstallBackupPath\*.*" 0 OldInstallRenameVerificationFailed
-      StrCpy $mixcworkOldInstallRenameStatus "success"
-      StrCpy $mixcworkOldInstallRenameReason "renamed"
-      StrCpy $mixcworkOldInstallRenameError "0"
+      IfFileExists "$mixworkOldInstallOriginalPath\*.*" OldInstallRenameVerificationFailed
+      IfFileExists "$mixworkOldInstallBackupPath\*.*" 0 OldInstallRenameVerificationFailed
+      StrCpy $mixworkOldInstallRenameStatus "success"
+      StrCpy $mixworkOldInstallRenameReason "renamed"
+      StrCpy $mixworkOldInstallRenameError "0"
       Goto OldInstallRenameComplete
 
     OldInstallRenameAttemptFailed:
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=old-install-rename-attempt attempt_id=$mixcworkInstallerAttemptId attempt=$mixcworkOldInstallRenameAttempts result=failed win32_error=$mixcworkOldInstallRenameError$\r$\n"
+      FileWrite $9 "$8 phase=old-install-rename-attempt attempt_id=$mixworkInstallerAttemptId attempt=$mixworkOldInstallRenameAttempts result=failed win32_error=$mixworkOldInstallRenameError$\r$\n"
       FileClose $9
-      IntCmp $mixcworkOldInstallRenameAttempts 3 OldInstallRenameComplete OldInstallRenameRetry OldInstallRenameComplete
+      IntCmp $mixworkOldInstallRenameAttempts 3 OldInstallRenameComplete OldInstallRenameRetry OldInstallRenameComplete
 
     OldInstallRenameRetry:
       Sleep 250
       Goto OldInstallRenameAttempt
 
     OldInstallRenameVerificationFailed:
-      StrCpy $mixcworkOldInstallRenameReason "verification-failed"
-      StrCpy $mixcworkOldInstallRenameError "verification-failed"
+      StrCpy $mixworkOldInstallRenameReason "verification-failed"
+      StrCpy $mixworkOldInstallRenameError "verification-failed"
       !insertmacro customRollbackOldInstall "rename-verification-failed"
-      StrCmp $mixcworkOldInstallRollbackStatus "success" OldInstallRenameVerificationRestored
+      StrCmp $mixworkOldInstallRollbackStatus "success" OldInstallRenameVerificationRestored
 
       ; The move succeeded but its postcondition could not be verified, and
       ; rollback could not restore a single authoritative old tree. Freeze the
       ; attempt with every recovery source preserved; never fall through into
       ; stock uninstall/install while filesystem ownership is ambiguous.
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=old-install-rename-verification-abort attempt_id=$mixcworkInstallerAttemptId outcome=recovery-required rollback_status=$mixcworkOldInstallRollbackStatus rollback_error=$mixcworkOldInstallRollbackError source=$mixcworkOldInstallOriginalPath backup=$mixcworkOldInstallBackupPath$\r$\n"
+      FileWrite $9 "$8 phase=old-install-rename-verification-abort attempt_id=$mixworkInstallerAttemptId outcome=recovery-required rollback_status=$mixworkOldInstallRollbackStatus rollback_error=$mixworkOldInstallRollbackError source=$mixworkOldInstallOriginalPath backup=$mixworkOldInstallBackupPath$\r$\n"
       FileClose $9
-      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork update stopped because the previous installation move could not be verified and automatic recovery did not complete. No recovery copy was deleted. Restart Windows before retrying. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork update stopped because the previous installation move could not be verified and automatic recovery did not complete. No recovery copy was deleted. Restart Windows before retrying. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
       ${If} ${Silent}
         Banner::destroy
       ${EndIf}
@@ -1133,15 +1133,15 @@ FunctionEnd
       Quit
 
     OldInstallRenameVerificationRestored:
-      ; mixcworkRollbackOldInstall has already restored and, when its strict
+      ; mixworkRollbackOldInstall has already restored and, when its strict
       ; gates allow it, relaunched the old application. This attempt must end
       ; here instead of invoking the stock uninstaller against that live tree.
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=old-install-rename-verification-abort attempt_id=$mixcworkInstallerAttemptId outcome=restored rollback_status=$mixcworkOldInstallRollbackStatus relaunch_status=$mixcworkOldAppRelaunchStatus source=$mixcworkOldInstallOriginalPath$\r$\n"
+      FileWrite $9 "$8 phase=old-install-rename-verification-abort attempt_id=$mixworkInstallerAttemptId outcome=restored rollback_status=$mixworkOldInstallRollbackStatus relaunch_status=$mixworkOldAppRelaunchStatus source=$mixworkOldInstallOriginalPath$\r$\n"
       FileClose $9
-      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork update stopped because the previous installation move could not be verified. The previous version was restored. Please retry the update. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork update stopped because the previous installation move could not be verified. The previous version was restored. Please retry the update. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
       ${If} ${Silent}
         Banner::destroy
       ${EndIf}
@@ -1153,17 +1153,17 @@ FunctionEnd
     IntOp $5 $6 - $7
     StrCpy $2 "false"
     StrCpy $3 "false"
-    IfFileExists "$mixcworkOldInstallOriginalPath\*.*" 0 OldInstallRenameSourceChecked
+    IfFileExists "$mixworkOldInstallOriginalPath\*.*" 0 OldInstallRenameSourceChecked
       StrCpy $2 "true"
     OldInstallRenameSourceChecked:
-    StrCmp $mixcworkOldInstallBackupPath "" OldInstallRenameBackupChecked
-    IfFileExists "$mixcworkOldInstallBackupPath\*.*" 0 OldInstallRenameBackupChecked
+    StrCmp $mixworkOldInstallBackupPath "" OldInstallRenameBackupChecked
+    IfFileExists "$mixworkOldInstallBackupPath\*.*" 0 OldInstallRenameBackupChecked
       StrCpy $3 "true"
     OldInstallRenameBackupChecked:
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=old-install-rename-complete attempt_id=$mixcworkInstallerAttemptId status=$mixcworkOldInstallRenameStatus reason=$mixcworkOldInstallRenameReason attempts=$mixcworkOldInstallRenameAttempts win32_error=$mixcworkOldInstallRenameError elapsed_ms=$5 source_exists=$2 backup_exists=$3 backup_path=$mixcworkOldInstallBackupPath cleanup_mode=deferred$\r$\n"
+    FileWrite $9 "$8 phase=old-install-rename-complete attempt_id=$mixworkInstallerAttemptId status=$mixworkOldInstallRenameStatus reason=$mixworkOldInstallRenameReason attempts=$mixworkOldInstallRenameAttempts win32_error=$mixworkOldInstallRenameError elapsed_ms=$5 source_exists=$2 backup_exists=$3 backup_path=$mixworkOldInstallBackupPath cleanup_mode=deferred$\r$\n"
     FileClose $9
 
     ; The install-scope Defender exclusion is intentionally added by
@@ -1173,14 +1173,14 @@ FunctionEnd
     Goto CustomCheckInstallerDone
 
     CustomCheckFreshInstall:
-      StrCpy $mixcworkTargetProcessesStopStatus "not-required-fresh-install"
-      StrCpy $mixcworkLegacySkillsStatus "legacy-not-applicable-fresh-install"
-      StrCpy $mixcworkOldInstallRenameStatus "not-required"
-      StrCpy $mixcworkOldInstallRenameReason "fresh-install"
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+      StrCpy $mixworkTargetProcessesStopStatus "not-required-fresh-install"
+      StrCpy $mixworkLegacySkillsStatus "legacy-not-applicable-fresh-install"
+      StrCpy $mixworkOldInstallRenameStatus "not-required"
+      StrCpy $mixworkOldInstallRenameReason "fresh-install"
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=fresh-install-old-flow-skipped attempt_id=$mixcworkInstallerAttemptId process_stop=skipped legacy_skills=skipped old_staging=skipped$\r$\n"
+      FileWrite $9 "$8 phase=fresh-install-old-flow-skipped attempt_id=$mixworkInstallerAttemptId process_stop=skipped legacy_skills=skipped old_staging=skipped$\r$\n"
       FileClose $9
 
     CustomCheckInstallerDone:
@@ -1190,7 +1190,7 @@ FunctionEnd
     ; uninstall blocker.
     !insertmacro EnsureInstallerAttemptId
     !insertmacro ResolveTrustedPowerShell
-    !insertmacro stopMixCWorkProcesses
+    !insertmacro stopMixWorkProcesses
   !endif
 !macroend
 
@@ -1200,48 +1200,48 @@ FunctionEnd
   ; only the matching legacy uninstaller is skipped. Every other case retains
   ; the stock uninstallOldVersion fallback and its error handling.
   !macro customUninstallOldVersion ROOT_KEY
-    StrCpy $mixcworkOldUninstallCandidatePath ""
-    StrCpy $mixcworkOldUninstallCandidatePathNormalized ""
+    StrCpy $mixworkOldUninstallCandidatePath ""
+    StrCpy $mixworkOldUninstallCandidatePathNormalized ""
     ClearErrors
-    !insertmacro readReg $mixcworkOldUninstallCandidatePath ${ROOT_KEY} "${INSTALL_REGISTRY_KEY}" InstallLocation
-    StrCmp $mixcworkOldUninstallCandidatePath "" CustomOldUninstallCandidateReady_${ROOT_KEY}
-      GetFullPathName $mixcworkOldUninstallCandidatePathNormalized "$mixcworkOldUninstallCandidatePath"
+    !insertmacro readReg $mixworkOldUninstallCandidatePath ${ROOT_KEY} "${INSTALL_REGISTRY_KEY}" InstallLocation
+    StrCmp $mixworkOldUninstallCandidatePath "" CustomOldUninstallCandidateReady_${ROOT_KEY}
+      GetFullPathName $mixworkOldUninstallCandidatePathNormalized "$mixworkOldUninstallCandidatePath"
     CustomOldUninstallCandidateReady_${ROOT_KEY}:
 
-    ${If} $mixcworkOldInstallRenameStatus == "success"
-    ${AndIf} $mixcworkOldUninstallCandidatePathNormalized != ""
-    ${AndIf} $mixcworkOldUninstallCandidatePathNormalized == $mixcworkOldInstallOriginalPathNormalized
+    ${If} $mixworkOldInstallRenameStatus == "success"
+    ${AndIf} $mixworkOldUninstallCandidatePathNormalized != ""
+    ${AndIf} $mixworkOldUninstallCandidatePathNormalized == $mixworkOldInstallOriginalPathNormalized
       ClearErrors
       StrCpy $R0 0
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=old-uninstaller-skipped attempt_id=$mixcworkInstallerAttemptId root=${ROOT_KEY} reason=rename-success registered_instdir=$mixcworkOldUninstallCandidatePath backup_path=$mixcworkOldInstallBackupPath$\r$\n"
+      FileWrite $9 "$8 phase=old-uninstaller-skipped attempt_id=$mixworkInstallerAttemptId root=${ROOT_KEY} reason=rename-success registered_instdir=$mixworkOldUninstallCandidatePath backup_path=$mixworkOldInstallBackupPath$\r$\n"
       FileClose $9
     ${Else}
       System::Call 'kernel32::GetTickCount()i .r4'
-      StrCpy $mixcworkOldUninstallStartTick $4
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+      StrCpy $mixworkOldUninstallStartTick $4
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=old-uninstaller-start attempt_id=$mixcworkInstallerAttemptId root=${ROOT_KEY} registered_instdir=$mixcworkOldUninstallCandidatePath rename_status=$mixcworkOldInstallRenameStatus$\r$\n"
+      FileWrite $9 "$8 phase=old-uninstaller-start attempt_id=$mixworkInstallerAttemptId root=${ROOT_KEY} registered_instdir=$mixworkOldUninstallCandidatePath rename_status=$mixworkOldInstallRenameStatus$\r$\n"
       FileClose $9
 
       !insertmacro uninstallOldVersion ${ROOT_KEY}
       IfErrors CustomOldUninstallerLaunchFailed_${ROOT_KEY}
-      StrCpy $mixcworkOldUninstallLaunchStatus "returned"
+      StrCpy $mixworkOldUninstallLaunchStatus "returned"
       Goto CustomOldUninstallerReturned_${ROOT_KEY}
 
       CustomOldUninstallerLaunchFailed_${ROOT_KEY}:
-      StrCpy $mixcworkOldUninstallLaunchStatus "launch-error"
+      StrCpy $mixworkOldUninstallLaunchStatus "launch-error"
 
       CustomOldUninstallerReturned_${ROOT_KEY}:
       System::Call 'kernel32::GetTickCount()i .r6'
-      IntOp $5 $6 - $mixcworkOldUninstallStartTick
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+      IntOp $5 $6 - $mixworkOldUninstallStartTick
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=old-uninstaller-returned attempt_id=$mixcworkInstallerAttemptId root=${ROOT_KEY} status=$mixcworkOldUninstallLaunchStatus exit=$R0 elapsed_ms=$5$\r$\n"
+      FileWrite $9 "$8 phase=old-uninstaller-returned attempt_id=$mixworkInstallerAttemptId root=${ROOT_KEY} status=$mixworkOldUninstallLaunchStatus exit=$R0 elapsed_ms=$5$\r$\n"
       FileClose $9
 
       ; handleUninstallResult calls Quit for a non-zero legacy uninstaller.
@@ -1252,7 +1252,7 @@ FunctionEnd
 
       ; The diagnostic writes above can change NSIS' error flag. Recreate the
       ; exact result expected by electron-builder's stock handler.
-      StrCmp $mixcworkOldUninstallLaunchStatus "launch-error" CustomOldUninstallerRestoreError_${ROOT_KEY}
+      StrCmp $mixworkOldUninstallLaunchStatus "launch-error" CustomOldUninstallerRestoreError_${ROOT_KEY}
       ClearErrors
       Goto CustomOldUninstallerHandle_${ROOT_KEY}
       CustomOldUninstallerRestoreError_${ROOT_KEY}:
@@ -1261,11 +1261,11 @@ FunctionEnd
       !insertmacro handleUninstallResult ${ROOT_KEY}
 
       System::Call 'kernel32::GetTickCount()i .r6'
-      IntOp $5 $6 - $mixcworkOldUninstallStartTick
-      FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+      IntOp $5 $6 - $mixworkOldUninstallStartTick
+      FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $9 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $9 "$8 phase=old-uninstaller-complete attempt_id=$mixcworkInstallerAttemptId root=${ROOT_KEY} status=handled exit=$R0 elapsed_ms=$5$\r$\n"
+      FileWrite $9 "$8 phase=old-uninstaller-complete attempt_id=$mixworkInstallerAttemptId root=${ROOT_KEY} status=handled exit=$R0 elapsed_ms=$5$\r$\n"
       FileClose $9
     ${EndIf}
   !macroend
@@ -1273,17 +1273,17 @@ FunctionEnd
   ; Runs after every old-install root has either been skipped or fully
   ; uninstalled, immediately before installApplicationFiles. This ordering is
   ; important for transition upgrades: already-installed legacy uninstallers
-  ; remove MixCWork exclusions at the end of their --updated flow.
+  ; remove MixWork exclusions at the end of their --updated flow.
   !macro customAfterUninstallOldVersions
     DetailPrint "[Installer] Applying Windows Defender install-scope exclusion"
     !insertmacro ResolveTrustedPowerShell
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=defender-exclusion-start attempt_id=$mixcworkInstallerAttemptId point=post-old-uninstaller rename_status=$mixcworkOldInstallRenameStatus helper_status=$mixcworkTrustedPowerShellStatus$\r$\n"
+    FileWrite $9 "$8 phase=defender-exclusion-start attempt_id=$mixworkInstallerAttemptId point=post-old-uninstaller rename_status=$mixworkOldInstallRenameStatus helper_status=$mixworkTrustedPowerShellStatus$\r$\n"
     FileClose $9
     System::Call 'kernel32::GetTickCount()i .r7'
-    StrCmp $mixcworkTrustedPowerShellPath "" DefenderPostUninstallHelperMissing
+    StrCmp $mixworkTrustedPowerShellPath "" DefenderPostUninstallHelperMissing
 
     ${GetParameters} $R9
     ClearErrors
@@ -1291,9 +1291,9 @@ FunctionEnd
     IfErrors 0 DefenderPostUninstallQueryOnly
 
     CreateDirectory "$INSTDIR"
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ROOT", t "$INSTDIR")i'
-    nsExec::ExecToStack '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
-      $$target = $$env:MIXCWORK_INSTALL_ROOT;\
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ROOT", t "$INSTDIR")i'
+    nsExec::ExecToStack '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
+      $$target = $$env:MIXWORK_INSTALL_ROOT;\
       try { $$beforePaths = @((Get-MpPreference -ErrorAction Stop).ExclusionPath); $$before = if ($$beforePaths -contains $$target) { \"present\" } else { \"absent\" } } catch { $$before = \"query-failed\" };\
       try { Add-MpPreference -ExclusionPath $$target -ErrorAction Stop; $$add = \"added\" } catch { $$add = \"skipped:\" + $$_.Exception.Message.Trim() };\
       try { $$afterPaths = @((Get-MpPreference -ErrorAction Stop).ExclusionPath); $$after = if ($$afterPaths -contains $$target) { \"present\" } else { \"absent\" } } catch { $$after = \"query-failed\" };\
@@ -1301,9 +1301,9 @@ FunctionEnd
     Goto DefenderPostUninstallCommandDone
 
     DefenderPostUninstallQueryOnly:
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ROOT", t "$INSTDIR")i'
-    nsExec::ExecToStack '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
-      $$root = $$env:MIXCWORK_INSTALL_ROOT;\
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ROOT", t "$INSTDIR")i'
+    nsExec::ExecToStack '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
+      $$root = $$env:MIXWORK_INSTALL_ROOT;\
       $$targets = @($$root, (Join-Path $$root \"resources\openclaw-runtime\"), (Join-Path $$root \"resources\python-win\"), (Join-Path $$root \"resources\SKILLs\"), (Join-Path $$root \"resources\app.asar.unpacked\"), (Join-Path $$root \"resources\app.asar\"), (Join-Path $$root \"resources\win-resources.tar\"));\
       try { $$beforePaths = @((Get-MpPreference -ErrorAction Stop).ExclusionPath); $$before = @($$targets | Where-Object { $$beforePaths -contains $$_ }).Count } catch { $$before = \"query-failed\" };\
       try { Remove-MpPreference -ExclusionPath $$targets -ErrorAction Stop; $$remove = \"requested\" } catch { $$remove = \"failed:\" + $$_.Exception.Message.Trim() };\
@@ -1314,7 +1314,7 @@ FunctionEnd
     Pop $0
     Pop $1
     StrCpy $R2 $0
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ROOT", t "")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ROOT", t "")i'
     Goto DefenderPostUninstallLog
 
     DefenderPostUninstallHelperMissing:
@@ -1324,10 +1324,10 @@ FunctionEnd
     DefenderPostUninstallLog:
     System::Call 'kernel32::GetTickCount()i .r6'
     IntOp $5 $6 - $7
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=defender-exclusion-complete attempt_id=$mixcworkInstallerAttemptId point=post-old-uninstaller exit=$R2 elapsed_ms=$5 output=$1$\r$\n"
+    FileWrite $9 "$8 phase=defender-exclusion-complete attempt_id=$mixworkInstallerAttemptId point=post-old-uninstaller exit=$R2 elapsed_ms=$5 output=$1$\r$\n"
     FileClose $9
   !macroend
 
@@ -1339,11 +1339,11 @@ FunctionEnd
     Push $8
     Push $9
     System::Call 'kernel32::GetTickCount()i .r0'
-    StrCpy $mixcworkPackageMaterializeStartTick $0
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    StrCpy $mixworkPackageMaterializeStartTick $0
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=payload-materialize-start attempt_id=$mixcworkInstallerAttemptId arch=$packageArch dest=$PLUGINSDIR\app-$packageArch.${COMPRESSION_METHOD}$\r$\n"
+    FileWrite $9 "$8 phase=payload-materialize-start attempt_id=$mixworkInstallerAttemptId arch=$packageArch dest=$PLUGINSDIR\app-$packageArch.${COMPRESSION_METHOD}$\r$\n"
     FileClose $9
     Pop $9
     Pop $8
@@ -1356,11 +1356,11 @@ FunctionEnd
     Push $8
     Push $9
     System::Call 'kernel32::GetTickCount()i .r0'
-    IntOp $1 $0 - $mixcworkPackageMaterializeStartTick
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    IntOp $1 $0 - $mixworkPackageMaterializeStartTick
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=payload-materialize-complete attempt_id=$mixcworkInstallerAttemptId arch=$packageArch elapsed_ms=$1$\r$\n"
+    FileWrite $9 "$8 phase=payload-materialize-complete attempt_id=$mixworkInstallerAttemptId arch=$packageArch elapsed_ms=$1$\r$\n"
     FileClose $9
     Pop $9
     Pop $8
@@ -1373,11 +1373,11 @@ FunctionEnd
     Push $8
     Push $9
     System::Call 'kernel32::GetTickCount()i .r0'
-    StrCpy $mixcworkPackageExtractStartTick $0
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    StrCpy $mixworkPackageExtractStartTick $0
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=payload-7z-extract-start attempt_id=$mixcworkInstallerAttemptId mode=${MODE} arch=$packageArch source=${SOURCE} dest=$OUTDIR$\r$\n"
+    FileWrite $9 "$8 phase=payload-7z-extract-start attempt_id=$mixworkInstallerAttemptId mode=${MODE} arch=$packageArch source=${SOURCE} dest=$OUTDIR$\r$\n"
     FileClose $9
     Pop $9
     Pop $8
@@ -1390,11 +1390,11 @@ FunctionEnd
     Push $8
     Push $9
     System::Call 'kernel32::GetTickCount()i .r0'
-    IntOp $1 $0 - $mixcworkPackageExtractStartTick
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    IntOp $1 $0 - $mixworkPackageExtractStartTick
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=payload-7z-extract-complete attempt_id=$mixcworkInstallerAttemptId mode=${MODE} arch=$packageArch result=${RESULT} elapsed_ms=$1$\r$\n"
+    FileWrite $9 "$8 phase=payload-7z-extract-complete attempt_id=$mixworkInstallerAttemptId mode=${MODE} arch=$packageArch result=${RESULT} elapsed_ms=$1$\r$\n"
     FileClose $9
     Pop $9
     Pop $8
@@ -1407,11 +1407,11 @@ FunctionEnd
     Push $8
     Push $9
     System::Call 'kernel32::GetTickCount()i .r0'
-    StrCpy $mixcworkPackageCopyStartTick $0
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    StrCpy $mixworkPackageCopyStartTick $0
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=payload-copy-start attempt_id=$mixcworkInstallerAttemptId attempt=$R1 source=$PLUGINSDIR\7z-out dest=$OUTDIR$\r$\n"
+    FileWrite $9 "$8 phase=payload-copy-start attempt_id=$mixworkInstallerAttemptId attempt=$R1 source=$PLUGINSDIR\7z-out dest=$OUTDIR$\r$\n"
     FileClose $9
     Pop $9
     Pop $8
@@ -1424,11 +1424,11 @@ FunctionEnd
     Push $8
     Push $9
     System::Call 'kernel32::GetTickCount()i .r0'
-    IntOp $1 $0 - $mixcworkPackageCopyStartTick
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    IntOp $1 $0 - $mixworkPackageCopyStartTick
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=payload-copy-complete attempt_id=$mixcworkInstallerAttemptId attempt=$R1 result=${RESULT} elapsed_ms=$1$\r$\n"
+    FileWrite $9 "$8 phase=payload-copy-complete attempt_id=$mixworkInstallerAttemptId attempt=$R1 result=${RESULT} elapsed_ms=$1$\r$\n"
     FileClose $9
     Pop $9
     Pop $8
@@ -1441,11 +1441,11 @@ FunctionEnd
     Push $8
     Push $9
     System::Call 'kernel32::GetTickCount()i .r0'
-    StrCpy $mixcworkInstallerCacheCopyStartTick $0
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    StrCpy $mixworkInstallerCacheCopyStartTick $0
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=installer-cache-copy-start attempt_id=$mixcworkInstallerAttemptId kind=${KIND}$\r$\n"
+    FileWrite $9 "$8 phase=installer-cache-copy-start attempt_id=$mixworkInstallerAttemptId kind=${KIND}$\r$\n"
     FileClose $9
     Pop $9
     Pop $8
@@ -1458,11 +1458,11 @@ FunctionEnd
     Push $8
     Push $9
     System::Call 'kernel32::GetTickCount()i .r0'
-    IntOp $1 $0 - $mixcworkInstallerCacheCopyStartTick
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    IntOp $1 $0 - $mixworkInstallerCacheCopyStartTick
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=installer-cache-copy-complete attempt_id=$mixcworkInstallerAttemptId kind=${KIND} result=${RESULT} elapsed_ms=$1$\r$\n"
+    FileWrite $9 "$8 phase=installer-cache-copy-complete attempt_id=$mixworkInstallerAttemptId kind=${KIND} result=${RESULT} elapsed_ms=$1$\r$\n"
     FileClose $9
     Pop $9
     Pop $8
@@ -1473,10 +1473,10 @@ FunctionEnd
   !macro customEstimatedSizeKnown VALUE
     Push $8
     Push $9
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=estimated-size-scan-skipped attempt_id=$mixcworkInstallerAttemptId source=build-estimate value_kb=${VALUE}$\r$\n"
+    FileWrite $9 "$8 phase=estimated-size-scan-skipped attempt_id=$mixworkInstallerAttemptId source=build-estimate value_kb=${VALUE}$\r$\n"
     FileClose $9
     Pop $9
     Pop $8
@@ -1485,22 +1485,22 @@ FunctionEnd
   !macro customEstimatedSizeScanStart
     Push $0
     System::Call 'kernel32::GetTickCount()i .r0'
-    StrCpy $mixcworkEstimatedSizeScanStartTick $0
+    StrCpy $mixworkEstimatedSizeScanStartTick $0
     Pop $0
   !macroend
 
   !macro customEstimatedSizeScanEnd VALUE
-    StrCpy $mixcworkEstimatedSizeValue ${VALUE}
+    StrCpy $mixworkEstimatedSizeValue ${VALUE}
     Push $0
     Push $1
     Push $8
     Push $9
     System::Call 'kernel32::GetTickCount()i .r0'
-    IntOp $1 $0 - $mixcworkEstimatedSizeScanStartTick
-    FileOpen $9 "$APPDATA\MixCWork\install-timing.log" a
+    IntOp $1 $0 - $mixworkEstimatedSizeScanStartTick
+    FileOpen $9 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $9 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $9 "$8 phase=estimated-size-scan-complete attempt_id=$mixcworkInstallerAttemptId value_kb=$mixcworkEstimatedSizeValue elapsed_ms=$1$\r$\n"
+    FileWrite $9 "$8 phase=estimated-size-scan-complete attempt_id=$mixworkInstallerAttemptId value_kb=$mixworkEstimatedSizeValue elapsed_ms=$1$\r$\n"
     FileClose $9
     Pop $9
     Pop $8
@@ -1512,14 +1512,14 @@ FunctionEnd
 !macro customBeforeRegistryAddInstallInfo
   ; -- Install Timing Log --
   ; Write timestamps to help diagnose slow installation phases.
-  ; Log file: %APPDATA%\MixCWork\install-timing.log
+  ; Log file: %APPDATA%\MixWork\install-timing.log
 
-  CreateDirectory "$APPDATA\MixCWork"
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  CreateDirectory "$APPDATA\MixWork"
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=app-files-install-complete attempt_id=$mixcworkInstallerAttemptId$\r$\n"
-  FileWrite $2 "$8 phase=nsis-extract-complete attempt_id=$mixcworkInstallerAttemptId$\r$\n"
+  FileWrite $2 "$8 phase=app-files-install-complete attempt_id=$mixworkInstallerAttemptId$\r$\n"
+  FileWrite $2 "$8 phase=nsis-extract-complete attempt_id=$mixworkInstallerAttemptId$\r$\n"
   FileClose $2
   DetailPrint "[Installer] Preparing installation steps"
 
@@ -1541,33 +1541,33 @@ FunctionEnd
   StrCpy $R3 "none"
   StrCpy $R4 "none"
   !insertmacro ResolveTrustedTar
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=system-tool-resolved attempt_id=$mixcworkInstallerAttemptId tool=tar status=$mixcworkTrustedTarStatus source=$mixcworkTrustedTarSource path=$mixcworkTrustedTarPath$\r$\n"
+  FileWrite $2 "$8 phase=system-tool-resolved attempt_id=$mixworkInstallerAttemptId tool=tar status=$mixworkTrustedTarStatus source=$mixworkTrustedTarSource path=$mixworkTrustedTarPath$\r$\n"
   FileClose $2
 
   ; -- Attempt 1: Windows built-in bsdtar (Win10 1803+) --
   ; Runs a trusted system binary instead of the freshly written app exe,
   ; which security software tends to freeze for cloud analysis on its first
   ; execution (the root cause of installers hanging at this phase).
-  StrCmp $mixcworkTrustedTarPath "" TarExtractElectron
+  StrCmp $mixworkTrustedTarPath "" TarExtractElectron
   StrCpy $R3 "system-tar"
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=tar-extract-start attempt_id=$mixcworkInstallerAttemptId extractor=system-tar helper=$mixcworkTrustedTarPath tar=$INSTDIR\resources\win-resources.tar dest=$INSTDIR\resources$\r$\n"
+  FileWrite $2 "$8 phase=tar-extract-start attempt_id=$mixworkInstallerAttemptId extractor=system-tar helper=$mixworkTrustedTarPath tar=$INSTDIR\resources\win-resources.tar dest=$INSTDIR\resources$\r$\n"
   FileClose $2
   System::Call 'kernel32::GetTickCount()i .r7'
-  nsExec::ExecToLog '"$mixcworkTrustedTarPath" -xf "$INSTDIR\resources\win-resources.tar" -C "$INSTDIR\resources"'
+  nsExec::ExecToLog '"$mixworkTrustedTarPath" -xf "$INSTDIR\resources\win-resources.tar" -C "$INSTDIR\resources"'
   Pop $0
   StrCpy $R2 $0
   System::Call 'kernel32::GetTickCount()i .r6'
   IntOp $5 $6 - $7
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=tar-extract-exit attempt_id=$mixcworkInstallerAttemptId extractor=system-tar raw_kind=numeric-or-adapter-exit exit=$R2 elapsed_ms=$5$\r$\n"
+  FileWrite $2 "$8 phase=tar-extract-exit attempt_id=$mixworkInstallerAttemptId extractor=system-tar raw_kind=numeric-or-adapter-exit exit=$R2 elapsed_ms=$5$\r$\n"
   FileClose $2
   StrCmp $R2 "error" TarExtractElectron
   IntCmp $R2 0 TarExtractVerify TarExtractElectron TarExtractElectron
@@ -1585,41 +1585,41 @@ FunctionEnd
   ; present is treated as success, still gated by TarExtractVerify.
   StrCpy $R3 "electron"
   DetailPrint "[Installer] Launching bundled extractor"
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=tar-extract-start attempt_id=$mixcworkInstallerAttemptId extractor=electron tar=$INSTDIR\resources\win-resources.tar dest=$INSTDIR\resources$\r$\n"
+  FileWrite $2 "$8 phase=tar-extract-start attempt_id=$mixworkInstallerAttemptId extractor=electron tar=$INSTDIR\resources\win-resources.tar dest=$INSTDIR\resources$\r$\n"
   FileClose $2
   System::Call 'kernel32::GetTickCount()i .r7'
 
   !insertmacro ResolveTrustedPowerShell
-  StrCmp $mixcworkTrustedPowerShellPath "" TarExtractHelperNotFound
-  Delete "$PLUGINSDIR\mixcwork-watchdog-$mixcworkInstallerAttemptId.marker"
+  StrCmp $mixworkTrustedPowerShellPath "" TarExtractHelperNotFound
+  Delete "$PLUGINSDIR\mixwork-watchdog-$mixworkInstallerAttemptId.marker"
   ; A stale sentinel from an earlier run must never vouch for this attempt.
   Delete "$INSTDIR\resources\.unpack-runtime-ok"
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_WATCHDOG_MARKER_PATH", t "$PLUGINSDIR\mixcwork-watchdog-$mixcworkInstallerAttemptId.marker")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_EXTRACTOR_EXE", t "$INSTDIR\${APP_EXECUTABLE_FILENAME}")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_EXTRACTOR_SCRIPT", t "$INSTDIR\resources\unpack-runtime.cjs")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_EXTRACTOR_ARCHIVE", t "$INSTDIR\resources\win-resources.tar")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_EXTRACTOR_DESTINATION", t "$INSTDIR\resources")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_EXTRACTOR_LOG", t "$APPDATA\MixCWork\install-timing.log")i'
-  nsExec::ExecToLog '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_WATCHDOG_MARKER_PATH", t "$PLUGINSDIR\mixwork-watchdog-$mixworkInstallerAttemptId.marker")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_EXTRACTOR_EXE", t "$INSTDIR\${APP_EXECUTABLE_FILENAME}")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_EXTRACTOR_SCRIPT", t "$INSTDIR\resources\unpack-runtime.cjs")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_EXTRACTOR_ARCHIVE", t "$INSTDIR\resources\win-resources.tar")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_EXTRACTOR_DESTINATION", t "$INSTDIR\resources")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_EXTRACTOR_LOG", t "$APPDATA\MixWork\install-timing.log")i'
+  nsExec::ExecToLog '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
     $$ErrorActionPreference = \"Stop\";\
-    $$marker = $$env:MIXCWORK_WATCHDOG_MARKER_PATH;\
-    function Write-MixcworkWatchdogMarker {\
+    $$marker = $$env:MIXWORK_WATCHDOG_MARKER_PATH;\
+    function Write-MixWorkWatchdogMarker {\
       param([string] $$value);\
       try {\
         Set-Content -LiteralPath $$marker -Value $$value -NoNewline -ErrorAction Stop\
       } catch {\
-        Write-Output (\"MIXCWORK_WATCHDOG_MARKER_WRITE_FAILED:\" + $$value)\
+        Write-Output (\"MIXWORK_WATCHDOG_MARKER_WRITE_FAILED:\" + $$value)\
       }\
     };\
     try {\
-      $$extractorArgs = \"`\"\" + $$env:MIXCWORK_EXTRACTOR_SCRIPT + \"`\" `\"\" + $$env:MIXCWORK_EXTRACTOR_ARCHIVE + \"`\" `\"\" + $$env:MIXCWORK_EXTRACTOR_DESTINATION + \"`\" `\"\" + $$env:MIXCWORK_EXTRACTOR_LOG + \"`\"\";\
-      $$p = Start-Process -FilePath $$env:MIXCWORK_EXTRACTOR_EXE -ArgumentList $$extractorArgs -NoNewWindow -PassThru\
+      $$extractorArgs = \"`\"\" + $$env:MIXWORK_EXTRACTOR_SCRIPT + \"`\" `\"\" + $$env:MIXWORK_EXTRACTOR_ARCHIVE + \"`\" `\"\" + $$env:MIXWORK_EXTRACTOR_DESTINATION + \"`\" `\"\" + $$env:MIXWORK_EXTRACTOR_LOG + \"`\"\";\
+      $$p = Start-Process -FilePath $$env:MIXWORK_EXTRACTOR_EXE -ArgumentList $$extractorArgs -NoNewWindow -PassThru\
     } catch {\
-      Write-MixcworkWatchdogMarker \"process-start-blocked\";\
-      Write-Output \"MIXCWORK_WATCHDOG_START_BLOCKED\";\
+      Write-MixWorkWatchdogMarker \"process-start-blocked\";\
+      Write-Output \"MIXWORK_WATCHDOG_START_BLOCKED\";\
       exit 125\
     };\
     if ($$p.WaitForExit(600000)) {\
@@ -1627,14 +1627,14 @@ FunctionEnd
       if ($$p.ExitCode -eq $$null) {\
         $$sentinelOk = $$false;\
         try {\
-          $$sentinel = Join-Path $$env:MIXCWORK_EXTRACTOR_DESTINATION \".unpack-runtime-ok\";\
+          $$sentinel = Join-Path $$env:MIXWORK_EXTRACTOR_DESTINATION \".unpack-runtime-ok\";\
           $$sentinelOk = Test-Path -LiteralPath $$sentinel\
         } catch { $$sentinelOk = $$false };\
         if ($$sentinelOk) {\
-          Write-MixcworkWatchdogMarker \"exit-code-null-sentinel-ok\";\
+          Write-MixWorkWatchdogMarker \"exit-code-null-sentinel-ok\";\
           exit 0\
         };\
-        Write-MixcworkWatchdogMarker \"output-validation-failed\";\
+        Write-MixWorkWatchdogMarker \"output-validation-failed\";\
         exit 127\
       };\
       exit $$p.ExitCode\
@@ -1642,34 +1642,34 @@ FunctionEnd
     try {\
       Stop-Process -Id $$p.Id -Force -ErrorAction Stop;\
       if (-not $$p.WaitForExit(30000)) {\
-        Write-MixcworkWatchdogMarker \"process-termination-failed\";\
-        Write-Output \"MIXCWORK_WATCHDOG_TERMINATION_FAILED\";\
+        Write-MixWorkWatchdogMarker \"process-termination-failed\";\
+        Write-Output \"MIXWORK_WATCHDOG_TERMINATION_FAILED\";\
         exit 126\
       }\
     } catch {\
-      Write-MixcworkWatchdogMarker \"process-termination-failed\";\
-      Write-Output \"MIXCWORK_WATCHDOG_TERMINATION_FAILED\";\
+      Write-MixWorkWatchdogMarker \"process-termination-failed\";\
+      Write-Output \"MIXWORK_WATCHDOG_TERMINATION_FAILED\";\
       exit 126\
     };\
-    Write-MixcworkWatchdogMarker \"process-timeout\";\
-    Write-Output \"MIXCWORK_WATCHDOG_TIMEOUT\";\
+    Write-MixWorkWatchdogMarker \"process-timeout\";\
+    Write-Output \"MIXWORK_WATCHDOG_TIMEOUT\";\
     exit 124"'
   Pop $0
   StrCpy $R2 $0
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_WATCHDOG_MARKER_PATH", t "")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_EXTRACTOR_EXE", t "")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_EXTRACTOR_SCRIPT", t "")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_EXTRACTOR_ARCHIVE", t "")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_EXTRACTOR_DESTINATION", t "")i'
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_EXTRACTOR_LOG", t "")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_WATCHDOG_MARKER_PATH", t "")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_EXTRACTOR_EXE", t "")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_EXTRACTOR_SCRIPT", t "")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_EXTRACTOR_ARCHIVE", t "")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_EXTRACTOR_DESTINATION", t "")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_EXTRACTOR_LOG", t "")i'
   StrCpy $R4 "none"
   ClearErrors
-  FileOpen $3 "$PLUGINSDIR\mixcwork-watchdog-$mixcworkInstallerAttemptId.marker" r
+  FileOpen $3 "$PLUGINSDIR\mixwork-watchdog-$mixworkInstallerAttemptId.marker" r
   IfErrors TarExtractMarkerReadDone
     FileRead $3 $R4
     FileClose $3
   TarExtractMarkerReadDone:
-  Delete "$PLUGINSDIR\mixcwork-watchdog-$mixcworkInstallerAttemptId.marker"
+  Delete "$PLUGINSDIR\mixwork-watchdog-$mixworkInstallerAttemptId.marker"
   Goto TarExtractWatchdogReturned
 
   TarExtractHelperNotFound:
@@ -1679,10 +1679,10 @@ FunctionEnd
   TarExtractWatchdogReturned:
   System::Call 'kernel32::GetTickCount()i .r6'
   IntOp $5 $6 - $7
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=tar-extract-exit attempt_id=$mixcworkInstallerAttemptId extractor=electron raw_marker=$R4 exit=$R2 elapsed_ms=$5$\r$\n"
+  FileWrite $2 "$8 phase=tar-extract-exit attempt_id=$mixworkInstallerAttemptId extractor=electron raw_marker=$R4 exit=$R2 elapsed_ms=$5$\r$\n"
   FileClose $2
 
   ; "error" = nsExec couldn't start PowerShell (check before IntCmp, which
@@ -1721,10 +1721,10 @@ FunctionEnd
   StrCpy $R5 "python-entry-missing"
 
   TarExtractRequiredResourceMissing:
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixcworkInstallerAttemptId extractor=$R3 exit=$R2 reason=$R5-after-extract$\r$\n"
+  FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixworkInstallerAttemptId extractor=$R3 exit=$R2 reason=$R5-after-extract$\r$\n"
   FileClose $2
   ; A bogus system-tar success still gets a shot at the bundled extractor.
   ;
@@ -1732,38 +1732,38 @@ FunctionEnd
   ; in /S installs unless a silent default is declared, and the in-app update
   ; must never block on an orphan dialog.
   StrCmp $R3 "system-tar" TarExtractElectron
-  MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork installation stopped because resource extraction completed without all required runtime resources ($R5). The installer will not commit a partial application. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+  MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork installation stopped because resource extraction completed without all required runtime resources ($R5). The installer will not commit a partial application. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
   Goto TarExtractFailed
 
   TarExtractProcessFailed:
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixcworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 reason=process-start-failed$\r$\n"
+    FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 reason=process-start-failed$\r$\n"
     FileClose $2
-    MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork installation stopped because the resource extractor could not be started (exit=$R2). The installer will not commit a partial application. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+    MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork installation stopped because the resource extractor could not be started (exit=$R2). The installer will not commit a partial application. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
     Goto TarExtractFailed
 
   TarExtractTimeout:
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixcworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 reason=timeout$\r$\n"
+    FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 reason=timeout$\r$\n"
     FileClose $2
-    MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork installation stopped because resource extraction timed out after 10 minutes. The blocked extractor was terminated and the installer will not commit a partial application. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+    MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork installation stopped because resource extraction timed out after 10 minutes. The blocked extractor was terminated and the installer will not commit a partial application. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
     Goto TarExtractFailed
 
   TarExtractTerminationFailed:
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixcworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 reason=process-termination-failed action=preserve-all-no-concurrent-rollback$\r$\n"
+    FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 reason=process-termination-failed action=preserve-all-no-concurrent-rollback$\r$\n"
     FileClose $2
     System::Call 'Kernel32::SetEnvironmentVariable(t "ELECTRON_RUN_AS_NODE", t "")i'
     ${If} ${Silent}
       Banner::destroy
     ${EndIf}
-    MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork installation stopped because the extractor process could not be confirmed terminated. No automatic rollback or cleanup was attempted while that process may still be writing files. Restart Windows before retrying. Recovery files (if any): $mixcworkOldInstallBackupPath. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+    MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork installation stopped because the extractor process could not be confirmed terminated. No automatic rollback or cleanup was attempted while that process may still be writing files. Restart Windows before retrying. Recovery files (if any): $mixworkOldInstallBackupPath. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
     SetErrorLevel 3
     Quit
 
@@ -1776,36 +1776,36 @@ FunctionEnd
     ; never trigger deletion, an unreadable exit code alone must never abort
     ; an installation whose payload verifiably exists.)
     IfFileExists "$INSTDIR\resources\.unpack-runtime-ok" 0 TarExtractOutputValidationFatal
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=tar-extract-sentinel-rescue attempt_id=$mixcworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 sentinel=present$\r$\n"
+    FileWrite $2 "$8 phase=tar-extract-sentinel-rescue attempt_id=$mixworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 sentinel=present$\r$\n"
     FileClose $2
     Goto TarExtractVerify
 
   TarExtractOutputValidationFatal:
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixcworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 reason=watchdog-output-validation-failed$\r$\n"
+    FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 reason=watchdog-output-validation-failed$\r$\n"
     FileClose $2
-    MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork installation stopped because the resource extractor watchdog returned an invalid result. The installer will not commit a partial application. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+    MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork installation stopped because the resource extractor watchdog returned an invalid result. The installer will not commit a partial application. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
     Goto TarExtractFailed
 
   TarExtractNonZero:
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixcworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 reason=numeric-child-exit$\r$\n"
+    FileWrite $2 "$8 phase=tar-extract-error attempt_id=$mixworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 elapsed_ms=$5 reason=numeric-child-exit$\r$\n"
     FileClose $2
-    MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork installation stopped because resource extraction failed (child exit code $R2). The installer will not commit a partial application. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+    MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork installation stopped because resource extraction failed (child exit code $R2). The installer will not commit a partial application. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
     Goto TarExtractFailed
 
   TarExtractSucceeded:
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=tar-extract-complete attempt_id=$mixcworkInstallerAttemptId extractor=$R3 exit=$R2$\r$\n"
+  FileWrite $2 "$8 phase=tar-extract-complete attempt_id=$mixworkInstallerAttemptId extractor=$R3 exit=$R2$\r$\n"
   FileClose $2
   ; Completion marker, read by the app for install-integrity diagnostics.
   FileOpen $2 "$INSTDIR\resources\.win-resources-extracted" w
@@ -1822,15 +1822,15 @@ FunctionEnd
   Goto TarExtractDone
 
   TarExtractFailed:
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=tar-extract-failed-archive-preserved attempt_id=$mixcworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 action=abort-install$\r$\n"
+  FileWrite $2 "$8 phase=tar-extract-failed-archive-preserved attempt_id=$mixworkInstallerAttemptId extractor=$R3 exit=$R2 raw_marker=$R4 action=abort-install$\r$\n"
   FileClose $2
   System::Call 'Kernel32::SetEnvironmentVariable(t "ELECTRON_RUN_AS_NODE", t "")i'
   !insertmacro customRollbackOldInstall "resource-extraction-failed"
-  StrCmp $mixcworkOldInstallRollbackStatus "failed" 0 TarExtractAbort
-    MessageBox MB_OK|MB_ICONEXCLAMATION "The installation failed and automatic rollback did not complete. No recovery copy was deleted. Previous files: $mixcworkOldInstallBackupPath. Partial update: $mixcworkOldInstallFailedPath. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+  StrCmp $mixworkOldInstallRollbackStatus "failed" 0 TarExtractAbort
+    MessageBox MB_OK|MB_ICONEXCLAMATION "The installation failed and automatic rollback did not complete. No recovery copy was deleted. Previous files: $mixworkOldInstallBackupPath. Partial update: $mixworkOldInstallFailedPath. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
   TarExtractAbort:
   ${If} ${Silent}
     Banner::destroy
@@ -1844,34 +1844,34 @@ FunctionEnd
   ; Restore any skills not already present in the new install, then clean up
   ; only this attempt's backup. A later attempt never consumes a historical
   ; fixed skills-backup directory.
-  StrCmp $mixcworkLegacySkillsStatus "legacy-backup-succeeded" 0 SkipSkillRestore
+  StrCmp $mixworkLegacySkillsStatus "legacy-backup-succeeded" 0 SkipSkillRestore
   System::Call 'kernel32::GetTickCount()i .r7'
-  IfFileExists "$APPDATA\MixCWork\skills-backup\$mixcworkInstallerAttemptId\backup-manifest.json" SkillRestoreAttemptBackupReady
+  IfFileExists "$APPDATA\MixWork\skills-backup\$mixworkInstallerAttemptId\backup-manifest.json" SkillRestoreAttemptBackupReady
     StrCpy $R2 "backup-missing"
     StrCpy $1 "current-attempt-backup-manifest-missing"
-    StrCpy $mixcworkLegacySkillsRestoreStatus "legacy-restore-backup-missing"
+    StrCpy $mixworkLegacySkillsRestoreStatus "legacy-restore-backup-missing"
     Goto SkillRestoreCommandDone
 
   SkillRestoreAttemptBackupReady:
     DetailPrint "[Installer] Restoring user-created skills"
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=skill-restore-start attempt_id=$mixcworkInstallerAttemptId backup=$APPDATA\MixCWork\skills-backup\$mixcworkInstallerAttemptId$\r$\n"
+    FileWrite $2 "$8 phase=skill-restore-start attempt_id=$mixworkInstallerAttemptId backup=$APPDATA\MixWork\skills-backup\$mixworkInstallerAttemptId$\r$\n"
     FileClose $2
 
-    StrCmp $mixcworkTrustedPowerShellPath "" SkillRestoreHelperMissing
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_SKILL_SOURCE", t "$mixcworkOldInstallOriginalPath\resources\SKILLs")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_SKILL_BACKUP_ROOT", t "$APPDATA\MixCWork\skills-backup")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_SKILL_DESTINATION", t "$INSTDIR\resources\SKILLs")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ATTEMPT_ID", t "$mixcworkInstallerAttemptId")i'
-    nsExec::ExecToStack '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
+    StrCmp $mixworkTrustedPowerShellPath "" SkillRestoreHelperMissing
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_SKILL_SOURCE", t "$mixworkOldInstallOriginalPath\resources\SKILLs")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_SKILL_BACKUP_ROOT", t "$APPDATA\MixWork\skills-backup")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_SKILL_DESTINATION", t "$INSTDIR\resources\SKILLs")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ATTEMPT_ID", t "$mixworkInstallerAttemptId")i'
+    nsExec::ExecToStack '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "\
       $$ErrorActionPreference = \"Stop\";\
-      $$attempt   = $$env:MIXCWORK_INSTALL_ATTEMPT_ID;\
-      $$root      = $$env:MIXCWORK_SKILL_BACKUP_ROOT;\
-      $$source    = $$env:MIXCWORK_SKILL_SOURCE;\
+      $$attempt   = $$env:MIXWORK_INSTALL_ATTEMPT_ID;\
+      $$root      = $$env:MIXWORK_SKILL_BACKUP_ROOT;\
+      $$source    = $$env:MIXWORK_SKILL_SOURCE;\
       $$backup    = Join-Path $$root $$attempt;\
-      $$newSkills = $$env:MIXCWORK_SKILL_DESTINATION;\
+      $$newSkills = $$env:MIXWORK_SKILL_DESTINATION;\
       try {\
         if ([string]::IsNullOrWhiteSpace($$attempt)) { throw \"attempt id missing\" };\
         $$manifestPath = Join-Path $$backup \"backup-manifest.json\";\
@@ -1932,53 +1932,53 @@ FunctionEnd
     Pop $0
     Pop $1
     StrCpy $R2 $0
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_SKILL_SOURCE", t "")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_SKILL_BACKUP_ROOT", t "")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_SKILL_DESTINATION", t "")i'
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ATTEMPT_ID", t "")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_SKILL_SOURCE", t "")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_SKILL_BACKUP_ROOT", t "")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_SKILL_DESTINATION", t "")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ATTEMPT_ID", t "")i'
     Goto SkillRestoreCommandDone
 
     SkillRestoreHelperMissing:
     StrCpy $R2 "helper-not-found"
     StrCpy $1 "trusted-powershell-unavailable"
-    StrCpy $mixcworkLegacySkillsRestoreStatus "legacy-restore-helper-launch-failed"
+    StrCpy $mixworkLegacySkillsRestoreStatus "legacy-restore-helper-launch-failed"
 
     SkillRestoreCommandDone:
     StrCmp $R2 "0" 0 +2
-      StrCpy $mixcworkLegacySkillsRestoreStatus "legacy-restore-succeeded"
+      StrCpy $mixworkLegacySkillsRestoreStatus "legacy-restore-succeeded"
     StrCmp $R2 "20" 0 +2
-      StrCpy $mixcworkLegacySkillsRestoreStatus "legacy-restore-name-conflict"
-    StrCmp $mixcworkLegacySkillsRestoreStatus "not-required" 0 +2
-      StrCpy $mixcworkLegacySkillsRestoreStatus "legacy-restore-failed"
+      StrCpy $mixworkLegacySkillsRestoreStatus "legacy-restore-name-conflict"
+    StrCmp $mixworkLegacySkillsRestoreStatus "not-required" 0 +2
+      StrCpy $mixworkLegacySkillsRestoreStatus "legacy-restore-failed"
     System::Call 'kernel32::GetTickCount()i .r6'
     IntOp $5 $6 - $7
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=skill-restore-complete attempt_id=$mixcworkInstallerAttemptId status=$mixcworkLegacySkillsRestoreStatus exit=$R2 elapsed_ms=$5 backup=$APPDATA\MixCWork\skills-backup\$mixcworkInstallerAttemptId$\r$\n"
-    FileWrite $2 "$8 phase=skill-restore-output attempt_id=$mixcworkInstallerAttemptId status=$mixcworkLegacySkillsRestoreStatus text=$1$\r$\n"
+    FileWrite $2 "$8 phase=skill-restore-complete attempt_id=$mixworkInstallerAttemptId status=$mixworkLegacySkillsRestoreStatus exit=$R2 elapsed_ms=$5 backup=$APPDATA\MixWork\skills-backup\$mixworkInstallerAttemptId$\r$\n"
+    FileWrite $2 "$8 phase=skill-restore-output attempt_id=$mixworkInstallerAttemptId status=$mixworkLegacySkillsRestoreStatus text=$1$\r$\n"
     FileClose $2
 
     StrCmp $R2 "0" SkillRestoreValidated
     StrCmp $R2 "20" SkillRestoreConflictPreserved
-      FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+      FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $2 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $2 "$8 phase=skill-restore-failed attempt_id=$mixcworkInstallerAttemptId status=legacy-restore-failed action=attempt-backup-preserved rename_status=$mixcworkOldInstallRenameStatus$\r$\n"
+      FileWrite $2 "$8 phase=skill-restore-failed attempt_id=$mixworkInstallerAttemptId status=legacy-restore-failed action=attempt-backup-preserved rename_status=$mixworkOldInstallRenameStatus$\r$\n"
       FileClose $2
 
       ; On the directory-swap path, restoring the previous application also
       ; restores its original in-place skills. The AppData copy remains as an
       ; additional recovery source because the PowerShell transaction deletes
       ; it only after every skill copy succeeds.
-      StrCmp $mixcworkOldInstallRenameStatus "success" 0 SkillRestoreFailurePreserved
+      StrCmp $mixworkOldInstallRenameStatus "success" 0 SkillRestoreFailurePreserved
       System::Call 'Kernel32::SetEnvironmentVariable(t "ELECTRON_RUN_AS_NODE", t "")i'
       !insertmacro customRollbackOldInstall "skill-restore-failed"
-      StrCmp $mixcworkOldInstallRollbackStatus "success" SkillRestoreRollbackSucceeded
-        MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork update could not restore user skills, and automatic rollback did not complete. No recovery copy was deleted. Previous files: $mixcworkOldInstallBackupPath. Partial update: $mixcworkOldInstallFailedPath. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+      StrCmp $mixworkOldInstallRollbackStatus "success" SkillRestoreRollbackSucceeded
+        MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork update could not restore user skills, and automatic rollback did not complete. No recovery copy was deleted. Previous files: $mixworkOldInstallBackupPath. Partial update: $mixworkOldInstallFailedPath. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
         Goto SkillRestoreAbort
       SkillRestoreRollbackSucceeded:
-        MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork update could not restore user skills, so the previous version was restored. Please retry the update. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+        MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork update could not restore user skills, so the previous version was restored. Please retry the update. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
       SkillRestoreAbort:
       ${If} ${Silent}
         Banner::destroy
@@ -1992,24 +1992,24 @@ FunctionEnd
       ; registration, but record an explicit degraded state for retry/manual
       ; recovery. The dialog must state exactly what survives: when no backup
       ; exists for this attempt, do not claim one was preserved.
-      StrCmp $mixcworkLegacySkillsRestoreStatus "legacy-restore-backup-missing" SkillRestoreDegradedBackupMissing
-      FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+      StrCmp $mixworkLegacySkillsRestoreStatus "legacy-restore-backup-missing" SkillRestoreDegradedBackupMissing
+      FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $2 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $2 "$8 phase=skill-restore-degraded attempt_id=$mixcworkInstallerAttemptId status=$mixcworkLegacySkillsRestoreStatus action=continue-with-attempt-backup-preserved backup=$APPDATA\MixCWork\skills-backup\$mixcworkInstallerAttemptId$\r$\n"
+      FileWrite $2 "$8 phase=skill-restore-degraded attempt_id=$mixworkInstallerAttemptId status=$mixworkLegacySkillsRestoreStatus action=continue-with-attempt-backup-preserved backup=$APPDATA\MixWork\skills-backup\$mixworkInstallerAttemptId$\r$\n"
       FileClose $2
-      MessageBox MB_OK|MB_ICONEXCLAMATION "MixCWork will finish installing, but legacy user skills could not be restored automatically ($mixcworkLegacySkillsRestoreStatus). The recovery backup was preserved at $APPDATA\MixCWork\skills-backup\$mixcworkInstallerAttemptId. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "MixWork will finish installing, but legacy user skills could not be restored automatically ($mixworkLegacySkillsRestoreStatus). The recovery backup was preserved at $APPDATA\MixWork\skills-backup\$mixworkInstallerAttemptId. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
       Goto SkillRestoreValidated
 
     SkillRestoreDegradedBackupMissing:
       ; No backup exists for this attempt, so nothing could be restored and
       ; there is no preserved copy to point the user at.
-      FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+      FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $2 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $2 "$8 phase=skill-restore-degraded attempt_id=$mixcworkInstallerAttemptId status=$mixcworkLegacySkillsRestoreStatus action=continue-no-backup-found backup=$APPDATA\MixCWork\skills-backup\$mixcworkInstallerAttemptId$\r$\n"
+      FileWrite $2 "$8 phase=skill-restore-degraded attempt_id=$mixworkInstallerAttemptId status=$mixworkLegacySkillsRestoreStatus action=continue-no-backup-found backup=$APPDATA\MixWork\skills-backup\$mixworkInstallerAttemptId$\r$\n"
       FileClose $2
-      MessageBox MB_OK|MB_ICONEXCLAMATION "MixCWork will finish installing, but the recovery backup for legacy user skills was not found, so no skills were restored ($mixcworkLegacySkillsRestoreStatus). Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "MixWork will finish installing, but the recovery backup for legacy user skills was not found, so no skills were restored ($mixworkLegacySkillsRestoreStatus). Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
       Goto SkillRestoreValidated
 
     SkillRestoreConflictPreserved:
@@ -2017,10 +2017,10 @@ FunctionEnd
       ; copy to be overwritten or deleted. Finish installing the verified new
       ; app, retain the entire attempt backup, and expose a typed state for
       ; user-context import/manual recovery.
-      FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+      FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
       FileSeek $2 0 END
       !insertmacro GetTimestamp $8
-      FileWrite $2 "$8 phase=skill-restore-conflict-preserved attempt_id=$mixcworkInstallerAttemptId status=name-conflict action=attempt-backup-preserved backup=$APPDATA\MixCWork\skills-backup\$mixcworkInstallerAttemptId$\r$\n"
+      FileWrite $2 "$8 phase=skill-restore-conflict-preserved attempt_id=$mixworkInstallerAttemptId status=name-conflict action=attempt-backup-preserved backup=$APPDATA\MixWork\skills-backup\$mixworkInstallerAttemptId$\r$\n"
       FileClose $2
     SkillRestoreValidated:
   SkipSkillRestore:
@@ -2035,21 +2035,21 @@ FunctionEnd
   ; leftover of an interrupted install -- the entry path is always $INSTDIR,
   ; so this step self-heals it) and the SKILLs entry older installers added.
   !insertmacro ResolveTrustedPowerShell
-  StrCmp $mixcworkTrustedPowerShellPath "" DefenderTrimHelperMissing
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ROOT", t "$INSTDIR")i'
-  nsExec::ExecToStack '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "try { $$root = $$env:MIXCWORK_INSTALL_ROOT; $$targets = @($$root, (Join-Path $$root \"resources\SKILLs\")); Remove-MpPreference -ExclusionPath $$targets -ErrorAction SilentlyContinue; Write-Output \"removed\" } catch { Write-Output (\"failed: \" + $$_.Exception.Message) }"'
+  StrCmp $mixworkTrustedPowerShellPath "" DefenderTrimHelperMissing
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ROOT", t "$INSTDIR")i'
+  nsExec::ExecToStack '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "try { $$root = $$env:MIXWORK_INSTALL_ROOT; $$targets = @($$root, (Join-Path $$root \"resources\SKILLs\")); Remove-MpPreference -ExclusionPath $$targets -ErrorAction SilentlyContinue; Write-Output \"removed\" } catch { Write-Output (\"failed: \" + $$_.Exception.Message) }"'
   Pop $0
   Pop $1
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ROOT", t "")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ROOT", t "")i'
   Goto DefenderTrimLog
   DefenderTrimHelperMissing:
   StrCpy $0 "helper-not-found"
   StrCpy $1 "skipped:trusted-powershell-unavailable"
   DefenderTrimLog:
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=defender-exclusion-trim-complete attempt_id=$mixcworkInstallerAttemptId exit=$0 output=$1$\r$\n"
+  FileWrite $2 "$8 phase=defender-exclusion-trim-complete attempt_id=$mixworkInstallerAttemptId exit=$0 output=$1$\r$\n"
   FileClose $2
 
   ; Re-add the permanent entries; skipped entirely when the
@@ -2069,77 +2069,77 @@ FunctionEnd
   ClearErrors
   ${GetOptions} $R9 "/NoDefenderExclusion" $R8
   IfErrors 0 DefenderPermanentAddSkipped
-  StrCmp $mixcworkTrustedPowerShellPath "" DefenderPermanentAddHelperMissing
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ROOT", t "$INSTDIR")i'
-  nsExec::ExecToStack '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "try { $$root = $$env:MIXCWORK_INSTALL_ROOT; $$targets = @((Join-Path $$root \"resources\openclaw-runtime\"), (Join-Path $$root \"resources\python-win\"), (Join-Path $$root \"resources\app.asar.unpacked\"), (Join-Path $$root \"resources\app.asar\"), (Join-Path $$root \"resources\win-resources.tar\")); Add-MpPreference -ExclusionPath $$targets -ErrorAction Stop; Write-Output \"added\" } catch { Write-Output (\"skipped: \" + $$_.Exception.Message) }"'
+  StrCmp $mixworkTrustedPowerShellPath "" DefenderPermanentAddHelperMissing
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ROOT", t "$INSTDIR")i'
+  nsExec::ExecToStack '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "try { $$root = $$env:MIXWORK_INSTALL_ROOT; $$targets = @((Join-Path $$root \"resources\openclaw-runtime\"), (Join-Path $$root \"resources\python-win\"), (Join-Path $$root \"resources\app.asar.unpacked\"), (Join-Path $$root \"resources\app.asar\"), (Join-Path $$root \"resources\win-resources.tar\")); Add-MpPreference -ExclusionPath $$targets -ErrorAction Stop; Write-Output \"added\" } catch { Write-Output (\"skipped: \" + $$_.Exception.Message) }"'
   Pop $0
   Pop $1
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ROOT", t "")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ROOT", t "")i'
   Goto DefenderPermanentAddLog
   DefenderPermanentAddHelperMissing:
   StrCpy $0 "helper-not-found"
   StrCpy $1 "skipped:trusted-powershell-unavailable"
   DefenderPermanentAddLog:
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=defender-exclusion-permanent-complete attempt_id=$mixcworkInstallerAttemptId exit=$0 output=$1$\r$\n"
+  FileWrite $2 "$8 phase=defender-exclusion-permanent-complete attempt_id=$mixworkInstallerAttemptId exit=$0 output=$1$\r$\n"
   FileClose $2
   DefenderPermanentAddSkipped:
 
   ; Validate every scenario before electron-builder writes new registration
   ; or shortcuts. The archive and unpack script are diagnostic recovery
   ; material, never a successful validation condition.
-  StrCpy $mixcworkNewInstallValidationStatus "failed"
-  StrCpy $mixcworkNewInstallValidationReason "app-executable-missing"
+  StrCpy $mixworkNewInstallValidationStatus "failed"
+  StrCpy $mixworkNewInstallValidationReason "app-executable-missing"
   IfFileExists "$INSTDIR\${APP_EXECUTABLE_FILENAME}" 0 NewInstallPrevalidateFailed
-  StrCpy $mixcworkNewInstallValidationReason "uninstaller-missing"
+  StrCpy $mixworkNewInstallValidationReason "uninstaller-missing"
   IfFileExists "$INSTDIR\${UNINSTALL_FILENAME}" 0 NewInstallPrevalidateFailed
-  StrCpy $mixcworkNewInstallValidationReason "app-asar-missing"
+  StrCpy $mixworkNewInstallValidationReason "app-asar-missing"
   IfFileExists "$INSTDIR\resources\app.asar" 0 NewInstallPrevalidateFailed
 
   IfFileExists "$INSTDIR\resources\openclaw-runtime\gateway-bundle.mjs" NewInstallPrevalidateSkills
   IfFileExists "$INSTDIR\resources\openclaw-runtime\openclaw.mjs" NewInstallPrevalidateSkills
-  StrCpy $mixcworkNewInstallValidationReason "runtime-entry-missing"
+  StrCpy $mixworkNewInstallValidationReason "runtime-entry-missing"
   Goto NewInstallPrevalidateFailed
 
   NewInstallPrevalidateSkills:
-    StrCpy $mixcworkNewInstallValidationReason "skills-content-missing"
+    StrCpy $mixworkNewInstallValidationReason "skills-content-missing"
     IfFileExists "$INSTDIR\resources\SKILLs\*.*" 0 NewInstallPrevalidateFailed
-    StrCpy $mixcworkNewInstallValidationReason "python-entry-missing"
+    StrCpy $mixworkNewInstallValidationReason "python-entry-missing"
     IfFileExists "$INSTDIR\resources\python-win\python.exe" NewInstallPrevalidateSucceeded
     IfFileExists "$INSTDIR\resources\python-win\python3.exe" NewInstallPrevalidateSucceeded
     Goto NewInstallPrevalidateFailed
 
   NewInstallPrevalidateSucceeded:
-    StrCpy $mixcworkNewInstallValidationStatus "success"
-    StrCpy $mixcworkNewInstallValidationReason "new-install-runtime-ready"
-    StrCmp $mixcworkOldInstallRenameStatus "success" 0 NewInstallPrevalidateLog
-      StrCpy $mixcworkOldInstallRenameStatus "prevalidated"
+    StrCpy $mixworkNewInstallValidationStatus "success"
+    StrCpy $mixworkNewInstallValidationReason "new-install-runtime-ready"
+    StrCmp $mixworkOldInstallRenameStatus "success" 0 NewInstallPrevalidateLog
+      StrCpy $mixworkOldInstallRenameStatus "prevalidated"
     NewInstallPrevalidateLog:
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=new-install-prevalidated attempt_id=$mixcworkInstallerAttemptId status=$mixcworkNewInstallValidationStatus reason=$mixcworkNewInstallValidationReason rename_status=$mixcworkOldInstallRenameStatus registration=pending backup_path=$mixcworkOldInstallBackupPath$\r$\n"
+    FileWrite $2 "$8 phase=new-install-prevalidated attempt_id=$mixworkInstallerAttemptId status=$mixworkNewInstallValidationStatus reason=$mixworkNewInstallValidationReason rename_status=$mixworkOldInstallRenameStatus registration=pending backup_path=$mixworkOldInstallBackupPath$\r$\n"
     FileClose $2
     Goto NewInstallPrevalidateDone
 
   NewInstallPrevalidateFailed:
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=new-install-prevalidation-failed attempt_id=$mixcworkInstallerAttemptId status=$mixcworkNewInstallValidationStatus reason=$mixcworkNewInstallValidationReason rename_status=$mixcworkOldInstallRenameStatus registration=not-written backup_path=$mixcworkOldInstallBackupPath$\r$\n"
+    FileWrite $2 "$8 phase=new-install-prevalidation-failed attempt_id=$mixworkInstallerAttemptId status=$mixworkNewInstallValidationStatus reason=$mixworkNewInstallValidationReason rename_status=$mixworkOldInstallRenameStatus registration=not-written backup_path=$mixworkOldInstallBackupPath$\r$\n"
     FileClose $2
-    StrCmp $mixcworkOldInstallRenameStatus "success" 0 NewInstallPrevalidateAbort
+    StrCmp $mixworkOldInstallRenameStatus "success" 0 NewInstallPrevalidateAbort
     !insertmacro customRollbackOldInstall "new-install-validation-failed"
-    StrCmp $mixcworkOldInstallRollbackStatus "success" NewInstallPrevalidateRollbackSucceeded
-      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork update could not be validated, and automatic rollback did not complete. No recovery copy was deleted. Previous files: $mixcworkOldInstallBackupPath. Partial update: $mixcworkOldInstallFailedPath. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+    StrCmp $mixworkOldInstallRollbackStatus "success" NewInstallPrevalidateRollbackSucceeded
+      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork update could not be validated, and automatic rollback did not complete. No recovery copy was deleted. Previous files: $mixworkOldInstallBackupPath. Partial update: $mixworkOldInstallFailedPath. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
       Goto NewInstallPrevalidateAbortAfterMessage
     NewInstallPrevalidateRollbackSucceeded:
-      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork update could not be validated, so the previous version was restored. Please retry the update. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork update could not be validated, so the previous version was restored. Please retry the update. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
       Goto NewInstallPrevalidateAbortAfterMessage
     NewInstallPrevalidateAbort:
-      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixCWork installation stopped because the new application could not be validated ($mixcworkNewInstallValidationReason). New registration and shortcuts were not written. Details: $APPDATA\MixCWork\install-timing.log" /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "The MixWork installation stopped because the new application could not be validated ($mixworkNewInstallValidationReason). New registration and shortcuts were not written. Details: $APPDATA\MixWork\install-timing.log" /SD IDOK
     NewInstallPrevalidateAbortAfterMessage:
     ${If} ${Silent}
       Banner::destroy
@@ -2155,13 +2155,13 @@ FunctionEnd
 ; customBeforeRegistryAddInstallInfo. This hook only commits the already
 ; prevalidated directory swap and schedules exact-current-backup cleanup.
 !macro customInstall
-  StrCmp $mixcworkNewInstallValidationStatus "success" 0 InstallFinalizeInvariantFailed
-  StrCmp $mixcworkOldInstallRenameStatus "prevalidated" 0 InstallFinalizeNoRename
-    StrCpy $mixcworkOldInstallRenameStatus "committed"
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  StrCmp $mixworkNewInstallValidationStatus "success" 0 InstallFinalizeInvariantFailed
+  StrCmp $mixworkOldInstallRenameStatus "prevalidated" 0 InstallFinalizeNoRename
+    StrCpy $mixworkOldInstallRenameStatus "committed"
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=old-install-commit-complete attempt_id=$mixcworkInstallerAttemptId status=$mixcworkNewInstallValidationStatus reason=$mixcworkNewInstallValidationReason registration=written backup_path=$mixcworkOldInstallBackupPath$\r$\n"
+    FileWrite $2 "$8 phase=old-install-commit-complete attempt_id=$mixworkInstallerAttemptId status=$mixworkNewInstallValidationStatus reason=$mixworkNewInstallValidationReason registration=written backup_path=$mixworkOldInstallBackupPath$\r$\n"
     FileClose $2
   InstallFinalizeNoRename:
 
@@ -2171,23 +2171,23 @@ FunctionEnd
   ; Pass the path through the environment to avoid shell interpretation of a
   ; user-selected install directory. Exec is asynchronous, so this phase is
   ; "scheduled", not complete.
-  ${If} $mixcworkOldInstallRenameStatus == "committed"
+  ${If} $mixworkOldInstallRenameStatus == "committed"
     StrCpy $0 "success"
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_OLD_CLEANUP_PATH", t "$mixcworkOldInstallBackupPath")i'
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_OLD_CLEANUP_PATH", t "$mixworkOldInstallBackupPath")i'
     ClearErrors
-    StrCmp $mixcworkTrustedPowerShellPath "" OldInstallCleanupHelperMissing
-    Exec '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -WindowStyle Hidden -Command "Remove-Item -LiteralPath $$env:MIXCWORK_OLD_CLEANUP_PATH -Recurse -Force -ErrorAction SilentlyContinue"'
+    StrCmp $mixworkTrustedPowerShellPath "" OldInstallCleanupHelperMissing
+    Exec '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -WindowStyle Hidden -Command "Remove-Item -LiteralPath $$env:MIXWORK_OLD_CLEANUP_PATH -Recurse -Force -ErrorAction SilentlyContinue"'
     IfErrors 0 +2
       StrCpy $0 "launch-failed"
     Goto OldInstallCleanupDispatchDone
     OldInstallCleanupHelperMissing:
       StrCpy $0 "helper-not-found"
     OldInstallCleanupDispatchDone:
-    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_OLD_CLEANUP_PATH", t "")i'
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_OLD_CLEANUP_PATH", t "")i'
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=old-install-cleanup-scheduled attempt_id=$mixcworkInstallerAttemptId dispatch=$0 backup_path=$mixcworkOldInstallBackupPath target=exact-current-backup cleanup_mode=async-exec-after-commit$\r$\n"
+    FileWrite $2 "$8 phase=old-install-cleanup-scheduled attempt_id=$mixworkInstallerAttemptId dispatch=$0 backup_path=$mixworkOldInstallBackupPath target=exact-current-backup cleanup_mode=async-exec-after-commit$\r$\n"
     FileClose $2
   ${EndIf}
   Goto InstallFinalizeComplete
@@ -2196,19 +2196,19 @@ FunctionEnd
     ; The version-pinned template contract guarantees the pre-registry hook.
     ; Fail visibly if that contract is ever broken instead of silently
     ; finalizing an unvalidated tree.
-    FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+    FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
     FileSeek $2 0 END
     !insertmacro GetTimestamp $8
-    FileWrite $2 "$8 phase=install-finalize-invariant-failed attempt_id=$mixcworkInstallerAttemptId validation_status=$mixcworkNewInstallValidationStatus rename_status=$mixcworkOldInstallRenameStatus$\r$\n"
+    FileWrite $2 "$8 phase=install-finalize-invariant-failed attempt_id=$mixworkInstallerAttemptId validation_status=$mixworkNewInstallValidationStatus rename_status=$mixworkOldInstallRenameStatus$\r$\n"
     FileClose $2
     SetErrorLevel 2
     Quit
 
   InstallFinalizeComplete:
-  FileOpen $2 "$APPDATA\MixCWork\install-timing.log" a
+  FileOpen $2 "$APPDATA\MixWork\install-timing.log" a
   FileSeek $2 0 END
   !insertmacro GetTimestamp $8
-  FileWrite $2 "$8 phase=install-complete attempt_id=$mixcworkInstallerAttemptId scenario=$mixcworkInstallScenario$\r$\n"
+  FileWrite $2 "$8 phase=install-complete attempt_id=$mixworkInstallerAttemptId scenario=$mixworkInstallScenario$\r$\n"
   FileClose $2
   DetailPrint "[Installer] Installation complete"
 
@@ -2230,11 +2230,11 @@ FunctionEnd
   ; whole-directory entry in case an install was interrupted before its
   ; rebalance step ran.
   !insertmacro ResolveTrustedPowerShell
-  StrCmp $mixcworkTrustedPowerShellPath "" DefenderUninstallCleanupDone
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ROOT", t "$INSTDIR")i'
-  nsExec::ExecToStack '"$mixcworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "try { $$root = $$env:MIXCWORK_INSTALL_ROOT; $$targets = @($$root, (Join-Path $$root \"resources\openclaw-runtime\"), (Join-Path $$root \"resources\python-win\"), (Join-Path $$root \"resources\SKILLs\"), (Join-Path $$root \"resources\app.asar.unpacked\"), (Join-Path $$root \"resources\win-resources.tar\"), (Join-Path $$root \"resources\app.asar\")); Remove-MpPreference -ExclusionPath $$targets -ErrorAction SilentlyContinue } catch {}"'
+  StrCmp $mixworkTrustedPowerShellPath "" DefenderUninstallCleanupDone
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ROOT", t "$INSTDIR")i'
+  nsExec::ExecToStack '"$mixworkTrustedPowerShellPath" -NoProfile -NonInteractive -Command "try { $$root = $$env:MIXWORK_INSTALL_ROOT; $$targets = @($$root, (Join-Path $$root \"resources\openclaw-runtime\"), (Join-Path $$root \"resources\python-win\"), (Join-Path $$root \"resources\SKILLs\"), (Join-Path $$root \"resources\app.asar.unpacked\"), (Join-Path $$root \"resources\win-resources.tar\"), (Join-Path $$root \"resources\app.asar\")); Remove-MpPreference -ExclusionPath $$targets -ErrorAction SilentlyContinue } catch {}"'
   Pop $0
   Pop $1
-  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXCWORK_INSTALL_ROOT", t "")i'
+  System::Call 'Kernel32::SetEnvironmentVariable(t "MIXWORK_INSTALL_ROOT", t "")i'
   DefenderUninstallCleanupDone:
 !macroend

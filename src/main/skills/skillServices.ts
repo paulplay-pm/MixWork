@@ -8,7 +8,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { cpRecursiveSync } from '../fsCompat';
-import { getElectronNodeRuntimePath } from '../libs/mixcworkUtil';
+import { getElectronNodeRuntimePath } from '../libs/mixworkUtil';
 import { resolveNodeRuntimeForSpawn } from '../libs/nodeRuntime';
 import { appendPythonRuntimeToEnv } from '../libs/pythonRuntime';
 
@@ -69,7 +69,7 @@ function buildSkillServiceEnv(): Record<string, string | undefined> {
 
   // Expose Electron executable so skill scripts can run JS with ELECTRON_RUN_AS_NODE
   // even when system Node.js is not installed.
-  env.MIXCWORK_ELECTRON_PATH = electronNodeRuntimePath;
+  env.MIXWORK_ELECTRON_PATH = electronNodeRuntimePath;
   appendPythonRuntimeToEnv(env);
 
   return env;
@@ -350,7 +350,7 @@ export class SkillServiceManager {
     const env = {
       ...baseEnv,
       ...(runtime.extraEnv ?? {}),
-      MIXCWORK_ELECTRON_PATH: electronNodeRuntimePath,
+      MIXWORK_ELECTRON_PATH: electronNodeRuntimePath,
     };
 
     // Node/Electron validates stdio streams synchronously. Use fd to avoid

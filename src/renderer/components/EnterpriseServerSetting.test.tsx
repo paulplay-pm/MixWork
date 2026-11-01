@@ -9,11 +9,11 @@ vi.mock('@/services/i18n', () => ({
 // status / verify / save / logout. SSR does not have a window, so install
 // a stub on globalThis before the suite runs.
 const stubEnterpriseMt = {
-  getBootstrapStatus: async () => ({ url: 'https://prod.mixcwork.com' }),
+  getBootstrapStatus: async () => ({ url: 'https://prod.mixwork.com' }),
   verifyUrl: async () => ({ ok: true }),
   saveUrl: async () => ({
     ok: true,
-    status: { configured: true, url: 'https://prod.mixcwork.com' },
+    status: { configured: true, url: 'https://prod.mixwork.com' },
   }),
   logout: async () => undefined,
   quit: async () => undefined,
@@ -76,7 +76,7 @@ describe('EnterpriseServerSetting', () => {
   test('onSave persists the new URL via bridge.saveUrl', async () => {
     const saveCalls: string[] = [];
     const localBridge = {
-      getBootstrapStatus: async () => ({ url: 'https://prod.mixcwork.com' }),
+      getBootstrapStatus: async () => ({ url: 'https://prod.mixwork.com' }),
       verifyUrl: async () => ({ ok: true }),
       saveUrl: async (url: string) => {
         saveCalls.push(url);
@@ -90,21 +90,21 @@ describe('EnterpriseServerSetting', () => {
       location: { reload: () => reloadCalls.push(Date.now()) },
     };
 
-    const url = 'https://new.mixcwork.com';
+    const url = 'https://new.mixwork.com';
     const result = await localBridge.saveUrl(url);
     expect(result.ok).toBe(true);
     expect(result.status?.url).toBe(url);
-    expect(saveCalls).toEqual(['https://new.mixcwork.com']);
+    expect(saveCalls).toEqual(['https://new.mixwork.com']);
   });
 
   test('onSave calls logout + reload after a successful save', async () => {
     const logoutCalls: number[] = [];
     const localBridge = {
-      getBootstrapStatus: async () => ({ url: 'https://prod.mixcwork.com' }),
+      getBootstrapStatus: async () => ({ url: 'https://prod.mixwork.com' }),
       verifyUrl: async () => ({ ok: true }),
       saveUrl: async (_url: string) => ({
         ok: true,
-        status: { configured: true, url: 'https://new.mixcwork.com' },
+        status: { configured: true, url: 'https://new.mixwork.com' },
       }),
       logout: async () => {
         logoutCalls.push(Date.now());
@@ -117,7 +117,7 @@ describe('EnterpriseServerSetting', () => {
     };
 
     // Exercise the same onSave body the parent component installs.
-    const saveResult = await localBridge.saveUrl('https://new.mixcwork.com');
+    const saveResult = await localBridge.saveUrl('https://new.mixwork.com');
     if (saveResult.ok) {
       await localBridge.logout();
       window.location.reload();
@@ -131,7 +131,7 @@ describe('EnterpriseServerSetting', () => {
     const logoutCalls: number[] = [];
     reloadCalls.length = 0;
     const localBridge = {
-      getBootstrapStatus: async () => ({ url: 'https://prod.mixcwork.com' }),
+      getBootstrapStatus: async () => ({ url: 'https://prod.mixwork.com' }),
       verifyUrl: async () => ({ ok: true }),
       saveUrl: async (_url: string) => ({ ok: false, error: 'storage failure' }),
       logout: async () => {
@@ -143,7 +143,7 @@ describe('EnterpriseServerSetting', () => {
       electron: { enterpriseMt: localBridge },
       location: { reload: () => reloadCalls.push(Date.now()) },
     };
-    const result = await localBridge.saveUrl('https://broken.mixcwork.com');
+    const result = await localBridge.saveUrl('https://broken.mixwork.com');
     if (result.ok) {
       await localBridge.logout();
       window.location.reload();

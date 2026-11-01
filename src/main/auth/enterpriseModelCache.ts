@@ -168,7 +168,7 @@ export const enterpriseModelCache = {
 
   /**
    * Send-time resolver keyed by a ref's model **portion** (the segment after
-   * `mixcwork-server/`). Canonicalizes via {@link canonicalModelId} (UUID-first,
+   * `mixwork-server/`). Canonicalizes via {@link canonicalModelId} (UUID-first,
    * unique-name legacy fallback) then validates the key/endpoint. Returns
    * `null` when the portion is not an enterprise-managed model so callers can
    * skip the gate, and throws only when the model IS enterprise-managed but

@@ -57,7 +57,7 @@ async function handleChatCompletions(c: Context, _provider: ProviderName) {
   const body = openAIChatBody.parse(await c.req.json()) as { model: string; [k: string]: unknown };
   const providerSegment = c.req.param('provider') || null;
   // The desktop's enterprise model identity is the catalog row's `id`
-  // (`mixcwork-server/<id>`), sent verbatim as the wire `model`. That id is a
+  // (`mixwork-server/<id>`), sent verbatim as the wire `model`. That id is a
   // v4 UUID for user-added provider-key models and a deterministic
   // `builtin:<orgId>:<slug>:<modelId>` string for plan/built-in models
   // (org/builtinProviders.ts). Either form resolves **by id**, fail-closed — a

@@ -12,7 +12,7 @@ function hashCode(code: string): string {
 
 function genCode(): string {
   const raw = randomBytes(24).toString('base64url').toUpperCase();
-  return `MIXCWORK-SETUP-${raw.slice(0, 8)}-${raw.slice(8, 16)}-${raw.slice(16, 24)}`;
+  return `MIXWORK-SETUP-${raw.slice(0, 8)}-${raw.slice(8, 16)}-${raw.slice(16, 24)}`;
 }
 
 export class InvalidInvitation extends Error {

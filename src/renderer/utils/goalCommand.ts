@@ -1,7 +1,7 @@
 import {
   type CoworkGoal,
   CoworkGoalStatus,
-} from '../../shared/mixcwork/goal';
+} from '../../shared/mixwork/goal';
 
 type OptimisticGoalAction =
   | 'start'

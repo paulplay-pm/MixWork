@@ -1,4 +1,4 @@
-import { ASK_USER_QUESTION_TOOL_NAME } from '../mixcwork/constants';
+import { ASK_USER_QUESTION_TOOL_NAME } from '../mixwork/constants';
 
 /** When task-completion notifications are shown. */
 export const TaskCompletionNotificationMode = {

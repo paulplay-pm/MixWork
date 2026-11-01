@@ -17,7 +17,7 @@ import { BrowserWindow, session } from 'electron';
  * retry faults the shared address space and the whole app SIGSEGVs. One
  * stable partition → one network process → deterministic lifecycle.
  */
-export const SSO_OAUTH_PARTITION = 'mixcwork-sso-oauth';
+export const SSO_OAUTH_PARTITION = 'mixwork-sso-oauth';
 
 /**
  * Compute the IdP allowlist for the SSO BrowserWindow's request filter.

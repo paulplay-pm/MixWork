@@ -18,7 +18,7 @@
 --     * DingTalk 后台 → 权限管理 → 申请 → 通讯录权限 → 成员信息读权限
 --       (corp admin auto-approves for self-built apps in dev mode;
 --       production rollout needs corp admin manual approval).
---     * MixCWork side — this migration adds `Contact.User.Read` to
+--     * MixWork side — this migration adds `Contact.User.Read` to
 --       `scopes` for every DingTalk row. The OAuth2 scope parameter
 --       takes space-separated values, so the column stores
 --       `openid Contact.User.Read` verbatim. URLSearchParams handles

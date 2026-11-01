@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Generate the small-size MixCWork brand mark for tiny UI contexts.
+"""Generate the small-size MixWork brand mark for tiny UI contexts.
 
-The master logo (`public/mixcwork.png`) carries a wordmark that is unreadable
+The master logo (`public/mixwork.png`) carries a wordmark that is unreadable
 below ~64px, so small usages (16px title bar, 18px context-menu icon, 34px
 export card) ship a squircle badge instead: a full-bleed dark plate carrying
 the orange node-network mark, echoing the app icon.
 
 The squircle has transparent corners, so the badge works on both light and
 dark backgrounds. Emits:
-  public/mixcwork-small.png                     512x512
+  public/mixwork-small.png                     512x512
   enterprise_server/web/public/brand/…          (same file, when present)
   enterprise_server/web-dist/brand/…            (built console output, when present)
 
@@ -19,10 +19,10 @@ import shutil
 
 from brand_mark import ROOT, SRC, compose, load_mark
 
-OUT = os.path.join(ROOT, "public", "mixcwork-small.png")
+OUT = os.path.join(ROOT, "public", "mixwork-small.png")
 COPIES = [
-    os.path.join(ROOT, "enterprise_server", "web", "public", "brand", "mixcwork-small.png"),
-    os.path.join(ROOT, "enterprise_server", "web-dist", "brand", "mixcwork-small.png"),
+    os.path.join(ROOT, "enterprise_server", "web", "public", "brand", "mixwork-small.png"),
+    os.path.join(ROOT, "enterprise_server", "web-dist", "brand", "mixwork-small.png"),
 ]
 
 SIZE = 512

@@ -10,7 +10,7 @@ import {
 import { findAgentsManagedMarker } from '../../shared/openclaw/agentsManagedMarker';
 
 const AGENTS_MD_FILENAME = 'AGENTS.md';
-const MIXCWORK_MIGRATIONS_DIR = path.join('.mixcwork', 'migrations');
+const MIXWORK_MIGRATIONS_DIR = path.join('.mixwork', 'migrations');
 const LEGACY_IDENTITY_TITLE = '## Identity（必须遵守）';
 const MAX_LEGACY_IDENTITY_BLOCK_CHARS = 20_000;
 
@@ -171,7 +171,7 @@ const buildBackupPath = (workspaceDir: string, originalContent: string, now: Dat
   const hash = crypto.createHash('sha256').update(originalContent).digest('hex').slice(0, 12);
   return path.join(
     workspaceDir,
-    MIXCWORK_MIGRATIONS_DIR,
+    MIXWORK_MIGRATIONS_DIR,
     `agents-md-before-legacy-identity-cleanup-${formatBackupTimestamp(now)}-${hash}.md`,
   );
 };

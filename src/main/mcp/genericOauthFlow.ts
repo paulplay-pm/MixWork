@@ -268,7 +268,7 @@ function startCodeCallback(expectedState: string, port: number): Promise<{
         return;
       }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end('<h1>Authorization complete</h1><p>You can return to MixcWork.</p>');
+      res.end('<h1>Authorization complete</h1><p>You can return to MixWork.</p>');
       resolveCode?.(code); // resolve-once; later polls get the same settlement
     });
     server.once('error', (err: NodeJS.ErrnoException) => {
@@ -276,7 +276,7 @@ function startCodeCallback(expectedState: string, port: number): Promise<{
       // the raw errno tells the user nothing about what to do.
       if (err.code === 'EADDRINUSE') {
         reject(new Error(
-          `OAuth callback port ${port} is already in use — another MixCWork window ` +
+          `OAuth callback port ${port} is already in use — another MixWork window ` +
           'is probably authorizing right now; close it and try again.',
         ));
         return;

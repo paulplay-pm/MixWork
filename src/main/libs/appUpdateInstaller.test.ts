@@ -68,7 +68,7 @@ import {
 } from './appUpdateInstaller';
 import { WINDOWS_INSTALLER_URL_POLICY_VERSION } from './appUpdateUrlPolicy';
 
-const INSTALLER_PATH = 'C:\\Users\\test\\AppData\\Roaming\\MixCWork\\updates\\mixcwork-update-manual-1.exe';
+const INSTALLER_PATH = 'C:\\Users\\test\\AppData\\Roaming\\MixWork\\updates\\mixwork-update-manual-1.exe';
 
 describe('Windows update install', () => {
   const originalPlatform = process.platform;
@@ -120,14 +120,14 @@ describe('Windows update install', () => {
     expect(args).toContain('-NonInteractive');
     const script = args[args.length - 1];
     expect(script).toContain('-FilePath $installer');
-    expect(script).toContain('$env:MIXCWORK_UPDATE_INSTALLER_PATH');
+    expect(script).toContain('$env:MIXWORK_UPDATE_INSTALLER_PATH');
     expect(script).not.toContain(INSTALLER_PATH);
     expect(script).toContain(`'--force-run','--updated'`);
     expect(script).not.toContain(`'/S'`);
     const options = cpMocks.execFile.mock.calls[0]?.[2] as {
       env?: NodeJS.ProcessEnv;
     };
-    expect(options.env?.MIXCWORK_UPDATE_INSTALLER_PATH).toBe(INSTALLER_PATH);
+    expect(options.env?.MIXWORK_UPDATE_INSTALLER_PATH).toBe(INSTALLER_PATH);
     expect(mocks.quit).toHaveBeenCalledOnce();
     // The wizard path must not run: silent launch succeeded.
     expect(mocks.openPath).not.toHaveBeenCalled();
@@ -236,7 +236,7 @@ describe('Windows update install', () => {
       { env?: NodeJS.ProcessEnv },
     ];
     expect(args.at(-1)).not.toContain(installerPath);
-    expect(options.env?.MIXCWORK_UPDATE_INSTALLER_PATH).toBe(installerPath);
+    expect(options.env?.MIXWORK_UPDATE_INSTALLER_PATH).toBe(installerPath);
   });
 });
 
@@ -306,7 +306,7 @@ describe('buildWindowsInstallerLaunchScript', () => {
   test('reads the installer path from an environment variable instead of script text', () => {
     const script = buildWindowsInstallerLaunchScript();
 
-    expect(script).toContain('$env:MIXCWORK_UPDATE_INSTALLER_PATH');
+    expect(script).toContain('$env:MIXWORK_UPDATE_INSTALLER_PATH');
     expect(script).toContain('-FilePath $installer');
   });
 
@@ -324,7 +324,7 @@ describe('Windows update download URL enforcement', () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-download-policy-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-download-policy-'));
     mocks.getPath.mockReset();
     mocks.getPath.mockReturnValue(tmpDir);
     mocks.fetch.mockReset();
@@ -339,7 +339,7 @@ describe('Windows update download URL enforcement', () => {
 
   test('rejects an insecure input before fetching or creating a partial file', async () => {
     await expect(downloadUpdate(
-      'http://downloads.example.com/MixCWork.exe',
+      'http://downloads.example.com/MixWork.exe',
       'manual',
       () => {},
     )).rejects.toThrow('update-url-untrusted');
@@ -367,7 +367,7 @@ describe('Windows update download URL enforcement', () => {
     });
 
     const inputUrl =
-      'https://downloads.example.com/MixCWork.exe?inputToken=do-not-log';
+      'https://downloads.example.com/MixWork.exe?inputToken=do-not-log';
     const result = await downloadUpdate(
       inputUrl,
       'auto',
@@ -394,13 +394,13 @@ describe('Windows update download URL enforcement', () => {
     mocks.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
 
     await expect(downloadUpdate(
-      'https://downloads.example.com/MixCWork.exe',
+      'https://downloads.example.com/MixWork.exe',
       'auto',
       () => {},
     )).rejects.toThrow('Failed to fetch');
 
     expect(mocks.fetch).toHaveBeenCalledWith(
-      'https://downloads.example.com/MixCWork.exe',
+      'https://downloads.example.com/MixWork.exe',
       expect.objectContaining({ redirect: 'error' }),
     );
     expect(fs.existsSync(path.join(tmpDir, 'updates'))).toBe(false);
@@ -429,7 +429,7 @@ describe('Windows update download URL enforcement', () => {
     });
 
     const firstDownload = downloadUpdate(
-      'https://downloads.example.com/MixCWork.exe',
+      'https://downloads.example.com/MixWork.exe',
       'auto',
       () => {},
     );
@@ -437,7 +437,7 @@ describe('Windows update download URL enforcement', () => {
 
     expect(cancelActiveDownload()).toBe(true);
     const replacementDownload = downloadUpdate(
-      'https://downloads.example.com/MixCWork.exe',
+      'https://downloads.example.com/MixWork.exe',
       'manual',
       () => {},
     );
@@ -456,7 +456,7 @@ describe('hdiutil plist parsing', () => {
     const json = JSON.stringify({
       'system-entities': [
         { 'content-hint': 'GUID_partition_scheme', 'dev-entry': '/dev/disk4' },
-        { 'dev-entry': '/dev/disk5s1', 'mount-point': '/Volumes/MixCWork', 'volume-kind': 'apfs' },
+        { 'dev-entry': '/dev/disk5s1', 'mount-point': '/Volumes/MixWork', 'volume-kind': 'apfs' },
         { 'content-hint': 'EF57347C-0000-11AA-AA11-00306543ECAC', 'dev-entry': '/dev/disk5' },
         { 'content-hint': 'Apple_APFS', 'dev-entry': '/dev/disk4s1' },
       ],
@@ -464,7 +464,7 @@ describe('hdiutil plist parsing', () => {
 
     const result = parseHdiutilAttachOutput(json);
 
-    expect(result.mountPoint).toBe('/Volumes/MixCWork');
+    expect(result.mountPoint).toBe('/Volumes/MixWork');
     expect(result.devEntries).toEqual(['/dev/disk4', '/dev/disk5s1', '/dev/disk5', '/dev/disk4s1']);
   });
 
@@ -472,13 +472,13 @@ describe('hdiutil plist parsing', () => {
     const json = JSON.stringify({
       'system-entities': [
         { 'content-hint': 'GUID_partition_scheme', 'dev-entry': '/dev/disk4' },
-        { 'content-hint': 'Apple_HFS', 'dev-entry': '/dev/disk4s1', 'mount-point': '/Volumes/MixCWork 1' },
+        { 'content-hint': 'Apple_HFS', 'dev-entry': '/dev/disk4s1', 'mount-point': '/Volumes/MixWork 1' },
       ],
     });
 
     const result = parseHdiutilAttachOutput(json);
 
-    expect(result.mountPoint).toBe('/Volumes/MixCWork 1');
+    expect(result.mountPoint).toBe('/Volumes/MixWork 1');
   });
 
   test('reports no mount point when the volume failed to mount', () => {
@@ -532,23 +532,23 @@ describe('hdiutil plist parsing', () => {
 
 describe('mac swap builders', () => {
   test('places staging and backup next to the target app, hidden and not .app-suffixed', () => {
-    const swapPaths = buildMacSwapPaths('/Applications/MixCWork.app', 1234);
+    const swapPaths = buildMacSwapPaths('/Applications/MixWork.app', 1234);
 
     expect(path.dirname(swapPaths.staging)).toBe('/Applications');
     expect(path.dirname(swapPaths.backup)).toBe('/Applications');
-    expect(path.basename(swapPaths.staging)).toBe(`.MixCWork.app${MAC_SWAP_STAGING_INFIX}1234`);
-    expect(path.basename(swapPaths.backup)).toBe(`.MixCWork.app${MAC_SWAP_BACKUP_INFIX}1234`);
+    expect(path.basename(swapPaths.staging)).toBe(`.MixWork.app${MAC_SWAP_STAGING_INFIX}1234`);
+    expect(path.basename(swapPaths.backup)).toBe(`.MixWork.app${MAC_SWAP_BACKUP_INFIX}1234`);
     expect(swapPaths.staging.endsWith('.app')).toBe(false);
     expect(swapPaths.backup.endsWith('.app')).toBe(false);
   });
 
   test('builds a staged-copy, guarded-backup, rollback and cleanup sequence', () => {
-    const target = '/Applications/MixCWork.app';
+    const target = '/Applications/MixWork.app';
     const swapPaths = buildMacSwapPaths(target, 7);
 
-    const cmd = buildMacSwapInstallCommand('/Volumes/MixCWork/MixCWork.app', target, swapPaths);
+    const cmd = buildMacSwapInstallCommand('/Volumes/MixWork/MixWork.app', target, swapPaths);
 
-    const cpIndex = cmd.indexOf(`cp -R '/Volumes/MixCWork/MixCWork.app' '${swapPaths.staging}'`);
+    const cpIndex = cmd.indexOf(`cp -R '/Volumes/MixWork/MixWork.app' '${swapPaths.staging}'`);
     const backupIndex = cmd.indexOf(`mv '${target}' '${swapPaths.backup}'`);
     const swapIndex = cmd.indexOf(`mv '${swapPaths.staging}' '${target}'`);
     const rollbackIndex = cmd.indexOf(`mv '${swapPaths.backup}' '${target}'`);
@@ -562,21 +562,21 @@ describe('mac swap builders', () => {
   });
 
   test('single-quotes paths containing spaces and quotes', () => {
-    const target = `/Applications/It's "MixCWork".app`;
+    const target = `/Applications/It's "MixWork".app`;
     const swapPaths = buildMacSwapPaths(target, 7);
 
     const cmd = buildMacSwapInstallCommand('/Volumes/src.app', target, swapPaths);
 
-    expect(cmd).toContain(`'/Applications/It'\\''s "MixCWork".app'`);
+    expect(cmd).toContain(`'/Applications/It'\\''s "MixWork".app'`);
   });
 });
 
 describe('macOS DMG install', () => {
   const originalPlatform = process.platform;
   const originalResourcesPath = (process as { resourcesPath?: string }).resourcesPath;
-  const USER_DATA = '/Users/test/Library/Application Support/MixCWork';
-  const DMG_PATH = `${USER_DATA}/updates/mixcwork-update-auto-1.dmg`;
-  const TARGET_APP = '/Applications/MixCWork.app';
+  const USER_DATA = '/Users/test/Library/Application Support/MixWork';
+  const DMG_PATH = `${USER_DATA}/updates/mixwork-update-auto-1.dmg`;
+  const TARGET_APP = '/Applications/MixWork.app';
 
   const attachNoMountJson = JSON.stringify({
     'system-entities': [
@@ -605,7 +605,7 @@ describe('macOS DMG install', () => {
   let applicationsEntries: string[];
 
   const respondNoMount = () => attachNoMountJson;
-  const respondMountedAtVolumes = () => attachMountedJson('/Volumes/MixCWork');
+  const respondMountedAtVolumes = () => attachMountedJson('/Volumes/MixWork');
   const respondMountedAtRequestedPoint = (cmd: string) => {
     const match = cmd.match(/-mountpoint '([^']+)'/);
     return attachMountedJson(match ? match[1] : '/Volumes/unexpected');
@@ -673,7 +673,7 @@ describe('macOS DMG install', () => {
     detachCommands = [];
     execCommands = [];
     execOverride = null;
-    applicationsEntries = ['MixCWork.app'];
+    applicationsEntries = ['MixWork.app'];
 
     cpMocks.exec.mockImplementation(
       (
@@ -722,12 +722,12 @@ describe('macOS DMG install', () => {
     vi.spyOn(fs.promises, 'readdir').mockImplementation(((dir: fs.PathLike) => {
       const dirPath = String(dir);
       if (dirPath.endsWith(path.join('Contents', 'MacOS'))) {
-        return Promise.resolve(['MixCWork']);
+        return Promise.resolve(['MixWork']);
       }
       if (dirPath === path.dirname(TARGET_APP)) {
         return Promise.resolve(applicationsEntries);
       }
-      return Promise.resolve(['MixCWork.app']);
+      return Promise.resolve(['MixWork.app']);
     }) as never);
   });
 
@@ -769,7 +769,7 @@ describe('macOS DMG install', () => {
     );
 
     expect(detachCommands).toHaveLength(1);
-    expect(detachCommands[0]).toContain('/Volumes/MixCWork');
+    expect(detachCommands[0]).toContain('/Volumes/MixWork');
     expect(fs.promises.unlink).toHaveBeenCalledWith(DMG_PATH);
     expect(cpMocks.execFile).not.toHaveBeenCalled();
     expect(mocks.relaunch).toHaveBeenCalledOnce();
@@ -908,20 +908,20 @@ describe('macOS DMG install', () => {
   test('cleans up leftover staging and backup directories before installing', async () => {
     attachResponders = [respondMountedAtVolumes];
     applicationsEntries = [
-      `.MixCWork.app${MAC_SWAP_STAGING_INFIX}1`,
-      `.MixCWork.app${MAC_SWAP_BACKUP_INFIX}2`,
-      'MixCWork.app',
+      `.MixWork.app${MAC_SWAP_STAGING_INFIX}1`,
+      `.MixWork.app${MAC_SWAP_BACKUP_INFIX}2`,
+      'MixWork.app',
       'Other.app',
     ];
 
     await installUpdate(DMG_PATH);
 
     expect(fs.promises.rm).toHaveBeenCalledWith(
-      `/Applications/.MixCWork.app${MAC_SWAP_STAGING_INFIX}1`,
+      `/Applications/.MixWork.app${MAC_SWAP_STAGING_INFIX}1`,
       { recursive: true, force: true },
     );
     expect(fs.promises.rm).toHaveBeenCalledWith(
-      `/Applications/.MixCWork.app${MAC_SWAP_BACKUP_INFIX}2`,
+      `/Applications/.MixWork.app${MAC_SWAP_BACKUP_INFIX}2`,
       { recursive: true, force: true },
     );
     expect(fs.promises.rm).not.toHaveBeenCalledWith('/Applications/Other.app', expect.anything());
@@ -952,7 +952,7 @@ describe('downloadUpdate auth + range resume', () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-dl-auth-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-dl-auth-'));
     mocks.getPath.mockReset();
     mocks.getPath.mockReturnValue(tmpDir);
     mocks.fetch.mockReset();

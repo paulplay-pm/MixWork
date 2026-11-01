@@ -95,7 +95,7 @@ describe('enterpriseClient.submitConnectorRequest', () => {
 });
 
 describe('enterpriseClient.logout', () => {
-  test('clears the mixcwork-sso-oauth partition with the expected storages', async () => {
+  test('clears the mixwork-sso-oauth partition with the expected storages', async () => {
     await enterpriseClient.logout();
     expect(clearStorageDataMock).toHaveBeenCalledTimes(1);
     const [arg] = clearStorageDataMock.mock.calls[0]!;

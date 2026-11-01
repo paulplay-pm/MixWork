@@ -7,7 +7,7 @@ import {
 } from './config';
 
 test('getProviderDisplayName is a passthrough in single-provider mode', () => {
-  expect(getProviderDisplayName('mixcwork-server')).toBe('mixcwork-server');
+  expect(getProviderDisplayName('mixwork-server')).toBe('mixwork-server');
   expect(getProviderDisplayName('openai')).toBe('openai');
 });
 

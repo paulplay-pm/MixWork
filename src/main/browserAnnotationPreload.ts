@@ -20,7 +20,7 @@ import {
   hasBrowserAnnotationContent,
   resolveBrowserAnnotationMarkerViewportPoint,
   resolveBrowserAnnotationViewportRect,
-} from '../shared/mixcwork/browserAnnotations';
+} from '../shared/mixwork/browserAnnotations';
 
 let activeEnvelope: BrowserAnnotationGuestEnvelope | null = null;
 let annotations: CoworkBrowserAnnotation[] = [];
@@ -291,7 +291,7 @@ function start(envelope: BrowserAnnotationGuestEnvelope): void {
 
   const labels = envelope.labels || {};
   const root = document.createElement('div');
-  root.dataset.mixcworkBrowserAnnotations = 'true';
+  root.dataset.mixworkBrowserAnnotations = 'true';
   root.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:none;';
   const shadow = root.attachShadow({ mode: 'closed' });
   const style = document.createElement('style');

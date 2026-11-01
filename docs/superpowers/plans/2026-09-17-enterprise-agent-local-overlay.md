@@ -28,7 +28,7 @@
 ## File Structure
 
 - `src/main/sqliteStore.ts` — add 3 baseline columns to `agents` (migration + CREATE TABLE).
-- `src/main/mixcworkStore.ts` — `Agent`/`CreateAgentRequest`/`UpdateAgentRequest` types + `serverSkillIds`/`serverSubagentAllowAgentIds`/`serverImChannels` fields; `mapAgentRow` parsing; `createAgent`/`updateAgent` write the baseline columns; **enterprise guard** in `updateAgent` + `deleteAgent`.
+- `src/main/mixworkStore.ts` — `Agent`/`CreateAgentRequest`/`UpdateAgentRequest` types + `serverSkillIds`/`serverSubagentAllowAgentIds`/`serverImChannels` fields; `mapAgentRow` parsing; `createAgent`/`updateAgent` write the baseline columns; **enterprise guard** in `updateAgent` + `deleteAgent`.
 - `src/main/libs/agentProvenance.ts` (new) — pure `deriveProvenance`.
 - `src/main/libs/agentEnterpriseSync.ts` — `ServerAgentView` gains `imChannels`; sync UPSERT merges baseline + overlay instead of clobbering.
 - `src/main/auth/enterpriseClient.ts` — `listEnterpriseAgents` returns `imChannels`.
@@ -100,16 +100,16 @@ git commit -m "feat(desktop): add agent server baseline columns (skills/subagent
 ### Task 2: Store types + read/write of baseline fields
 
 **Files:**
-- Modify: `src/main/mixcworkStore.ts` (`Agent` 402-424, `CreateAgentRequest` 426-441, `UpdateAgentRequest` 443-457, `createAgent` 3237-3291, `updateAgent` 3304-3376, `mapAgentRow` 3425-3473).
-- Test: `src/main/mixcworkStore.test.ts`.
+- Modify: `src/main/mixworkStore.ts` (`Agent` 402-424, `CreateAgentRequest` 426-441, `UpdateAgentRequest` 443-457, `createAgent` 3237-3291, `updateAgent` 3304-3376, `mapAgentRow` 3425-3473).
+- Test: `src/main/mixworkStore.test.ts`.
 
 **Interfaces:**
-- Consumes: Task 1 columns; existing `normalizeStringIdList` (mixcworkStore.ts:156) and `parseStringIdList` (mixcworkStore.ts:180).
+- Consumes: Task 1 columns; existing `normalizeStringIdList` (mixworkStore.ts:156) and `parseStringIdList` (mixworkStore.ts:180).
 - Produces: `Agent.serverSkillIds: string[]`, `Agent.serverSubagentAllowAgentIds: string[]`, `Agent.serverImChannels: string[]`. `CreateAgentRequest`/`UpdateAgentRequest` accept the same three optional fields. `mapAgentRow` parses them (default `[]`).
 
 - [ ] **Step 1: Write the failing test**
 
-In `src/main/mixcworkStore.test.ts`, add (near the existing agent tests). Note the test harness `setupDb()` (line 42) builds a minimal `agents` table — extend its `CREATE TABLE agents` (around lines 120-136) to include the three new columns so the INSERT/SELECT succeed:
+In `src/main/mixworkStore.test.ts`, add (near the existing agent tests). Note the test harness `setupDb()` (line 42) builds a minimal `agents` table — extend its `CREATE TABLE agents` (around lines 120-136) to include the three new columns so the INSERT/SELECT succeed:
 
 ```ts
   test('updateAgent stores and reads back the three server baseline fields', () => {
@@ -127,16 +127,16 @@ In `src/main/mixcworkStore.test.ts`, add (near the existing agent tests). Note t
   });
 ```
 
-(If `mixcworkStore.test.ts`'s `setupDb()` currently lacks an `agents` table, add one mirroring `sqliteStore.ts` including the three new columns. Check the file first.)
+(If `mixworkStore.test.ts`'s `setupDb()` currently lacks an `agents` table, add one mirroring `sqliteStore.ts` including the three new columns. Check the file first.)
 
 - [ ] **Step 2: Run to verify it fails**
 
-Run: `npx vitest run src/main/mixcworkStore.test.ts --no-file-parallelism`
+Run: `npx vitest run src/main/mixworkStore.test.ts --no-file-parallelism`
 Expected: FAIL — `updated?.serverSkillIds` is `undefined`.
 
 - [ ] **Step 3: Add the fields to the types**
 
-In `mixcworkStore.ts`, add to `Agent` (after line 413 `subagentAllowAgentIds: string[];`):
+In `mixworkStore.ts`, add to `Agent` (after line 413 `subagentAllowAgentIds: string[];`):
 
 ```ts
   serverSkillIds: string[];
@@ -193,19 +193,19 @@ In `mapAgentRow` (3425), add to the row param type `server_skill_ids?: string | 
 
 - [ ] **Step 6: Run to verify it passes**
 
-Run: `npx vitest run src/main/mixcworkStore.test.ts --no-file-parallelism`
+Run: `npx vitest run src/main/mixworkStore.test.ts --no-file-parallelism`
 Expected: PASS.
 
 - [ ] **Step 7: Lint + type check**
 
-Run: `npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/main/mixcworkStore.ts src/main/mixcworkStore.test.ts`
+Run: `npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/main/mixworkStore.ts src/main/mixworkStore.test.ts`
 Run: `npm run compile:electron`
 Expected: both clean.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/main/mixcworkStore.ts src/main/mixcworkStore.test.ts
+git add src/main/mixworkStore.ts src/main/mixworkStore.test.ts
 git commit -m "feat(desktop): read/write agent server baseline fields in the store"
 ```
 
@@ -364,8 +364,8 @@ git commit -m "feat(desktop): add agent provenance (baseline vs added) pure func
 ### Task 4: Main-process guard on enterprise update/delete
 
 **Files:**
-- Modify: `src/main/mixcworkStore.ts` (`updateAgent` 3304-3376, `deleteAgent` 3405-3423).
-- Test: `src/main/mixcworkStore.test.ts`.
+- Modify: `src/main/mixworkStore.ts` (`updateAgent` 3304-3376, `deleteAgent` 3405-3423).
+- Test: `src/main/mixworkStore.test.ts`.
 
 **Interfaces:**
 - Consumes: Task 2 (`Agent.serverSkillIds`/`serverSubagentAllowAgentIds`/`serverImChannels`), Task 3 `deriveProvenance`.
@@ -375,7 +375,7 @@ git commit -m "feat(desktop): add agent provenance (baseline vs added) pure func
 
 The store can enforce exactly **two** invariants without the skill catalog: (a) server-owned scalar fields are immutable for enterprise rows, and (b) enterprise rows cannot be deleted. The "re-add a dropped baseline skill" merge is enforced in the **handler** (Task 6) — the only layer that has `skillManager` to resolve server→local ids. Do not test the merge here.
 
-In `src/main/mixcworkStore.test.ts`:
+In `src/main/mixworkStore.test.ts`:
 
 ```ts
   test('enterprise row: server-owned scalar field change is rejected', () => {
@@ -420,16 +420,16 @@ In `deleteAgent` (3405), right after `if (id === AgentId.Main) return false;` (l
 
 - [ ] **Step 3: Run the scalar/delete tests**
 
-Run: `npx vitest run src/main/mixcworkStore.test.ts --no-file-parallelism -t enterprise`
+Run: `npx vitest run src/main/mixworkStore.test.ts --no-file-parallelism -t enterprise`
 Expected: the two enterprise scalar/delete tests PASS. (Move the "baseline re-add" test into Task 6 against the handler — do not assert it here.)
 
 - [ ] **Step 4: Lint + type check + commit**
 
-Run: `npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/main/mixcworkStore.ts src/main/mixcworkStore.test.ts`
+Run: `npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/main/mixworkStore.ts src/main/mixworkStore.test.ts`
 Run: `npm run compile:electron`
 
 ```bash
-git add src/main/mixcworkStore.ts src/main/mixcworkStore.test.ts
+git add src/main/mixworkStore.ts src/main/mixworkStore.test.ts
 git commit -m "feat(desktop): enforce read-only invariants for enterprise agents in the store"
 ```
 
@@ -463,7 +463,7 @@ In `src/main/libs/agentEnterpriseSync.test.ts`, update the `row()` factory to in
     const skillManager = { getCatalogLocalId: (id: string) => 'local_' + id };
     await agentEnterpriseSync.syncFromServer({
       serverView: [{ agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', model: '', thinkingLevel: 'medium', icon: '', skillIds: ['s1'], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true, imChannels: ['feishu'] }],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: prefs as never,
       skillManager: skillManager as never,
       defaultModelRef: '',
@@ -486,7 +486,7 @@ In `src/main/libs/agentEnterpriseSync.test.ts`, update the `row()` factory to in
     const skillManager = { getCatalogLocalId: (id: string) => 'local_' + id };
     await agentEnterpriseSync.syncFromServer({
       serverView: [{ agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', model: '', thinkingLevel: 'medium', icon: '', skillIds: ['s1'], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true, imChannels: [] }],
-      mixcworkStore: store as never,
+      mixworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: skillManager as never,
       defaultModelRef: '',
@@ -521,7 +521,7 @@ Replace the UPSERT payload construction (lines 64-97). For the **existing** ente
         .map((sid) => opts.skillManager.getCatalogLocalId(sid) ?? sid);
 
       // Map server subagent ids → local agent ids (via enterprise_agent_id).
-      const allLocal = opts.mixcworkStore.listAgents();
+      const allLocal = opts.mixworkStore.listAgents();
       const serverAgentIdToLocal = new Map(
         allLocal.filter(a => a.source === 'enterprise' && a.enterpriseAgentId).map(a => [a.enterpriseAgentId!, a.id] as const),
       );
@@ -564,10 +564,10 @@ Replace the UPSERT payload construction (lines 64-97). For the **existing** ente
       };
 
       if (existing) {
-        opts.mixcworkStore.updateAgent(existing.id, payload);
+        opts.mixworkStore.updateAgent(existing.id, payload);
       } else {
         const req: CreateAgentRequest = { ...payload };
-        opts.mixcworkStore.createAgent(req);
+        opts.mixworkStore.createAgent(req);
       }
       report.upserted++;
 ```
@@ -598,7 +598,7 @@ git commit -m "feat(desktop): sync merges server baseline with local agent overl
 - Test: extend `src/main/ipcHandlers/agents/handlers.test.ts` if it exists; otherwise add `src/main/ipcHandlers/agents/agentHandlers.enterprise.test.ts`.
 
 **Interfaces:**
-- Consumes: `deriveProvenance` (Task 3), `skillManager.getCatalogLocalId`, `mixcworkStore`/`agentManager.listAgents`.
+- Consumes: `deriveProvenance` (Task 3), `skillManager.getCatalogLocalId`, `mixworkStore`/`agentManager.listAgents`.
 - Produces: the `agents:update` handler, for enterprise rows, computes the effective `skillIds`/`subagentAllowAgentIds` as `submitted ∪ baselineLocal` (so a dropped baseline item is re-added) before calling the store. The `agents:list` handler enriches each enterprise agent's response with `serverSkillIds`/`serverSubagentAllowAgentIds`/`serverImChannels` **plus** the pre-resolved local sets `serverSkillLocalIds`/`serverSubagentLocalIds` (so the renderer can show lock badges without a new IPC).
 
 - [ ] **Step 1: Add `getSkillManager` to the deps**
@@ -607,10 +607,10 @@ In `handlers.ts` `registerAgentHandlers` (line 72), destructure `getSkillManager
 
 - [ ] **Step 2: Write the failing test**
 
-Create `src/main/ipcHandlers/agents/agentHandlers.enterprise.test.ts` (or extend the existing handler test if one exists). Mock `electron` (`app.getAppPath`), build an in-memory DB like `mixcworkStore.test.ts` with an `agents` table including the baseline columns, create a `MixCWorkStore`, and an `AgentManager`-like `listAgents`/`updateAgent` delegate to the store. Register the handlers with a fake `getSkillManager` whose `getCatalogLocalId(id)` returns `'local_' + id`. Insert an enterprise agent:
+Create `src/main/ipcHandlers/agents/agentHandlers.enterprise.test.ts` (or extend the existing handler test if one exists). Mock `electron` (`app.getAppPath`), build an in-memory DB like `mixworkStore.test.ts` with an `agents` table including the baseline columns, create a `MixWorkStore`, and an `AgentManager`-like `listAgents`/`updateAgent` delegate to the store. Register the handlers with a fake `getSkillManager` whose `getCatalogLocalId(id)` returns `'local_' + id`. Insert an enterprise agent:
 
 ```ts
-// Setup (mirrors mixcworkStore.test.ts harness + registerAgentHandlers with fakes)
+// Setup (mirrors mixworkStore.test.ts harness + registerAgentHandlers with fakes)
 const ent = store.createAgent({ name: 'Ent', source: 'enterprise', enterpriseAgentId: 'srv-1', skillIds: ['local_s1', 'local_mine'], subagentAllowAgentIds: ['localagent_x'] });
 store.updateAgent(ent.id, { serverSkillIds: ['s1'], serverSubagentAllowAgentIds: ['x'] });
 
@@ -635,12 +635,12 @@ Expected: FAIL — the update writes `skillIds: ['local_mine']` without re-addin
 In the `agents:update` handler (in `handlers.ts`, ~125-159), before calling the store `updateAgent`, if the target agent is enterprise, merge the baseline back in:
 
 ```ts
-      const target = getMixCWorkStore().getAgent(agentId);
+      const target = getMixWorkStore().getAgent(agentId);
       let effectiveUpdates = updates;
       if (target && target.source === 'enterprise') {
         const skillMgr = getSkillManager();
         const localByServerAgent = new Map(
-          getMixCWorkStore().listAgents()
+          getMixWorkStore().listAgents()
             .filter((a) => a.source === 'enterprise' && a.enterpriseAgentId)
             .map((a) => [a.enterpriseAgentId!, a.id] as const),
         );
@@ -680,7 +680,7 @@ In the `agents:list` handler (~84-99), after `const agents = getAgentManager().l
 
 ```ts
       const skillMgr = getSkillManager();
-      const all = getMixCWorkStore().listAgents();
+      const all = getMixWorkStore().listAgents();
       const serverAgentIdToLocal = new Map(
         all.filter((a) => a.source === 'enterprise' && a.enterpriseAgentId)
           .map((a) => [a.enterpriseAgentId!, a.id] as const),

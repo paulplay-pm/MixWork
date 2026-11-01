@@ -71,7 +71,7 @@ describe('migrateLegacyOpenClawPluginInstalls', () => {
         OPENCLAW_STATE_DIR: stateDir,
         OPENCLAW_CONFIG_PATH: configPath,
         ELECTRON_RUN_AS_NODE: '1',
-        MIXCWORK_APIKEY_0: 'secret',
+        MIXWORK_APIKEY_0: 'secret',
       });
       const migrated = structuredClone(legacyConfig);
       delete (migrated.plugins as { installs?: unknown }).installs;
@@ -85,7 +85,7 @@ describe('migrateLegacyOpenClawPluginInstalls', () => {
       runtimeRoot,
       electronNodeRuntimePath: '/electron/node',
       env: {},
-      secretEnvVars: { MIXCWORK_APIKEY_0: 'secret' },
+      secretEnvVars: { MIXWORK_APIKEY_0: 'secret' },
       runner,
     });
 

@@ -183,14 +183,14 @@ async function bakeMermaid(content: string): Promise<string> {
     theme: 'default',
   });
   const container = document.createElement('div');
-  container.setAttribute('data-mixcwork-mermaid-render-container', 'true');
+  container.setAttribute('data-mixwork-mermaid-render-container', 'true');
   container.style.position = 'absolute';
   container.style.left = '0';
   container.style.top = '0';
   container.style.visibility = 'hidden';
   container.style.pointerEvents = 'none';
   document.body.appendChild(container);
-  const id = `mixcwork-bake-mermaid-${Date.now()}`;
+  const id = `mixwork-bake-mermaid-${Date.now()}`;
   try {
     const { svg } = await mermaid.render(id, content, container);
     return `<div class="diagram">${svg}</div>`;

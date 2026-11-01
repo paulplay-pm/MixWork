@@ -52,25 +52,25 @@ import type {
   BrowserAnnotationRect,
   BrowserAnnotationScreenshotRef,
   CoworkBrowserAnnotationMessageBatch,
-} from '../../shared/mixcwork/browserAnnotations';
+} from '../../shared/mixwork/browserAnnotations';
 import type {
   CoworkBtwAbortRequest,
   CoworkBtwAbortResponse,
   CoworkBtwEntry,
   CoworkBtwSubmitRequest,
   CoworkBtwSubmitResponse,
-} from '../../shared/mixcwork/btw';
+} from '../../shared/mixwork/btw';
 import type {
   CoworkContextUsageFailureReason,
   CoworkContextUsageSource,
   CoworkSessionsChangedPayload,
-} from '../../shared/mixcwork/constants';
-import type { CoworkGoal } from '../../shared/mixcwork/goal';
-import type { CoworkMessageRailIndexItem } from '../../shared/mixcwork/rail';
+} from '../../shared/mixwork/constants';
+import type { CoworkGoal } from '../../shared/mixwork/goal';
+import type { CoworkMessageRailIndexItem } from '../../shared/mixwork/rail';
 import type {
   CoworkSearchMessage,
   CoworkSearchMessageCursor,
-} from '../../shared/mixcwork/search';
+} from '../../shared/mixwork/search';
 import type {
   OpenClawEngineErrorCode,
   OpenClawEnginePhase as SharedOpenClawEnginePhase,
@@ -122,7 +122,7 @@ import type {
   SkinGetActiveResponse,
   SkinListResponse,
 } from '../../shared/skin/types';
-import type { CoworkTempDirPreview } from './mixcwork';
+import type { CoworkTempDirPreview } from './mixwork';
 interface ApiResponse {
   ok: boolean;
   status: number;
@@ -303,7 +303,7 @@ interface CoworkPermissionRequest {
   toolUseId?: string | null;
 }
 
-interface MixCWorkApiConfig {
+interface MixWorkApiConfig {
   apiKey: string;
   baseURL: string;
   model: string;
@@ -788,11 +788,11 @@ interface IElectronAPI {
     onStreamError: (requestId: string, callback: (error: string) => void) => () => void;
     onStreamAbort: (requestId: string, callback: () => void) => () => void;
   };
-  getApiConfig: () => Promise<MixCWorkApiConfig | null>;
+  getApiConfig: () => Promise<MixWorkApiConfig | null>;
   checkApiConfig: (options?: {
     probeModel?: boolean;
-  }) => Promise<{ hasConfig: boolean; config: MixCWorkApiConfig | null; error?: string }>;
-  saveApiConfig: (config: MixCWorkApiConfig) => Promise<{ success: boolean; error?: string }>;
+  }) => Promise<{ hasConfig: boolean; config: MixWorkApiConfig | null; error?: string }>;
+  saveApiConfig: (config: MixWorkApiConfig) => Promise<{ success: boolean; error?: string }>;
   generateSessionTitle: (userInput: string | null) => Promise<string>;
   getRecentCwds: (limit?: number) => Promise<string[]>;
   dsh: {

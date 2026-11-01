@@ -46,7 +46,7 @@ function writeInstalledRuntime(version: string, target: string, sha256: string):
     `${JSON.stringify({ target, dshVersion: version, patchHash: 'test' }, null, 2)}\n`
   );
   fs.writeFileSync(
-    path.join(root, '.mixcwork-install-ok.json'),
+    path.join(root, '.mixwork-install-ok.json'),
     `${JSON.stringify(
       { installedAt: new Date().toISOString(), version, target, sha256 },
       null,

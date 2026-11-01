@@ -1,4 +1,4 @@
-# 企业 SSO 成员登录联邦 — 设计（MixCWork 工作台）
+# 企业 SSO 成员登录联邦 — 设计（MixWork 工作台）
 
 **Date:** 2026-09-27
 **Owner:** paul
@@ -10,7 +10,7 @@
 
 ## 0. 一句话
 
-让企业成员通过公司身份提供商（IdP：通用 OAuth2/OIDC、Azure AD、钉钉、飞书、SAML2、企业微信）**登录 MixCWork**（企业控制台 + 桌面端），服务端做身份验证（凭据服务端持有、**绝不展示给成员**），首次登录按「身份字段映射 + 邮箱域名白名单」**JIT 开号 / 匹配**，签发与密码登录**同构**的 JWT。
+让企业成员通过公司身份提供商（IdP：通用 OAuth2/OIDC、Azure AD、钉钉、飞书、SAML2、企业微信）**登录 MixWork**（企业控制台 + 桌面端），服务端做身份验证（凭据服务端持有、**绝不展示给成员**），首次登录按「身份字段映射 + 邮箱域名白名单」**JIT 开号 / 匹配**，签发与密码登录**同构**的 JWT。
 
 ---
 
@@ -27,7 +27,7 @@
 ### 1.2 非目标（一期不做）
 
 - **SAML2**（SP 端断言解析 / 元数据 / 签名验证）——后置。
-- IdP 组 / 属性 → MixCWork 角色的映射（JIT 一律默认 `Role.User`，后续人工调整角色）。
+- IdP 组 / 属性 → MixWork 角色的映射（JIT 一律默认 `Role.User`，后续人工调整角色）。
 - SCIM / 目录同步（增量更新、离职禁用）。
 - 账号合并（仅按 `email` 去重）。
 - SSO 连接启停的灰度 / 按成员灰度（一期按 org 全量）。
@@ -139,7 +139,7 @@
 - 点击 → 打开 `GET /auth/sso/:id/authorize?orgName=&return=desktop`（`shell.openExternal` 或内嵌 BrowserWindow）。
 - IdP 完成后回跳 `GET /auth/sso/desktop/callback?code&state`：
   - **桌面首选**：回跳到一个 **localhost 回调**（复用现有 OAuth 流的 localhost callback 机制，`main/mcp/oauthBrowserFlow.ts` / `qichachaMcpAuth` 同款）→ 桌面主进程拿到 token → `persistSession` + `loginGate.unlock`（复用现有登录后刷新流程，`enterpriseMt.ts:183`）。
-  - 深链备选：`mixcwork://sso/callback?code=..`（若 localhost 不可用）。
+  - 深链备选：`mixwork://sso/callback?code=..`（若 localhost 不可用）。
 - **服务端凭据绝不下发桌面**；桌面只拿最终 JWT。
 
 ---
@@ -170,10 +170,10 @@
 ## 9. 与 MCP 连接器 `sso` 鉴权方式的边界（关键澄清）
 
 > **两者是不同的东西，不得混淆：**
-> - **本方案（企业 SSO 成员登录联邦）**：解决「**成员如何登录 MixCWork**」（成员 → MixCWork 的身份）。
-> - **MCP 连接器 `sso` 鉴权方式**：解决「**第三方 MCP 服务如何验证调用方身份**」（MixCWork/桌面 → 第三方 MCP 服务的 API 调用）。
+> - **本方案（企业 SSO 成员登录联邦）**：解决「**成员如何登录 MixWork**」（成员 → MixWork 的身份）。
+> - **MCP 连接器 `sso` 鉴权方式**：解决「**第三方 MCP 服务如何验证调用方身份**」（MixWork/桌面 → 第三方 MCP 服务的 API 调用）。
 >
-> **明确决策（用户确认）：连接器 SSO 不复用成员企业会话。** MCP 连接器 `sso` 模式由该连接器**单独使用 SSO 做验证**（即连接器自身绑定的 IdP 端点 + 凭据，走桌面通用 OAuth 驱动 / 或网关），**不是**「成员已登录 MixCWork 即放行」。
+> **明确决策（用户确认）：连接器 SSO 不复用成员企业会话。** MCP 连接器 `sso` 模式由该连接器**单独使用 SSO 做验证**（即连接器自身绑定的 IdP 端点 + 凭据，走桌面通用 OAuth 驱动 / 或网关），**不是**「成员已登录 MixWork 即放行」。
 >
 > 因此：
 > - 本子系统（`sso_connections`）**不**作为连接器 `sso` 鉴权的凭据源。

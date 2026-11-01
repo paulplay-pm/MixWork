@@ -3,7 +3,7 @@ import React, { useRef, useState } from 'react';
 
 import { i18nService } from '../../services/i18n';
 import { getCompactFolderName } from '../../utils/path';
-import FolderSelectorPopover from '../mixcwork/FolderSelectorPopover';
+import FolderSelectorPopover from '../mixwork/FolderSelectorPopover';
 
 interface AgentWorkingDirectoryFieldProps {
   value: string;

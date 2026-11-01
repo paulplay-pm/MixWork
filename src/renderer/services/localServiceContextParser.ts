@@ -7,7 +7,7 @@ import {
   type ShareDeploymentProjectCandidate,
 } from '../../shared/shareDeployment/constants';
 import { type Artifact, ArtifactTypeValue } from '../types/artifact';
-import type { MixCWorkMessage } from '../types/mixcwork';
+import type { MixWorkMessage } from '../types/mixwork';
 import {
   collectProjectDirectoryCandidatesFromText,
   getLocalServicePortIdentityKey,
@@ -227,7 +227,7 @@ function mergeCandidates(
 }
 
 function getShellDirectoryEvidence(
-  message: MixCWorkMessage,
+  message: MixWorkMessage,
   workingDirectory?: string,
 ): { evidence?: DirectoryEvidence; context: ShellToolContext } {
   const input = message.metadata?.toolInput ?? {};
@@ -291,7 +291,7 @@ function getShellDirectoryEvidence(
 }
 
 function extractPwdResultCandidate(
-  message: MixCWorkMessage,
+  message: MixWorkMessage,
   shellContext: ShellToolContext,
   workingDirectory?: string,
 ): ShareDeploymentProjectCandidate | null {
@@ -323,7 +323,7 @@ function extractPwdResultCandidate(
 }
 
 function getBrowserLocalServiceArtifacts(
-  message: MixCWorkMessage,
+  message: MixWorkMessage,
   sessionId: string,
 ): Artifact[] {
   if (!isBrowserTool(message.metadata?.toolName)) return [];
@@ -406,7 +406,7 @@ function getCandidatesForServiceEvidence(
 }
 
 function parseLocalServiceArtifactsFromTurn(
-  messages: MixCWorkMessage[],
+  messages: MixWorkMessage[],
   sessionId: string,
   options: LocalServiceContextParserOptions,
 ): Artifact[] {
@@ -522,7 +522,7 @@ function parseLocalServiceArtifactsFromTurn(
   }));
 }
 
-function isConversationBoundary(message: MixCWorkMessage): boolean {
+function isConversationBoundary(message: MixWorkMessage): boolean {
   if (message.type === 'user') return true;
   if (message.type !== 'system') return false;
   const kind = message.metadata?.kind;
@@ -532,12 +532,12 @@ function isConversationBoundary(message: MixCWorkMessage): boolean {
 }
 
 export function parseLocalServiceArtifactsFromMessages(
-  messages: MixCWorkMessage[],
+  messages: MixWorkMessage[],
   sessionId: string,
   options: LocalServiceContextParserOptions = {},
 ): Artifact[] {
   const artifacts: Artifact[] = [];
-  let turnMessages: MixCWorkMessage[] = [];
+  let turnMessages: MixWorkMessage[] = [];
   const flushTurn = () => {
     if (!turnMessages.length) return;
     artifacts.push(...parseLocalServiceArtifactsFromTurn(turnMessages, sessionId, options));

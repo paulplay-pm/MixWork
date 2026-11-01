@@ -26,7 +26,7 @@ export function getKitAnalyticsParams(
   return {
     kitId: kit.id,
     kitName: resolveLocalizedText(kit.name),
-    kitSource: installedKit ? 'installed' : 'mixcwork-kits',
+    kitSource: installedKit ? 'installed' : 'mixwork-kits',
     isInstalled: Boolean(installedKit),
     version: kit.version,
     installedVersion,

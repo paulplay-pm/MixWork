@@ -102,7 +102,7 @@ export const mcpRegistry: McpRegistryEntry[] = [
     kind: McpRegistryEntryKind.Server,
   },
   // Migrated from the LobsterAI built-in market list. GitHub, Notion and
-  // Qichacha are the connectors MixCWork already ships, so they are not
+  // Qichacha are the connectors MixWork already ships, so they are not
   // duplicated here; every other public connector is carried over verbatim
   // (same package, args and env keys).
   {

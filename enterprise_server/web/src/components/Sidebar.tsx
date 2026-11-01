@@ -89,7 +89,7 @@ export function Sidebar(): JSX.Element {
       <div className="px-5 pt-5 pb-4 border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-2.5">
           <img
-            src="/brand/mixcwork-small.png"
+            src="/brand/mixwork-small.png"
             alt=""
             draggable={false}
             className="w-8 h-8 rounded-[var(--radius-md)] object-contain"

@@ -297,7 +297,7 @@ const LibraryPreviewModalContent: React.FC<LibraryPreviewModalProps> = ({
             >
               {item.title}
             </h2>
-            <p className={`truncate ${MANAGEMENT_META_TEXT} leading-[var(--mixcwork-leading-xs)] text-secondary`}>
+            <p className={`truncate ${MANAGEMENT_META_TEXT} leading-[var(--mixwork-leading-xs)] text-secondary`}>
               {i18nService.t('libraryLastModifiedAt')}: {formatLibraryTime(item.sortTime)}
             </p>
           </div>
@@ -456,7 +456,7 @@ const LibraryPreviewModalContent: React.FC<LibraryPreviewModalProps> = ({
             ) : (
               <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
                 <InformationCircleIcon className="h-9 w-9 text-tertiary" />
-                <p className={`max-w-md ${MANAGEMENT_BODY_TEXT} leading-[var(--mixcwork-leading-sm)] text-secondary`}>
+                <p className={`max-w-md ${MANAGEMENT_BODY_TEXT} leading-[var(--mixwork-leading-sm)] text-secondary`}>
                   {i18nService.t('libraryPreviewUnavailable')}
                 </p>
                 <button
@@ -478,7 +478,7 @@ const LibraryPreviewModalContent: React.FC<LibraryPreviewModalProps> = ({
                 <h3 className={`${MANAGEMENT_TITLE_TEXT} font-semibold text-foreground`}>
                   {item.title}
                 </h3>
-                <p className={`${MANAGEMENT_BODY_TEXT} mt-1 max-w-md leading-[var(--mixcwork-leading-sm)] text-secondary`}>
+                <p className={`${MANAGEMENT_BODY_TEXT} mt-1 max-w-md leading-[var(--mixwork-leading-sm)] text-secondary`}>
                   {i18nService.t('libraryCloudPreviewDescription')}
                 </p>
               </div>

@@ -1,5 +1,5 @@
 import type { Platform } from '../../../shared/platform';
-import type { MixCWorkSessionStatus } from '../../types/mixcwork';
+import type { MixWorkSessionStatus } from '../../types/mixwork';
 import type { AgentSidebarIndicator } from './constants';
 
 export interface AgentSidebarAgentSummary {
@@ -18,7 +18,7 @@ export interface AgentSidebarTaskNode {
   agentId: string;
   title: string;
   isScheduledTask: boolean;
-  status: MixCWorkSessionStatus;
+  status: MixWorkSessionStatus;
   pinned: boolean;
   pinOrder?: number | null;
   imPlatform?: Platform | null;

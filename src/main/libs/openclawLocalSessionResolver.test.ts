@@ -14,7 +14,7 @@ const createDb = (): Database.Database => {
   const db = new Database(':memory:');
   dbs.push(db);
   db.exec(`
-    CREATE TABLE mixcwork_sessions (
+    CREATE TABLE mixwork_sessions (
       id TEXT PRIMARY KEY,
       openclaw_session_id TEXT,
       parent_session_id TEXT
@@ -44,7 +44,7 @@ const insertSession = (
   openclawSessionId: string | null = null,
   parentSessionId: string | null = null,
 ) => {
-  db.prepare('INSERT INTO mixcwork_sessions (id, openclaw_session_id, parent_session_id) VALUES (?, ?, ?)')
+  db.prepare('INSERT INTO mixwork_sessions (id, openclaw_session_id, parent_session_id) VALUES (?, ?, ?)')
     .run(id, openclawSessionId, parentSessionId);
 };
 
@@ -72,7 +72,7 @@ describe('openclaw local session resolver', () => {
 
     expect(resolveCoworkSessionIdByOpenClawSessionKey(
       db,
-      'agent:qa-reviewer:mixcwork:session-1',
+      'agent:qa-reviewer:mixwork:session-1',
     )).toBe('session-1');
   });
 
@@ -101,7 +101,7 @@ describe('openclaw local session resolver', () => {
     )).toBe(null);
   });
 
-  test('resolves subagent child session via subagent_runs back-pointer when mixcwork_sessions row missing', () => {
+  test('resolves subagent child session via subagent_runs back-pointer when mixwork_sessions row missing', () => {
     const db = createDb();
     insertSession(db, 'parent-1');
     insertSubagentRun(db, 'run-1', 'parent-1', 'agent:qa-reviewer:subagent:run-1');
@@ -112,7 +112,7 @@ describe('openclaw local session resolver', () => {
     )).toBe('parent-1');
   });
 
-  test('prefers mixcwork_sessions row over subagent_runs back-pointer when both exist', () => {
+  test('prefers mixwork_sessions row over subagent_runs back-pointer when both exist', () => {
     const db = createDb();
     insertSession(db, 'parent-1');
     insertSession(db, 'child-1', 'agent:qa-reviewer:subagent:run-1', 'parent-1');

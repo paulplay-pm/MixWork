@@ -1,12 +1,12 @@
 {
-  "name": "mixcwork",
+  "name": "mixwork",
   "private": true,
   "author": {
-    "name": "MixcWork",
+    "name": "MixWork",
     "email": "paulplay@126.com"
   },
   "license": "MIT",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "openclaw": {
     "version": "v2026.6.1",
     "repo": "https://github.com/openclaw/openclaw.git",

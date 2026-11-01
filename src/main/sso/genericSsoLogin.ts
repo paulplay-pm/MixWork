@@ -37,7 +37,7 @@ export async function fetchDesktopRedirectPort(enterpriseBaseUrl: string): Promi
 }
 
 export interface AuthorizeArgs {
-  enterpriseBaseUrl: string;  // e.g. https://api.mixcwork.example
+  enterpriseBaseUrl: string;  // e.g. https://api.mixwork.example
   orgName: string;
   connectionId: string;
   desktopPort: number;  // the loopback port we'll bind.
@@ -101,7 +101,7 @@ body {
   font-weight: 700; font-size: 22px;
 }
 .brand-tile--provider { background: #fff; color: #1f2937; }
-.brand-tile--mixcwork { background: #1f2937; color: #fff; }
+.brand-tile--mixwork { background: #1f2937; color: #fff; }
 .brand-arrow { color: #94a3b8; font-size: 18px; }
 
 .check-wrap { margin: 0 0 20px 0; }
@@ -217,7 +217,7 @@ export function startCallbackServer(
   // The connection metadata from the most recent pending_bind
   // settlement. The server's ready_to_finalize redirect back to the
   // loopback carries only `?token=…`, so to render a provider-aware
-  // success page (e.g. "飞书账号已完成与 MixCWork 的绑定") the loopback
+  // success page (e.g. "飞书账号已完成与 MixWork 的绑定") the loopback
   // has to remember the connection from the prior stage. Set on
   // pendingBind settle; read by bindSuccessHtml when the post-bind
   // `?token=…` arrives. Cleared on every fresh startCallbackServer
@@ -301,7 +301,7 @@ export function startCallbackServer(
     }[c] as string));
     return (
       '<!doctype html><meta charset="utf-8">' +
-      '<title>MixcWork SSO — binding required</title>' +
+      '<title>MixWork SSO — binding required</title>' +
       '<h1>SSO login needs an extra step</h1>' +
       `<p>This sign-in is for the <b>${safeName}</b> identity provider and ` +
       'requires a one-time binding step that can only be completed in your browser.</p>' +
@@ -344,7 +344,7 @@ export function startCallbackServer(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>登录成功 — MixcWork</title>
+<title>登录成功 — MixWork</title>
 <style>${BIND_PAGE_CSS}</style>
 </head>
 <body>
@@ -352,7 +352,7 @@ export function startCallbackServer(
     <div class="brand-row" aria-hidden="true">
       <div class="brand-tile brand-tile--provider"><span>${providerLetter}</span></div>
       <span class="brand-arrow">→</span>
-      <div class="brand-tile brand-tile--mixcwork"><span>G</span></div>
+      <div class="brand-tile brand-tile--mixwork"><span>G</span></div>
     </div>
 
     <div class="check-wrap" aria-hidden="true">
@@ -362,9 +362,9 @@ export function startCallbackServer(
     </div>
 
     <h1 class="title">登录成功</h1>
-    <p class="subtitle">${providerName} 账号已完成与 MixcWork 的绑定。请关闭本页面,回到 MixcWork 客户端继续使用。</p>
+    <p class="subtitle">${providerName} 账号已完成与 MixWork 的绑定。请关闭本页面,回到 MixWork 客户端继续使用。</p>
 
-    <button type="button" class="close-btn" id="close-btn">关闭本页面,打开MixcWork</button>
+    <button type="button" class="close-btn" id="close-btn">关闭本页面,打开MixWork</button>
 
     <div class="safe-pill" aria-live="polite">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
@@ -373,9 +373,9 @@ export function startCallbackServer(
     <p class="close-hint" id="close-hint">如未自动关闭,请按 <kbd>⌘W</kbd> / <kbd>Ctrl+W</kbd></p>
   </main>
   <script>
-    // Click the button to fire the mixcwork:// deep link. The OS
+    // Click the button to fire the mixwork:// deep link. The OS
     // shows its own "Open this application?" prompt (Chrome's
-    // external-protocol confirmation); the user picks 打开 MixCWork
+    // external-protocol confirmation); the user picks 打开 MixWork
     // or 取消 there. We don't add a second in-page confirm — the
     // OS prompt already covers the decision, and asking twice
     // forces an extra click on a surface the user just finished
@@ -394,7 +394,7 @@ export function startCallbackServer(
         // Disable so a second click can't double-fire the deep
         // link (which on some OSes would re-show the OS prompt).
         btn.disabled = true;
-        try { window.location.href = 'mixcwork://'; } catch (e) { /* swallow */ }
+        try { window.location.href = 'mixwork://'; } catch (e) { /* swallow */ }
         try { window.close(); } catch (e) { /* swallow */ }
         if (hint) hint.classList.add('close-hint--visible');
       });
@@ -422,7 +422,7 @@ export function startCallbackServer(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>登录失败 — MixcWork</title>
+<title>登录失败 — MixWork</title>
 <style>${BIND_PAGE_CSS}</style>
 </head>
 <body>
@@ -430,7 +430,7 @@ export function startCallbackServer(
     <div class="brand-row" aria-hidden="true">
       <div class="brand-tile brand-tile--provider"><span>${providerLetter}</span></div>
       <span class="brand-arrow">→</span>
-      <div class="brand-tile brand-tile--mixcwork"><span>G</span></div>
+      <div class="brand-tile brand-tile--mixwork"><span>G</span></div>
     </div>
 
     <div class="check-wrap" aria-hidden="true">
@@ -442,7 +442,7 @@ export function startCallbackServer(
     <h1 class="title">登录未完成</h1>
     <p class="subtitle">绑定过程出现错误(${safeErr})。请回到桌面端重试,或在客户端重新发起 ${provider || 'SSO'} 登录。</p>
 
-    <button type="button" class="close-btn" id="close-btn">关闭本页面,打开MixcWork</button>
+    <button type="button" class="close-btn" id="close-btn">关闭本页面,打开MixWork</button>
 
     <p class="close-hint" id="close-hint">如未自动关闭,请按 <kbd>⌘W</kbd> / <kbd>Ctrl+W</kbd></p>
   </main>
@@ -453,7 +453,7 @@ export function startCallbackServer(
       if (!btn) return;
       btn.addEventListener('click', function () {
         btn.disabled = true;
-        try { window.location.href = 'mixcwork://'; } catch (e) { /* swallow */ }
+        try { window.location.href = 'mixwork://'; } catch (e) { /* swallow */ }
         try { window.close(); } catch (e) { /* swallow */ }
         if (hint) hint.classList.add('close-hint--visible');
       });
@@ -484,7 +484,7 @@ export function startCallbackServer(
         const outcome = await postExchange(codeParam, stateParam);
         if (outcome && outcome.kind === 'pending_bind') {
           // The desktop opens the bind-sso page in the user's OS default
-          // browser (where they'll enter their MixCWork account and password)
+          // browser (where they'll enter their MixWork account and password)
           // via the probe in startSsoMemberLogin. The probe settles the
           // wait with the pendingBind outcome so it can act on it, then
           // keeps polling. The server's ready_to_finalize finalize (after
@@ -651,8 +651,8 @@ export async function startSsoMemberLogin(args: {
     //
     // The pendingBind branch is the "two-stage strict-mode" path: the
     // server's /auth/sso/desktop/exchange returns 409 when the IdP
-    // identity has no prebound MixCWork user. We open the bind-sso page
-    // in the user's OS default browser (so they can enter their MixCWork
+    // identity has no prebound MixWork user. We open the bind-sso page
+    // in the user's OS default browser (so they can enter their MixWork
     // account and password), close the IdP auth window, and KEEP the
     // loopback probe alive. When the user completes the bind, the
     // server's ready_to_finalize finalize redirects the browser to
@@ -687,7 +687,7 @@ export async function startSsoMemberLogin(args: {
  *  - `token`       — return the token; openOauthFlow resolves.
  *  - `pendingBind` — the server's strict-mode gate returned 409. We
  *    open the bind-sso page in the user's OS default browser
- *    (so they can enter their MixCWork account and password) via
+ *    (so they can enter their MixWork account and password) via
  *    `shell.openExternal`, then close the IdP auth window and
  *    return `null` to keep polling. The loopback is still alive;
  *    when the user completes the bind in the browser, the server's

@@ -30,11 +30,11 @@ This directory contains utilities and notes for SQLite backup and recovery perfo
 2. 确认目标数据库路径。默认桌面版用户数据路径通常是：
    Confirm the target database path. The default desktop user-data path is usually:
 
-   - macOS: `~/Library/Application Support/MixCWork/mixcwork.sqlite`
-   - Windows: `%APPDATA%/MixCWork/mixcwork.sqlite`
-   - Linux: `~/.config/MixCWork/mixcwork.sqlite`
+   - macOS: `~/Library/Application Support/MixWork/mixwork.sqlite`
+   - Windows: `%APPDATA%/MixWork/mixwork.sqlite`
+   - Linux: `~/.config/MixWork/mixwork.sqlite`
 
-   The product name and `userData` directory come from `electron-builder.json` (`productName: "MixCWork"`).
+   The product name and `userData` directory come from `electron-builder.json` (`productName: "MixWork"`).
 
 3. 建议先退出应用，避免写入测试数据时与正在运行的进程竞争数据库锁。
    It is recommended to close the app before seeding data, to avoid lock contention with a running process.
@@ -48,7 +48,7 @@ First, generate enough data for backup performance testing.
 
 ```bash
 npm run test:sqlite-backup:seed -- \
-  --db "$HOME/Library/Application Support/MixCWork/mixcwork.sqlite" \
+  --db "$HOME/Library/Application Support/MixWork/mixwork.sqlite" \
   --sessions 10 \
   --messages-per-session 2000 \
   --payload-kb 8
@@ -58,7 +58,7 @@ npm run test:sqlite-backup:seed -- \
 
 ```bash
 npm run test:sqlite-backup:seed -- \
-  --db "$HOME/Library/Application Support/MixCWork/mixcwork.sqlite" \
+  --db "$HOME/Library/Application Support/MixWork/mixwork.sqlite" \
   --sessions 50 \
   --messages-per-session 10000 \
   --payload-kb 16
@@ -87,7 +87,7 @@ This is required before the automatic backup logic will run.
 If QA needs an automatic backup on every startup, set this environment variable:
 
 ```bash
-MIXCWORK_SQLITE_BACKUP_ALWAYS_ON_STARTUP=1
+MIXWORK_SQLITE_BACKUP_ALWAYS_ON_STARTUP=1
 ```
 
 支持的 truthy 值：`1`、`true`。
@@ -99,7 +99,7 @@ The constant is defined in `src/main/libs/sqliteBackup/constants.ts` as
 ### Example: run in dev mode with forced startup backup
 
 ```bash
-MIXCWORK_SQLITE_BACKUP_ALWAYS_ON_STARTUP=1 npm run electron:dev
+MIXWORK_SQLITE_BACKUP_ALWAYS_ON_STARTUP=1 npm run electron:dev
 ```
 
 ### What this does
@@ -118,7 +118,7 @@ After the app starts, inspect the main-process logs.
 Focus on these log lines:
 
 - `[SqliteBackup] Forced startup backup is enabled ...`
-- `[SqliteBackup] Starting periodic backup to mixcwork-latest.sqlite`
+- `[SqliteBackup] Starting periodic backup to mixwork-latest.sqlite`
 - `[SqliteBackup] Backup progress: transferred X/Y pages, Z remaining`
 - `[SqliteBackup] Completed periodic backup with 1 retained snapshot(s)`
 
@@ -136,14 +136,14 @@ Without the force env var, startup will first check:
 After backup completes, verify that the backup file exists:
 
 ```bash
-ls -lh "$HOME/Library/Application Support/MixCWork/backups/sqlite/snapshots/"
+ls -lh "$HOME/Library/Application Support/MixWork/backups/sqlite/snapshots/"
 ```
 
 当前单文件备份名为：
 The current single backup file is:
 
 ```text
-mixcwork-latest.sqlite
+mixwork-latest.sqlite
 ```
 
 ## 6. Recovery Test
@@ -170,7 +170,7 @@ Make sure a valid backup exists first, then intentionally corrupt the main datab
 Example:
 
 ```bash
-printf 'not-a-sqlite-db' > "$HOME/Library/Application Support/MixCWork/mixcwork.sqlite"
+printf 'not-a-sqlite-db' > "$HOME/Library/Application Support/MixWork/mixwork.sqlite"
 ```
 
 然后启动应用。
@@ -197,8 +197,8 @@ Suggested QA sequence:
    Run the seeding script to build a large database.
 3. 在应用中启用自动备份与恢复。
    Enable auto backup and recovery in the app.
-4. 使用 `MIXCWORK_SQLITE_BACKUP_ALWAYS_ON_STARTUP=1` 启动应用。
-   Launch the app with `MIXCWORK_SQLITE_BACKUP_ALWAYS_ON_STARTUP=1`.
+4. 使用 `MIXWORK_SQLITE_BACKUP_ALWAYS_ON_STARTUP=1` 启动应用。
+   Launch the app with `MIXWORK_SQLITE_BACKUP_ALWAYS_ON_STARTUP=1`.
 5. 记录备份开始、进度、完成日志及耗时。
    Record backup start, progress, completion logs, and duration.
 6. 删除备份文件，重新启动，确认会立即补备份。

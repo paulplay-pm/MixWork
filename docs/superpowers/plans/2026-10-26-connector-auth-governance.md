@@ -195,7 +195,7 @@ Token URL/Client ID/scope 每个字段分别是什么用途？在 Enterprise ser
 （公开元数据，桌面端是 PKCE 公共客户端，没有 secret，企业端可以统一持有并下发）；**回调地址
 是 redirect_uri**，必须在上游 IdP 登记，且必须与桌面端实际发出的完全一致。
 
-查出的失真：控制台显示 `https://oauth.mixcwork.cn/mcp/callback`（"回调落企业端"的网关设计），
+查出的失真：控制台显示 `https://oauth.mixwork.cn/mcp/callback`（"回调落企业端"的网关设计），
 桌面端实际发 `http://localhost:<随机端口>/callback`。三者对不上——这个值服务端不读、也不
 下发；随机端口在上游登记不了（Okta / Azure AD 严格匹配 redirect_uri）；桌面端绑 `127.0.0.1`
 却发 `localhost`（浏览器解析成 `::1` 时 code 送不到）。

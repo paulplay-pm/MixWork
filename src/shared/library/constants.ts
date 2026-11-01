@@ -12,7 +12,7 @@ export const LibrarySourceFilter = {
 export type LibrarySourceFilter = typeof LibrarySourceFilter[keyof typeof LibrarySourceFilter];
 
 export const LibraryNavigationEvent = {
-  OpenCloud: 'mixcwork:library-open-cloud',
+  OpenCloud: 'mixwork:library-open-cloud',
 } as const;
 
 export type LibraryNavigationEvent =

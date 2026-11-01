@@ -15,7 +15,7 @@ const createState = (status: AppUpdateRuntimeState['status']): AppUpdateRuntimeS
       zh: { title: '本次更新', content: ['第一项更新', '第二项更新', '第三项更新'] },
       en: { title: 'Release notes', content: ['First change', 'Second change', 'Third change'] },
     },
-    url: 'https://updates.example.com/mixcwork.exe',
+    url: 'https://updates.example.com/mixwork.exe',
   },
   progress: null,
   readyFilePath: null,

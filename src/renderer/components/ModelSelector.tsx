@@ -12,7 +12,7 @@ import {
   type ModelThinkingConfig,
   type ModelThinkingLevel as ModelThinkingLevelType,
   ProviderName,
-  supportsMixCWorkRequestOptionsV1,
+  supportsMixWorkRequestOptionsV1,
 } from '@shared/providers';
 import React from 'react';
 import { createPortal } from 'react-dom';
@@ -383,7 +383,7 @@ export function canConfigureModelThinking(
   > | null | undefined,
 ): boolean {
   return !!model?.thinkingConfig
-    && supportsMixCWorkRequestOptionsV1(model.requestCapabilities)
+    && supportsMixWorkRequestOptionsV1(model.requestCapabilities)
     && model.accessible !== false
     && !isModelAgenticBlocked(model);
 }
@@ -392,7 +392,7 @@ export function supportsConfigurableModelThinkingProtocol(
   model: Pick<Model, 'requestCapabilities' | 'thinkingConfig'> | null | undefined,
 ): boolean {
   return !!model?.thinkingConfig
-    && supportsMixCWorkRequestOptionsV1(model.requestCapabilities);
+    && supportsMixWorkRequestOptionsV1(model.requestCapabilities);
 }
 
 const MODEL_ICON_PROVIDER_HINTS: Array<{ pattern: RegExp; providerName: ProviderName | ProviderIconId }> = [
@@ -820,7 +820,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   };
   const resolveModelIconProviderKey = (model: Model): string => {
     const providerKey = model.providerKey?.trim();
-    if (providerKey && providerKey !== ProviderName.MixcworkServer) return providerKey;
+    if (providerKey && providerKey !== ProviderName.MixWorkServer) return providerKey;
 
     const searchableText = `${model.name} ${model.id}`;
     return MODEL_ICON_PROVIDER_HINTS.find(({ pattern }) => pattern.test(searchableText))?.providerName

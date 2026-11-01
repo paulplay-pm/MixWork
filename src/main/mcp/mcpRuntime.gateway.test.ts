@@ -12,7 +12,7 @@ vi.mock('../computerUse/computerUseKit', () => ({ isComputerUseKitInstalled: () 
 vi.mock('../computerUse/computerUseMcpServer', () => ({ resolveComputerUseMcpServer: () => null }));
 vi.mock('../computerUse/computerUseRuntime', () => ({ installComputerUseRuntime: vi.fn() }));
 vi.mock('../ipcHandlers/dsh/handlers', () => ({ resolveDshCodeMcpServerForConfig: async () => null }));
-vi.mock('../libs/mixcworkUtil', () => ({ getElectronNodeRuntimePath: () => '/electron' }));
+vi.mock('../libs/mixworkUtil', () => ({ getElectronNodeRuntimePath: () => '/electron' }));
 vi.mock('../libs/mcpBridgeServer', () => ({ McpBridgeServer: class {} }));
 vi.mock('../libs/resolveStdioCommand', () => ({ resolveStdioCommand: vi.fn() }));
 vi.mock('./mcpLaunchResolverManager', () => ({ McpLaunchResolverManager: class {} }));

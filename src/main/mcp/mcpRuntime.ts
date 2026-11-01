@@ -3,7 +3,7 @@ import { app, BrowserWindow } from 'electron';
 import path from 'path';
 
 import { ConnectorConsumption, McpIpcChannel } from '../../shared/mcp/constants';
-import { ASK_USER_QUESTION_TOOL_NAME, SESSION_AGNOSTIC_PERMISSION_SESSION_ID } from '../../shared/mixcwork/constants';
+import { ASK_USER_QUESTION_TOOL_NAME, SESSION_AGNOSTIC_PERMISSION_SESSION_ID } from '../../shared/mixwork/constants';
 import { isComputerUseKitInstalled } from '../computerUse/computerUseKit';
 import { resolveComputerUseMcpServer } from '../computerUse/computerUseMcpServer';
 import { installComputerUseRuntime } from '../computerUse/computerUseRuntime';
@@ -15,7 +15,7 @@ import {
   type MediaGenerationRequest,
   type MediaGenerationResponse,
 } from '../libs/mcpBridgeServer';
-import { getElectronNodeRuntimePath } from '../libs/mixcworkUtil';
+import { getElectronNodeRuntimePath } from '../libs/mixworkUtil';
 import { OpenClawConfigImpact } from '../libs/openclawConfigImpact';
 import type { ResolvedMcpServer } from '../libs/openclawConfigSync';
 import { resolveLocalDesktopCoworkSessionIdByOpenClawSessionKey } from '../libs/openclawLocalSessionResolver';
@@ -140,7 +140,7 @@ export class McpRuntime {
       windows.forEach(win => {
         if (win.isDestroyed()) return;
         try {
-          win.webContents.send('mixcwork:stream:permission', {
+          win.webContents.send('mixwork:stream:permission', {
             sessionId,
             request: {
               requestId: request.requestId,
@@ -166,7 +166,7 @@ export class McpRuntime {
       windows.forEach(win => {
         if (win.isDestroyed()) return;
         try {
-          win.webContents.send('mixcwork:stream:permissionDismiss', { requestId });
+          win.webContents.send('mixwork:stream:permissionDismiss', { requestId });
         } catch {
           // ignore
         }
@@ -225,10 +225,10 @@ export class McpRuntime {
       : '';
     const buildShimEnv = (): Record<string, string> => {
       const shimEnv: Record<string, string> = {
-        MIXCWORK_ELECTRON_PATH: electronPath,
+        MIXWORK_ELECTRON_PATH: electronPath,
       };
       if (npmBinDir) {
-        shimEnv.MIXCWORK_NPM_BIN_DIR = npmBinDir;
+        shimEnv.MIXWORK_NPM_BIN_DIR = npmBinDir;
       }
       return shimEnv;
     };
@@ -252,10 +252,10 @@ export class McpRuntime {
           if (readyResolution) {
             optimizedCount++;
             const shimEnv: Record<string, string> = {
-              MIXCWORK_ELECTRON_PATH: electronPath,
+              MIXWORK_ELECTRON_PATH: electronPath,
             };
             if (npmBinDir) {
-              shimEnv.MIXCWORK_NPM_BIN_DIR = npmBinDir;
+              shimEnv.MIXWORK_NPM_BIN_DIR = npmBinDir;
             }
             resolved.push({
               name: server.name,

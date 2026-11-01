@@ -26,7 +26,7 @@ function writeFile(filePath: string, content: string): void {
 
 describe('openclawCronLegacyMigration', () => {
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-openclaw-cron-migration-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixwork-openclaw-cron-migration-'));
     stateDir = path.join(tmpDir, 'openclaw', 'state');
     runtimeRoot = path.join(tmpDir, 'runtime');
     electronNodeRuntimePath = process.execPath;
@@ -89,7 +89,7 @@ describe('openclawCronLegacyMigration', () => {
     expect(options.env.EXISTING).toBe('1');
     expect(options.env.OPENCLAW_HOME).toBe(path.dirname(stateDir));
     expect(options.env.OPENCLAW_STATE_DIR).toBe(stateDir);
-    expect(options.env.OPENCLAW_CONFIG_PATH).toBe(path.join(stateDir, '.mixcwork-cron-doctor-openclaw.json'));
+    expect(options.env.OPENCLAW_CONFIG_PATH).toBe(path.join(stateDir, '.mixwork-cron-doctor-openclaw.json'));
     expect(options.env.ELECTRON_RUN_AS_NODE).toBe('1');
     expect(JSON.parse(fs.readFileSync(options.env.OPENCLAW_CONFIG_PATH ?? '', 'utf8'))).toEqual({
       gateway: { mode: 'local' },

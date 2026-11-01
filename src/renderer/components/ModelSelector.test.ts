@@ -1,4 +1,4 @@
-import { MixCWorkRequestCapability } from '@shared/providers/mixcworkRequestOptions';
+import { MixWorkRequestCapability } from '@shared/providers/mixworkRequestOptions';
 import { ModelThinkingLevel } from '@shared/providers/modelThinking';
 import { expect, test } from 'vitest';
 
@@ -215,7 +215,7 @@ test('allows thinking changes only for capable, accessible, and ready models', (
   expect(canConfigureModelThinking({
     accessible: true,
     isServerModel: true,
-    requestCapabilities: [MixCWorkRequestCapability.OptionsV1],
+    requestCapabilities: [MixWorkRequestCapability.OptionsV1],
     thinkingConfig: { options: thinkingConfig.options.map(option => ({ ...option })), defaultLevel: thinkingConfig.defaultLevel },
   })).toBe(true);
   expect(canConfigureModelThinking({
@@ -226,7 +226,7 @@ test('allows thinking changes only for capable, accessible, and ready models', (
   expect(canConfigureModelThinking({
     accessible: false,
     isServerModel: true,
-    requestCapabilities: [MixCWorkRequestCapability.OptionsV1],
+    requestCapabilities: [MixWorkRequestCapability.OptionsV1],
     thinkingConfig: { options: thinkingConfig.options.map(option => ({ ...option })), defaultLevel: thinkingConfig.defaultLevel },
   })).toBe(false);
   expect(canConfigureModelThinking({
@@ -234,13 +234,13 @@ test('allows thinking changes only for capable, accessible, and ready models', (
     isServerModel: true,
     runtimeProfile: 'moonshot-kimi-k3',
     agenticReady: false,
-    requestCapabilities: [MixCWorkRequestCapability.OptionsV1],
+    requestCapabilities: [MixWorkRequestCapability.OptionsV1],
     thinkingConfig: { options: thinkingConfig.options.map(option => ({ ...option })), defaultLevel: thinkingConfig.defaultLevel },
   })).toBe(false);
   expect(canConfigureModelThinking({
     accessible: true,
     isServerModel: true,
-    requestCapabilities: [MixCWorkRequestCapability.OptionsV1],
+    requestCapabilities: [MixWorkRequestCapability.OptionsV1],
   })).toBe(false);
 });
 
@@ -256,7 +256,7 @@ test('hides the thinking protocol entry when request-options support is absent',
   expect(supportsConfigurableModelThinkingProtocol({ thinkingConfig })).toBe(false);
   expect(supportsConfigurableModelThinkingProtocol({
     thinkingConfig,
-    requestCapabilities: [MixCWorkRequestCapability.OptionsV1],
+    requestCapabilities: [MixWorkRequestCapability.OptionsV1],
   })).toBe(true);
 });
 

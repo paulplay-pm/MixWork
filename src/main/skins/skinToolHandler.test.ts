@@ -82,7 +82,7 @@ const createStoreDouble = () => ({
 }) as unknown as SkinStore;
 
 const context = {
-  sessionKey: 'agent:main:mixcwork:test-session',
+  sessionKey: 'agent:main:mixwork:test-session',
   toolCallId: 'tool-call-one',
 };
 

@@ -7,6 +7,6 @@ describe('ProviderName constants', () => {
     expect(ProviderName.OpenAI).toBe('openai');
     expect(ProviderName.DeepSeek).toBe('deepseek');
     expect(ProviderName.Custom).toBe('custom');
-    expect(ProviderName.MixcworkServer).toBe('mixcwork-server');
+    expect(ProviderName.MixWorkServer).toBe('mixwork-server');
   });
 });

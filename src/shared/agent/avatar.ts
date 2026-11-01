@@ -9,7 +9,7 @@ export const AgentAvatarIconSeparator = {
 } as const;
 
 export const AgentAvatarSvg = {
-  Mixcwork: 'mixcwork',
+  MixWork: 'mixwork',
   Code: 'code',
   Repair: 'repair',
   Briefcase: 'briefcase',
@@ -65,7 +65,7 @@ export const agentAvatarColor = (index: number | null | undefined): string | nul
 };
 
 export const DefaultAgentAvatar = {
-  svg: AgentAvatarSvg.Mixcwork,
+  svg: AgentAvatarSvg.MixWork,
 } as const satisfies DesignedAgentAvatar;
 
 export const isAgentAvatarSvg = (value: string): value is AgentAvatarSvg => {

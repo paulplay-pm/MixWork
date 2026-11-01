@@ -1,31 +1,31 @@
 import { expect, test, vi } from 'vitest';
 
-import type { MixCWorkMessage } from '../../../mixcworkStore';
+import type { MixWorkMessage } from '../../../mixworkStore';
 import {
   createOpenClawThinkingTurnState,
   OpenClawThinkingController,
   type OpenClawThinkingTurnContext,
 } from './controller';
 
-const createHarness = (initialMessages: MixCWorkMessage[]) => {
+const createHarness = (initialMessages: MixWorkMessage[]) => {
   const messages = [...initialMessages];
   let nextId = messages.length + 1;
   const updateMessage = vi.fn((
     _sessionId: string,
     messageId: string,
-    updates: { content?: string; metadata?: MixCWorkMessage['metadata'] },
+    updates: { content?: string; metadata?: MixWorkMessage['metadata'] },
   ) => {
     const message = messages.find((candidate) => candidate.id === messageId);
     if (message) Object.assign(message, updates);
   });
-  const createMessage = (payload: Omit<MixCWorkMessage, 'id' | 'timestamp'>): MixCWorkMessage => ({
+  const createMessage = (payload: Omit<MixWorkMessage, 'id' | 'timestamp'>): MixWorkMessage => ({
     ...payload,
     id: `msg-${nextId++}`,
     timestamp: nextId,
   });
   const store = {
     getSession: () => ({ messages }),
-    addMessage: (_sessionId: string, payload: Omit<MixCWorkMessage, 'id' | 'timestamp'>) => {
+    addMessage: (_sessionId: string, payload: Omit<MixWorkMessage, 'id' | 'timestamp'>) => {
       const message = createMessage(payload);
       messages.push(message);
       return message;
@@ -33,7 +33,7 @@ const createHarness = (initialMessages: MixCWorkMessage[]) => {
     insertMessageBeforeId: (
       _sessionId: string,
       beforeMessageId: string,
-      payload: Omit<MixCWorkMessage, 'id' | 'timestamp'>,
+      payload: Omit<MixWorkMessage, 'id' | 'timestamp'>,
     ) => {
       const message = createMessage(payload);
       const index = messages.findIndex((candidate) => candidate.id === beforeMessageId);
@@ -63,10 +63,10 @@ const createHarness = (initialMessages: MixCWorkMessage[]) => {
 
 const message = (
   id: string,
-  type: MixCWorkMessage['type'],
+  type: MixWorkMessage['type'],
   content: string,
-  metadata: MixCWorkMessage['metadata'] = {},
-): MixCWorkMessage => ({ id, type, content, metadata, timestamp: 1 });
+  metadata: MixWorkMessage['metadata'] = {},
+): MixWorkMessage => ({ id, type, content, metadata, timestamp: 1 });
 
 const createTurn = (assistantMessageId?: string): OpenClawThinkingTurnContext => ({
   assistantMessageId,

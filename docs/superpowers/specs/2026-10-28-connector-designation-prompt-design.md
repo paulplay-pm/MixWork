@@ -34,7 +34,7 @@ OpenClaw 把每个 MCP server 的工具物化成：
 - `safeServerName = sanitizeServerName(configKey)`：非 ASCII 字符**全部**替换成 `-`；不以字母开头时补 `mcp-` 前缀；重名时追加 `-2` / `-3` 后缀。
 - 工具描述 = **厂商自己写的** `tool.description`（`openclaw/src/agents/agent-bundle-mcp-runtime.ts:687`）。连接器名字**不在描述里**；只有厂商没写描述时才用带 server name 的 fallback。
 
-`configKey` 是 MixCWork 写进 `openclaw.json` 的 `mcp.servers` 键，目前是
+`configKey` 是 MixWork 写进 `openclaw.json` 的 `mcp.servers` 键，目前是
 `safeServerKey(record.name)`（`src/main/libs/openclawMcpServers.ts:120`），也就是**显示名**。
 
 ### 2.2 企业连接器的显示名是中文优先
@@ -55,7 +55,7 @@ mcp-29c79d44__query_company      描述「查询客户跟进记录」
 
 ### 2.3 直接用显示名当 config key 会撞名
 
-把 OpenClaw 的 `sanitizeServerName` 原样跑一遍（`safeServerName` 一侧是 MixCWork 现有逻辑）：
+把 OpenClaw 的 `sanitizeServerName` 原样跑一遍（`safeServerName` 一侧是 MixWork 现有逻辑）：
 
 | 显示名 | 直接当 config key → OpenClaw 产出的 key |
 |---|---|
@@ -72,7 +72,7 @@ mcp-29c79d44__query_company      描述「查询客户跟进记录」
 2. **撞名** —— 5 个 4 字中文名的 base 全是 `mcp-----`，靠数字后缀区分。
 3. **后缀依赖注册顺序** —— 新装一个连接器可能挤掉已有连接器的后缀，导致它的工具名变化。
 
-MixCWork 现有的 md5 方案（`mcp-29c79d44`）避开了第 2、3 条，但一样不可读。
+MixWork 现有的 md5 方案（`mcp-29c79d44`）避开了第 2、3 条，但一样不可读。
 
 ### 2.4 同类产品的做法
 
@@ -83,7 +83,7 @@ MixCWork 现有的 md5 方案（`mcp-29c79d44`）避开了第 2、3 条，但一
 | **DB-GPT** | ⚠️ 更激进。ask 区工具栏勾选连接器 → **只把选中的连接器的工具挂给 agent**；文档明确论证理由：保持 prompt 聚焦、省 token、避免选错工具 | `docs.dbgpt.cn/.../mcp_connectors` |
 | **ChatGPT Apps** | ❌ 无系统提示词。用 @mention / 对话里点名 app。且有研究指出 Apps SDK `sendFollowUpMessage` 的隐藏参数 `systemPrompt` + `isVisible:false` 构成跨 app 上下文投毒向量 —— 「静默系统级注入」在生态里有安全争议 | `arxiv.org/abs/2606.00485` |
 
-**结论：WorkBuddy 那条路（「用户自己点名」）今天在 MixCWork 走不通** —— 用户写「纷享销客」，模型看见 `mcp-29c79d44__`，两边对不上。所以 MixCWork 要么把名字改成模型看得懂的（→ 提示词注入），要么收窄工具集（→ 能力边界变窄）。
+**结论：WorkBuddy 那条路（「用户自己点名」）今天在 MixWork 走不通** —— 用户写「纷享销客」，模型看见 `mcp-29c79d44__`，两边对不上。所以 MixWork 要么把名字改成模型看得懂的（→ 提示词注入），要么收窄工具集（→ 能力边界变窄）。
 
 本设计取前者：**改 config key 让工具名可读 + 用提示词把「显示名 ↔ 工具前缀」的映射交给模型。**
 
@@ -105,7 +105,7 @@ MixCWork 现有的 md5 方案（`mcp-29c79d44`）避开了第 2、3 条，但一
 | 每轮 prompt 注入连接器映射 | 「启用 = 指定」意味着每轮内容完全一样，常驻章节更合适（不重复烧 token、不受多轮漂移、启用状态自动最新）。§4-D3 |
 | 内部 / 外部连接器分级 | 组织信任级别是 server 端字段，本期不引入。规则只区分「连接器覆盖的数据」与「网页 / 记忆」。 |
 | 工具收窄（只暴露选中连接器的工具） | `mcp.servers` 是全局的，收窄要么重启网关、要么等 OpenClaw 侧的 per-agent 工具白名单落地。收益（省 token、避免选错工具）留待后续评估。 |
-| 自动重试失败的那一步 | WorkBuddy 有这个能力，但 MixCWork 的工具执行由 OpenClaw 掌控，桌面端无法重放某个 tool call。卡片在重连成功后改为提示用户可重试，不代替用户操作。 |
+| 自动重试失败的那一步 | WorkBuddy 有这个能力，但 MixWork 的工具执行由 OpenClaw 掌控，桌面端无法重放某个 tool call。卡片在重连成功后改为提示用户可重试，不代替用户操作。 |
 | 连接器管理页的功能变更 | 管理页（`McpManager.tsx`）不在本期范围，选择器复用它的既有能力与 IPC。 |
 | Kit 与连接器的合并 | Kit 的 `mcpServers` / `connectors` 目前**只是元数据**，安装 Kit 不创建本地 `mcp_servers` 行（`src/main/ipcHandlers/kits/handlers.ts` 只把两者 normalize 后存进 installed kit 记录）。Kit 的连接器与真实可调的连接器是两套东西，本期不合并。 |
 
@@ -125,7 +125,7 @@ key = safeServerKey(record.serverKey || record.name)
 **影响与已核对项：**
 
 - ✅ **不破坏组织的工具策略**：`shouldExposeMcpTool(selection, tool.name.trim())` 匹配的是**原始工具名**，不是带前缀的全名（`openclaw/src/agents/agent-bundle-mcp-runtime.ts:337-345`）。org 的 `toolFilter.include: ["query_company"]` 照常生效。
-- ⚠️ **工具名会变**：老用户的 `mcp-29c79d44__x` 变成 `fxiaoke__x`。历史对话里显示的仍是旧名（纯展示层）；`agents.<id>.tools.allow/deny` 里若有人写过 `mcp-29c79d44__*` 形式的模式会失效 —— MixCWork 自己不写这种模式（`MANAGED_TOOL_DENY = ['web_search']`），但用户自定义的系统提示词里可能有，发布说明要提一句。
+- ⚠️ **工具名会变**：老用户的 `mcp-29c79d44__x` 变成 `fxiaoke__x`。历史对话里显示的仍是旧名（纯展示层）；`agents.<id>.tools.allow/deny` 里若有人写过 `mcp-29c79d44__*` 形式的模式会失效 —— MixWork 自己不写这种模式（`MANAGED_TOOL_DENY = ['web_search']`），但用户自定义的系统提示词里可能有，发布说明要提一句。
 - ⚠️ **极小概率重名**：`serverKey` 是小写，`name` 可能是大写（`GitHub`）。OpenClaw 的重名消解按小写比较，理论上 `serverKey=github` 与本地名 `GitHub` 会撞，后者在 OpenClaw 侧变成 `github-2`。实现时要保证同一份 `mcp.servers` 里 key 唯一。
 
 ### D2 — 「启用」就是「指定」
@@ -301,7 +301,7 @@ npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 <fil
 
 ## 7. 留给实现者的
 
-- **`serverKey` 落到 config key 之后，老连接器的工具名会变。** 发布说明要提一句；`agents.<id>.tools.allow/deny` 里写过旧 `mcp-<hash>__*` 模式的用户需要自己改（MixCWork 自己不写这种模式）。
+- **`serverKey` 落到 config key 之后，老连接器的工具名会变。** 发布说明要提一句；`agents.<id>.tools.allow/deny` 里写过旧 `mcp-<hash>__*` 模式的用户需要自己改（MixWork 自己不写这种模式）。
 - **连接器清单的显示名用记录上的 `name`**（企业连接器是中文优先）。不要在章节里改写显示名 —— 用户在管理页看到的名字必须和这里一致。
 - **AGENTS.md 章节是英文**，与既有 `MANAGED_*_POLICY_PROMPT` 保持一致；连接器显示名保持原样（中文没问题）。
 - **章节里不写「内部 / 外部」分级**，只写「连接器覆盖的数据」与「网页 / 记忆」的对立。

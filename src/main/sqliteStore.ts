@@ -9,11 +9,11 @@ import { AgentId, DefaultAgentAvatarIcon, DefaultAgentProfile, LegacyAgentName, 
 import {
   OpenClawCronRunMetadataKey,
   parseOpenClawCronSessionKey,
-} from '../shared/mixcwork/openclawCronSessionKey';
+} from '../shared/mixwork/openclawCronSessionKey';
 import { DB_FILENAME } from './appConstants';
 import { initializeLibraryTables } from './library/libraryMigrations';
-import { MIXCWORK_DATA_MIGRATIONS } from './libs/dataMigration/dataMigrationService';
-import { adoptLegacySqliteFile } from './libs/dataMigration/migrations/mixcworkRebrandMigration';
+import { MIXWORK_DATA_MIGRATIONS } from './libs/dataMigration/dataMigrationService';
+import { adoptLegacySqliteFile } from './libs/dataMigration/migrations/mixworkRebrandMigration';
 import {
   openSqliteDatabaseWithRecovery,
   SqliteBackupManager,
@@ -28,7 +28,7 @@ type ChangePayload<T = unknown> = {
 const USER_MEMORIES_MIGRATION_KEY = 'userMemories.migration.v1.completed';
 const AGENT_WORKING_DIRECTORY_BACKFILL_KEY = 'agents.workingDirectoryBackfill.v1.completed';
 const SCHEDULED_TASK_SESSION_BACKFILL_KEY = 'coworkSessions.scheduledTaskIdBackfill.v1.completed';
-const EXTRACT_SCHEDULED_TASK_ID_SQL_FUNCTION = 'mixcwork_extract_scheduled_task_id';
+const EXTRACT_SCHEDULED_TASK_ID_SQL_FUNCTION = 'mixwork_extract_scheduled_task_id';
 
 const extractScheduledTaskIdFromMessageMetadata = (metadata: unknown): string | null => {
   if (typeof metadata !== 'string' || !metadata) return null;
@@ -62,8 +62,8 @@ export class SqliteStore {
     const basePath = userDataPath ?? app.getPath('userData');
     const dbPath = path.join(basePath, DB_FILENAME);
 
-    // Move any pre-rebrand MixCWork sqlite file into place BEFORE we open
-    // the new database — otherwise opening the new (empty) mixcwork.sqlite would
+    // Move any pre-rebrand MixWork sqlite file into place BEFORE we open
+    // the new database — otherwise opening the new (empty) mixwork.sqlite would
     // make the legacy adoption a no-op.
     try {
       adoptLegacySqliteFile(basePath);
@@ -94,9 +94,9 @@ export class SqliteStore {
     }
 
     // Run registered versioned data migrations before initializeTables so that
-    // legacy schema renames (e.g. cowork_sessions -> mixcwork_sessions) land on
+    // legacy schema renames (e.g. cowork_sessions -> mixwork_sessions) land on
     // the existing data rather than racing with CREATE TABLE statements.
-    for (const migration of MIXCWORK_DATA_MIGRATIONS) {
+    for (const migration of MIXWORK_DATA_MIGRATIONS) {
       try {
         console.log(`[Migration] running ${migration.id} v${migration.version}`);
         migration.apply(db, basePath);
@@ -122,7 +122,7 @@ export class SqliteStore {
 
     // Create cowork tables
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS mixcwork_sessions (
+      CREATE TABLE IF NOT EXISTS mixwork_sessions (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         openclaw_session_id TEXT,
@@ -149,7 +149,7 @@ export class SqliteStore {
     `);
 
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS mixcwork_messages (
+      CREATE TABLE IF NOT EXISTS mixwork_messages (
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL,
         type TEXT NOT NULL,
@@ -157,16 +157,16 @@ export class SqliteStore {
         metadata TEXT,
         created_at INTEGER NOT NULL,
         sequence INTEGER,
-        FOREIGN KEY (session_id) REFERENCES mixcwork_sessions(id) ON DELETE CASCADE
+        FOREIGN KEY (session_id) REFERENCES mixwork_sessions(id) ON DELETE CASCADE
       );
     `);
 
     this.db.exec(`
-      CREATE INDEX IF NOT EXISTS idx_mixcwork_messages_session_id ON mixcwork_messages(session_id);
+      CREATE INDEX IF NOT EXISTS idx_mixwork_messages_session_id ON mixwork_messages(session_id);
     `);
 
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS mixcwork_session_capsules (
+      CREATE TABLE IF NOT EXISTS mixwork_session_capsules (
         session_id TEXT PRIMARY KEY,
         version INTEGER NOT NULL,
         revision INTEGER NOT NULL,
@@ -174,12 +174,12 @@ export class SqliteStore {
         updated_at INTEGER NOT NULL,
         last_source TEXT NOT NULL,
         last_compacted_at INTEGER,
-        FOREIGN KEY (session_id) REFERENCES mixcwork_sessions(id) ON DELETE CASCADE
+        FOREIGN KEY (session_id) REFERENCES mixwork_sessions(id) ON DELETE CASCADE
       );
     `);
 
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS mixcwork_config (
+      CREATE TABLE IF NOT EXISTS mixwork_config (
         key TEXT PRIMARY KEY,
         value TEXT NOT NULL,
         updated_at INTEGER NOT NULL
@@ -412,94 +412,94 @@ export class SqliteStore {
     // release. Keep this required migration independent from the legacy
     // best-effort block below so an unrelated ALTER failure cannot skip it.
     try {
-      const sessionCols = this.db.pragma('table_info(mixcwork_sessions)') as Array<{ name: string }>;
+      const sessionCols = this.db.pragma('table_info(mixwork_sessions)') as Array<{ name: string }>;
       if (!sessionCols.some(column => column.name.toLowerCase() === 'thinking_level')) {
-        this.db.exec("ALTER TABLE mixcwork_sessions ADD COLUMN thinking_level TEXT NOT NULL DEFAULT '';");
+        this.db.exec("ALTER TABLE mixwork_sessions ADD COLUMN thinking_level TEXT NOT NULL DEFAULT '';");
         this.didRunMigration = true;
-        console.log('[SqliteStore] added required mixcwork_sessions.thinking_level column');
+        console.log('[SqliteStore] added required mixwork_sessions.thinking_level column');
       }
     } catch (error) {
-      console.error('[SqliteStore] failed to add mixcwork_sessions.thinking_level:', error);
+      console.error('[SqliteStore] failed to add mixwork_sessions.thinking_level:', error);
       throw error;
     }
 
     // Migrations - safely add columns if they don't exist
     try {
       // Check if execution_mode column exists
-      const columns = this.db.pragma('table_info(mixcwork_sessions)') as Array<{ name: string }>;
+      const columns = this.db.pragma('table_info(mixwork_sessions)') as Array<{ name: string }>;
       const colNames = columns.map((c) => c.name);
 
       if (!colNames.includes('execution_mode')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN execution_mode TEXT;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN execution_mode TEXT;');
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('pinned')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN pinned INTEGER NOT NULL DEFAULT 0;');
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('pin_order')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN pin_order INTEGER;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN pin_order INTEGER;');
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('active_skill_ids')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN active_skill_ids TEXT;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN active_skill_ids TEXT;');
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('model_override')) {
-        this.db.exec("ALTER TABLE mixcwork_sessions ADD COLUMN model_override TEXT NOT NULL DEFAULT '';");
+        this.db.exec("ALTER TABLE mixwork_sessions ADD COLUMN model_override TEXT NOT NULL DEFAULT '';");
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('parent_session_id')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN parent_session_id TEXT;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN parent_session_id TEXT;');
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('forked_from_message_id')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN forked_from_message_id TEXT;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN forked_from_message_id TEXT;');
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('forked_at')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN forked_at INTEGER;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN forked_at INTEGER;');
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('fork_mode')) {
-        this.db.exec("ALTER TABLE mixcwork_sessions ADD COLUMN fork_mode TEXT NOT NULL DEFAULT 'none';");
+        this.db.exec("ALTER TABLE mixwork_sessions ADD COLUMN fork_mode TEXT NOT NULL DEFAULT 'none';");
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('fork_workspace_path')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN fork_workspace_path TEXT;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN fork_workspace_path TEXT;');
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('fork_git_branch')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN fork_git_branch TEXT;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN fork_git_branch TEXT;');
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('fork_git_base_ref')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN fork_git_base_ref TEXT;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN fork_git_base_ref TEXT;');
         this.didRunMigration = true;
       }
 
       if (!colNames.includes('goal_json')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN goal_json TEXT;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN goal_json TEXT;');
         this.didRunMigration = true;
       }
 
-      // Migration: Add sequence column to mixcwork_messages
-      const msgColumns = this.db.pragma('table_info(mixcwork_messages)') as Array<{ name: string }>;
+      // Migration: Add sequence column to mixwork_messages
+      const msgColumns = this.db.pragma('table_info(mixwork_messages)') as Array<{ name: string }>;
       const msgColNames = msgColumns.map(c => c.name);
 
       if (!msgColNames.includes('sequence')) {
-        this.db.exec('ALTER TABLE mixcwork_messages ADD COLUMN sequence INTEGER');
+        this.db.exec('ALTER TABLE mixwork_messages ADD COLUMN sequence INTEGER');
         this.didRunMigration = true;
 
         // Assign sequence numbers to existing messages ordered by created_at + ROWID
@@ -509,10 +509,10 @@ export class SqliteStore {
               PARTITION BY session_id
               ORDER BY created_at ASC, ROWID ASC
             ) as seq
-            FROM mixcwork_messages
+            FROM mixwork_messages
           )
-          UPDATE mixcwork_messages
-          SET sequence = (SELECT seq FROM numbered WHERE numbered.id = mixcwork_messages.id)
+          UPDATE mixwork_messages
+          SET sequence = (SELECT seq FROM numbered WHERE numbered.id = mixwork_messages.id)
         `);
       }
     } catch {
@@ -521,16 +521,16 @@ export class SqliteStore {
 
     // Keep mixed-message pagination (history rail and conversation search)
     // index-backed. This must run after the legacy `sequence` migration above:
-    // older installations can still have a mixcwork_messages table without that
+    // older installations can still have a mixwork_messages table without that
     // column when initializeTables starts.
     try {
-      const indexName = 'idx_mixcwork_messages_session_order';
+      const indexName = 'idx_mixwork_messages_session_order';
       const existingIndex = this.db
         .prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = ?")
         .get(indexName);
       this.db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_mixcwork_messages_session_order
-        ON mixcwork_messages(session_id, COALESCE(sequence, created_at), created_at);
+        CREATE INDEX IF NOT EXISTS idx_mixwork_messages_session_order
+        ON mixwork_messages(session_id, COALESCE(sequence, created_at), created_at);
       `);
       if (!existingIndex) {
         this.didRunMigration = true;
@@ -546,23 +546,23 @@ export class SqliteStore {
     // Keep its migration isolated from unrelated legacy columns so an earlier
     // best-effort migration cannot prevent it from being installed.
     try {
-      const sessionCols = this.db.pragma('table_info(mixcwork_sessions)') as Array<{ name: string }>;
+      const sessionCols = this.db.pragma('table_info(mixwork_sessions)') as Array<{ name: string }>;
       if (!sessionCols.some(column => column.name === 'scheduled_task_id')) {
-        this.db.exec('ALTER TABLE mixcwork_sessions ADD COLUMN scheduled_task_id TEXT;');
+        this.db.exec('ALTER TABLE mixwork_sessions ADD COLUMN scheduled_task_id TEXT;');
         this.didRunMigration = true;
       }
     } catch (error) {
-      console.error('[SqliteStore] failed to add mixcwork_sessions.scheduled_task_id:', error);
+      console.error('[SqliteStore] failed to add mixwork_sessions.scheduled_task_id:', error);
       throw error;
     }
 
     try {
-      const pinnedResult = this.db.prepare('UPDATE mixcwork_sessions SET pinned = 0 WHERE pinned IS NULL;').run();
+      const pinnedResult = this.db.prepare('UPDATE mixwork_sessions SET pinned = 0 WHERE pinned IS NULL;').run();
       const pinOrderResult = this.db
-        .prepare('UPDATE mixcwork_sessions SET pin_order = updated_at WHERE pinned = 1 AND pin_order IS NULL;')
+        .prepare('UPDATE mixwork_sessions SET pin_order = updated_at WHERE pinned = 1 AND pin_order IS NULL;')
         .run();
       const unpinnedResult = this.db
-        .prepare('UPDATE mixcwork_sessions SET pin_order = NULL WHERE pinned = 0 AND pin_order IS NOT NULL;')
+        .prepare('UPDATE mixwork_sessions SET pin_order = NULL WHERE pinned = 0 AND pin_order IS NOT NULL;')
         .run();
       if (pinnedResult.changes > 0 || pinOrderResult.changes > 0 || unpinnedResult.changes > 0) {
         this.didRunMigration = true;
@@ -571,13 +571,13 @@ export class SqliteStore {
       // Column might not exist yet.
     }
 
-    // Migration: Add agent_id column to mixcwork_sessions
+    // Migration: Add agent_id column to mixwork_sessions
     try {
-      const sessionCols = this.db.pragma('table_info(mixcwork_sessions)') as Array<{ name: string }>;
+      const sessionCols = this.db.pragma('table_info(mixwork_sessions)') as Array<{ name: string }>;
       const sessionColNames = sessionCols.map(c => c.name);
       if (!sessionColNames.includes('agent_id')) {
         this.db.exec(
-          "ALTER TABLE mixcwork_sessions ADD COLUMN agent_id TEXT NOT NULL DEFAULT 'main';",
+          "ALTER TABLE mixwork_sessions ADD COLUMN agent_id TEXT NOT NULL DEFAULT 'main';",
         );
         this.didRunMigration = true;
       }
@@ -587,8 +587,8 @@ export class SqliteStore {
 
     try {
       this.db.exec(`
-        CREATE INDEX IF NOT EXISTS idx_mixcwork_sessions_scheduled_task_id
-        ON mixcwork_sessions(scheduled_task_id, agent_id);
+        CREATE INDEX IF NOT EXISTS idx_mixwork_sessions_scheduled_task_id
+        ON mixwork_sessions(scheduled_task_id, agent_id);
       `);
     } catch (error) {
       // The index improves restart lookup but is not required for correctness.
@@ -611,7 +611,7 @@ export class SqliteStore {
                SELECT sessions.id AS session_id,
                       (
                         SELECT ${EXTRACT_SCHEDULED_TASK_ID_SQL_FUNCTION}(messages.metadata)
-                        FROM mixcwork_messages AS messages
+                        FROM mixwork_messages AS messages
                         WHERE messages.session_id = sessions.id
                           AND messages.metadata IS NOT NULL
                           AND messages.metadata LIKE ?
@@ -619,11 +619,11 @@ export class SqliteStore {
                         ORDER BY messages.created_at DESC, messages.id DESC
                         LIMIT 1
                       ) AS scheduled_task_id
-               FROM mixcwork_sessions AS sessions
+               FROM mixwork_sessions AS sessions
                WHERE sessions.scheduled_task_id IS NULL
                  AND sessions.parent_session_id IS NULL
              )
-             UPDATE mixcwork_sessions AS sessions
+             UPDATE mixwork_sessions AS sessions
              SET scheduled_task_id = candidates.scheduled_task_id
              FROM candidate_sessions AS candidates
              WHERE sessions.id = candidates.session_id
@@ -748,11 +748,11 @@ export class SqliteStore {
         .get(AgentId.Main) as { id: string; name: string; icon: string } | undefined;
       if (!mainAgent) {
         const now = Date.now();
-        // Read existing systemPrompt from mixcwork_config to inherit into main agent
+        // Read existing systemPrompt from mixwork_config to inherit into main agent
         let existingSystemPrompt = '';
         try {
           const spRow = this.db
-            .prepare("SELECT value FROM mixcwork_config WHERE key = 'systemPrompt'")
+            .prepare("SELECT value FROM mixwork_config WHERE key = 'systemPrompt'")
             .get() as { value: string } | undefined;
           if (spRow?.value) {
             existingSystemPrompt = spRow.value;
@@ -849,7 +849,7 @@ export class SqliteStore {
     try {
       if (this.get<string>(AGENT_WORKING_DIRECTORY_BACKFILL_KEY) !== '1') {
         const cwdRow = this.db
-          .prepare("SELECT value FROM mixcwork_config WHERE key = 'workingDirectory'")
+          .prepare("SELECT value FROM mixwork_config WHERE key = 'workingDirectory'")
           .get() as { value: string } | undefined;
         const legacyWorkingDirectory = cwdRow?.value?.trim() || '';
         if (legacyWorkingDirectory) {
@@ -872,10 +872,10 @@ export class SqliteStore {
 
     try {
       this.db.exec(
-        `UPDATE mixcwork_sessions SET execution_mode = 'local' WHERE execution_mode = 'container';`,
+        `UPDATE mixwork_sessions SET execution_mode = 'local' WHERE execution_mode = 'container';`,
       );
       this.db.exec(`
-        UPDATE mixcwork_config
+        UPDATE mixwork_config
         SET value = 'local'
         WHERE key = 'executionMode' AND value = 'container';
       `);

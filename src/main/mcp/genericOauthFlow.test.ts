@@ -105,9 +105,9 @@ describe('resolveRedirect', () => {
   });
 
   test('it refuses a server-hosted callback — the desktop cannot bind that', () => {
-    const r = resolveRedirect('https://oauth.mixcwork.cn/mcp/callback');
+    const r = resolveRedirect('https://oauth.mixwork.cn/mcp/callback');
     expect(r.port).toBe(MCP_OAUTH_REDIRECT_PORT_DEFAULT);
-    expect(r.uri).not.toContain('oauth.mixcwork.cn');
+    expect(r.uri).not.toContain('oauth.mixwork.cn');
   });
 
   test('it refuses a loopback URI with no port', () => {

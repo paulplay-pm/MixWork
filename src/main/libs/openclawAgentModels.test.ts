@@ -21,7 +21,7 @@ describe('buildAgentEntry', () => {
       description: '',
       systemPrompt: '',
       identity: '',
-      model: 'mixcwork-server/deepseek-v3.2',
+      model: 'mixwork-server/deepseek-v3.2',
       workingDirectory: '',
       icon: '',
       skillIds: [],
@@ -36,7 +36,7 @@ describe('buildAgentEntry', () => {
     expect(result).toMatchObject({
       id: 'main',
       default: true,
-      model: { primary: 'mixcwork-server/deepseek-v3.2' },
+      model: { primary: 'mixwork-server/deepseek-v3.2' },
     });
   });
 
@@ -76,7 +76,7 @@ describe('buildAgentEntry', () => {
       description: '',
       systemPrompt: '',
       identity: '',
-      model: 'mixcwork-server/kimi-k2.6',
+      model: 'mixwork-server/kimi-k2.6',
       workingDirectory: '',
       icon: '',
       skillIds: [],
@@ -94,7 +94,7 @@ describe('buildAgentEntry', () => {
 
     expect(result).toMatchObject({
       id: 'main',
-      model: { primary: 'mixcwork-server/kimi-k2.6' },
+      model: { primary: 'mixwork-server/kimi-k2.6' },
     });
   });
 
@@ -372,10 +372,10 @@ describe('buildManagedAgentEntries', () => {
 
 describe('parsePrimaryModelRef', () => {
   test('parses provider-qualified primary model refs', () => {
-    expect(parsePrimaryModelRef('mixcwork-server/deepseek-v3.2')).toEqual({
-      providerId: 'mixcwork-server',
+    expect(parsePrimaryModelRef('mixwork-server/deepseek-v3.2')).toEqual({
+      providerId: 'mixwork-server',
       modelId: 'deepseek-v3.2',
-      primaryModel: 'mixcwork-server/deepseek-v3.2',
+      primaryModel: 'mixwork-server/deepseek-v3.2',
     });
   });
 
@@ -386,26 +386,26 @@ describe('parsePrimaryModelRef', () => {
 
 describe('resolveManagedSessionModelTarget', () => {
   const availableProviders = {
-    'mixcwork-server': { models: [{ id: 'qwen3.5-plus' }, { id: 'deepseek-v3.2' }] },
+    'mixwork-server': { models: [{ id: 'qwen3.5-plus' }, { id: 'deepseek-v3.2' }] },
     minimax: { models: [{ id: 'MiniMax-M2.7' }] },
   };
 
   test('uses fallback target when agent model is empty', () => {
     expect(resolveManagedSessionModelTarget({
       agentModel: '',
-      fallbackPrimaryModel: 'mixcwork-server/qwen3.5-plus',
+      fallbackPrimaryModel: 'mixwork-server/qwen3.5-plus',
       availableProviders,
     })).toEqual({
-      providerId: 'mixcwork-server',
+      providerId: 'mixwork-server',
       modelId: 'qwen3.5-plus',
-      primaryModel: 'mixcwork-server/qwen3.5-plus',
+      primaryModel: 'mixwork-server/qwen3.5-plus',
     });
   });
 
   test('keeps explicit provider-qualified models', () => {
     expect(resolveManagedSessionModelTarget({
       agentModel: 'minimax/MiniMax-M2.7',
-      fallbackPrimaryModel: 'mixcwork-server/qwen3.5-plus',
+      fallbackPrimaryModel: 'mixwork-server/qwen3.5-plus',
       availableProviders,
     })).toEqual({
       providerId: 'minimax',
@@ -417,25 +417,25 @@ describe('resolveManagedSessionModelTarget', () => {
   test('resolves bare model ids against available providers', () => {
     expect(resolveManagedSessionModelTarget({
       agentModel: 'deepseek-v3.2',
-      fallbackPrimaryModel: 'mixcwork-server/qwen3.5-plus',
+      fallbackPrimaryModel: 'mixwork-server/qwen3.5-plus',
       availableProviders,
     })).toEqual({
-      providerId: 'mixcwork-server',
+      providerId: 'mixwork-server',
       modelId: 'deepseek-v3.2',
-      primaryModel: 'mixcwork-server/deepseek-v3.2',
+      primaryModel: 'mixwork-server/deepseek-v3.2',
     });
   });
 
   test('falls back to current provider when bare model cannot be resolved uniquely', () => {
     expect(resolveManagedSessionModelTarget({
       agentModel: 'unknown-model',
-      fallbackPrimaryModel: 'mixcwork-server/qwen3.5-plus',
+      fallbackPrimaryModel: 'mixwork-server/qwen3.5-plus',
       availableProviders,
-      currentProviderId: 'mixcwork-server',
+      currentProviderId: 'mixwork-server',
     })).toEqual({
-      providerId: 'mixcwork-server',
+      providerId: 'mixwork-server',
       modelId: 'unknown-model',
-      primaryModel: 'mixcwork-server/unknown-model',
+      primaryModel: 'mixwork-server/unknown-model',
     });
   });
 });
@@ -445,12 +445,12 @@ describe('resolveQualifiedAgentModelRef', () => {
     expect(resolveQualifiedAgentModelRef({
       agentModel: 'deepseek-v3.2',
       availableProviders: {
-        'mixcwork-server': { models: [{ id: 'deepseek-v3.2' }] },
+        'mixwork-server': { models: [{ id: 'deepseek-v3.2' }] },
         minimax: { models: [{ id: 'MiniMax-M2.7' }] },
       },
     })).toEqual({
       status: 'qualified',
-      primaryModel: 'mixcwork-server/deepseek-v3.2',
+      primaryModel: 'mixwork-server/deepseek-v3.2',
     });
   });
 
@@ -459,12 +459,12 @@ describe('resolveQualifiedAgentModelRef', () => {
       agentModel: 'deepseek-v3.2',
       availableProviders: {
         anthropic: { models: [{ id: 'deepseek-v3.2' }] },
-        'mixcwork-server': { models: [{ id: 'deepseek-v3.2' }] },
+        'mixwork-server': { models: [{ id: 'deepseek-v3.2' }] },
       },
     })).toEqual({
       status: 'ambiguous',
       modelId: 'deepseek-v3.2',
-      providerIds: ['anthropic', 'mixcwork-server'],
+      providerIds: ['anthropic', 'mixwork-server'],
     });
   });
 
@@ -494,13 +494,13 @@ describe('resolveQualifiedAgentModelRef', () => {
 
   test('keeps explicit server refs when a custom provider has the same model id', () => {
     expect(resolveQualifiedAgentModelRef({
-      agentModel: 'mixcwork-server/kimi-k2.6',
+      agentModel: 'mixwork-server/kimi-k2.6',
       availableProviders: {
         moonshot: { models: [{ id: 'kimi-k2.6' }] },
       },
     })).toEqual({
       status: 'qualified',
-      primaryModel: 'mixcwork-server/kimi-k2.6',
+      primaryModel: 'mixwork-server/kimi-k2.6',
     });
   });
 });
@@ -508,42 +508,42 @@ describe('resolveQualifiedAgentModelRef', () => {
 describe('resolveServerModelRefForRun', () => {
   test('keeps an explicitly qualified custom model non-server when the package uses the same id', () => {
     expect(resolveServerModelRefForRun({
-      modelRef: 'custom_0/kimi-k3-MixcworkInner',
+      modelRef: 'custom_0/kimi-k3-MixWorkInner',
       availableProviders: {
-        custom_0: { models: [{ id: 'kimi-k3-MixcworkInner' }] },
-        'mixcwork-server': { models: [{ id: 'kimi-k3-MixcworkInner' }] },
+        custom_0: { models: [{ id: 'kimi-k3-MixWorkInner' }] },
+        'mixwork-server': { models: [{ id: 'kimi-k3-MixWorkInner' }] },
       },
     })).toEqual({
       status: ServerModelRefResolutionStatus.NonServer,
-      modelId: 'kimi-k3-MixcworkInner',
+      modelId: 'kimi-k3-MixWorkInner',
       providerIds: ['custom_0'],
     });
   });
 
   test('fails closed for a historical bare id shared by a custom and package provider', () => {
     expect(resolveServerModelRefForRun({
-      modelRef: 'kimi-k3-MixcworkInner',
+      modelRef: 'kimi-k3-MixWorkInner',
       availableProviders: {
-        custom_0: { models: [{ id: 'kimi-k3-MixcworkInner' }] },
-        'mixcwork-server': { models: [{ id: 'kimi-k3-MixcworkInner' }] },
+        custom_0: { models: [{ id: 'kimi-k3-MixWorkInner' }] },
+        'mixwork-server': { models: [{ id: 'kimi-k3-MixWorkInner' }] },
       },
     })).toEqual({
       status: ServerModelRefResolutionStatus.Ambiguous,
-      modelId: 'kimi-k3-MixcworkInner',
-      providerIds: ['custom_0', 'mixcwork-server'],
+      modelId: 'kimi-k3-MixWorkInner',
+      providerIds: ['custom_0', 'mixwork-server'],
     });
   });
 
-  test('resolves a bare package-only id to mixcwork-server', () => {
+  test('resolves a bare package-only id to mixwork-server', () => {
     expect(resolveServerModelRefForRun({
-      modelRef: 'kimi-k3-MixcworkInner',
+      modelRef: 'kimi-k3-MixWorkInner',
       availableProviders: {
-        'mixcwork-server': { models: [{ id: 'kimi-k3-MixcworkInner' }] },
+        'mixwork-server': { models: [{ id: 'kimi-k3-MixWorkInner' }] },
       },
     })).toEqual({
       status: ServerModelRefResolutionStatus.Server,
-      modelId: 'kimi-k3-MixcworkInner',
-      primaryModel: 'mixcwork-server/kimi-k3-MixcworkInner',
+      modelId: 'kimi-k3-MixWorkInner',
+      primaryModel: 'mixwork-server/kimi-k3-MixWorkInner',
     });
   });
 
