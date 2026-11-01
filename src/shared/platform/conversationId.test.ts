@@ -19,10 +19,10 @@ describe('parseImConversationId', () => {
   });
 
   test('parses group conversations', () => {
-    expect(parseImConversationId('bot1:group:zhangsan@popo.example.com')).toEqual({
+    expect(parseImConversationId('bot1:group:zhangsan@corp.example.com')).toEqual({
       accountId: 'bot1',
       peerKind: 'group',
-      peerId: 'zhangsan@popo.example.com',
+      peerId: 'zhangsan@corp.example.com',
     });
   });
 

@@ -51,7 +51,7 @@ describe('routes/releaseInstallerUploads', () => {
     const r = await a.request('/admin/releases/installers/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({ platform: 'windowsX64', fileName: 'genwork.dmg', fileSize: 100 }),
+      body: JSON.stringify({ platform: 'windowsX64', fileName: 'mixcwork.dmg', fileSize: 100 }),
     });
     expect(r.status).toBe(400);
     expect((await r.json()) as any).toMatchObject({ error: 'bad_extension' });
@@ -63,7 +63,7 @@ describe('routes/releaseInstallerUploads', () => {
     const init = await a.request('/admin/releases/installers/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({ platform: 'windowsX64', fileName: 'genwork.exe', fileSize: 5 }),
+      body: JSON.stringify({ platform: 'windowsX64', fileName: 'mixcwork.exe', fileSize: 5 }),
     });
     expect(init.status).toBe(200);
     const { uploadId, chunkSize } = (await init.json()) as any;
@@ -85,7 +85,7 @@ describe('routes/releaseInstallerUploads', () => {
     expect(done.status).toBe(200);
     const meta = (await done.json()) as any;
     expect(meta.id).toBe(uploadId);
-    expect(meta.fileName).toBe('genwork.exe');
+    expect(meta.fileName).toBe('mixcwork.exe');
     expect(meta.fileSize).toBe(5);
     expect(meta.sha256).toMatch(/^[0-9a-f]{64}$/);
 
@@ -101,7 +101,7 @@ describe('routes/releaseInstallerUploads', () => {
     const init = await a.request('/admin/releases/installers/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({ platform: 'windowsX64', fileName: 'genwork.exe', fileSize: 5 }),
+      body: JSON.stringify({ platform: 'windowsX64', fileName: 'mixcwork.exe', fileSize: 5 }),
     });
     const { uploadId } = (await init.json()) as any;
     // Send index 1 before index 0 -> gap.
@@ -119,7 +119,7 @@ describe('routes/releaseInstallerUploads', () => {
     const init = await a.request('/admin/releases/installers/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({ platform: 'windowsX64', fileName: 'genwork.exe', fileSize: 100 }),
+      body: JSON.stringify({ platform: 'windowsX64', fileName: 'mixcwork.exe', fileSize: 100 }),
     });
     const { uploadId } = (await init.json()) as any;
     const put = await a.request(`/admin/releases/installers/${uploadId}/chunks/0`, {
@@ -143,7 +143,7 @@ describe('routes/releaseInstallerUploads', () => {
     const init = await a.request('/admin/releases/installers/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({ platform: 'windowsX64', fileName: 'genwork.exe', fileSize: 5 }),
+      body: JSON.stringify({ platform: 'windowsX64', fileName: 'mixcwork.exe', fileSize: 5 }),
     });
     const { uploadId } = (await init.json()) as any;
     const done = await a.request(`/admin/releases/installers/${uploadId}/complete`, {

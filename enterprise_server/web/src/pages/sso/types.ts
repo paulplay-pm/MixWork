@@ -27,6 +27,9 @@ export interface SsoConnection {
   token_url: string | null;
   userinfo_url: string | null;
   client_id: string | null;
+  /** WeCom (企业微信) only: the 应用 AgentId. WeCom's authorize URL
+   *  needs BOTH the CorpID (client_id) and this. Null elsewhere. */
+  agentid: string | null;
   client_secret_masked: string | null;
   scopes: string | null;
   identity_id_field: string;
@@ -63,6 +66,8 @@ export interface SsoConnectionInput {
   userinfoUrl?: string;
   clientId?: string;
   clientSecret?: string;
+  /** WeCom only — see `SsoConnection.agentid`. */
+  agentid?: string;
   scopes?: string;
   identityIdField: string;
   loginNameField?: string;

@@ -1,5 +1,5 @@
 /** Diagnostic summaries intentionally exclude thinking text. */
-const THINKING_DIAGNOSTICS_ENABLED = process.env.GENWORK_THINKING_DIAGNOSTICS === '1';
+const THINKING_DIAGNOSTICS_ENABLED = process.env.MIXCWORK_THINKING_DIAGNOSTICS === '1';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => (
   Boolean(value && typeof value === 'object' && !Array.isArray(value))

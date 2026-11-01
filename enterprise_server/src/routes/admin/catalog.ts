@@ -16,7 +16,10 @@ import { providerKeyVault } from '../../vault/providerKeyVault';
  * proxy (which carries the user's JWT).
  *
  * Filtering: only enabled providers and enabled+non-policy-disabled models
- * are returned, mirroring `modelCatalog.list()` semantics.
+ * are returned, mirroring `modelCatalog.list()` semantics. That list also
+ * carries the SESSION type filter (`SESSION_MODEL_TYPES`): a media/ASR model
+ * is not offered in the desktop's chat picker — it is addressed through its
+ * own capability channel instead.
  */
 export const catalogRoutes = new Hono();
 catalogRoutes.use('/admin/catalog', requireAuth);

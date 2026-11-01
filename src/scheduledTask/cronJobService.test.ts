@@ -499,7 +499,7 @@ describe('mapGatewayJob', () => {
       makeGatewayJob({
         delivery: {
           mode: DeliveryMode.None,
-          channel: 'moltbot-popo',
+          channel: 'telegram',
           to: 'zhangsan@corp.example.com',
           accountId: 'acc-1',
           bestEffort: true,
@@ -514,7 +514,7 @@ describe('mapGatewayJob', () => {
     const job = mapGatewayJob(
       makeGatewayJob({
         delivery: { mode: DeliveryMode.None },
-        sessionKey: 'popo:ou_someuser',
+        sessionKey: 'telegram:ou_someuser',
       }),
     );
 

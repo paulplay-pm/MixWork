@@ -112,7 +112,7 @@ describe('routes/sso — public half', () => {
     const first = await a.request(`/auth/sso/callback?state=${encodeURIComponent(state)}&code=CODE`);
     expect(first.status).toBe(200);
     const firstHtml = await first.text();
-    expect(firstHtml).toContain('genwork.enterprise.auth.token');
+    expect(firstHtml).toContain('mixcwork.enterprise.auth.token');
     expect(firstHtml).toContain('eyJ'); // a real JWT (eyJ… is the base64 JWT header)
 
     // Replay with the SAME state: state already consumed → session-expired, no JWT.
@@ -245,7 +245,7 @@ describe('routes/sso — callback finalize after /auth/sso/bind', () => {
     // The token's roles must carry the user's extra_roles, not the legacy
     // [Role.User] hardcode — an org_admin completing their first strict-mode
     // bind+login must not be downgraded.
-    const m = html.match(/localStorage\.setItem\('genwork\.enterprise\.auth\.token', '([^']+)'\)/);
+    const m = html.match(/localStorage\.setItem\('mixcwork\.enterprise\.auth\.token', '([^']+)'\)/);
     expect(m).toBeTruthy();
     const { payload } = await jwtVerify(m![1], new TextEncoder().encode(process.env.JWT_SECRET!));
     expect(payload.sub).toBe('u-admin');
@@ -339,7 +339,7 @@ describe('routes/sso — callback finalize after /auth/sso/bind', () => {
       expect(html).toMatch(/sessionStorage\.setItem\('ssoBindJustSucceeded',\s*'1'\)/);
       // The new token must land in localStorage (same key the SPA's auth
       // store reads on init — see web/src/auth/store.ts:readStoredSession).
-      const m = html.match(/localStorage\.setItem\('genwork\.enterprise\.auth\.token',\s*'([^']+)'\)/);
+      const m = html.match(/localStorage\.setItem\('mixcwork\.enterprise\.auth\.token',\s*'([^']+)'\)/);
       expect(m).toBeTruthy();
       expect(m![1]).toMatch(/^eyJ/);
       // Redirect is to /account/sso-bindings, NOT '/' (which would dump

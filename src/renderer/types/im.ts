@@ -337,55 +337,6 @@ export interface WecomMultiInstanceStatus {
   instances: WecomInstanceStatus[];
 }
 
-// ==================== POPO Types ====================
-
-export interface PopoOpenClawConfig {
-  enabled: boolean;
-  connectionMode: 'websocket' | 'webhook';
-  appKey: string;
-  appSecret: string;
-  token: string;
-  aesKey: string;
-  webhookBaseUrl: string;
-  webhookPath: string;
-  webhookPort: number;
-  dmPolicy: 'open' | 'pairing' | 'allowlist' | 'disabled';
-  allowFrom: string[];
-  groupPolicy: 'open' | 'allowlist' | 'disabled';
-  groupAllowFrom: string[];
-  textChunkLimit: number;
-  richTextChunkLimit: number;
-  debug: boolean;
-}
-
-export interface PopoGatewayStatus {
-  connected: boolean;
-  startedAt: number | null;
-  lastError: string | null;
-  lastInboundAt: number | null;
-  lastOutboundAt: number | null;
-}
-
-export const MAX_POPO_INSTANCES = 20;
-
-export interface PopoInstanceConfig extends PopoOpenClawConfig {
-  instanceId: string;
-  instanceName: string;
-}
-
-export interface PopoInstanceStatus extends PopoGatewayStatus {
-  instanceId: string;
-  instanceName: string;
-}
-
-export interface PopoMultiInstanceConfig {
-  instances: PopoInstanceConfig[];
-}
-
-export interface PopoMultiInstanceStatus {
-  instances: PopoInstanceStatus[];
-}
-
 // ==================== Weixin (微信) Types ====================
 
 export interface WeixinOpenClawConfig {
@@ -407,64 +358,6 @@ export interface WeixinGatewayStatus {
   lastOutboundAt: number | null;
 }
 
-// ==================== Email Channel Types ====================
-
-export interface EmailInstanceConfig {
-  instanceId: string;
-  instanceName: string;
-  enabled: boolean;
-  transport: 'imap' | 'ws';
-  email: string;
-  password?: string;
-  apiKey?: string;
-  agentId: string;
-  imapHost?: string;
-  imapPort?: number;
-  smtpHost?: string;
-  smtpPort?: number;
-  allowFrom?: string[];
-  replyMode?: 'immediate' | 'accumulated' | 'complete';
-  replyTo?: 'sender' | 'all';
-  a2aEnabled?: boolean;
-  a2aAgentDomains?: string[];
-  a2aMaxPingPongTurns?: number;
-}
-
-export interface EmailMultiInstanceConfig {
-  instances: EmailInstanceConfig[];
-}
-
-export interface EmailInstanceStatus {
-  instanceId: string;
-  instanceName: string;
-  connected: boolean;
-  startedAt: number | null;
-  lastError: string | null;
-  email: string | null;
-  transport: 'imap' | 'ws' | null;
-  lastInboundAt: number | null;
-  lastOutboundAt: number | null;
-}
-
-export interface EmailMultiInstanceStatus {
-  instances: EmailInstanceStatus[];
-}
-
-export const DEFAULT_EMAIL_MULTI_INSTANCE_CONFIG: EmailMultiInstanceConfig = {
-  instances: [],
-};
-
-export const DEFAULT_EMAIL_INSTANCE_CONFIG: Partial<EmailInstanceConfig> = {
-  enabled: false,
-  transport: 'ws',
-  agentId: 'main',
-  replyMode: 'complete',
-  replyTo: 'sender',
-  allowFrom: ['*'],
-};
-
-export const MAX_EMAIL_INSTANCES = 20;
-
 // ==================== Common IM Types ====================
 
 export type IMPlatform = keyof Omit<IMGatewayConfig, 'settings'> | 'xiaomifeng';
@@ -476,9 +369,7 @@ export interface IMGatewayConfig {
   qq: QQMultiInstanceConfig;
   discord: DiscordMultiInstanceConfig;
   wecom: WecomMultiInstanceConfig;
-  popo: PopoMultiInstanceConfig;
   weixin: WeixinOpenClawConfig;
-  email: EmailMultiInstanceConfig;
   settings: IMSettings;
 }
 
@@ -496,9 +387,7 @@ export interface IMGatewayStatus {
   telegram: TelegramMultiInstanceStatus;
   discord: DiscordMultiInstanceStatus;
   wecom: WecomMultiInstanceStatus;
-  popo: PopoMultiInstanceStatus;
   weixin: WeixinGatewayStatus;
-  email: EmailMultiInstanceStatus;
 }
 
 // ==================== Media Attachment Types ====================
@@ -721,27 +610,6 @@ export const DEFAULT_WECOM_CONFIG: WecomOpenClawConfig = {
 
 export const DEFAULT_WECOM_MULTI_INSTANCE_CONFIG: WecomMultiInstanceConfig = { instances: [] };
 
-export const DEFAULT_POPO_CONFIG: PopoOpenClawConfig = {
-  enabled: false,
-  connectionMode: 'websocket',
-  appKey: '',
-  appSecret: '',
-  token: '',
-  aesKey: '',
-  webhookBaseUrl: '',
-  webhookPath: '/popo/callback',
-  webhookPort: 3100,
-  dmPolicy: 'open',
-  allowFrom: [],
-  groupPolicy: 'open',
-  groupAllowFrom: [],
-  textChunkLimit: 3000,
-  richTextChunkLimit: 5000,
-  debug: true,
-};
-
-export const DEFAULT_POPO_MULTI_INSTANCE_CONFIG: PopoMultiInstanceConfig = { instances: [] };
-
 export const DEFAULT_WEIXIN_CONFIG: WeixinOpenClawConfig = {
   enabled: false,
   accountId: '',
@@ -764,9 +632,7 @@ export const DEFAULT_IM_CONFIG: IMGatewayConfig = {
   qq: DEFAULT_QQ_MULTI_INSTANCE_CONFIG,
   discord: DEFAULT_DISCORD_MULTI_INSTANCE_CONFIG,
   wecom: DEFAULT_WECOM_MULTI_INSTANCE_CONFIG,
-  popo: DEFAULT_POPO_MULTI_INSTANCE_CONFIG,
   weixin: DEFAULT_WEIXIN_CONFIG,
-  email: DEFAULT_EMAIL_MULTI_INSTANCE_CONFIG,
   settings: DEFAULT_IM_SETTINGS,
 };
 
@@ -787,9 +653,6 @@ export const DEFAULT_IM_STATUS: IMGatewayStatus = {
   wecom: {
     instances: [],
   },
-  popo: {
-    instances: [],
-  },
   weixin: {
     connected: false,
     accountId: null,
@@ -797,8 +660,5 @@ export const DEFAULT_IM_STATUS: IMGatewayStatus = {
     lastError: null,
     lastInboundAt: null,
     lastOutboundAt: null,
-  },
-  email: {
-    instances: [],
   },
 };

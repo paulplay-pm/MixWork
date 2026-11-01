@@ -1,6 +1,6 @@
-import type { GenWorkSessionStatus } from '../../genworkStore';
+import type { MixCWorkSessionStatus } from '../../mixcworkStore';
 
-export function resolveChannelSessionTerminalStatus(rawStatus: string): GenWorkSessionStatus | null {
+export function resolveChannelSessionTerminalStatus(rawStatus: string): MixCWorkSessionStatus | null {
   if (
     rawStatus === 'failed' ||
     rawStatus === 'killed' ||
@@ -29,8 +29,8 @@ export function resolveChannelSessionTerminalStatus(rawStatus: string): GenWorkS
 export function resolveChannelSessionNextStatus(input: {
   hasActiveRun: boolean | null;
   rawStatus: string;
-  currentStatus: GenWorkSessionStatus;
-}): GenWorkSessionStatus | null {
+  currentStatus: MixCWorkSessionStatus;
+}): MixCWorkSessionStatus | null {
   const { hasActiveRun, rawStatus, currentStatus } = input;
 
   if (hasActiveRun === true) return 'running';

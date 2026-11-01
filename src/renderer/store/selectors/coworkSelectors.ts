@@ -1,10 +1,10 @@
 import { createSelector } from '@reduxjs/toolkit';
 
-import { SESSION_AGNOSTIC_PERMISSION_SESSION_ID } from '../../../shared/genwork/constants';
-import type { GenWorkMessage } from '../../types/genwork';
+import { SESSION_AGNOSTIC_PERMISSION_SESSION_ID } from '../../../shared/mixcwork/constants';
+import type { MixCWorkMessage } from '../../types/mixcwork';
 import type { RootState } from '../index';
 
-const EMPTY_COWORK_MESSAGES: GenWorkMessage[] = [];
+const EMPTY_COWORK_MESSAGES: MixCWorkMessage[] = [];
 
 // --- Primitive (identity) selectors ---
 // These return stable references for primitive values or existing object refs,
@@ -46,7 +46,7 @@ export const selectCurrentMessages = createSelector(
   (session) => session?.messages ?? null,
 );
 
-const selectCurrentSessionDetachedTailMessages = (state: RootState): GenWorkMessage[] => {
+const selectCurrentSessionDetachedTailMessages = (state: RootState): MixCWorkMessage[] => {
   const sessionId = state.cowork.currentSession?.id;
   return sessionId
     ? state.cowork.detachedTailMessagesBySessionId[sessionId] ?? EMPTY_COWORK_MESSAGES

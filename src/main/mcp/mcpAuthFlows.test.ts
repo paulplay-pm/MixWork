@@ -209,6 +209,97 @@ describe('mcpAuthFlows', () => {
     expect(probeSpy).toHaveBeenCalledTimes(1);
   });
 
+  test('the generic flow gets the connector URL as its discovery anchor', async () => {
+    const s = store.createServer({
+      name: 'fxsk-url',
+      description: '',
+      transportType: 'http',
+      url: 'https://fxsk.example.com/mcp',
+      authMethod: McpAuthMethod.OAuth,
+    });
+    await saveCredential(
+      null,
+      s.id,
+      { kind: 'oauth', providerId: 'generic:fxsk-mcp' },
+      { store },
+    );
+    expect(genericFlowSpy).toHaveBeenCalledTimes(1);
+    const [config] = genericFlowSpy.mock.calls[0] as unknown as [Record<string, unknown>];
+    expect(config.resourceUrl).toBe('https://fxsk.example.com/mcp');
+  });
+
+  test('a registered client id is written back onto the record so re-authorizing reuses it', async () => {
+    const s = store.createServer({
+      name: 'fxsk-reg',
+      description: '',
+      transportType: 'http',
+      url: 'https://fxsk.example.com/mcp',
+      authMethod: McpAuthMethod.OAuth,
+    });
+    genericFlowSpy.mockImplementationOnce(async (_cfg: unknown, _win: unknown, options: unknown) => {
+      (options as { onResolved?: (r: unknown) => void }).onResolved?.({
+        authorizeUrl: 'https://auth.example.com/a',
+        tokenUrl: 'https://auth.example.com/t',
+        clientId: 'registered-client',
+        redirectUri: 'http://127.0.0.1:53232/callback',
+        discoveredEndpoints: true,
+        registeredClient: true,
+      });
+      return 'mock-generic-token';
+    });
+
+    await saveCredential(null, s.id, { kind: 'oauth', providerId: 'generic:fxsk-mcp' }, { store });
+
+    const after = store.getServer(s.id)!;
+    expect(after.oauthConfig?.clientId).toBe('registered-client');
+    // The org never configured endpoints, and discovery results are not
+    // pinned onto the record — only the stateful registration is.
+    expect(after.oauthConfig?.authorizeUrl).toBeUndefined();
+    expect(after.oauthConfig?.tokenUrl).toBeUndefined();
+  });
+
+  test('discovery and registration are wired into the flow so the connector can complete itself', async () => {
+    const s = store.createServer({
+      name: 'fxsk-wired',
+      description: '',
+      transportType: 'http',
+      url: 'https://fxsk.example.com/mcp',
+      authMethod: McpAuthMethod.OAuth,
+    });
+    await saveCredential(null, s.id, { kind: 'oauth', providerId: 'generic:fxsk-mcp' }, { store });
+    const [, , options] = genericFlowSpy.mock.calls[0] as unknown as [
+      unknown,
+      unknown,
+      { discover?: unknown; register?: unknown },
+    ];
+    expect(typeof options.discover).toBe('function');
+    expect(typeof options.register).toBe('function');
+  });
+
+  test('a discovery-only run leaves the record’s oauthConfig untouched', async () => {
+    const s = store.createServer({
+      name: 'fxsk-noop',
+      description: '',
+      transportType: 'http',
+      url: 'https://fxsk.example.com/mcp',
+      authMethod: McpAuthMethod.OAuth,
+    });
+    genericFlowSpy.mockImplementationOnce(async (_cfg: unknown, _win: unknown, options: unknown) => {
+      (options as { onResolved?: (r: unknown) => void }).onResolved?.({
+        authorizeUrl: 'https://auth.example.com/a',
+        tokenUrl: 'https://auth.example.com/t',
+        clientId: 'org-client',
+        redirectUri: 'http://127.0.0.1:53232/callback',
+        discoveredEndpoints: true,
+        registeredClient: false,
+      });
+      return 'mock-generic-token';
+    });
+
+    await saveCredential(null, s.id, { kind: 'oauth', providerId: 'generic:fxsk-mcp' }, { store });
+    expect(store.getServer(s.id)!.oauthConfig).toBeUndefined();
+  });
+
   test('saveCredential with unknown oauth provider returns ok=false without probing', async () => {
     const s = store.createServer({
       name: 'foo',

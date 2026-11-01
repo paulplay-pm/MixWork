@@ -84,7 +84,7 @@ describe('sessionDiagnosticsArchive', () => {
     });
 
     expect(fileName).toBe(
-      'genwork-diagnostics-LOFTER content safety review Prompt-session--20260703-010203.zip',
+      'mixcwork-diagnostics-LOFTER content safety review Prompt-session--20260703-010203.zip',
     );
   });
 
@@ -96,9 +96,9 @@ describe('sessionDiagnosticsArchive', () => {
     });
 
     expect(fileName).toBe(
-      `genwork-diagnostics-CON ${'会'.repeat(36)}-session--20260703-010203.zip`,
+      `mixcwork-diagnostics-CON ${'会'.repeat(36)}-session--20260703-010203.zip`,
     );
-    expect(Array.from(fileName)).toHaveLength(89);
+    expect(Array.from(fileName)).toHaveLength(90);
     expect(fileName).not.toMatch(/[<>:"/\\|?*\u0000-\u001F\u200B]/);
   });
 

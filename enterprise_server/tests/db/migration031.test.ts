@@ -1,6 +1,7 @@
 import '../helpers/setupEnv';
 
 import { describe, expect, test } from 'vitest';
+
 import { resetSchema, runMigrations, testPool } from '../../src/db/testDb';
 
 describe('migration 031 (provider_keys v2)', () => {

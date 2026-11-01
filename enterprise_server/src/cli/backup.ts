@@ -5,10 +5,10 @@ import { join } from 'node:path';
 
 import { assertDockerOnPath, assertRoot, requireEnv } from './lib/preflight.js';
 
-const ETC_GENWORK = process.env.GENWORK_ETC_DIR ?? '/etc/genwork';
+const ETC_MIXCWORK = process.env.MIXCWORK_ETC_DIR ?? '/etc/mixcwork';
 
 export async function run(argv: string[] = process.argv.slice(2)): Promise<void> {
-  let out = `./genwork-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`;
+  let out = `./mixcwork-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--out') out = argv[++i];
     else {
@@ -19,7 +19,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
   assertRoot();
   assertDockerOnPath();
   const dbUrl = requireEnv('DATABASE_URL');
-  const work = mkdtempSync(join(tmpdir(), 'genwork-backup-'));
+  const work = mkdtempSync(join(tmpdir(), 'mixcwork-backup-'));
   const dump = join(work, 'dump.sql.gz');
   console.log(`[backup] pg_dump → ${dump}`);
   const dumpRes = spawnSync(
@@ -32,12 +32,12 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
     process.exit(dumpRes.status ?? 1);
   }
   // Arg-array form: operator-controlled `out` is one argv element, not a
-  // shell string. Was: `tar czf ${out} -C ${ETC_GENWORK} data ${dump}` —
+  // shell string. Was: `tar czf ${out} -C ${ETC_MIXCWORK} data ${dump}` —
   // a `;` or backtick in `out` would run an arbitrary command.
   console.log(`[backup] tar → ${out}`);
   const tarRes = spawnSync(
     'tar',
-    ['czf', out, '-C', ETC_GENWORK, 'data', dump],
+    ['czf', out, '-C', ETC_MIXCWORK, 'data', dump],
     { stdio: 'inherit' },
   );
   if (tarRes.status !== 0) {

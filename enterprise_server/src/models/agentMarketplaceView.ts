@@ -1,8 +1,11 @@
+import type { CatalogScope } from './catalogScope';
+
 /** Single source of the SELECT column list used by both the public catalog
- *  route and the admin list route. Keep in sync with migrations 025/026/027. */
+ *  route and the admin list route. Keep in sync with migrations 025/026/027
+ *  and 057 (which replaced `allowed_roles` with `scope`). */
 export const AGENT_COLUMNS = `agent_id, name, description, identity, system_prompt,
   model, thinking_level, icon, skill_ids, subagent_allow_agent_ids,
-  allowed_roles, enabled, about_you, icon_color, im_channels`;
+  scope, enabled, about_you, icon_color, im_channels`;
 
 /** DB row shape for a marketplace agent (post-027). */
 export interface AgentRow {
@@ -16,7 +19,7 @@ export interface AgentRow {
   icon: string;
   skill_ids: string[] | null;
   subagent_allow_agent_ids: string[] | null;
-  allowed_roles: string[];
+  scope: CatalogScope;
   enabled: boolean;
   about_you: string;
   icon_color: number;
@@ -35,7 +38,7 @@ export interface AgentMarketplaceView {
   icon: string;
   skillIds: string[];
   subagentAllowAgentIds: string[];
-  allowedRoles: string[];
+  scope: CatalogScope;
   enabled: boolean;
   aboutYou: string;
   iconColor: number;
@@ -54,7 +57,7 @@ export function mapAgent(row: AgentRow): AgentMarketplaceView {
     icon: row.icon,
     skillIds: row.skill_ids ?? [],
     subagentAllowAgentIds: row.subagent_allow_agent_ids ?? [],
-    allowedRoles: row.allowed_roles,
+    scope: row.scope,
     enabled: row.enabled,
     aboutYou: row.about_you ?? '',
     iconColor: row.icon_color ?? 0,

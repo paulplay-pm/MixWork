@@ -23,12 +23,10 @@ import {
 import { createPortal } from 'react-dom';
 import { useSelector } from 'react-redux';
 
-import { selectIsEnterpriseAccount } from '@/features/enterpriseAccount/selectors';
-import { authService } from '@/services/auth';
+import { selectIsEnterpriseAccount } from '@/services/enterpriseMt';
 import { copyTextToClipboard } from '@/services/clipboard';
 import { getPortalPricingUrl } from '@/services/endpoints';
 import { i18nService } from '@/services/i18n';
-import type { RootState } from '@/store';
 import type { Artifact } from '@/types/artifact';
 
 import Modal from '../common/Modal';
@@ -293,7 +291,6 @@ function logShare(level: 'debug' | 'warn', message: string): void {
 }
 
 export function ArtifactFileShareProvider({ sessionId, children }: ArtifactFileShareProviderProps) {
-  const authState = useSelector((state: RootState) => state.auth);
   const isEnterpriseAccount = useSelector(selectIsEnterpriseAccount);
   const [dialog, setDialog] = useState<ArtifactFileShareDialogState | null>(null);
   const [subscriptionPrompt, setSubscriptionPrompt] =
@@ -339,12 +336,7 @@ export function ArtifactFileShareProvider({ sessionId, children }: ArtifactFileS
     setPublishingQuota(null);
     setTrialNotice(null);
     resetFeedback();
-  }, [
-    authState.accountGeneration,
-    authState.ownerAccountKey,
-    resetFeedback,
-    sessionId,
-  ]);
+  }, [resetFeedback, sessionId]);
 
   useEffect(() => () => clearFeedbackTimer(), [clearFeedbackTimer]);
 
@@ -451,25 +443,16 @@ export function ArtifactFileShareProvider({ sessionId, children }: ArtifactFileS
   }, [clearFeedbackTimer]);
 
   const getSubscriptionDecision = useCallback(async () => {
-    return resolveArtifactSubscriptionDecision({
-      isLoggedIn: authState.isLoggedIn,
+    const snapshot = {
+      isLoggedIn: false,
       isEnterpriseAccount,
-      subscriptionStatus: authState.quota?.subscriptionStatus,
-      accountMode: authState.quota?.accountMode ?? authState.user?.accountMode,
-      shareEntitled: authState.quota?.shareEntitled,
-      deploymentEntitled: authState.quota?.deploymentEntitled,
-    }, async () => {
-      const refreshed = await authService.refreshAuthState();
-      return {
-        isLoggedIn: refreshed.isLoggedIn,
-        isEnterpriseAccount,
-        subscriptionStatus: refreshed.quota?.subscriptionStatus,
-        accountMode: refreshed.quota?.accountMode ?? refreshed.user?.accountMode,
-        shareEntitled: refreshed.quota?.shareEntitled,
-        deploymentEntitled: refreshed.quota?.deploymentEntitled,
-      };
-    }, ArtifactSubscriptionFeature.Share);
-  }, [authState.isLoggedIn, isEnterpriseAccount, authState.quota, authState.user?.accountMode]);
+    };
+    return resolveArtifactSubscriptionDecision(
+      snapshot,
+      async () => snapshot,
+      ArtifactSubscriptionFeature.Share,
+    );
+  }, [isEnterpriseAccount]);
 
   const lookupShare = useCallback(async (api: HtmlShareApi, request: ArtifactFileShareRequest) => {
     return api.getBySource({

@@ -3,7 +3,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
-import { getElectronNodeRuntimePath } from './genworkUtil';
+import { getElectronNodeRuntimePath } from './mixcworkUtil';
 
 export interface NodeRuntimeCommand {
   command: string;

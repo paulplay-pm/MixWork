@@ -11,7 +11,7 @@ const getSessionRowById = (
   const normalized = sessionId.trim();
   if (!normalized) return null;
   const row = db
-    .prepare('SELECT id, parent_session_id FROM genwork_sessions WHERE id = ? LIMIT 1')
+    .prepare('SELECT id, parent_session_id FROM mixcwork_sessions WHERE id = ? LIMIT 1')
     .get(normalized) as { id: string; parent_session_id: string | null } | undefined;
   return row ?? null;
 };
@@ -23,7 +23,7 @@ const getSessionRowByClaudeSessionId = (
   const normalized = sessionKey.trim();
   if (!normalized) return null;
   const row = db
-    .prepare('SELECT id, parent_session_id FROM genwork_sessions WHERE openclaw_session_id = ? LIMIT 1')
+    .prepare('SELECT id, parent_session_id FROM mixcwork_sessions WHERE openclaw_session_id = ? LIMIT 1')
     .get(normalized) as { id: string; parent_session_id: string | null } | undefined;
   return row ?? null;
 };

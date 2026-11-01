@@ -1,4 +1,4 @@
-import type { GenWorkMessage } from '../../genworkStore';
+import type { MixCWorkMessage } from '../../mixcworkStore';
 import { extractGatewayMessageThinking } from '../openclawHistory';
 
 type GatewayHistoryMessage = Record<string, unknown>;
@@ -7,7 +7,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => {
   return Boolean(value && typeof value === 'object' && !Array.isArray(value));
 };
 
-const isThinkingAssistantMessage = (message: GenWorkMessage): boolean => {
+const isThinkingAssistantMessage = (message: MixCWorkMessage): boolean => {
   return message.type === 'assistant'
     && isRecord(message.metadata)
     && message.metadata.isThinking === true;
@@ -51,7 +51,7 @@ export const extractThinkingFromCurrentTurn = (messages: unknown[]): string => {
 };
 
 export const findMatchingThinkingMessageIdInCurrentTurn = (
-  messages: GenWorkMessage[],
+  messages: MixCWorkMessage[],
   thinkingText: string,
 ): string | null => {
   const targetText = thinkingText.trim();
@@ -69,7 +69,7 @@ export const findMatchingThinkingMessageIdInCurrentTurn = (
 };
 
 export const findReusableFinalAssistantMessageId = (
-  messages: GenWorkMessage[],
+  messages: MixCWorkMessage[],
   content: string,
 ): string | null => {
   const normalizedContent = content.trim();
@@ -95,7 +95,7 @@ export const findReusableFinalAssistantMessageId = (
 };
 
 export const findReusableCommittedAssistantMessageId = (
-  messages: GenWorkMessage[],
+  messages: MixCWorkMessage[],
   messageId: string | null | undefined,
   content: string,
 ): string | null => {
@@ -117,7 +117,7 @@ export const findReusableCommittedAssistantMessageId = (
 };
 
 export const findRedundantFinalPrefixMessageId = (
-  messages: GenWorkMessage[],
+  messages: MixCWorkMessage[],
   finalMessageId: string | null | undefined,
   finalText: string,
 ): string | null => {

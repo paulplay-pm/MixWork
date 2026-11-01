@@ -127,7 +127,7 @@ function fixBinSymlinks(baseDir) {
         const target = fs.readlinkSync(full);
         if (!path.isAbsolute(target)) continue;
         // Extract the path relative to node_modules/ from the absolute target.
-        // e.g. "/tmp/.../extensions/moltbot-popo/node_modules/qrcode/bin/qrcode"
+        // e.g. "/tmp/.../extensions/dingtalk-connector/node_modules/some-dep/bin/cli"
         //   -> "qrcode/bin/qrcode"
         const nmSegment = '/node_modules/';
         const nmIdx = target.lastIndexOf(nmSegment);

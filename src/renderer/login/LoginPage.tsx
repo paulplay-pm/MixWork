@@ -1,7 +1,13 @@
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { i18nService } from '../services/i18n';
+import {
+  handlePasswordEnter,
+  handleUsernameEnter,
+  passwordValueAfterHandoff,
+} from './loginEnterFlow';
+import { loginErrorMessage } from './loginErrorMessage';
 
 declare global {
   interface Window {
@@ -10,7 +16,7 @@ declare global {
         orgId: string;
         username: string;
         password: string;
-      }): Promise<{ ok: true } | { ok: false; error: string }>;
+      }): Promise<{ ok: true } | { ok: false; error: string; code: string | null }>;
       logout(): Promise<void>;
       listOrgs(): Promise<{ orgs: { id: string; name: string }[] }>;
       getModels(): Promise<unknown[]>;
@@ -35,6 +41,7 @@ export function LoginPage({ onSuccess }: LoginPageProps = {}) {
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [ssoProviders, setSsoProviders] = useState<Array<{ id: string; name: string; provider_type: string; sort_order: number; logoUrl: string | null }>>([]);
 
   useEffect(() => {
@@ -70,12 +77,14 @@ export function LoginPage({ onSuccess }: LoginPageProps = {}) {
       });
   }, []);
 
+  const t = (key: string): string => i18nService.t(key);
+
   const submit = async (): Promise<void> => {
     setErr(null);
     setBusy(true);
     try {
       if (!window.electron?.enterpriseMt) {
-        setErr('enterprise bridge unavailable');
+        setErr(t('enterpriseLoginErrorBridgeUnavailable'));
         return;
       }
       const r = await window.electron.enterpriseMt.login({ orgId, username, password });
@@ -83,23 +92,23 @@ export function LoginPage({ onSuccess }: LoginPageProps = {}) {
         if (onSuccess) onSuccess();
         else window.location.reload();
       } else {
-        setErr(r.error);
+        // `r.code` names the failure cause (e.g. 'user_not_found'), so the
+        // user learns which part of the credential was wrong.
+        setErr(loginErrorMessage(r.code, r.error));
       }
     } catch (e) {
-      setErr((e as Error).message);
+      setErr(loginErrorMessage(null, (e as Error).message));
     } finally {
       setBusy(false);
     }
   };
-
-  const t = (key: string): string => i18nService.t(key);
 
   const onSso = async (connectionId: string): Promise<void> => {
     setErr(null);
     setBusy(true);
     try {
       if (!window.electron?.enterpriseMt?.ssoLogin) {
-        setErr('enterprise bridge unavailable');
+        setErr(t('enterpriseLoginErrorBridgeUnavailable'));
         return;
       }
       // The `orgId` state holds the org NAME (see the `<select>` options
@@ -130,14 +139,42 @@ export function LoginPage({ onSuccess }: LoginPageProps = {}) {
   const showOrgSelector = orgs !== null && orgs.length > 1;
   const showOrgTextInput = orgs !== null && orgs.length === 0;
 
-  // Enter in any input submits. Most natural target is the password
-  // field (the last input before the submit button) but supporting all
-  // three keeps muscle memory consistent.
+  // The org field is a context picker, not a step in the credential flow —
+  // Enter there still submits.
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLSelectElement>): void => {
     if (e.key === 'Enter' && !busy) {
       e.preventDefault();
       void submit();
     }
+  };
+
+  /**
+   * Move the credential flow into the password field.
+   *
+   * Chromium's password manager fills the field it pairs as soon as that field
+   * gains focus, writing straight into the DOM where React never sees it —
+   * and with no <form> element to pair on, it can put the username in the
+   * password box. That is not a password, so the handoff hands the box over
+   * empty (see `passwordValueAfterHandoff`).
+   */
+  const focusPassword = (): void => {
+    const el = passwordRef.current;
+    if (!el) return;
+    el.focus();
+    const next = passwordValueAfterHandoff(el.value, username);
+    if (next !== null) {
+      el.value = next;
+      setPassword(next);
+    }
+  };
+
+  // Enter walks the credential fields: username → password → submit.
+  const enterDeps = {
+    busy,
+    focusPassword,
+    submit: () => {
+      void submit();
+    },
   };
 
   return (
@@ -151,7 +188,7 @@ export function LoginPage({ onSuccess }: LoginPageProps = {}) {
             AI
           </div>
           <div className="font-semibold text-base text-[var(--text-primary)]">
-            GenWork
+            MixCWork
           </div>
         </div>
         <h1 className="text-base font-semibold text-[var(--text-primary)] mb-1.5">
@@ -186,19 +223,25 @@ export function LoginPage({ onSuccess }: LoginPageProps = {}) {
         )}
         <input
           className="w-full px-3 py-2 mb-2 bg-[var(--bg-tertiary)] border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-[var(--text-primary)] focus:outline-none focus:bg-[var(--bg-secondary)] focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/10 transition-colors"
+          name="username"
+          autoComplete="username"
+          spellCheck={false}
+          autoCapitalize="none"
           placeholder={t('enterpriseLoginUsername')}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          onKeyDown={onKeyDown}
+          onKeyDown={(e) => handleUsernameEnter(e, enterDeps)}
         />
         <div className="relative mb-4">
           <input
+            ref={passwordRef}
             className="w-full px-3 py-2 pr-10 bg-[var(--bg-tertiary)] border border-[var(--border-default)] rounded-[var(--radius-sm)] text-sm text-[var(--text-primary)] focus:outline-none focus:bg-[var(--bg-secondary)] focus:border-[var(--accent-primary)] focus:ring-2 focus:ring-[var(--accent-primary)]/10 transition-colors"
             type={showPassword ? 'text' : 'password'}
+            name="password"
             placeholder={t('enterpriseLoginPassword')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={onKeyDown}
+            onKeyDown={(e) => handlePasswordEnter(e, enterDeps)}
             autoComplete="current-password"
           />
           <button

@@ -8,17 +8,17 @@ export {
   ProviderName,
 } from './constants';
 export {
-  GENWORK_CLIENT_CAPABILITIES,
-  GENWORK_CLIENT_CAPABILITIES_HEADER,
-  GENWORK_CLIENT_VERSION_HEADER,
-  GENWORK_REQUEST_OPTIONS_FIELD,
-  GENWORK_REQUEST_OPTIONS_VERSION,
-  GenWorkRequestCapability,
   KIMI_K3_AGENTIC_CAPABILITY,
-  parseGenWorkRequestCapabilities,
-  supportsGenWorkRequestOptionsV1,
+  MIXCWORK_CLIENT_CAPABILITIES,
+  MIXCWORK_CLIENT_CAPABILITIES_HEADER,
+  MIXCWORK_CLIENT_VERSION_HEADER,
+  MIXCWORK_REQUEST_OPTIONS_FIELD,
+  MIXCWORK_REQUEST_OPTIONS_VERSION,
+  MixCWorkRequestCapability,
+  parseMixCWorkRequestCapabilities,
+  supportsMixCWorkRequestOptionsV1,
   THINKING_LEVEL_CONTROL_CAPABILITY,
-} from './genworkRequestOptions';
+} from './mixcworkRequestOptions';
 export type {
   ModelThinkingConfig,
   ModelThinkingOption,

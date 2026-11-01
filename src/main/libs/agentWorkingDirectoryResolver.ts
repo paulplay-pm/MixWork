@@ -1,4 +1,4 @@
-import type { Agent } from '../genworkStore';
+import type { Agent } from '../mixcworkStore';
 
 export interface CwdResolverDeps {
   getAgent: (agentId: string) => Agent | null;

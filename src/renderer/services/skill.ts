@@ -1,5 +1,6 @@
 import type { SkillSubmitRequest } from '../../shared/skills/constants';
 import { BUNDLED_SKILL_DISPLAY_NAMES } from '../components/skills/bundledSkillNames';
+import { builtinSkillIcon } from '../data/brandIcons';
 import { LocalizedText, MarketCategory, MarketplaceSkill, normalizeMarketplaceRow,Skill } from '../types/skill';
 import { i18nService } from './i18n';
 
@@ -178,7 +179,7 @@ class SkillService {
     }
   }
 
-  async downloadSkill(source: string): Promise<{
+  async downloadSkill(source: string, catalogVersion?: string): Promise<{
     success: boolean;
     skills?: Skill[];
     error?: string;
@@ -186,7 +187,7 @@ class SkillService {
     pendingInstallId?: string;
   }> {
     try {
-      const result = await window.electron.skills.download(source);
+      const result = await window.electron.skills.download(source, catalogVersion);
       if (result.success && result.skills) {
         this.skills = result.skills;
       }
@@ -215,7 +216,7 @@ class SkillService {
     }
   }
 
-  async upgradeSkill(skillId: string, downloadUrl: string): Promise<{
+  async upgradeSkill(skillId: string, downloadUrl: string, catalogVersion?: string): Promise<{
     success: boolean;
     skills?: Skill[];
     error?: string;
@@ -223,7 +224,7 @@ class SkillService {
     pendingInstallId?: string;
   }> {
     try {
-      const result = await window.electron.skills.upgrade(skillId, downloadUrl);
+      const result = await window.electron.skills.upgrade(skillId, downloadUrl, catalogVersion);
       if (result.success && result.skills) {
         this.skills = result.skills;
       }
@@ -504,9 +505,11 @@ class SkillService {
     return prettifySkillName(skillName);
   }
 
-  /** Server-provided icon URL, if any. Callers fall back to a generated tile. */
+  /** The skill's icon: the catalog's when the org or marketplace supplied one,
+   *  otherwise the artwork bundled with the app for a built-in skill. Callers
+   *  fall back to a generated tile when neither exists. */
   getSkillIcon(skillId: string): string | undefined {
-    return this.skillIcons.get(skillId);
+    return this.skillIcons.get(skillId) ?? builtinSkillIcon(skillId);
   }
 
   getLocalizedSkillDescription(skillId: string, skillName: string, fallback: string): string {

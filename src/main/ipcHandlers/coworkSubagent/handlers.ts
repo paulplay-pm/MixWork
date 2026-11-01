@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-import { GenWorkIpcChannel } from '../../../shared/genwork/constants';
+import { MixCWorkIpcChannel } from '../../../shared/mixcwork/constants';
 
 export interface CoworkSubagentRuntimeAdapter {
   getSubTaskHistory: (
@@ -22,14 +22,14 @@ export interface CoworkSubagentEngineRouter {
 
 export interface CoworkSubagentHandlerDeps {
   getOpenClawRuntimeAdapter: () => CoworkSubagentRuntimeAdapter | null;
-  getGenWorkEngineRouter: () => CoworkSubagentEngineRouter;
+  getMixCWorkEngineRouter: () => CoworkSubagentEngineRouter;
 }
 
 export function registerCoworkSubagentHandlers(deps: CoworkSubagentHandlerDeps): void {
-  const { getOpenClawRuntimeAdapter, getGenWorkEngineRouter } = deps;
+  const { getOpenClawRuntimeAdapter, getMixCWorkEngineRouter } = deps;
 
   ipcMain.handle(
-    GenWorkIpcChannel.SubTaskHistory,
+    MixCWorkIpcChannel.SubTaskHistory,
     async (
       _event,
       options: {
@@ -58,7 +58,7 @@ export function registerCoworkSubagentHandlers(deps: CoworkSubagentHandlerDeps):
     },
   );
 
-  ipcMain.handle(GenWorkIpcChannel.SubagentList, async (_event, options: { parentSessionId: string }) => {
+  ipcMain.handle(MixCWorkIpcChannel.SubagentList, async (_event, options: { parentSessionId: string }) => {
     const adapter = getOpenClawRuntimeAdapter();
     if (!adapter) return { success: true, runs: [] };
     const runs = adapter.listSubagentRuns(options.parentSessionId);
@@ -66,7 +66,7 @@ export function registerCoworkSubagentHandlers(deps: CoworkSubagentHandlerDeps):
   });
 
   ipcMain.handle(
-    GenWorkIpcChannel.SubagentListByAgent,
+    MixCWorkIpcChannel.SubagentListByAgent,
     async (_event, options: { agentId: string; limit?: number; offset?: number }) => {
       const adapter = getOpenClawRuntimeAdapter();
       if (!adapter) return { success: true, runs: [], hasMore: false };
@@ -80,14 +80,14 @@ export function registerCoworkSubagentHandlers(deps: CoworkSubagentHandlerDeps):
   );
 
   ipcMain.handle(
-    GenWorkIpcChannel.SubagentDelete,
+    MixCWorkIpcChannel.SubagentDelete,
     async (_event, options: { parentSessionId: string; runId: string }) => {
       const adapter = getOpenClawRuntimeAdapter();
       if (!adapter) {
         return { success: false, error: 'Runtime adapter not available' };
       }
       try {
-        const deleted = await getGenWorkEngineRouter().deleteSubagentSession(
+        const deleted = await getMixCWorkEngineRouter().deleteSubagentSession(
           options.parentSessionId,
           options.runId,
         );

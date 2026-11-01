@@ -8,7 +8,7 @@ vi.mock('../../src/db/pool', async () => {
 });
 
 import { resetSchema, runMigrations, testPool } from '../../src/db/testDb';
-import { providerKeyVault, maskKey } from '../../src/vault/providerKeyVault';
+import { maskKey,providerKeyVault } from '../../src/vault/providerKeyVault';
 
 describe('providerKeyVault', () => {
   beforeEach(async () => {
@@ -131,5 +131,55 @@ describe('providerKeyVault', () => {
     });
     await providerKeyVault.setEnabled(id, false);
     await expect(providerKeyVault.getDecrypted(id)).rejects.toThrow(/disabled/i);
+  });
+
+  /**
+   * `config` holds the provider-specific settings the console writes: the
+   * media model list, the ASR daily cap. It is stored as JSONB and has to
+   * survive a round trip through the vault.
+   */
+  test('config round-trips: add stores it, list echoes it', async () => {
+    const { id } = await providerKeyVault.add({
+      orgId: 'o1',
+      provider: 'minimax',
+      plaintextKey: 'sk-x',
+      protocol: 'image-gen',
+      config: { models: [{ modelId: 'image-01', displayName: 'image-01' }] },
+    });
+    const row = await testPool.query<{ config: Record<string, unknown> }>(
+      `SELECT config FROM provider_keys WHERE id=$1`, [id]);
+    expect(row.rows[0].config).toEqual({
+      models: [{ modelId: 'image-01', displayName: 'image-01' }],
+    });
+    const listed = (await providerKeyVault.list('o1')).find((r) => r.id === id);
+    expect(listed?.config).toEqual({
+      models: [{ modelId: 'image-01', displayName: 'image-01' }],
+    });
+  });
+
+  test('add without config stores an empty object, not null', async () => {
+    const { id } = await providerKeyVault.add({ orgId: 'o1', provider: 'plain-x' });
+    const row = await testPool.query<{ config: Record<string, unknown> | null }>(
+      `SELECT config FROM provider_keys WHERE id=$1`, [id]);
+    expect(row.rows[0].config).toEqual({});
+  });
+
+  test('patch merges config at the top level instead of replacing it', async () => {
+    // A console that only knows about `models` must not wipe the ASR daily
+    // cap it never saw — so the merge is per top-level key.
+    const { id } = await providerKeyVault.add({
+      orgId: 'o1',
+      provider: 'minimax',
+      plaintextKey: 'sk-x',
+      protocol: 'image-gen',
+      config: { limitSecondsToday: 900, models: [{ modelId: 'image-01' }] },
+    });
+    await providerKeyVault.patch(id, { config: { models: [{ modelId: 'image-01-live' }] } });
+    const row = await testPool.query<{ config: Record<string, unknown> }>(
+      `SELECT config FROM provider_keys WHERE id=$1`, [id]);
+    expect(row.rows[0].config).toEqual({
+      limitSecondsToday: 900,
+      models: [{ modelId: 'image-01-live' }],
+    });
   });
 });

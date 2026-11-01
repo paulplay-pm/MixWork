@@ -1,10 +1,10 @@
 # Web Search Skill
 
-Real-time web search capability for GenWork using Playwright-controlled browser automation.
+Real-time web search capability for MixCWork using Playwright-controlled browser automation.
 
 ## Overview
 
-The Web Search Skill enables GenWork to perform live web searches using Google and Bing, with automatic fallback when one provider is unavailable. The skill uses Playwright to control a local Chrome browser instance, making all operations transparent and observable.
+The Web Search Skill enables MixCWork to perform live web searches using Google and Bing, with automatic fallback when one provider is unavailable. The skill uses Playwright to control a local Chrome browser instance, making all operations transparent and observable.
 
 ## Features
 
@@ -20,7 +20,7 @@ The Web Search Skill enables GenWork to perform live web searches using Google a
 ## Architecture
 
 ```
-GenWork (renderer) → Bridge Server (localhost:8923) → Playwright → CDP → Chrome
+MixCWork (renderer) → Bridge Server (localhost:8923) → Playwright → CDP → Chrome
 ```
 
 **Components:**
@@ -129,9 +129,9 @@ Default configuration in `server/config.ts`:
 }
 ```
 
-## How GenWork Uses This Skill
+## How MixCWork Uses This Skill
 
-When GenWork needs real-time information, it will:
+When MixCWork needs real-time information, it will:
 
 1. **Recognize the need** - Questions about current events, latest docs, etc.
 2. **Check server** - Verify the bridge server is running
@@ -144,7 +144,7 @@ When GenWork needs real-time information, it will:
 ```
 User: What are the new features in Next.js 14?
 
-GenWork: [Calls: bash SKILLs/web-search/scripts/search.sh "Next.js 14 features" 5]
+MixCWork: [Calls: bash SKILLs/web-search/scripts/search.sh "Next.js 14 features" 5]
 
         Based on the latest search results, Next.js 14 introduces:
         1. Turbopack - 5000x faster than Webpack
@@ -184,7 +184,7 @@ GenWork: [Calls: bash SKILLs/web-search/scripts/search.sh "Next.js 14 features" 
 ```
 SKILLs/web-search/
 ├── README.md                    # This file
-├── SKILL.md                     # Skill documentation (for GenWork)
+├── SKILL.md                     # Skill documentation (for MixCWork)
 ├── LICENSE.txt                  # MIT License
 ├── package.json                 # Dependencies
 ├── tsconfig.json                # TypeScript config
@@ -304,7 +304,7 @@ MIT License - See [LICENSE.txt](LICENSE.txt).
 
 ## Contributing
 
-This skill ships with GenWork. For issues or suggestions:
+This skill ships with MixCWork. For issues or suggestions:
 
 1. Check existing issues
 2. Create detailed bug reports

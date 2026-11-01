@@ -13,6 +13,7 @@ import { authService } from '../../src/auth/authService';
 import { verifyToken } from '../../src/auth/jwt';
 import { resetSchema, runMigrations,testPool } from '../../src/db/testDb';
 import { authRoutes } from '../../src/routes/auth';
+import { LoginErrorCode } from '../../src/shared/enterpriseServerConstants';
 
 function buildApp(): Hono {
   const app = new Hono();
@@ -41,7 +42,7 @@ describe('routes/auth', () => {
     expect(j.token.length).toBeGreaterThan(20);
   });
 
-  test('POST /auth/login 设置 HttpOnly genwork_session cookie（Phase 2 浏览器登录门）', async () => {
+  test('POST /auth/login 设置 HttpOnly mixcwork_session cookie（Phase 2 浏览器登录门）', async () => {
     const a = buildApp();
     const res = await a.request('/auth/login', {
       method: 'POST',
@@ -50,7 +51,7 @@ describe('routes/auth', () => {
     });
     const j = (await res.json()) as { token: string };
     const setCookie = res.headers.get('set-cookie') ?? '';
-    expect(setCookie).toContain('genwork_session=');
+    expect(setCookie).toContain('mixcwork_session=');
     expect(setCookie).toContain(j.token);
     expect(setCookie.toLowerCase()).toContain('httponly');
     expect(setCookie.toLowerCase()).toContain('samesite=lax');
@@ -71,18 +72,18 @@ describe('routes/auth', () => {
     expect(res.headers.get('set-cookie')).toBeNull();
   });
 
-  test('POST /auth/logout 清除 genwork_session cookie', async () => {
+  test('POST /auth/logout 清除 mixcwork_session cookie', async () => {
     const a = buildApp();
     const res = await a.request('/auth/logout', { method: 'POST' });
     expect(res.status).toBe(200);
     const setCookie = res.headers.get('set-cookie') ?? '';
-    expect(setCookie).toContain('genwork_session=');
+    expect(setCookie).toContain('mixcwork_session=');
     // Cleared: empty value + zero max-age (equivalent to expiration).
-    expect(/genwork_session=;/.test(setCookie)).toBe(true);
+    expect(/mixcwork_session=;/.test(setCookie)).toBe(true);
     expect(/max-age=0/i.test(setCookie)).toBe(true);
   });
 
-  test('POST /auth/login 密码错误返回 401', async () => {
+  test('POST /auth/login 密码错误返回 401 invalid_password', async () => {
     const a = buildApp();
     const res = await a.request('/auth/login', {
       method: 'POST',
@@ -90,9 +91,21 @@ describe('routes/auth', () => {
       body: JSON.stringify({ orgName: 'Test', username: 'a', password: 'WRONG' }),
     });
     expect(res.status).toBe(401);
+    expect(((await res.json()) as { error: string }).error).toBe(LoginErrorCode.InvalidPassword);
   });
 
-  test('POST /auth/login 未知组织返回 401', async () => {
+  test('POST /auth/login 用户不存在返回 401 user_not_found', async () => {
+    const a = buildApp();
+    const res = await a.request('/auth/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ orgName: 'Test', username: 'nobody', password: 'pw12345' }),
+    });
+    expect(res.status).toBe(401);
+    expect(((await res.json()) as { error: string }).error).toBe(LoginErrorCode.UserNotFound);
+  });
+
+  test('POST /auth/login 未知组织返回 401 org_not_found', async () => {
     const a = buildApp();
     const res = await a.request('/auth/login', {
       method: 'POST',
@@ -100,6 +113,7 @@ describe('routes/auth', () => {
       body: JSON.stringify({ orgName: 'Nonexistent', username: 'a', password: 'pw12345' }),
     });
     expect(res.status).toBe(401);
+    expect(((await res.json()) as { error: string }).error).toBe(LoginErrorCode.OrgNotFound);
   });
 
   test('POST /auth/login 成功时写入 login_events（result=success）', async () => {

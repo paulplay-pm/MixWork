@@ -88,15 +88,14 @@ describe('enterpriseConfigSync', () => {
     const map: Record<string, string> = {
       telegram: 'telegramOpenClaw', discord: 'discordOpenClaw',
       feishu: 'feishuOpenClaw', dingtalk: 'dingtalkOpenClaw', 'dingtalk-connector': 'dingtalkOpenClaw',
-      qqbot: 'qq', wecom: 'wecomOpenClaw', 'moltbot-popo': 'popo',
+      qqbot: 'qq', wecom: 'wecomOpenClaw',
       'openclaw-weixin': 'weixin', xiaomifeng: 'xiaomifeng',
     };
-    expect(Object.keys(map)).toHaveLength(10);
+    expect(Object.keys(map)).toHaveLength(9);
     expect(map['telegram']).toBe('telegramOpenClaw');
     expect(map['dingtalk']).toBe('dingtalkOpenClaw');
     expect(map['dingtalk-connector']).toBe('dingtalkOpenClaw');
     expect(map['qqbot']).toBe('qq');
-    expect(map['moltbot-popo']).toBe('popo');
     expect(map['openclaw-weixin']).toBe('weixin');
   });
 
@@ -145,7 +144,6 @@ describe('enterpriseConfigSync', () => {
         getWecomInstances: () => [],
         setWecomInstanceConfig: () => undefined,
         setWecomConfig: () => undefined,
-        setPopoConfig: () => undefined,
         setNimConfig: () => undefined,
         setWeixinConfig: () => undefined,
         setNeteaseBeeChanConfig: () => undefined,
@@ -221,7 +219,6 @@ describe('enterpriseConfigSync', () => {
       getQQInstances: () => [],
       setQQInstanceConfig: () => undefined,
       setQQConfig: () => undefined,
-      setPopoConfig: () => undefined,
       setNimConfig: () => undefined,
       setWeixinConfig: () => undefined,
       setNeteaseBeeChanConfig: () => undefined,
@@ -411,7 +408,6 @@ describe('enterpriseConfigSync', () => {
       getWecomInstances: () => [],
       setWecomInstanceConfig: () => undefined,
       setWecomConfig: () => undefined,
-      setPopoConfig: () => undefined,
       setNimConfig: () => undefined,
       setWeixinConfig: () => undefined,
       setNeteaseBeeChanConfig: () => undefined,
@@ -526,7 +522,6 @@ describe('enterpriseConfigSync', () => {
       getWecomInstances: () => [],
       setWecomInstanceConfig: () => undefined,
       setWecomConfig: () => undefined,
-      setPopoConfig: () => undefined,
       setNimConfig: () => undefined,
       setWeixinConfig: () => undefined,
       setNeteaseBeeChanConfig: () => undefined,
@@ -557,105 +552,7 @@ describe('enterpriseConfigSync', () => {
     ]);
   });
 
-  test('syncEnterpriseConfig reads moltbot-popo accounts with top-level enterprise overrides', async () => {
-    const configDir = path.join(tmpDir, 'enterprise-config');
-    fs.mkdirSync(configDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(configDir, 'manifest.json'),
-      JSON.stringify({
-        version: '1.0.0',
-        name: 'Test',
-        sync: { openclaw: true, skills: false, agents: false, mcp: false },
-      }),
-    );
-    fs.writeFileSync(
-      path.join(configDir, 'openclaw.json'),
-      JSON.stringify({
-        channels: {
-          'moltbot-popo': {
-            accounts: {
-              default: {
-                enabled: true,
-                appKey: 'old-key',
-                appSecret: 'old-secret',
-                connectionMode: 'websocket',
-                aesKey: 'old-aes',
-                dmPolicy: 'open',
-                allowFrom: ['*'],
-              },
-            },
-            enabled: true,
-            appKey: 'new-key',
-            appSecret: 'new-secret',
-            connectionMode: 'webhook',
-            webhookPort: 3200,
-            dmPolicy: 'allowlist',
-            allowFrom: ['u1'],
-          },
-        },
-      }),
-    );
-
-    const mod = await import('./enterpriseConfigSync');
-    const store = {
-      get: () => undefined,
-      set: () => undefined,
-    };
-    const setPopoMultiInstanceCalls: Array<Record<string, unknown>> = [];
-    const imStore = {
-      setPopoMultiInstanceConfig: (config: Record<string, unknown>) => {
-        setPopoMultiInstanceCalls.push(config);
-      },
-      setTelegramOpenClawConfig: () => undefined,
-      setDiscordOpenClawConfig: () => undefined,
-      getFeishuInstances: () => [],
-      setFeishuInstanceConfig: () => undefined,
-      setFeishuOpenClawConfig: () => undefined,
-      getDingTalkInstances: () => [],
-      setDingTalkInstanceConfig: () => undefined,
-      setDingTalkOpenClawConfig: () => undefined,
-      getQQInstances: () => [],
-      setQQInstanceConfig: () => undefined,
-      setQQConfig: () => undefined,
-      getWecomInstances: () => [],
-      setWecomInstanceConfig: () => undefined,
-      setWecomConfig: () => undefined,
-      setNimConfig: () => undefined,
-      setWeixinConfig: () => undefined,
-      setNeteaseBeeChanConfig: () => undefined,
-    };
-
-    mod.syncEnterpriseConfig(
-      configDir,
-      store as any,
-      imStore as any,
-      () => undefined,
-      () => undefined,
-      () => undefined,
-      () => undefined,
-    );
-
-    expect(setPopoMultiInstanceCalls).toEqual([
-      {
-        instances: [
-          {
-            enabled: true,
-            appKey: 'new-key',
-            appSecret: 'new-secret',
-            connectionMode: 'webhook',
-            aesKey: 'old-aes',
-            dmPolicy: 'allowlist',
-            allowFrom: ['u1'],
-            webhookPort: 3200,
-            instanceId: 'default',
-            instanceName: 'POPO Bot 1',
-          },
-        ],
-      },
-    ]);
-  });
-
-  test('syncEnterpriseConfig syncs openclaw agents list into Genwork agents', async () => {
+  test('syncEnterpriseConfig syncs openclaw agents list into Mixcwork agents', async () => {
     const configDir = path.join(tmpDir, 'enterprise-config');
     fs.mkdirSync(configDir, { recursive: true });
     fs.writeFileSync(
@@ -716,7 +613,6 @@ describe('enterpriseConfigSync', () => {
         getWecomInstances: () => [],
         setWecomInstanceConfig: () => undefined,
         setWecomConfig: () => undefined,
-        setPopoConfig: () => undefined,
         setNimConfig: () => undefined,
         setWeixinConfig: () => undefined,
         setNeteaseBeeChanConfig: () => undefined,
@@ -934,66 +830,6 @@ describe('enterpriseConfigSync', () => {
             },
           },
           enabled: true,
-          dmPolicy: 'allowlist',
-          allowFrom: ['u1'],
-        },
-      },
-    });
-  });
-
-  test('mergeOpenClawConfigs overwrites moltbot-popo accounts with top-level enterprise fields', async () => {
-    const mod = await import('./enterpriseConfigSync');
-    const merged = mod.mergeOpenClawConfigs(
-      {
-        channels: {
-          'moltbot-popo': {
-            accounts: {
-              default: {
-                enabled: true,
-                appKey: 'old-key',
-                appSecret: 'old-secret',
-                connectionMode: 'websocket',
-                aesKey: 'old-aes',
-                dmPolicy: 'open',
-                allowFrom: ['*'],
-              },
-            },
-          },
-        },
-      },
-      {
-        channels: {
-          'moltbot-popo': {
-            enabled: true,
-            appKey: 'new-key',
-            appSecret: 'new-secret',
-            connectionMode: 'webhook',
-            webhookPort: 3200,
-            dmPolicy: 'allowlist',
-            allowFrom: ['u1'],
-          },
-        },
-      },
-    );
-
-    expect(merged).toEqual({
-      channels: {
-        'moltbot-popo': {
-          accounts: {
-            default: {
-              enabled: true,
-              appKey: 'new-key',
-              appSecret: 'new-secret',
-              connectionMode: 'webhook',
-              aesKey: 'old-aes',
-              webhookPort: 3200,
-              dmPolicy: 'allowlist',
-              allowFrom: ['u1'],
-            },
-          },
-          enabled: true,
-          connectionMode: 'webhook',
-          webhookPort: 3200,
           dmPolicy: 'allowlist',
           allowFrom: ['u1'],
         },

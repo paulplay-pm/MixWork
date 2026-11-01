@@ -4,11 +4,12 @@ import { useState } from 'react';
 import type { DeptNode } from '../../api/departments';
 import {
   type KitAdmin,
+  kitCatalogApi,
   type KitCategory,
   type KitScope,
-  kitCatalogApi,
 } from '../../api/kitCatalog';
 import type { UserRow } from '../../api/users';
+import { IconUploadField } from '../../components/IconUploadField';
 import { useToast } from '../../components/toastStore';
 import { t } from '../../i18n';
 import { KitScopeSelector } from './KitScopeSelector';
@@ -25,6 +26,8 @@ export interface KitDrawerSaveInput {
   category_id: string;
   scope: KitScope;
   newZip?: File;
+  /** An icon picked before the kit existed → uploaded once it does. */
+  newIcon?: File;
   parsed?: { tempToken: string };
 }
 
@@ -63,6 +66,10 @@ export function KitDrawer(p: Props): JSX.Element {
   const [descEn, setDescEn] = useState(isEdit ? (p.kit?.description_en ?? '') : '');
   const [descZh, setDescZh] = useState(isEdit ? (p.kit?.description_zh ?? '') : '');
   const [icon, setIcon] = useState(isEdit ? (p.kit?.icon ?? '') : '');
+  /** Edit mode only: uploads go straight to the existing kit. */
+  const iconTargetSlug = isEdit ? slug : undefined;
+  /** Create mode: the file is held and uploaded once the kit exists. */
+  const [pendingIcon, setPendingIcon] = useState<File | null>(null);
   const [category, setCategory] = useState(isEdit ? (p.kit?.category ?? '') : (p.defaultCategory ?? ''));
   const [scope, setScope] = useState<KitScope>(isEdit ? (p.kit?.scope ?? EMPTY_SCOPE) : EMPTY_SCOPE);
 
@@ -92,6 +99,7 @@ export function KitDrawer(p: Props): JSX.Element {
       descriptionEn: descEn.trim() || undefined,
       descriptionZh: descZh.trim() || undefined,
       icon: icon.trim() || undefined,
+      newIcon: pendingIcon ?? undefined,
       author: author.trim() || undefined,
       version: p.kit?.version ?? undefined,
       category_id: category,
@@ -220,10 +228,18 @@ export function KitDrawer(p: Props): JSX.Element {
               {t('kitmgmt.descEn')}
               <input className={inputCls} aria-label={t('kitmgmt.descEn')} value={descEn} onChange={(e) => setDescEn(e.target.value)} />
             </label>
-            <label className={`col-span-2 ${labelCls}`}>
-              {t('kitmgmt.icon')}
-              <input className={inputCls} aria-label={t('kitmgmt.icon')} value={icon} onChange={(e) => setIcon(e.target.value)} />
-            </label>
+            <div className={`col-span-2 ${labelCls}`}>
+              <IconUploadField
+                label={t('kitmgmt.icon')}
+                icon={icon || null}
+                pendingFile={pendingIcon}
+                onPick={setPendingIcon}
+                onClearPick={() => setPendingIcon(null)}
+                onUpload={iconTargetSlug ? (file) => kitCatalogApi.uploadIcon(iconTargetSlug, file) : undefined}
+                onClear={iconTargetSlug ? () => kitCatalogApi.clearIcon(iconTargetSlug) : undefined}
+                onChanged={(next) => setIcon(next ?? '')}
+              />
+            </div>
           </div>
         </section>
 
@@ -236,22 +252,6 @@ export function KitDrawer(p: Props): JSX.Element {
             depts={p.depts}
             members={p.members}
             onOpenChange={p.onScopePickerOpenChange}
-            labels={{
-              allCompany: t('kitmgmt.scope.allCompany'),
-              triggerAll: t('kitmgmt.scope.triggerAll'),
-              triggerSome: t('kitmgmt.scope.triggerSome'),
-              triggerEmpty: t('kitmgmt.scope.triggerEmpty'),
-              empty: t('kitmgmt.scope.empty'),
-              modalTitle: t('kitmgmt.scope.modal.title'),
-              searchDept: t('kitmgmt.scope.modal.searchDept'),
-              searchMember: t('kitmgmt.scope.modal.searchMember'),
-              deptLabel: t('kitmgmt.scope.deptLabel'),
-              memberExceptions: t('kitmgmt.scope.memberExceptions'),
-              memberTruncated: t('kitmgmt.scope.memberTruncated'),
-              noResult: t('kitmgmt.scope.modal.noResult'),
-              allAdded: t('kitmgmt.scope.modal.allAdded'),
-              done: t('kitmgmt.scope.modal.done'),
-            }}
           />
         </section>
 

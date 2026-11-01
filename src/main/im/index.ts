@@ -3,10 +3,10 @@
  * Re-exports all IM gateway related modules
  */
 
-export * from './types';
-export { IMStore } from './imStore';
-export { IMChatHandler } from './imChatHandler';
-export { IMGenworkHandler, type IMGenworkHandlerOptions } from './imGenworkHandler';
-export { IMGatewayManager, type IMGatewayManagerOptions } from './imGatewayManager';
 export { parseMediaMarkers, stripMediaMarkers } from './dingtalkMediaParser';
+export { IMChatHandler } from './imChatHandler';
+export { IMGatewayManager, type IMGatewayManagerOptions } from './imGatewayManager';
 export { buildIMMediaInstruction } from './imMediaInstruction';
+export { IMMixcworkHandler, type IMMixcworkHandlerOptions } from './imMixcworkHandler';
+export { IMStore } from './imStore';
+export * from './types';

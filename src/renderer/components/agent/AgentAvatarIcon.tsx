@@ -1,6 +1,8 @@
 import {
+  agentAvatarColor,
   AgentAvatarSvg,
   DefaultAgentAvatar,
+  isAgentIconImage,
   parseAgentAvatarIcon,
 } from '@shared/agent/avatar';
 import React from 'react';
@@ -19,12 +21,12 @@ import experimentIconUrl from '../../assets/agent-avatars/experiment.svg';
 import fitnessIconUrl from '../../assets/agent-avatars/fitness.svg';
 import folderIconUrl from '../../assets/agent-avatars/folder.svg';
 import graduationCapIconUrl from '../../assets/agent-avatars/graduation-cap.svg';
-import genworkIconUrl from '../../assets/agent-avatars/genwork.svg';
 import headphonesIconUrl from '../../assets/agent-avatars/headphones.svg';
 import heartIconUrl from '../../assets/agent-avatars/heart.svg';
 import inspirationIconUrl from '../../assets/agent-avatars/inspiration.svg';
 import lightningIconUrl from '../../assets/agent-avatars/lightning.svg';
 import meditationIconUrl from '../../assets/agent-avatars/meditation.svg';
+import mixcworkIconUrl from '../../assets/agent-avatars/mixcwork.svg';
 import musicIconUrl from '../../assets/agent-avatars/music.svg';
 import petIconUrl from '../../assets/agent-avatars/pet.svg';
 import pottedPlantIconUrl from '../../assets/agent-avatars/potted-plant.svg';
@@ -37,7 +39,7 @@ import translationAltIconUrl from '../../assets/agent-avatars/translation-alt.sv
 import travelIconUrl from '../../assets/agent-avatars/travel.svg';
 
 export const AGENT_AVATAR_SVG_OPTIONS: Array<{ svg: AgentAvatarSvg; labelKey: string }> = [
-  { svg: AgentAvatarSvg.Genwork, labelKey: 'agentAvatarSvgGenwork' },
+  { svg: AgentAvatarSvg.Mixcwork, labelKey: 'agentAvatarSvgMixcwork' },
 
   { svg: AgentAvatarSvg.Code, labelKey: 'agentAvatarSvgCode' },
   { svg: AgentAvatarSvg.Repair, labelKey: 'agentAvatarSvgRepair' },
@@ -74,7 +76,7 @@ export const AGENT_AVATAR_SVG_OPTIONS: Array<{ svg: AgentAvatarSvg; labelKey: st
 ];
 
 const AGENT_AVATAR_SVG_URLS: Record<AgentAvatarSvg, string> = {
-  [AgentAvatarSvg.Genwork]: genworkIconUrl,
+  [AgentAvatarSvg.Mixcwork]: mixcworkIconUrl,
   [AgentAvatarSvg.Code]: codeIconUrl,
   [AgentAvatarSvg.Repair]: repairIconUrl,
   [AgentAvatarSvg.Briefcase]: briefcaseIconUrl,
@@ -112,6 +114,8 @@ export const getAgentAvatarSvgUrl = (svg: AgentAvatarSvg): string => {
 
 interface AgentAvatarIconProps {
   value?: string | null;
+  /** Tint index from the Enterprise console; absent means "follow the theme". */
+  color?: number | null;
   className?: string;
   iconClassName?: string;
   legacyClassName?: string;
@@ -121,6 +125,7 @@ interface AgentAvatarIconProps {
 
 const AgentAvatarIcon: React.FC<AgentAvatarIconProps> = ({
   value,
+  color,
   className = 'h-10 w-10',
   iconClassName = 'h-5 w-5',
   legacyClassName = 'text-2xl',
@@ -133,6 +138,7 @@ const AgentAvatarIcon: React.FC<AgentAvatarIconProps> = ({
 
   if (avatar) {
     const iconUrl = getAgentAvatarSvgUrl(avatar.svg);
+    const tint = agentAvatarColor(color);
     const maskStyle: React.CSSProperties = {
       WebkitMaskImage: `url("${iconUrl}")`,
       WebkitMaskPosition: 'center',
@@ -146,8 +152,25 @@ const AgentAvatarIcon: React.FC<AgentAvatarIconProps> = ({
     };
 
     return (
-      <span className={`inline-flex shrink-0 items-center justify-center rounded-full text-foreground ${className}`}>
-        <span aria-hidden="true" className={`inline-block ${iconClassName}`} style={maskStyle} />
+      <span
+        className={`inline-flex shrink-0 items-center justify-center rounded-full text-foreground ${className}`}
+        style={tint ? { backgroundColor: `${tint}1f` } : undefined}
+      >
+        <span
+          aria-hidden="true"
+          className={`inline-block ${iconClassName}`}
+          style={tint ? { ...maskStyle, backgroundColor: tint } : maskStyle}
+        />
+      </span>
+    );
+  }
+
+  // An uploaded icon (an org's own logo) is a picture, not a built-in avatar
+  // and not a legacy emoji, so it renders as one.
+  if (isAgentIconImage(normalized)) {
+    return (
+      <span className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full ${className}`}>
+        <img src={normalized} alt="" className="h-full w-full object-cover" />
       </span>
     );
   }

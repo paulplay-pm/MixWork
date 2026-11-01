@@ -10,9 +10,9 @@ vi.mock('../../src/db/pool', async () => {
 import { resetSchema, runMigrations, testPool } from '../../src/db/testDb';
 
 async function cols(table: string): Promise<Set<string>> {
-  const r = await testPool.query(
+  const r = await testPool.query<{ column_name: string }>(
     `SELECT column_name FROM information_schema.columns WHERE table_name = $1`, [table]);
-  return new Set(r.rows.map((x: { column_name: string }) => x.column_name));
+  return new Set(r.rows.map((x) => x.column_name));
 }
 
 describe('migration 040 kit_catalog', () => {
@@ -36,14 +36,14 @@ describe('migration 040 kit_catalog', () => {
 
   test('org creation seeds the reserved uncategorized bucket', async () => {
     await testPool.query(`INSERT INTO orgs(id, name) VALUES ('o1', 'T1')`);
-    const r = await testPool.query(
+    const r = await testPool.query<{ category_id: string; is_reserved: boolean }>(
       `SELECT category_id, is_reserved FROM kit_categories WHERE org_id = 'o1' AND category_id = 'uncategorized'`);
     expect(r.rowCount).toBe(1);
     expect(r.rows[0].is_reserved).toBe(true);
   });
 
   test('grants kit points to org_admin/super_admin', async () => {
-    const r = await testPool.query(
+    const r = await testPool.query<{ name: string; permissions: string[] }>(
       `SELECT name, permissions FROM roles WHERE name IN ('org_admin','super_admin')`);
     for (const row of r.rows) {
       expect(row.permissions).toContain('kit:view');

@@ -14,8 +14,15 @@ import {
   McpInstalledItem,
 } from '../../services/mcpRegistryPresentation';
 import { RootState } from '../../store';
+import { openMcpAuthModal } from '../../store/slices/mcpAuthSlice';
 import { setMcpServers } from '../../store/slices/mcpSlice';
-import { McpEnterpriseMarketCategory, McpEnterpriseMarketServer, McpRegistryEntry, McpServerConfig, McpServerFormData } from '../../types/mcp';
+import {
+  McpEnterpriseMarketCategory,
+  McpEnterpriseMarketServer,
+  McpRegistryEntry,
+  McpServerConfig,
+  McpServerFormData,
+} from '../../types/mcp';
 import { CARD_ACTION_PILL_CLASS, DETAIL_ACTION_PILL_CLASS } from '../common/actionPillStyles';
 import CardOverflowMenu, { type CardOverflowMenuItem } from '../common/CardOverflowMenu';
 import CardToggle from '../common/CardToggle';
@@ -32,13 +39,23 @@ import {
   getServerAnalyticsParams,
   reportMcpAction,
 } from './analytics';
-import McpAuthModal from './McpAuthModal';
+import {
+  EnterpriseCardAction,
+  enterpriseCardAction,
+  EnterpriseOrgBadge,
+  installedOrgBadge,
+  orgKeyReady,
+} from './connectorCardState';
+import { isGatewayAuthMode } from './enterpriseAuthMode';
 import { getAuthDotClass } from './mcpAuthModalHelpers';
 import McpCard from './McpCard';
+import { connectedTools, connectionLabelKey, type McpToolListState } from './mcpConnectionStatus';
 import McpDetailModal, { type McpDetailInfoRow, type McpDetailStat } from './McpDetailModal';
 import McpServerFormModal from './McpServerFormModal';
+import { sourceLabelKey } from './mcpSource';
 import { MCP_TAB_LABEL_KEYS, MCP_TAB_ORDER, McpTab } from './mcpTabs';
 import SubmitConnectorForm from './SubmitConnectorForm';
+import { toolListErrorKey } from './toolListErrorMessage';
 
 const TRANSPORT_BADGE_COLORS: Record<string, string> = {
   stdio: 'bg-blue-500/10 text-blue-600 dark:text-blue-400',
@@ -50,7 +67,9 @@ const LAUNCH_STATUS_COLORS: Record<string, string> = {
   pending: 'bg-gray-500/10 text-gray-600 dark:text-gray-300',
   installing: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   ready: 'bg-green-500/10 text-green-600 dark:text-green-400',
-  failed: 'bg-red-500/10 text-red-600 dark:text-red-400',
+  // A failed managed launch is not a broken connector — the runtime falls
+  // back to the raw command — so it shares the neutral "not optimised" style.
+  failed: 'bg-gray-500/10 text-gray-600 dark:text-gray-300',
   unsupported: 'bg-gray-500/10 text-gray-600 dark:text-gray-300',
 };
 
@@ -76,10 +95,6 @@ type DetailTarget =
   | { kind: 'registryGroup'; registryId: string }
   | { kind: 'marketplace'; entryId: string };
 
-/** Auth modal target — driven by both a user gesture (connect button) and the
- *  silent `mcp:authFlowRequested` IPC push from the main process. */
-type AuthModalTarget = { kind: 'connect' | 'reauthorize'; serverId: string };
-
 /** Management actions stay hidden until the card is hovered or focused. */
 const CARD_MENU_REVEAL_CLASS =
   'opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100';
@@ -100,7 +115,8 @@ const McpManager: React.FC = () => {
   const [connectingRegistryId, setConnectingRegistryId] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const [detailTarget, setDetailTarget] = useState<DetailTarget | null>(null);
-  const [authModalTarget, setAuthModalTarget] = useState<AuthModalTarget | null>(null);
+  /** Live tool listing for the open detail dialog. */
+  const [detailTools, setDetailTools] = useState<McpToolListState>({ kind: 'idle' });
   const [dynamicRegistry] = useState<McpRegistryEntry[]>(mcpRegistry);
   const [dynamicCategories] = useState<ReadonlyArray<{ id: string; key: string; name_zh?: string; name_en?: string }>>(mcpCategories);
   const [enterpriseServers, setEnterpriseServers] = useState<McpEnterpriseMarketServer[]>([]);
@@ -134,16 +150,6 @@ const McpManager: React.FC = () => {
       dispatch(setMcpServers(loaded));
     });
   }, [dispatch]);
-
-  // The main process silently pushes `mcp:authFlowRequested` when an MCP call
-  // hits a server that needs (re-)authorization. We open the auth modal in
-  // `connect` mode for that server so the user can paste their credential.
-  useEffect(() => {
-    const unsubscribe = window.electron.mcp.onAuthFlowRequested((options) => {
-      setAuthModalTarget({ kind: 'connect', serverId: options.id });
-    });
-    return unsubscribe;
-  }, []);
 
   // Enterprise marketplace: render the cached copy immediately, then refresh
   // from the enterprise server. The isActive guard mirrors the servers effect
@@ -210,6 +216,32 @@ const McpManager: React.FC = () => {
     return ids;
   }, [servers]);
 
+  /** The installed record behind each marketplace entry, for the enterprise
+   *  card's 更新配置 action. */
+  const installedServersByRegistryId = useMemo(() => {
+    const map = new Map<string, McpServerConfig>();
+    for (const s of servers) {
+      if (s.registryId) map.set(s.registryId, s);
+    }
+    return map;
+  }, [servers]);
+
+  /** serverKey → the catalog's current auth mode. Installs that predate the
+   *  mode being persisted on the record are recognised through this. */
+  const catalogAuthModeByServerKey = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const entry of enterpriseServers) map[entry.serverKey] = entry.authMode;
+    return map;
+  }, [enterpriseServers]);
+
+  /** serverKey → the catalog entry, for the facts only it carries (whether the
+   *  org key is stored server-side). */
+  const catalogEntryByServerKey = useMemo(() => {
+    const map: Record<string, McpEnterpriseMarketServer> = {};
+    for (const entry of enterpriseServers) map[entry.serverKey] = entry;
+    return map;
+  }, [enterpriseServers]);
+
   const getRegistryEntryDescription = useCallback((entry: McpRegistryEntry): string => {
     const remoteDescription = getRegistryEntryLocalizedDescription(entry, currentLanguage);
     if (remoteDescription) return remoteDescription;
@@ -263,7 +295,7 @@ const McpManager: React.FC = () => {
     if (status === 'pending') return i18nService.t('mcpLaunchPending');
     if (status === 'installing') return i18nService.t('mcpLaunchInstalling');
     if (status === 'ready') return i18nService.t('mcpLaunchReady');
-    if (status === 'failed') return i18nService.t('mcpLaunchFailed');
+    if (status === 'failed') return i18nService.t('mcpLaunchUnsupported');
     if (status === 'unsupported') return i18nService.t('mcpLaunchUnsupported');
     return null;
   };
@@ -299,7 +331,11 @@ const McpManager: React.FC = () => {
   }, [getRegistryEntryDescription, getRegistryEntryForServer]);
 
   const getServerIcon = useCallback(
-    (server: McpServerConfig): string | undefined => getRegistryEntryForServer(server)?.icon,
+    // The record's own icon wins: an enterprise connector's logo comes from
+    // the org's catalog and is stored on the record at install time, while
+    // the local registry only covers the built-in catalog.
+    (server: McpServerConfig): string | undefined =>
+      server.icon ?? getRegistryEntryForServer(server)?.icon,
     [getRegistryEntryForServer],
   );
 
@@ -717,6 +753,27 @@ const McpManager: React.FC = () => {
     setIsFormOpen(true);
   };
 
+  /**
+   * 更新配置 on an installed enterprise connector: the same form in edit mode
+   * against the catalog's current entry. The org owns the endpoint, the
+   * identity and the tool selection, so those come from the catalog; the
+   * member's stored credential is never re-asked for and never cleared.
+   */
+  const handleUpdateEnterpriseConfig = (
+    entry: McpEnterpriseMarketServer,
+    server: McpServerConfig,
+  ) => {
+    reportMcpAction('enterprise_connect_open', {
+      source: 'mcp_manager',
+      activeTab,
+      targetServerId: entry.id,
+    });
+    setEditingServer(server);
+    setInstallingRegistry(null);
+    setInstallingEnterpriseServer(entry);
+    setIsFormOpen(true);
+  };
+
   const handleCloseForm = () => {
     reportMcpAction('form_close', {
       source: 'mcp_manager',
@@ -896,6 +953,30 @@ const McpManager: React.FC = () => {
 
   const closeDetail = () => setDetailTarget(null);
 
+  /** The server whose detail dialog is open, if the dialog shows one server. */
+  const detailServer = detailTarget?.kind === 'server'
+    ? servers.find(item => item.id === detailTarget.id)
+    : undefined;
+  const detailServerId = detailServer?.id;
+  const detailServerEnabled = detailServer?.enabled;
+
+  // Ask the server what it advertises whenever a connected server's detail
+  // opens. Deps are the id and the enabled flag rather than the record: the
+  // redux list gets a new identity on every auth/probe write, and refetching
+  // on each of those would fire a network round-trip per keystroke elsewhere.
+  useEffect(() => {
+    if (!detailServerId || !detailServerEnabled) {
+      setDetailTools({ kind: 'idle' });
+      return;
+    }
+    let cancelled = false;
+    setDetailTools({ kind: 'loading' });
+    void mcpService.listTools(detailServerId).then(outcome => {
+      if (!cancelled) setDetailTools({ kind: 'done', outcome });
+    });
+    return () => { cancelled = true; };
+  }, [detailServerId, detailServerEnabled]);
+
   /**
    * One installed/custom server card. Both tabs show the same object, so they
    * share a renderer instead of drifting apart.
@@ -908,18 +989,22 @@ const McpManager: React.FC = () => {
     const needsAuth =
       server.authStatus === McpAuthStatus.NeedsAuth
       || server.authStatus === McpAuthStatus.AuthError;
+    // Org-credential connectors have no Connect button: their credential is
+    // the org's. A gateway one is labelled as such; a retired one (client-creds)
+    // says it is unavailable instead of offering a flow nobody can finish.
+    const orgBadge = installedOrgBadge(server, catalogAuthModeByServerKey);
     const actions = (
       <>
         <CardOverflowMenu
           className={CARD_MENU_REVEAL_CLASS}
           items={buildServerMenuItems(server)}
         />
-        {needsAuth && server.authMethod !== McpAuthMethod.None ? (
+        {needsAuth && orgBadge === null && server.authMethod !== McpAuthMethod.None ? (
           <button
             type="button"
             onClick={(event) => {
               event.stopPropagation();
-              setAuthModalTarget({ kind: 'connect', serverId: server.id });
+              dispatch(openMcpAuthModal({ mode: 'connect', serverId: server.id }));
             }}
             className={CARD_ACTION_PILL_CLASS}
           >
@@ -939,6 +1024,8 @@ const McpManager: React.FC = () => {
         key={server.id}
         title={getServerDisplayName(server)}
         description={getInstalledDescription(server)}
+        seed={server.id}
+        label={getServerDisplayName(server)}
         icon={getServerIcon(server)}
         onOpenDetail={() => openServerDetail(server)}
         actions={actions}
@@ -950,6 +1037,22 @@ const McpManager: React.FC = () => {
             {!server.isBuiltIn && (
               <span className="shrink-0 rounded bg-primary-muted px-1.5 py-0.5 font-medium text-primary">
                 {i18nService.t('mcpCustom')}
+              </span>
+            )}
+            {orgBadge === EnterpriseOrgBadge.Gateway && (
+              <span
+                className="shrink-0 rounded bg-primary-muted px-1.5 py-0.5 font-medium text-primary"
+                title={i18nService.t('mcpEnterpriseGatewayHint')}
+              >
+                {i18nService.t('mcpEnterpriseGatewayOrgCredential')}
+              </span>
+            )}
+            {orgBadge === EnterpriseOrgBadge.Retired && (
+              <span
+                className="shrink-0 rounded bg-surface-raised px-1.5 py-0.5 font-medium text-secondary"
+                title={i18nService.t('mcpEnterpriseOrgManagedHint')}
+              >
+                {i18nService.t('mcpEnterpriseOrgManaged')}
               </span>
             )}
             <span className={`shrink-0 rounded px-1.5 py-0.5 font-medium ${TRANSPORT_BADGE_COLORS[server.transportType] || ''}`}>
@@ -1037,15 +1140,22 @@ const McpManager: React.FC = () => {
     const registryEntry = getRegistryEntryForServer(server);
     const displayName = getServerDisplayName(server);
     const launchStatusLabel = getLaunchStatusLabel(server);
+    const orgBadge = installedOrgBadge(server, catalogAuthModeByServerKey);
     const stats: McpDetailStat[] = [
       {
         label: i18nService.t('mcpDetailStatus'),
         value: i18nService.t(server.enabled ? 'enabled' : 'disabled'),
       },
+      // Live connection state, from the tools/list round-trip below — not the
+      // stored authStatus, which only records whenever the last probe ran.
+      {
+        label: i18nService.t('mcpDetailConnection'),
+        value: i18nService.t(connectionLabelKey(server.enabled, detailTools)),
+      },
       { label: i18nService.t('mcpDetailTransport'), value: server.transportType },
       {
         label: i18nService.t('mcpDetailSource'),
-        value: i18nService.t(server.isBuiltIn || server.registryId ? 'mcpSourceMarketplace' : 'mcpCustom'),
+        value: i18nService.t(sourceLabelKey(server)),
       },
     ];
     const info: McpDetailInfoRow[] = [];
@@ -1064,6 +1174,22 @@ const McpManager: React.FC = () => {
         onSelect: () => window.electron.shell.openExternal(server.url as string),
       });
     }
+    // A gateway connector is reachable and installed, but it works only while
+    // the org key is stored server-side — the one fact the member needs to
+    // know who to ask.
+    const gatewayInstalled = orgBadge === EnterpriseOrgBadge.Gateway;
+    const catalogEntry = server.serverKey ? catalogEntryByServerKey[server.serverKey] : undefined;
+    const keyReady = orgKeyReady(catalogEntry);
+    if (gatewayInstalled) {
+      info.push({
+        label: i18nService.t('mcpDetailAuthorization'),
+        value: i18nService.t('mcpEnterpriseGatewayOrgCredential'),
+      });
+      info.push({
+        label: i18nService.t('mcpDetailOrgKey'),
+        value: i18nService.t(keyReady ? 'mcpDetailOrgKeyConfigured' : 'mcpDetailOrgKeyNotConfigured'),
+      });
+    }
     const envKeys = getKeyListValue(server.env);
     if (envKeys) info.push({ label: i18nService.t('mcpDetailEnvKeys'), value: envKeys, mono: true });
     const headerKeys = getKeyListValue(server.headers);
@@ -1078,6 +1204,67 @@ const McpManager: React.FC = () => {
     }
     info.push({ label: i18nService.t('mcpDetailId'), value: server.id, mono: true });
 
+    // What the server advertises, once it has answered. Rendered under the info
+    // rows so the dialog stays a single scroll column.
+    const tools = server.enabled ? connectedTools(detailTools) : null;
+    // Branch on the outcome, not on the message: a failure with no message must
+    // still read as a failure, never as "this MCP returned no tools".
+    const toolErrorOutcome = detailTools.kind === 'done' && !detailTools.outcome.ok
+      ? detailTools.outcome
+      : null;
+    // A gateway refusal has a cause the member can act on; the raw protocol
+    // detail ("initialize failed: HTTP 502") stays only as the fallback for a
+    // code this build does not know.
+    const toolErrorKey = toolErrorOutcome
+      ? toolListErrorKey(toolErrorOutcome, gatewayInstalled)
+      : null;
+    const toolError = toolErrorOutcome
+      ? (toolErrorKey ? i18nService.t(toolErrorKey) : toolErrorOutcome.error ?? '')
+      : null;
+    const toolsSection = server.enabled ? (
+      <section className="mt-5">
+        <h3 className={`mb-2 ${MANAGEMENT_BODY_TEXT} font-semibold text-foreground`}>
+          {i18nService.t('mcpDetailTools')}
+          {tools && tools.length > 0 ? ` (${tools.length})` : ''}
+        </h3>
+        {detailTools.kind === 'loading' ? (
+          <p className={`${MANAGEMENT_TITLE_TEXT} text-secondary`}>
+            {i18nService.t('mcpDetailToolsLoading')}
+          </p>
+        ) : toolError !== null ? (
+          <p className={`${MANAGEMENT_TITLE_TEXT} break-all text-red-500 dark:text-red-400`}>
+            {i18nService.t('mcpDetailToolsFailed')}
+            {toolError ? ` · ${toolError}` : ''}
+          </p>
+        ) : tools && tools.length === 0 ? (
+          <p className={`${MANAGEMENT_TITLE_TEXT} text-secondary`}>
+            {i18nService.t('mcpDetailToolsEmpty')}
+          </p>
+        ) : tools ? (
+          <ul className="space-y-2">
+            {tools.map(tool => (
+              <li key={tool.name}>
+                <div className="break-all font-mono text-xs text-foreground">{tool.name}</div>
+                {tool.description && (
+                  <div className={`mt-0.5 line-clamp-2 ${MANAGEMENT_TITLE_TEXT} text-secondary`}>
+                    {tool.description}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </section>
+    ) : null;
+
+    const orgKeyNotice = gatewayInstalled && !keyReady ? (
+      <section className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">
+        <p className={`${MANAGEMENT_TITLE_TEXT} text-amber-600 dark:text-amber-400`}>
+          {i18nService.t('mcpDetailOrgKeyMissingNotice')}
+        </p>
+      </section>
+    ) : null;
+
     return (
       <McpDetailModal
         title={displayName}
@@ -1091,12 +1278,13 @@ const McpManager: React.FC = () => {
           <>
             {renderDetailToggle(server.enabled, () => handleToggleEnabled(server.id))}
             <div className="flex items-center gap-1">
-              {server.authMethod !== McpAuthMethod.None && (
+              {server.authMethod !== McpAuthMethod.None
+                && orgBadge === null && (
                 <button
                   type="button"
                   onClick={() => {
                     setDetailTarget(null);
-                    setAuthModalTarget({ kind: 'reauthorize', serverId: server.id });
+                    dispatch(openMcpAuthModal({ mode: 'reauthorize', serverId: server.id }));
                   }}
                   className={DETAIL_FOOTER_BUTTON_CLASS}
                 >
@@ -1122,7 +1310,10 @@ const McpManager: React.FC = () => {
             </div>
           </>
         )}
-      />
+      >
+        {orgKeyNotice}
+        {toolsSection}
+      </McpDetailModal>
     );
   };
 
@@ -1688,18 +1879,45 @@ const McpManager: React.FC = () => {
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
             {filteredEnterpriseMarketplace.map((entry) => {
-              const isInstalled = installedRegistryIds.has(entry.id);
+              const installedServer = installedServersByRegistryId.get(entry.id);
+              // `shared-key` installs like any other connector — the gateway
+              // injects the key, so the member has nothing to supply. Only a
+              // retired mode (client-creds) refuses, and its badge says why.
+              const cardAction = enterpriseCardAction({
+                authMode: entry.authMode,
+                installed: Boolean(installedServer),
+              });
+              const gatewayEntry = isGatewayAuthMode(entry.authMode);
               return (
                 <McpCard
                   key={entry.id}
                   title={currentLanguage === 'zh' ? (entry.nameZh ?? entry.name) : entry.name}
                   description={entry.description}
-                  actions={isInstalled ? (
-                    /* Installed is a fact, not an action — it stays quiet. */
-                    <span className={`inline-flex h-[26px] flex-shrink-0 items-center gap-1 px-1 ${MANAGEMENT_META_TEXT} text-muted`}>
-                      <CheckIcon className="h-3.5 w-3.5" />
-                      {i18nService.t('mcpInstalled')}
+                  actions={cardAction === EnterpriseCardAction.Retired ? (
+                    <span
+                      title={i18nService.t('mcpEnterpriseOrgManagedHint')}
+                      className={`inline-flex h-[26px] flex-shrink-0 items-center px-1 ${MANAGEMENT_META_TEXT} text-muted`}
+                    >
+                      {i18nService.t('mcpEnterpriseOrgManaged')}
                     </span>
+                  ) : cardAction === EnterpriseCardAction.Installed && installedServer ? (
+                    <div className="flex flex-shrink-0 items-center gap-1">
+                      {/* Installed is a fact, not an action — it stays quiet. */}
+                      <span className={`inline-flex h-[26px] flex-shrink-0 items-center gap-1 px-1 ${MANAGEMENT_META_TEXT} text-muted`}>
+                        <CheckIcon className="h-3.5 w-3.5" />
+                        {i18nService.t('mcpInstalled')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleUpdateEnterpriseConfig(entry, installedServer);
+                        }}
+                        className={CARD_ACTION_PILL_CLASS}
+                      >
+                        {i18nService.t('mcpUpdateConfig')}
+                      </button>
+                    </div>
                   ) : (
                     <button
                       type="button"
@@ -1710,9 +1928,19 @@ const McpManager: React.FC = () => {
                     </button>
                   )}
                   meta={(
-                    <span className={`shrink-0 rounded px-1.5 py-0.5 font-medium ${TRANSPORT_BADGE_COLORS[entry.transport] || ''}`}>
-                      {entry.transport}
-                    </span>
+                    <>
+                      <span className={`shrink-0 rounded px-1.5 py-0.5 font-medium ${TRANSPORT_BADGE_COLORS[entry.transport] || ''}`}>
+                        {entry.transport}
+                      </span>
+                      {gatewayEntry && (
+                        <span
+                          className="shrink-0 rounded bg-primary-muted px-1.5 py-0.5 font-medium text-primary"
+                          title={i18nService.t('mcpEnterpriseGatewayHint')}
+                        >
+                          {i18nService.t('mcpEnterpriseGatewayBadge')}
+                        </span>
+                      )}
+                    </>
                   )}
                 />
               );
@@ -1785,24 +2013,6 @@ const McpManager: React.FC = () => {
         onSubmitted={() => void loadEnterpriseMarketplaceRef.current?.()}
       />
 
-      {/* Per-user authorization modal — opened either by the connect /
-          reauthorize buttons, or silently by the main-process push event. */}
-      {authModalTarget && (() => {
-        const targetServer = servers.find((item) => item.id === authModalTarget.serverId);
-        if (!targetServer) return null;
-        return (
-          <McpAuthModal
-            server={targetServer}
-            mode={authModalTarget.kind}
-            onClose={() => setAuthModalTarget(null)}
-            onSuccess={async () => {
-              setAuthModalTarget(null);
-              const reloaded = await mcpService.loadServers();
-              dispatch(setMcpServers(reloaded));
-            }}
-          />
-        );
-      })()}
     </div>
   );
 };

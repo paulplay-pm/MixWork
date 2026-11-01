@@ -2,21 +2,21 @@
 
 ## Testing the Complete Integration
 
-This guide walks through testing the entire Web Search Skill integration with GenWork.
+This guide walks through testing the entire Web Search Skill integration with MixCWork.
 
 ## Prerequisites
 
-1. GenWork built and ready to run
+1. MixCWork built and ready to run
 2. Google Chrome installed
 3. Internet connection available
 
 ## Test 1: Service Auto-Start
 
-**Objective:** Verify that the Bridge Server starts automatically with GenWork.
+**Objective:** Verify that the Bridge Server starts automatically with MixCWork.
 
 **Steps:**
 
-1. Start GenWork in development mode:
+1. Start MixCWork in development mode:
    ```bash
    npm run electron:dev
    ```
@@ -45,7 +45,7 @@ This guide walks through testing the entire Web Search Skill integration with Ge
    }
    ```
 
-**Expected Result:** ✅ Bridge Server starts automatically within 3 seconds of GenWork launch.
+**Expected Result:** ✅ Bridge Server starts automatically within 3 seconds of MixCWork launch.
 
 ## Test 2: CLI Search from Terminal
 
@@ -53,7 +53,7 @@ This guide walks through testing the entire Web Search Skill integration with Ge
 
 **Steps:**
 
-1. Open a terminal while GenWork is running
+1. Open a terminal while MixCWork is running
 
 2. Execute a search:
    ```bash
@@ -74,7 +74,7 @@ This guide walks through testing the entire Web Search Skill integration with Ge
 
 **Steps:**
 
-1. Start GenWork
+1. Start MixCWork
 2. Create a new Cowork session
 3. Send the following message:
 
@@ -113,11 +113,11 @@ This guide walks through testing the entire Web Search Skill integration with Ge
 
 ## Test 5: Service Cleanup on Exit
 
-**Objective:** Verify graceful shutdown of services when GenWork quits.
+**Objective:** Verify graceful shutdown of services when MixCWork quits.
 
 **Steps:**
 
-1. With GenWork running and searches completed, quit the application
+1. With MixCWork running and searches completed, quit the application
 2. Check console output for:
    ```
    [SkillServices] Stopping skill services...
@@ -145,7 +145,7 @@ This guide walks through testing the entire Web Search Skill integration with Ge
 
 **Steps:**
 
-1. Start GenWork
+1. Start MixCWork
 2. Manually stop the Bridge Server:
    ```bash
    bash SKILLs/web-search/scripts/stop-server.sh
@@ -174,7 +174,7 @@ This guide walks through testing the entire Web Search Skill integration with Ge
 
 **Steps:**
 
-1. Start GenWork (ensure headless is false in config)
+1. Start MixCWork (ensure headless is false in config)
 2. Execute a search via CLI or Cowork
 3. Observe:
    - Chrome window appears
@@ -309,7 +309,7 @@ rm SKILLs/web-search/.connection
 
 All tests pass when:
 
-- ✅ Server auto-starts with GenWork
+- ✅ Server auto-starts with MixCWork
 - ✅ Searches complete in < 3 seconds
 - ✅ Claude uses skill automatically when appropriate
 - ✅ Connection caching improves performance

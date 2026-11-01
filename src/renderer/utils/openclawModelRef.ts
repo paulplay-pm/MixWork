@@ -8,9 +8,9 @@ type ModelRefInput = Pick<Model, 'id' | 'name' | 'providerKey' | 'openClawProvid
 
 function resolveModelOpenClawProviderId(model: ModelRefInput): string {
   if (model.isServerModel) {
-    return OpenClawProviderId.GenworkServer;
+    return OpenClawProviderId.MixcworkServer;
   }
-  return model.openClawProviderId || OpenClawProviderId.GenworkServer;
+  return model.openClawProviderId || OpenClawProviderId.MixcworkServer;
 }
 
 export function toOpenClawModelRef(model: ModelRefInput): string {
@@ -84,11 +84,11 @@ export function resolveOpenClawModelRef<T extends ModelRefInput>(
       return idMatches[0];
     }
     // Legacy fallback for refs saved before server-model identity moved to the
-    // catalog UUID: `genwork-server/<upstream name>`. When the name maps to a
+    // catalog UUID: `mixcwork-server/<upstream name>`. When the name maps to a
     // single server model, resolve it; when several same-named rows exist the
     // ref is ambiguous — report it as such instead of guessing, so the user
     // re-picks and the stored ref is rewritten to the unambiguous UUID form.
-    if (providerId === OpenClawProviderId.GenworkServer) {
+    if (providerId === OpenClawProviderId.MixcworkServer) {
       const nameMatches = availableModels.filter((model) => (
         model.isServerModel && model.name === modelId
       ));

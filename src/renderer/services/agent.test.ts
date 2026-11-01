@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { store } from '../store';
 import { setAgents, setCurrentAgentId } from '../store/slices/agentSlice';
-import { clearCurrentSession } from '../store/slices/genworkSlice';
+import { clearCurrentSession } from '../store/slices/mixcworkSlice';
 import { clearActiveSkills, setActiveSkillIds } from '../store/slices/skillSlice';
 import type { Agent } from '../types/agent';
 import { agentService } from './agent';

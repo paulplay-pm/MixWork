@@ -3,9 +3,9 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 import { assertDockerOnPath, assertRoot } from './lib/preflight.js';
 
-const COMPOSE = process.env.COMPOSE_FILE ?? '/etc/genwork/compose.yml';
-const PREVIOUS_VERSION_FILE = process.env.PREVIOUS_VERSION_FILE ?? '/etc/genwork/previous-version';
-const CURRENT_VERSION_FILE = process.env.CURRENT_VERSION_FILE ?? '/etc/genwork/current-version';
+const COMPOSE = process.env.COMPOSE_FILE ?? '/etc/mixcwork/compose.yml';
+const PREVIOUS_VERSION_FILE = process.env.PREVIOUS_VERSION_FILE ?? '/etc/mixcwork/previous-version';
+const CURRENT_VERSION_FILE = process.env.CURRENT_VERSION_FILE ?? '/etc/mixcwork/current-version';
 const HEALTH_TIMEOUT_MS = Number(process.env.UPGRADE_HEALTH_TIMEOUT_MS ?? 30_000);
 const HEALTH_POLL_MS = Number(process.env.UPGRADE_HEALTH_POLL_MS ?? 1_000);
 
@@ -67,7 +67,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
     }
   }
   if (!to) {
-    console.error('Usage: genwork-server upgrade --to <version>');
+    console.error('Usage: mixcwork-server upgrade --to <version>');
     process.exit(2);
   }
 
@@ -90,9 +90,9 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
       '--env-file',
       '.env',
       '-e',
-      'GENWORK_MIGRATE_DRY_RUN=1',
+      'MIXCWORK_MIGRATE_DRY_RUN=1',
       newImage,
-      'genwork-server',
+      'mixcwork-server',
       'migrate',
     ]);
 

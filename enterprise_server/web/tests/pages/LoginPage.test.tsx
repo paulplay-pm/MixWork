@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 
 import { apiClient } from '../../src/api/client';
 import { useAuthStore } from '../../src/auth/store';
+import { t } from '../../src/i18n';
 import { LoginPage } from '../../src/pages/LoginPage';
 
 describe('pages/LoginPage', () => {
@@ -224,6 +225,109 @@ describe('pages/LoginPage', () => {
     expect(path).toMatch(/\/auth\/login$/);
   });
 
+  test('pressing Enter in the username field moves focus to the password field', async () => {
+    fetchMock.mockResolvedValueOnce(orgsResp([{ id: 'o1', name: 'Acme' }]));
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ providers: [] }), { status: 200 }));
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    const username = screen.getByPlaceholderText(/Username/i) as HTMLInputElement;
+    const password = screen.getByPlaceholderText(/Password/i) as HTMLInputElement;
+    username.focus();
+    fireEvent.keyDown(username, { key: 'Enter', code: 'Enter' });
+
+    expect(document.activeElement).toBe(password);
+    // Advancing must NOT fire a login request.
+    const paths = fetchMock.mock.calls.map((c) => c[0] as string);
+    expect(paths.some((p) => p.endsWith('/auth/login'))).toBe(false);
+  });
+
+  test('Enter in the username field hands the password box over EMPTY, not holding the username', async () => {
+    // Reported bug: after typing the username and pressing Enter, the password
+    // box contained the username. Chromium's password manager pairs login
+    // fields itself and fills a field the moment it gains focus, writing
+    // straight into the DOM where React never sees it — so the box showed a
+    // value the state never had, and the login then sent something the admin
+    // never typed. Moving focus must hand over a clean field.
+    fetchMock.mockResolvedValueOnce(orgsResp([{ id: 'o1', name: 'Acme' }]));
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ providers: [] }), { status: 200 }));
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    const username = screen.getByPlaceholderText(/Username/i) as HTMLInputElement;
+    const password = screen.getByPlaceholderText(/Password/i) as HTMLInputElement;
+    fireEvent.change(username, { target: { value: 'alice' } });
+    // The browser writes into the DOM only: no input event, so React state
+    // stays empty — exactly what the password manager does.
+    password.value = 'alice';
+
+    fireEvent.keyDown(username, { key: 'Enter', code: 'Enter' });
+
+    expect(document.activeElement).toBe(password);
+    expect(password.value).toBe('');
+  });
+
+  test('a password the admin actually typed is never cleared by the handoff', async () => {
+    // Clearing on every focus would eat a real password whenever the admin
+    // goes back to fix the username.
+    fetchMock.mockResolvedValueOnce(orgsResp([{ id: 'o1', name: 'Acme' }]));
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ providers: [] }), { status: 200 }));
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    const username = screen.getByPlaceholderText(/Username/i) as HTMLInputElement;
+    const password = screen.getByPlaceholderText(/Password/i) as HTMLInputElement;
+    fireEvent.change(username, { target: { value: 'alice' } });
+    fireEvent.change(password, { target: { value: 's3cret-pw' } });
+
+    fireEvent.keyDown(username, { key: 'Enter', code: 'Enter' });
+
+    expect(password.value).toBe('s3cret-pw');
+  });
+
+  test('each login failure code shows its own message', async () => {
+    const cases: Array<[string, RegExp]> = [
+      // An unknown username and a wrong password must read identically, so
+      // the login form cannot be used to enumerate accounts.
+      ['user_not_found', /Invalid username or password/i],
+      ['invalid_password', /Invalid username or password/i],
+      ['org_not_found', /Organization not found/i],
+      ['user_disabled', /has been disabled/i],
+    ];
+    for (const [code, expected] of cases) {
+      fetchMock.mockReset();
+      useAuthStore.getState().logout();
+      fetchMock.mockResolvedValueOnce(orgsResp([{ id: 'o1', name: 'Acme' }]));
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ providers: [] }), { status: 200 })
+      );
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: code }), { status: 401 })
+      );
+      const { unmount } = render(
+        <MemoryRouter>
+          <LoginPage />
+        </MemoryRouter>
+      );
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+      fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+      await waitFor(() => expect(screen.getByText(expected)).toBeInTheDocument());
+      unmount();
+    }
+  });
+
   // --- SSO providers row ---
 
   /** Seed the orgs fetch and a matching /auth/sso/providers response. The
@@ -293,4 +397,20 @@ describe('pages/LoginPage', () => {
     // No "Other sign-in methods" divider is rendered.
     expect(screen.queryByText(/Other sign-in methods/i)).not.toBeInTheDocument();
   });
+
+  test('a session-expired logout shows a readable hint on the login page', async () => {
+    // The token lapsed and could not be renewed (see api/client.ts): the
+    // admin was signed out by the app, not by themselves, so the page has to
+    // say so instead of looking like a plain sign-in form.
+    seedOrgs([{ id: 'o1', name: 'Acme' }]);
+    useAuthStore.getState().logout('session-expired');
+    render(
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(screen.getByText(t('auth.session.expiredHint'))).toBeInTheDocument();
+  });
+
 });

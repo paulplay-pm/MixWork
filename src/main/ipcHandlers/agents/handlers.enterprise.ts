@@ -4,14 +4,14 @@ import { AgentIpcChannel } from '../../../shared/agent/constants';
 import { enterpriseClient } from '../../auth/enterpriseClient';
 import type { EnterpriseModelEntry } from '../../auth/enterpriseModelCache';
 import { loginGate } from '../../auth/loginGate';
-import type { GenWorkStore } from '../../genworkStore';
 import { agentEnterpriseSync } from '../../libs/agentEnterpriseSync';
 import { agentEnterpriseSyncThrottle } from '../../libs/agentEnterpriseSyncThrottle';
 import type { EnterpriseAgentPrefsStore } from '../../libs/enterpriseAgentPrefsStore';
+import type { MixCWorkStore } from '../../mixcworkStore';
 import type { SkillManager } from '../../skills/skillManager';
 
 export interface AgentEnterpriseHandlerDeps {
-  getGenWorkStore: () => GenWorkStore;
+  getMixCWorkStore: () => MixCWorkStore;
   getEnterpriseAgentPrefsStore: () => EnterpriseAgentPrefsStore;
   getSkillManager: () => SkillManager;
   /** Returns the desktop default model ref (providerId/modelId), used when the
@@ -49,7 +49,7 @@ export function registerAgentEnterpriseHandlers(deps: AgentEnterpriseHandlerDeps
         const serverView = await enterpriseClient.listEnterpriseAgents();
         const { report } = await agentEnterpriseSync.syncFromServer({
           serverView,
-          genworkStore: deps.getGenWorkStore(),
+          mixcworkStore: deps.getMixCWorkStore(),
           prefsStore: deps.getEnterpriseAgentPrefsStore(),
           skillManager: deps.getSkillManager(),
           defaultModelRef: deps.getAvailableModelsRef(),
@@ -72,7 +72,7 @@ export function registerAgentEnterpriseHandlers(deps: AgentEnterpriseHandlerDeps
   // workingDirectory to ''.
   ipcMain.handle(AgentIpcChannel.GetEnterpriseAgentWorkingDirectory, async (_e, agentId: string) => {
     loginGate.requireEnterprise();
-    const local = deps.getGenWorkStore().listAgents().find(a => a.source === 'enterprise' && a.enterpriseAgentId === agentId);
+    const local = deps.getMixCWorkStore().listAgents().find(a => a.source === 'enterprise' && a.enterpriseAgentId === agentId);
     if (!local) return { success: false, error: 'unknown_agent' };
     return { success: true, workingDirectory: deps.getEnterpriseAgentPrefsStore().get(agentId) };
   });
@@ -87,7 +87,7 @@ export function registerAgentEnterpriseHandlers(deps: AgentEnterpriseHandlerDeps
   // column): Task 5 consults this at model-resolution time.
   ipcMain.handle(AgentIpcChannel.GetEnterpriseAgentModel, async (_e, agentId: string) => {
     loginGate.requireEnterprise();
-    const local = deps.getGenWorkStore().listAgents().find(a => a.source === 'enterprise' && a.enterpriseAgentId === agentId);
+    const local = deps.getMixCWorkStore().listAgents().find(a => a.source === 'enterprise' && a.enterpriseAgentId === agentId);
     if (!local) return { success: false, error: 'unknown_agent' };
     return { success: true, modelRef: deps.getEnterpriseAgentPrefsStore().getModel(agentId) };
   });

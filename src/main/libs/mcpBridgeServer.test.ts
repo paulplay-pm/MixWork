@@ -33,7 +33,7 @@ describe('McpBridgeServer AskUser session attribution', () => {
           'x-ask-user-secret': secret,
         },
         body: JSON.stringify({
-          sessionKey: 'agent:main:genwork:session-a',
+          sessionKey: 'agent:main:mixcwork:session-a',
           questions: makeQuestions(),
         }),
       });
@@ -41,7 +41,7 @@ describe('McpBridgeServer AskUser session attribution', () => {
       expect(response.ok).toBe(true);
       await expect(response.json()).resolves.toEqual({ behavior: 'allow' });
       expect(received).toHaveLength(1);
-      expect(received[0].sessionKey).toBe('agent:main:genwork:session-a');
+      expect(received[0].sessionKey).toBe('agent:main:mixcwork:session-a');
     } finally {
       await server.stop();
     }
@@ -59,10 +59,10 @@ describe('McpBridgeServer AskUser session attribution', () => {
     await expect(server.askUserInternal(
       makeQuestions(),
       1_000,
-      { sessionKey: 'agent:main:genwork:session-b' },
+      { sessionKey: 'agent:main:mixcwork:session-b' },
     )).resolves.toEqual({ behavior: 'deny' });
 
     expect(received).toHaveLength(1);
-    expect(received[0].sessionKey).toBe('agent:main:genwork:session-b');
+    expect(received[0].sessionKey).toBe('agent:main:mixcwork:session-b');
   });
 });

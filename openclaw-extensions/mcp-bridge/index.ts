@@ -201,7 +201,7 @@ const invokeBridge = async (
 const plugin = {
   id: 'mcp-bridge',
   name: 'MCP Bridge',
-  description: 'Expose Genwork-managed MCP servers as native OpenClaw tools.',
+  description: 'Expose Mixcwork-managed MCP servers as native OpenClaw tools.',
   configSchema: {
     parse(value: unknown): McpBridgePluginConfig {
       return parsePluginConfig(value);

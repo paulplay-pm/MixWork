@@ -3,7 +3,7 @@ import {
   type ShareDeploymentProjectCandidate,
 } from '../../shared/shareDeployment/constants';
 import { type Artifact, type ArtifactType, ArtifactTypeValue } from '../types/artifact';
-import type { GenWorkMessage } from '../types/genwork';
+import type { MixCWorkMessage } from '../types/mixcwork';
 
 /**
  * Normalize a local artifact path from markdown, MEDIA tokens, or tool metadata.
@@ -283,7 +283,7 @@ export function dedupeArtifactsWithinMessages(artifacts: Artifact[]): Artifact[]
   return result;
 }
 
-export function hasToolResultMediaAssets(toolResultMsg: GenWorkMessage | undefined): boolean {
+export function hasToolResultMediaAssets(toolResultMsg: MixCWorkMessage | undefined): boolean {
   if (!toolResultMsg?.metadata || toolResultMsg.metadata.isError) return false;
 
   const details = toolResultMsg.metadata.toolResultDetails;
@@ -985,7 +985,7 @@ export function parseRemoteImageArtifactsFromText(
 }
 
 export function parseToolResultMediaArtifacts(
-  toolResultMsg: GenWorkMessage | undefined,
+  toolResultMsg: MixCWorkMessage | undefined,
   sessionId: string,
 ): Artifact[] {
   if (!toolResultMsg?.metadata || toolResultMsg.metadata.isError) return [];
@@ -1062,7 +1062,7 @@ const WRITE_TOOL_NAMES = new Set([
  */
 const IMAGE_GEN_TOOL_NAMES_FOR_PATH_DETECTION = new Set([
   'image_generate',
-  'genwork_image_generate',
+  'mixcwork_image_generate',
 ]);
 
 export function shouldParseFilePathsFromToolResult(toolName: string | undefined | null): boolean {
@@ -1096,8 +1096,8 @@ function getFileName(filePath: string): string {
 }
 
 export function parseToolArtifact(
-  toolUseMsg: GenWorkMessage,
-  toolResultMsg: GenWorkMessage | undefined,
+  toolUseMsg: MixCWorkMessage,
+  toolResultMsg: MixCWorkMessage | undefined,
   sessionId: string,
 ): Artifact | null {
   const toolName = toolUseMsg.metadata?.toolName;

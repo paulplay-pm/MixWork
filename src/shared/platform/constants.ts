@@ -76,15 +76,6 @@ const DEFINITIONS = [
     logo: 'qq_bot.jpeg',
     guideUrl: '',
   },
-  {
-    id: 'popo',
-    label: 'POPO',
-    region: 'china',
-    channel: 'moltbot-popo',
-    channelAliases: ['popo'],
-    logo: 'popo.png',
-    guideUrl: '',
-  },
   // ── Global ──
   {
     id: 'telegram',
@@ -102,15 +93,6 @@ const DEFINITIONS = [
     channel: 'discord',
     channelAliases: [],
     logo: 'discord.svg',
-    guideUrl: '',
-  },
-  {
-    id: 'email',
-    label: 'Email',
-    region: 'china',
-    channel: 'email',
-    channelAliases: ['clawemail', 'clawemail-email'],
-    logo: 'email.svg',
     guideUrl: '',
   },
 ] as const satisfies readonly PlatformDefInput[];

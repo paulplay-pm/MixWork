@@ -6,14 +6,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { agentService } from '../../services/agent';
-import { genworkService } from '../../services/genwork';
 import { i18nService } from '../../services/i18n';
 import { imService } from '../../services/im';
+import { mixcworkService } from '../../services/mixcwork';
 import { resolveThinkingLevelForModel } from '../../services/modelThinkingLevelMemory';
 import type { RootState } from '../../store';
 import type { Model } from '../../store/slices/modelSlice';
 import type { PresetAgent } from '../../types/agent';
-import type { DingTalkInstanceConfig, DiscordInstanceConfig, FeishuInstanceConfig, IMGatewayConfig, PopoInstanceConfig, QQInstanceConfig, TelegramInstanceConfig, WecomInstanceConfig } from '../../types/im';
+import type { DingTalkInstanceConfig, DiscordInstanceConfig, FeishuInstanceConfig, IMGatewayConfig, QQInstanceConfig, TelegramInstanceConfig, WecomInstanceConfig } from '../../types/im';
 import type { Skill } from '../../types/skill';
 import { getAgentDisplayName, getAgentDisplayNameById } from '../../utils/agentDisplay';
 import { toOpenClawModelRef } from '../../utils/openclawModelRef';
@@ -26,8 +26,8 @@ import AgentDetailToolbar from './AgentDetailToolbar';
 import AgentSkillSelector from './AgentSkillSelector';
 import { AgentConfirmDialogVariant, AgentDetailTab } from './constants';
 
-type MultiInstancePlatform = 'dingtalk' | 'feishu' | 'qq' | 'wecom' | 'telegram' | 'discord' | 'popo';
-type MultiInstanceConfig = DingTalkInstanceConfig | FeishuInstanceConfig | QQInstanceConfig | WecomInstanceConfig | TelegramInstanceConfig | DiscordInstanceConfig | PopoInstanceConfig;
+type MultiInstancePlatform = 'dingtalk' | 'feishu' | 'qq' | 'wecom' | 'telegram' | 'discord';
+type MultiInstanceConfig = DingTalkInstanceConfig | FeishuInstanceConfig | QQInstanceConfig | WecomInstanceConfig | TelegramInstanceConfig | DiscordInstanceConfig;
 type AgentCreateAnalyticsSource = 'home_agent_sidebar' | 'home_agent_sidebar_empty' | 'agents_view' | 'agent_create_modal';
 type AgentCreateActionType =
   | 'open'
@@ -43,7 +43,7 @@ type AgentCreateActionType =
   | 'discard_confirm_submit'
   | 'discard_confirm_cancel';
 
-const MULTI_INSTANCE_PLATFORMS: MultiInstancePlatform[] = ['dingtalk', 'feishu', 'qq', 'wecom', 'telegram', 'discord', 'popo'];
+const MULTI_INSTANCE_PLATFORMS: MultiInstancePlatform[] = ['dingtalk', 'feishu', 'qq', 'wecom', 'telegram', 'discord'];
 const AGENT_CREATE_ANALYTICS_DEFAULT_SOURCE: AgentCreateAnalyticsSource = 'agent_create_modal';
 
 const isMultiInstancePlatform = (platform: Platform): platform is MultiInstancePlatform =>
@@ -322,7 +322,7 @@ const AgentCreateModal: React.FC<AgentCreateModalProps> = ({
       });
       if (agent) {
         if (userInfo !== initialUserInfoRef.current) {
-          const userInfoSaved = await genworkService.writeBootstrapFile('USER.md', userInfo, { agentId: agent.id });
+          const userInfoSaved = await mixcworkService.writeBootstrapFile('USER.md', userInfo, { agentId: agent.id });
           if (!userInfoSaved) {
             console.warn(`[AgentCreateModal] failed to save USER.md for agent ${agent.id}`);
             window.dispatchEvent(new CustomEvent('app:showToast', { detail: i18nService.t('agentSaveFailed') }));

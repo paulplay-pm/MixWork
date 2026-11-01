@@ -12,6 +12,7 @@ export const TYPE_VALUE_LABEL_KEY: Record<ModelTypeValue, string> = {
   [ModelTypes.Rerank]: 'providersModels.model.typeRerank',
   [ModelTypes.Asr]: 'providersModels.model.typeAsr',
   [ModelTypes.Tts]: 'providersModels.model.typeTts',
+  [ModelTypes.VideoGen]: 'providersModels.model.typeVideoGen',
 };
 export function typeValueLabel(v: ModelTypeValue): string {
   return t(TYPE_VALUE_LABEL_KEY[v] ?? 'providersModels.model.typeChat');
@@ -27,12 +28,28 @@ const TYPE_BG: Record<ModelTypeValue, string> = {
   'rerank': 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
   'asr': 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
   'tts': 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
+  'video-gen': 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)]',
 };
-export function ModelTypesBadges({ types }: { types: ModelTypeValue[] }): JSX.Element {
+export function ModelTypesBadges({
+  types,
+  defaultTypes = [],
+}: {
+  types: ModelTypeValue[];
+  /** The types this model is the DEFAULT model for. Those chips carry the
+   * "default" badge; the rest do not. */
+  defaultTypes?: ModelTypeValue[];
+}): JSX.Element {
   return (
     <span className="inline-flex flex-wrap gap-1">
       {types.map((v) => (
-        <span key={v} className={`inline-flex rounded-full px-2 py-0.5 text-xs ${TYPE_BG[v]}`}>{typeValueLabel(v)}</span>
+        <span key={v} className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${TYPE_BG[v]}`}>
+          {typeValueLabel(v)}
+          {defaultTypes.includes(v) && (
+            <span className="rounded-full bg-[var(--accent-primary)] px-1.5 text-[10px] font-medium text-white">
+              {t('providersModels.model.defaultBadge')}
+            </span>
+          )}
+        </span>
       ))}
     </span>
   );

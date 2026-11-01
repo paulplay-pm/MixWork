@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 
 import {
   createAccountOwnerKey,
+  createEnterpriseSessionAccountOwnerKey,
   resolveAccountOwnerUserId,
 } from './accountOwner';
 
@@ -34,4 +35,23 @@ test('fails closed while an enterprise identity is missing its enterprise contex
 test('falls back to yid and rejects missing user identities', () => {
   expect(resolveAccountOwnerUserId({ yid: 'employee' })).toBe('employee');
   expect(createAccountOwnerKey({ user: null })).toBeNull();
+});
+
+test('scopes the multi-tenant enterprise session by org and user', () => {
+  expect(createEnterpriseSessionAccountOwnerKey({
+    orgId: '万象服务',
+    userId: '1e5ee1f5-6b94-4fc2-96ce-a8b2033bd678',
+  })).toBe('enterprise:1e5ee1f5-6b94-4fc2-96ce-a8b2033bd678:万象服务');
+});
+
+test('rejects an enterprise session without an org or a user', () => {
+  expect(createEnterpriseSessionAccountOwnerKey({
+    orgId: '万象服务',
+    userId: '',
+  })).toBeNull();
+  expect(createEnterpriseSessionAccountOwnerKey({
+    orgId: '',
+    userId: '1e5ee1f5-6b94-4fc2-96ce-a8b2033bd678',
+  })).toBeNull();
+  expect(createEnterpriseSessionAccountOwnerKey({})).toBeNull();
 });

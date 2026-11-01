@@ -1,5 +1,5 @@
 {
-  "name": "@genwork/enterprise-server-web",
+  "name": "@mixcwork/enterprise-server-web",
   "private": true,
   "type": "module",
   "scripts": {

@@ -1,33 +1,36 @@
 # ---- Stage 1: web SPA build -----------------------------------------------
-# enterprise_server/web is a standalone npm project (not a workspace),
-# with its own lockfile. We build the SPA in its own stage so that
-# dist/web-dist can be COPY --from=web-build into the server stage.
+# enterprise_server/web is a standalone npm project (not a workspace), so it
+# carries its own lockfile. `npm ci` installs the exact locked tree, so a
+# clean checkout builds identically to a developer's. We build the SPA in its
+# own stage so that dist/web-dist can be COPY --from=web-build into the server
+# stage.
 FROM node:24-alpine AS web-build
 WORKDIR /work
-COPY enterprise_server/web/package.json enterprise_server/web/package-lock.json* ./web/
+COPY enterprise_server/web/package.json enterprise_server/web/package-lock.json ./web/
 RUN cd web && npm ci --no-audit --no-fund --ignore-scripts
 COPY enterprise_server/web/ ./web/
+# The web tsconfig type-checks `tests/**` too, and two parity tests under
+# web/tests/shared/ import the backend's canonical shared modules through a
+# relative path that resolves to /work/src/shared — outside the copied web
+# tree. `npm run build` runs `tsc` first, so bring those modules in too.
+COPY enterprise_server/src/shared/ ./src/shared/
 RUN cd web && npm run build
 
 # ---- Stage 2: server build -----------------------------------------------
-# enterprise_server itself is an npm workspace of the repo root, so its
-# dependency lock lives at the ROOT package-lock.json. Install via the
-# workspace selector and include the workspace root so the install
-# resolves the workspace links. web-dist comes in from the web stage
-# via COPY --from=web-build.
+# enterprise_server is a standalone npm project (not a workspace), so it carries
+# its own lockfile and `npm ci` installs its exact locked tree. The repo-root
+# (Electron) manifest is deliberately not involved: its deps do not belong in
+# the server image. web-dist comes in from the web stage via COPY --from=web-build.
 FROM node:24-alpine AS build
-WORKDIR /work/repo
-COPY package.json package-lock.json ./
-COPY enterprise_server/package.json enterprise_server/
-RUN npm ci --no-audit --no-fund --ignore-scripts \
-        --include-workspace-root \
-        --workspace=@genwork/enterprise-server
+WORKDIR /work/repo/enterprise_server
+COPY enterprise_server/package.json enterprise_server/package-lock.json ./
+RUN npm ci --no-audit --no-fund --ignore-scripts
 
-# Lay out the rest of the server source (src + tsconfig + cli) alongside
-# the workspace. Vite already wrote web-dist to enterprise_server/web-dist,
-# so we copy that in last to keep the layer dependencies clean.
-COPY enterprise_server/src enterprise_server/src
-COPY enterprise_server/tsconfig.json enterprise_server/tsconfig.build.json enterprise_server/
+# Lay out the rest of the server source (src + tsconfig + cli). Vite already
+# wrote web-dist to /work/web-dist, so we copy that in last to keep the layer
+# dependencies clean.
+COPY enterprise_server/src ./src
+COPY enterprise_server/tsconfig.json enterprise_server/tsconfig.build.json ./
 
 WORKDIR /work/repo/enterprise_server
 COPY --from=web-build /work/web-dist ./web-dist
@@ -54,11 +57,8 @@ FROM node:24-alpine AS runtime
 RUN apk add --no-cache tini postgresql16-client bash
 
 WORKDIR /app/repo
-COPY package.json package-lock.json ./
-COPY enterprise_server/package.json enterprise_server/
+COPY enterprise_server/package.json enterprise_server/package-lock.json ./
 RUN npm ci --omit=dev --no-audit --no-fund --ignore-scripts \
-        --include-workspace-root \
-        --workspace=@genwork/enterprise-server \
  && npm cache clean --force
 
 # Layout the runtime tree so the node process resolves npm packages via

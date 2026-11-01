@@ -106,12 +106,23 @@ export function ConnectorCard({ c, onOpen, onToggle, onMenu }: Props): JSX.Eleme
 
       {/* Header: colored initials badge, name + status dot + 启用/停用 tag, mono key. */}
       <div className="flex items-start gap-2.5 pr-16">
-        <span
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] text-[15px] font-semibold ${iconPaletteCls(name)}`}
-          aria-hidden
-        >
-          {initials(name)}
-        </span>
+        {c.icon ? (
+          // An uploaded brand icon wins over the generated initials badge — the
+          // admin picked that logo precisely so the card would show it.
+          <span
+            className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-[8px] border border-[var(--border-subtle)] bg-white"
+            aria-hidden
+          >
+            <img src={c.icon} alt="" className="h-full w-full object-contain" />
+          </span>
+        ) : (
+          <span
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] text-[15px] font-semibold ${iconPaletteCls(name)}`}
+            aria-hidden
+          >
+            {initials(name)}
+          </span>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <strong className="truncate text-[14px] text-[var(--text-primary)]">{name}</strong>

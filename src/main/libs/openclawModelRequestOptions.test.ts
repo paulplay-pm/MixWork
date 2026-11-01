@@ -2,14 +2,14 @@ import type { StreamFn } from 'openclaw/plugin-sdk/agent-core';
 import { describe, expect, test } from 'vitest';
 
 import {
-  createGenworkRequestOptionsWrapper,
-  GENWORK_REQUEST_OPTIONS_FIELD,
-  resolveGenworkRequestThinkingLevel,
-} from '../../../openclaw-extensions/genwork-model-compat/requestOptions';
-import { GENWORK_REQUEST_OPTIONS_VERSION } from '../../../openclaw-extensions/genwork-model-compat/requestOptionsProtocol';
-import type { GenworkThinkingProfile } from '../../../openclaw-extensions/genwork-model-compat/thinkingProfileMapping';
+  createMixcworkRequestOptionsWrapper,
+  MIXCWORK_REQUEST_OPTIONS_FIELD,
+  resolveMixcworkRequestThinkingLevel,
+} from '../../../openclaw-extensions/mixcwork-model-compat/requestOptions';
+import { MIXCWORK_REQUEST_OPTIONS_VERSION } from '../../../openclaw-extensions/mixcwork-model-compat/requestOptionsProtocol';
+import type { MixcworkThinkingProfile } from '../../../openclaw-extensions/mixcwork-model-compat/thinkingProfileMapping';
 
-const profile: GenworkThinkingProfile = {
+const profile: MixcworkThinkingProfile = {
   options: [
     { level: 'off', openclawLevel: 'off' },
     { level: 'high', openclawLevel: 'high' },
@@ -19,12 +19,12 @@ const profile: GenworkThinkingProfile = {
   requestOptionsVersion: 1,
 };
 
-describe('GenWork request options', () => {
+describe('MixCWork request options', () => {
   test('uses an allowed selected level and falls back to the profile default', () => {
-    expect(resolveGenworkRequestThinkingLevel(profile, 'off')).toBe('off');
-    expect(resolveGenworkRequestThinkingLevel(profile, 'xhigh')).toBe('max');
-    expect(resolveGenworkRequestThinkingLevel(profile, 'low')).toBe('high');
-    expect(resolveGenworkRequestThinkingLevel(profile, undefined)).toBe('high');
+    expect(resolveMixcworkRequestThinkingLevel(profile, 'off')).toBe('off');
+    expect(resolveMixcworkRequestThinkingLevel(profile, 'xhigh')).toBe('max');
+    expect(resolveMixcworkRequestThinkingLevel(profile, 'low')).toBe('high');
+    expect(resolveMixcworkRequestThinkingLevel(profile, undefined)).toBe('high');
   });
 
   test('adds the final semantic thinking intent after the caller payload hook', async () => {
@@ -33,12 +33,12 @@ describe('GenWork request options', () => {
       forwardedOptions = options;
       return {} as ReturnType<StreamFn>;
     }) as StreamFn;
-    const wrapped = createGenworkRequestOptionsWrapper(baseStreamFn, 'off');
+    const wrapped = createMixcworkRequestOptionsWrapper(baseStreamFn, 'off');
 
     await wrapped({} as never, {} as never, {
       onPayload: () => ({
-        model: 'deepseek-v4-flash-GenworkInner',
-        [GENWORK_REQUEST_OPTIONS_FIELD]: {
+        model: 'deepseek-v4-flash-MixcworkInner',
+        [MIXCWORK_REQUEST_OPTIONS_FIELD]: {
           version: 999,
           thinking: { level: 'max' },
         },
@@ -47,12 +47,12 @@ describe('GenWork request options', () => {
 
     const payload = await forwardedOptions?.onPayload?.({}, {} as never);
     const expectedOptions = {
-      version: GENWORK_REQUEST_OPTIONS_VERSION,
+      version: MIXCWORK_REQUEST_OPTIONS_VERSION,
       thinking: { level: 'off' },
     };
     expect(payload).toEqual({
-      model: 'deepseek-v4-flash-GenworkInner',
-      [GENWORK_REQUEST_OPTIONS_FIELD]: expectedOptions,
+      model: 'deepseek-v4-flash-MixcworkInner',
+      [MIXCWORK_REQUEST_OPTIONS_FIELD]: expectedOptions,
     });
   });
 });

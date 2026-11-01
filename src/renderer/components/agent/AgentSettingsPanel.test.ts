@@ -4,10 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { Provider } from 'react-redux';
 import { describe, expect, test, vi } from 'vitest';
 
-import enterpriseAccountReducer from '../../features/enterpriseAccount/enterpriseAccountSlice';
 import { i18nService } from '../../services/i18n';
 import agentReducer, { setAgents } from '../../store/slices/agentSlice';
-import authReducer from '../../store/slices/authSlice';
 import modelReducer from '../../store/slices/modelSlice';
 import skillReducer from '../../store/slices/skillSlice';
 import AgentSettingsPanel from './AgentSettingsPanel';
@@ -45,8 +43,6 @@ const renderPanel = (agents: AgentSummaryInput[], agentId: string): string => {
       agent: agentReducer,
       model: modelReducer,
       skill: skillReducer,
-      auth: authReducer,
-      enterpriseAccount: enterpriseAccountReducer,
     },
   });
   store.dispatch(setAgents(agents));

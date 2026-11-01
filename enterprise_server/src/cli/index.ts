@@ -30,7 +30,7 @@ async function main(): Promise<void> {
       await import('./upgrade.js').then((m) => m.run(subArgs));
       break;
     case 'logs': {
-      const composeFile = process.env.COMPOSE_FILE ?? '/etc/genwork/compose.yml';
+      const composeFile = process.env.COMPOSE_FILE ?? '/etc/mixcwork/compose.yml';
       const child = spawn('docker', ['compose', '-f', composeFile, 'logs', ...subArgs], {
         stdio: 'inherit',
       });
@@ -59,15 +59,15 @@ async function main(): Promise<void> {
 
 function printHelp(): void {
   const lines = [
-    'genwork-server — Enterprise Server lifecycle CLI',
+    'mixcwork-server — Enterprise Server lifecycle CLI',
     '',
     'Subcommands:',
-    '  init       Host-side: prepare /etc/genwork/ and bootstrap the database',
+    '  init       Host-side: prepare /etc/mixcwork/ and bootstrap the database',
     '  start      Container-side: run migrations and start the server',
-    '  migrate    Container-side: apply pending DB migrations (or dry-run if GENWORK_MIGRATE_DRY_RUN=1)',
+    '  migrate    Container-side: apply pending DB migrations (or dry-run if MIXCWORK_MIGRATE_DRY_RUN=1)',
     '  status     Host-side: report health / version / uptime',
     '  logs       Host-side: tail docker compose logs',
-    '  backup     Host-side: dump the database and tar /etc/genwork/data',
+    '  backup     Host-side: dump the database and tar /etc/mixcwork/data',
     '  restore    Host-side: restore from a backup tarball',
     '  upgrade    Host-side: pull a new image and restart with rollback on failure',
     '  reinit     Legacy: re-open the /setup flow (preserved unchanged)',

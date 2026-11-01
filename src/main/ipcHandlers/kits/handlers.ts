@@ -264,6 +264,9 @@ export function registerKitHandlers(deps: KitHandlerDeps): void {
       const base = getEnterpriseServerUrl();
       const data = kits.map((kit) => ({
         ...kit,
+        // An uploaded icon is a path on the enterprise server; the desktop
+        // renders it in an <img>, so it has to be absolute.
+        icon: kit.icon?.startsWith('/') ? `${base}${kit.icon}` : kit.icon,
         skills: { ...kit.skills, bundle: `${base}/api/kits/download/${kit.id}` },
       }));
       return { success: true, data };
@@ -315,7 +318,7 @@ export function registerKitHandlers(deps: KitHandlerDeps): void {
       }
 
       // 1. Download zip
-      tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'genwork-kit-'));
+      tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-kit-'));
       let buffer: Buffer;
       const entBase = (() => { try { return getEnterpriseServerUrl(); } catch { return ''; } })();
       const isEnterpriseBundle = entBase !== '' && bundleUrl.startsWith(`${entBase}/api/kits/download/`);

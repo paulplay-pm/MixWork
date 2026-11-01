@@ -1,5 +1,5 @@
 /**
- * Tailwind CSS v3 plugin — bridges --genwork-* CSS variables into Tailwind utility classes.
+ * Tailwind CSS v3 plugin — bridges --mixcwork-* CSS variables into Tailwind utility classes.
  *
  * Usage in tailwind.config.js:
  *   plugins: [require('./src/renderer/theme/tailwind/plugin.cjs')]
@@ -24,73 +24,73 @@ module.exports = plugin(function () {
     extend: {
       colors: {
         // === Semantic theme colors (driven by CSS variables) ===
-        background:    withAlpha('--genwork-background'),
-        foreground:    withAlpha('--genwork-foreground'),
+        background:    withAlpha('--mixcwork-background'),
+        foreground:    withAlpha('--mixcwork-foreground'),
         primary: {
-          DEFAULT:     withAlpha('--genwork-primary'),
-          foreground:  withAlpha('--genwork-primary-foreground'),
-          hover:       withAlpha('--genwork-primary-hover'),
-          muted:       withAlpha('--genwork-primary-muted'),
-          dark:        withAlpha('--genwork-primary-hover'),  // backward compat alias
+          DEFAULT:     withAlpha('--mixcwork-primary'),
+          foreground:  withAlpha('--mixcwork-primary-foreground'),
+          hover:       withAlpha('--mixcwork-primary-hover'),
+          muted:       withAlpha('--mixcwork-primary-muted'),
+          dark:        withAlpha('--mixcwork-primary-hover'),  // backward compat alias
         },
         accent: {
-          DEFAULT:     withAlpha('--genwork-accent'),
-          foreground:  withAlpha('--genwork-accent-foreground'),
+          DEFAULT:     withAlpha('--mixcwork-accent'),
+          foreground:  withAlpha('--mixcwork-accent-foreground'),
         },
         surface: {
-          DEFAULT:     withAlpha('--genwork-surface'),
-          foreground:  withAlpha('--genwork-surface-foreground'),
-          raised:      withAlpha('--genwork-surface-raised'),
-          overlay:     withAlpha('--genwork-surface-overlay'),
-          inset:       withAlpha('--genwork-surface-raised'),  // alias
+          DEFAULT:     withAlpha('--mixcwork-surface'),
+          foreground:  withAlpha('--mixcwork-surface-foreground'),
+          raised:      withAlpha('--mixcwork-surface-raised'),
+          overlay:     withAlpha('--mixcwork-surface-overlay'),
+          inset:       withAlpha('--mixcwork-surface-raised'),  // alias
         },
         border: {
-          DEFAULT:     withAlpha('--genwork-border'),
-          subtle:      withAlpha('--genwork-border-subtle'),
-          input:       withAlpha('--genwork-input-border'),
+          DEFAULT:     withAlpha('--mixcwork-border'),
+          subtle:      withAlpha('--mixcwork-border-subtle'),
+          input:       withAlpha('--mixcwork-input-border'),
         },
-        muted:         withAlpha('--genwork-text-muted'),
+        muted:         withAlpha('--mixcwork-text-muted'),
         destructive: {
-          DEFAULT:     withAlpha('--genwork-destructive'),
-          foreground:  withAlpha('--genwork-destructive-foreground'),
+          DEFAULT:     withAlpha('--mixcwork-destructive'),
+          foreground:  withAlpha('--mixcwork-destructive-foreground'),
         },
-        success:       withAlpha('--genwork-success'),
-        warning:       withAlpha('--genwork-warning'),
+        success:       withAlpha('--mixcwork-success'),
+        warning:       withAlpha('--mixcwork-warning'),
 
-        // === Legacy claude.* aliases (map to --genwork-* for backward compat) ===
+        // === Legacy claude.* aliases (map to --mixcwork-* for backward compat) ===
         claude: {
-          bg:                withAlpha('--genwork-background'),
-          surface:           withAlpha('--genwork-surface'),
-          surfaceHover:      withAlpha('--genwork-surface-raised'),
-          surfaceMuted:      withAlpha('--genwork-surface-raised'),
-          surfaceInset:      withAlpha('--genwork-surface-raised'),
-          border:            withAlpha('--genwork-border'),
-          borderLight:       withAlpha('--genwork-border-subtle'),
-          text:              withAlpha('--genwork-text-primary'),
-          textSecondary:     withAlpha('--genwork-text-secondary'),
+          bg:                withAlpha('--mixcwork-background'),
+          surface:           withAlpha('--mixcwork-surface'),
+          surfaceHover:      withAlpha('--mixcwork-surface-raised'),
+          surfaceMuted:      withAlpha('--mixcwork-surface-raised'),
+          surfaceInset:      withAlpha('--mixcwork-surface-raised'),
+          border:            withAlpha('--mixcwork-border'),
+          borderLight:       withAlpha('--mixcwork-border-subtle'),
+          text:              withAlpha('--mixcwork-text-primary'),
+          textSecondary:     withAlpha('--mixcwork-text-secondary'),
           // dark.* aliases point to the same vars — theme handles light/dark
-          darkBg:            withAlpha('--genwork-background'),
-          darkSurface:       withAlpha('--genwork-surface'),
-          darkSurfaceHover:  withAlpha('--genwork-surface-raised'),
-          darkSurfaceMuted:  withAlpha('--genwork-surface-raised'),
-          darkSurfaceInset:  withAlpha('--genwork-surface-raised'),
-          darkBorder:        withAlpha('--genwork-border'),
-          darkBorderLight:   withAlpha('--genwork-border-subtle'),
-          darkText:          withAlpha('--genwork-text-primary'),
-          darkTextSecondary: withAlpha('--genwork-text-secondary'),
+          darkBg:            withAlpha('--mixcwork-background'),
+          darkSurface:       withAlpha('--mixcwork-surface'),
+          darkSurfaceHover:  withAlpha('--mixcwork-surface-raised'),
+          darkSurfaceMuted:  withAlpha('--mixcwork-surface-raised'),
+          darkSurfaceInset:  withAlpha('--mixcwork-surface-raised'),
+          darkBorder:        withAlpha('--mixcwork-border'),
+          darkBorderLight:   withAlpha('--mixcwork-border-subtle'),
+          darkText:          withAlpha('--mixcwork-text-primary'),
+          darkTextSecondary: withAlpha('--mixcwork-text-secondary'),
           // Accent
-          accent:            withAlpha('--genwork-primary'),
-          accentHover:       withAlpha('--genwork-primary-hover'),
-          accentLight:       withAlpha('--genwork-primary'),
-          accentMuted:       withAlpha('--genwork-primary-muted'),
+          accent:            withAlpha('--mixcwork-primary'),
+          accentHover:       withAlpha('--mixcwork-primary-hover'),
+          accentLight:       withAlpha('--mixcwork-primary'),
+          accentMuted:       withAlpha('--mixcwork-primary-muted'),
         },
         secondary: {
-          DEFAULT: withAlpha('--genwork-text-secondary'),
-          dark:    withAlpha('--genwork-border'),
+          DEFAULT: withAlpha('--mixcwork-text-secondary'),
+          dark:    withAlpha('--mixcwork-border'),
         },
       },
       borderRadius: {
-        theme: 'var(--genwork-radius)',
+        theme: 'var(--mixcwork-radius)',
       },
     },
   },

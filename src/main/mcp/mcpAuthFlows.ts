@@ -1,9 +1,11 @@
 import type { BrowserWindow } from 'electron';
 
 import { McpAuthMethod } from '../../shared/mcp/constants';
-import { runGenericOauthFlow, type GenericOauthConfig } from './genericOauthFlow';
+import { type GenericOauthConfig,runGenericOauthFlow } from './genericOauthFlow';
 import { probeAuthorization, type ProbeResult } from './mcpAuthProbe';
 import { McpStore } from './mcpStore';
+import { discoverOAuthEndpoints } from './oauthDiscovery';
+import { registerPublicClient } from './oauthRegistration';
 
 /**
  * Module-level store singleton. Set once by `McpRuntime` after the DB is
@@ -98,10 +100,40 @@ export async function saveCredential(
     // Per-provider generic flow (spec §5.2 option B): bypass the registry so
     // the built-in qichacha entry is untouched. `generic:<serverKey>` + an
     // oauthConfig means "drive this connector's own endpoints".
-    if (payload.providerId.startsWith('generic:') && payload.oauthConfig) {
+    if (payload.providerId.startsWith('generic:')) {
+      // The connector's own URL is the discovery anchor (RFC 9728). It comes
+      // from the record, not the renderer: the renderer's copy is the org's
+      // client profile and does not carry the endpoint URL.
+      const oauthConfig: GenericOauthConfig = {
+        ...(payload.oauthConfig ?? {}),
+        resourceUrl: payload.oauthConfig?.resourceUrl ?? record.url,
+      };
       let genericToken: string;
       try {
-        genericToken = await runGenericOauthFlow(payload.oauthConfig, win);
+        genericToken = await runGenericOauthFlow(oauthConfig, win, {
+          // Discovery and registration go through Chromium's network stack
+          // (Electron `net`), not Node's fetch: enterprise desktops reach the
+          // provider through the system proxy and trust the OS certificate
+          // store, and Node's fetch honours neither.
+          discover: async (args) =>
+            discoverOAuthEndpoints({ ...args, fetchImpl: await electronNetFetch() }),
+          register: async (args) =>
+            registerPublicClient({ ...args, fetchImpl: await electronNetFetch() }),
+          onResolved: (resolved) => {
+            // Only a REGISTERED client is stateful — the AS bound the redirect
+            // URI to that id, so re-authorizing must present the same one.
+            // Discovered endpoints are re-read every run and deliberately not
+            // pinned: the provider can move them.
+            if (!resolved.registeredClient) return;
+            store.updateServer(id, {
+              oauthConfig: {
+                ...(record.oauthConfig ?? {}),
+                ...(payload.oauthConfig ?? {}),
+                clientId: resolved.clientId,
+              },
+            });
+          },
+        });
       } catch (err) {
         console.warn(`[mcpAuthFlows] generic oauth flow failed for ${payload.providerId}: ${errMsg(err)}`);
         return { ok: false, reason: errMsg(err) };
@@ -196,6 +228,13 @@ export async function probeOnly(
   const record = store.getServer(id);
   if (!record) return { ok: false, status: 'connect-error', latencyMs: 0, error: 'server not found' };
   return await probeAuthorization(record, store);
+}
+
+/** Chromium-backed fetch for the discovery/registration requests, imported
+ *  lazily so unit tests that never discover stay free of Electron. */
+async function electronNetFetch(): Promise<typeof fetch> {
+  const { net } = await import('electron');
+  return ((input: string, init?: RequestInit) => net.fetch(input, init)) as typeof fetch;
 }
 
 function errMsg(err: unknown): string {

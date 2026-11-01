@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-// Canonical content of the GenWork-generated pip shim and wrapper files for
+// Canonical content of the MixCWork-generated pip shim and wrapper files for
 // the bundled Windows Python runtime. scripts/setup-python-runtime.js keeps a
 // CJS copy of these templates for packaging time; pythonPipShim.test.ts asserts
 // both copies stay byte-identical so the two can never drift again.
@@ -53,7 +53,7 @@ export const PIP_WRAPPER_SH_TEMPLATE = [
 ].join('\n');
 
 // A pip module dir is "ours" when its __main__.py redirects through pip.pyz —
-// true for every historical GenWork shim, never for a real pip package
+// true for every historical MixCWork shim, never for a real pip package
 // (e.g. copied from a host Python or installed by get-pip/`pip install pip`).
 const PIP_SHIM_OWNERSHIP_MARKER = 'pip.pyz';
 const PIP_WRAPPER_OWNERSHIP_MARKER = '-m pip';
@@ -74,7 +74,7 @@ function readTextIfExists(filePath: string): string | null {
 }
 
 /**
- * Converge GenWork-owned pip shim/wrapper files to the current templates.
+ * Converge MixCWork-owned pip shim/wrapper files to the current templates.
  *
  * Runtimes deployed by older app versions keep whatever shim they were synced
  * with (the health checks only test file existence), so a broken shim would

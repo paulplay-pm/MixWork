@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Stop the reproducible Electron SIGSEGV that crashes the desktop when a user logs in via Feishu SSO after a previous attempt left a `BrowserWindow` network process in a half-completed TLS state. Two changes in `src/main/mcp/oauthBrowserFlow.ts`: (1) replace the per-attempt `oauth-${crypto.randomUUID()}` partition with a single named partition `genwork-sso-oauth`; (2) add a 20 s `loadURL` deadline that settles with `sso_authorize_timeout` if the IdP authorize page does not load in time.
+**Goal:** Stop the reproducible Electron SIGSEGV that crashes the desktop when a user logs in via Feishu SSO after a previous attempt left a `BrowserWindow` network process in a half-completed TLS state. Two changes in `src/main/mcp/oauthBrowserFlow.ts`: (1) replace the per-attempt `oauth-${crypto.randomUUID()}` partition with a single named partition `mixcwork-sso-oauth`; (2) add a 20 s `loadURL` deadline that settles with `sso_authorize_timeout` if the IdP authorize page does not load in time.
 
 **Architecture:** The crash is in Chromium's collapsed process model (`--no-sandbox --disable-gpu` switches in `src/main/main.ts:1703-1710` force all network and rendering into the main process's address space). Every SSO attempt spinning up a fresh `partition: oauth-${uuid}` creates a brand-new network process; under load with a prior cancelled attempt, the new network process's TLS retry faults the shared address space, the SIGSEGV propagates up the IPC chain, and the whole app exits. Reusing a single partition eliminates the per-attempt network process churn, and a bounded `loadURL` deadline catches the case where the user closes the window mid-handshake (or the network process is stuck) before the 5-minute outer timeout fires.
 
@@ -40,7 +40,7 @@
 
 **Interfaces:**
 - Consumes: nothing (this task is the first).
-- Produces: `export const SSO_OAUTH_PARTITION = 'genwork-sso-oauth'` exported from `src/main/mcp/oauthBrowserFlow.ts`.
+- Produces: `export const SSO_OAUTH_PARTITION = 'mixcwork-sso-oauth'` exported from `src/main/mcp/oauthBrowserFlow.ts`.
 
 - [ ] **Step 1: Add the const and export it**
 
@@ -64,7 +64,7 @@ In `src/main/mcp/oauthBrowserFlow.ts`, immediately after the `import` block (lin
  * retry faults the shared address space and the whole app SIGSEGVs. One
  * stable partition → one network process → deterministic lifecycle.
  */
-export const SSO_OAUTH_PARTITION = 'genwork-sso-oauth';
+export const SSO_OAUTH_PARTITION = 'mixcwork-sso-oauth';
 ```
 
 - [ ] **Step 2: Remove the unused `crypto` import (if no other use in the file)**
@@ -97,7 +97,7 @@ expect(opts.webPreferences.partition).toMatch(/^oauth-/);
 to:
 
 ```ts
-expect(opts.webPreferences.partition).toBe('genwork-sso-oauth');
+expect(opts.webPreferences.partition).toBe('mixcwork-sso-oauth');
 ```
 
 This converts a stale pin (which would silently keep passing even if the implementation went back to a per-attempt UUID) into a load-bearing pin on the new stable name.
@@ -129,7 +129,7 @@ test('uses a stable partition name across two openOauthFlow calls (no per-attemp
   const partitions = lastWindows.map(
     (w) => (w._opts as { webPreferences: { partition: string } }).webPreferences.partition
   );
-  expect(partitions).toEqual(['genwork-sso-oauth', 'genwork-sso-oauth']);
+  expect(partitions).toEqual(['mixcwork-sso-oauth', 'mixcwork-sso-oauth']);
 });
 ```
 
@@ -150,7 +150,7 @@ git add src/main/mcp/oauthBrowserFlow.ts src/main/mcp/oauthBrowserFlow.test.ts
 git commit -m "fix(sso): use a stable partition for SSO BrowserWindows
 
 Replaces the per-attempt `oauth-${crypto.randomUUID()}` partition with a
-single named partition `genwork-sso-oauth` shared by every SSO login
+single named partition `mixcwork-sso-oauth` shared by every SSO login
 attempt. With --no-sandbox --disable-gpu switches active in main.ts,
 Chromium's process model collapses the network process into the main
 process's address space; a fresh partition per attempt spun up a new

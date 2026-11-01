@@ -25,6 +25,11 @@ export interface SsoConnectionRow {
   /** When true, an IdP identity not in users.sso_(connection,external) is
    *  sent to /bind-sso (must verify password) instead of JIT-resolving. */
   require_prebinding: boolean;
+  /** WeCom (企业微信) only: the 应用 AgentId (a short numeric id) for a
+   *  企业内部自建应用. WeCom's authorize URL needs BOTH `client_id`
+   *  (the CorpID, `ww` + 16 alphanumerics) AND `agentid`; the generic
+   *  providers use `client_id` alone. Null for every other provider. */
+  agentid: string | null;
   /** Optional per-connection logo URL. When set, the login pages use it
    *  as the SSO button's <img src>. When null, the server falls back to
    *  the built-in default for the provider_type (see sso/logos.ts). */

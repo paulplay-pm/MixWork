@@ -1,4 +1,4 @@
-export const APP_NAME = 'GenWork';
-export const APP_ID = 'genwork';
-export const EXPORT_FORMAT_TYPE = 'genwork.providers';
-export const EXPORT_PASSWORD = 'genwork-APP';
+export const APP_NAME = 'MixcWork';
+export const APP_ID = 'mixcwork';
+export const EXPORT_FORMAT_TYPE = 'mixcwork.providers';
+export const EXPORT_PASSWORD = 'mixcwork-APP';

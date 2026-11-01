@@ -319,3 +319,69 @@ describe('McpIpcChannel.SetEnabledByRegistryId handler (gated by authStatus)', (
     ]);
   });
 });
+vi.mock('../../mcp/mcpToolCatalog', () => ({ listServerTools: vi.fn() }));
+
+describe('McpIpcChannel.ListTools handler', () => {
+  const result = {
+    ok: true,
+    status: 'ok',
+    tools: [{ name: 'create_lead' }],
+    latencyMs: 12,
+  } as never;
+  let mcpStoreStub: {
+    getServer: ReturnType<typeof vi.fn>;
+    saveGatewayToken?: ReturnType<typeof vi.fn>;
+  };
+  let listServerToolsMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(async () => {
+    registeredHandlers.clear();
+    mcpStoreStub = { getServer: vi.fn() };
+    const mod = await import('../../mcp/mcpToolCatalog');
+    listServerToolsMock = vi.mocked(mod.listServerTools) as unknown as ReturnType<typeof vi.fn>;
+    listServerToolsMock.mockReset();
+    registerMcpHandlers({
+      getMcpRuntime: () => ({ getStore: () => mcpStoreStub }) as never,
+      syncOpenClawConfig: async () => ({ success: true, changed: false }),
+    });
+  });
+
+  // Regression: the detail dialog showed "No handler registered for
+  // 'mcp:listTools'" because the channel was never registered.
+  test('the channel is registered', () => {
+    expect(registeredHandlers.get(McpIpcChannel.ListTools)).toBeDefined();
+  });
+
+  test('an unknown id answers without touching the network', async () => {
+    mcpStoreStub.getServer.mockReturnValue(undefined);
+    const handler = registeredHandlers.get(McpIpcChannel.ListTools)!;
+    expect(await handler!({}, { id: 'nope' })).toEqual({ success: false, error: 'server not found' });
+    expect(listServerToolsMock).not.toHaveBeenCalled();
+  });
+
+  test('passes the stored record and the store-bound token saver through', async () => {
+    const record = { id: 's1', name: '纷享销客' };
+    const saveGatewayToken = vi.fn();
+    mcpStoreStub = { getServer: vi.fn().mockReturnValue(record), saveGatewayToken };
+    listServerToolsMock.mockResolvedValue(result);
+    const handler = registeredHandlers.get(McpIpcChannel.ListTools)!;
+    expect(await handler!({}, { id: 's1' })).toEqual({ success: true, result });
+    expect(listServerToolsMock).toHaveBeenCalledWith(record, {
+      saveGatewayToken: expect.any(Function),
+    });
+    // A gateway probe that had to mint a token must write it back through the
+    // store, otherwise the next probe and the next config build mint again.
+    const deps = listServerToolsMock.mock.calls[0][1] as {
+      saveGatewayToken: (id: string, token: string, owner: string, expiresAt: string) => void;
+    };
+    deps.saveGatewayToken('s1', 'gsj', 'u2', '2027-01-01T00:00:00.000Z');
+    expect(saveGatewayToken).toHaveBeenCalledWith('s1', 'gsj', 'u2', '2027-01-01T00:00:00.000Z');
+  });
+
+  test('a thrown error becomes a failure answer, not a rejection', async () => {
+    mcpStoreStub.getServer.mockReturnValue({ id: 's1' });
+    listServerToolsMock.mockRejectedValue(new Error('boom'));
+    const handler = registeredHandlers.get(McpIpcChannel.ListTools)!;
+    expect(await handler!({}, { id: 's1' })).toEqual({ success: false, error: 'boom' });
+  });
+});

@@ -5,7 +5,7 @@ Status: Draft — pending review
 
 ## 1. Purpose
 
-Add a **套件管理** (expert-suite / kit management) subsystem to the GenWork
+Add a **套件管理** (expert-suite / kit management) subsystem to the MixCWork
 enterprise server, mirroring the existing **skill marketplace** subsystem, and
 wire the desktop app's 专家套件 view to read permission-scoped kits from the
 enterprise server instead of the (dead) local marketplace.
@@ -27,7 +27,7 @@ Six requirements, reconciled with the product owner:
    `ydhardwarebusiness.nosdn.127.net` at startup.)
 4. Desktop 专家套件 **市场 → 企业** tab; lists only kits the logged-in user is
    authorized for, read from the enterprise server via the org JWT.
-5. **Keep** the desktop "GenWork 外观定制" built-in kit and the AI 皮肤
+5. **Keep** the desktop "MixCWork 外观定制" built-in kit and the AI 皮肤
    feature (requirement reversed by product decision). Instead, the desktop
    gains a **内置 (built-in)** tab that hosts the existing local built-in kits.
 6. **Keep** the Settings → 外观 "AI 皮肤" section (same reversal). No skin
@@ -188,7 +188,7 @@ UPDATE roles SET permissions = permissions || '["kit:view","kit:create","kit:edi
   sha256, and write to `enterprise_server/seeds/kits/<slug>.zip`.
 - **Manifest:** `enterprise_server/src/org/builtinKits.ts` holds a
   `BUILTIN_KITS` const array. Each entry carries: `slug`, `name_en/zh`,
-  `description_en/zh`, `icon_url`, `author:'GenWork'`, `version`,
+  `description_en/zh`, `icon_url`, `author:'MixCWork'`, `version`,
   `try_asking` (6×`{en,zh}`), `skill_list` (from `skills.list`),
   `defaultCategory` (a display category, e.g. 工程研发 / 设计 / 产品 / 运营增长 /
   销售客服 / 职能支持 — see §7), and `seedZipFile` (e.g. `'engineering.zip'`).
@@ -312,7 +312,7 @@ the SPA fallback; check `:id` pattern overlap with static routes (none expected)
     `skills.bundle`'s host is the enterprise server (compare against
     `getEnterpriseServerUrl()`) and, in that case, downloads via
     `enterpriseClient.downloadEnterpriseKit(id)` (Bearer) instead of the
-    unauthenticated `downloadBuffer`. Built-in kits (GenWork 外观定制
+    unauthenticated `downloadBuffer`. Built-in kits (MixCWork 外观定制
     `builtin://…`, computer-use CDN URL) take the existing unauthenticated path
     unchanged. No renderer change to the install payload is required — the
     existing `{ kitId, bundleUrl, … }` carries the absolute enterprise URL.
@@ -337,7 +337,7 @@ the SPA fallback; check `:id` pattern overlap with static routes (none expected)
     `kitEnterpriseEmpty`).
   - **内置 tab** data source: the *existing* built-in path — reuse
     `kitService.fetchMarketplaceKits()` (which returns the offline/built-in
-    response: GenWork 外观定制 + computer-use). This preserves 外观定制 and
+    response: MixCWork 外观定制 + computer-use). This preserves 外观定制 and
     computer-use exactly as today.
   - **已安装** tab: unchanged.
   - Install on the 企业 tab passes the enterprise kit id so the authed download
@@ -402,7 +402,7 @@ Desktop:
   state, if the code is extractable without Electron.
 - Manual: `npm run electron:dev` (or `:openclaw`) — 专家套件 shows 企业/内置/已
   安装; 企业 tab lists authorized kits from the server; installing one
-  downloads (authed) and appears in 已安装; 内置 still shows GenWork 外观定制.
+  downloads (authed) and appears in 已安装; 内置 still shows MixCWork 外观定制.
 
 Lint gate (CI-equivalent) on every touched file:
 `npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 <files>`.
@@ -448,10 +448,10 @@ Lint gate (CI-equivalent) on every touched file:
    a `KITS_SEED_DIR` env override (tests). Confirm the packaged server's cwd
    includes `seeds/kits/` — if the packaged server runs from a different cwd,
    the seed dir must ship with it.
-3. **`author` value:** set to `"GenWork"` for all 12 built-in kits (product
+3. **`author` value:** set to `"MixCWork"` for all 12 built-in kits (product
    decision, overriding the LobsterAI provenance in the source store).
 4. **Custom-kit zip upload vs. seed:** custom kits are admin-uploaded (zip
    parsed server-side); the 12 built-ins are vendored. Both flow through the
    same `kitStoreDir`/download path.
-5. **Existing desktop installs of GenWork 外观定制 / skin-creator:** untouched
+5. **Existing desktop installs of MixCWork 外观定制 / skin-creator:** untouched
    (requirement reversal), so no cleanup/migration needed.

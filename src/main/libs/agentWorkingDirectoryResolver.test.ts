@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 
-import type { Agent } from '../genworkStore';
+import type { Agent } from '../mixcworkStore';
 import { type CwdResolverDeps,resolveAgentDefaultWorkingDirectory } from './agentWorkingDirectoryResolver';
 
 function makeAgent(overrides: Partial<Agent>): Agent {

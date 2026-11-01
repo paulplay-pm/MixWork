@@ -5,10 +5,11 @@ import { AuthGuard } from './auth/AuthGuard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Sidebar } from './components/Sidebar';
 import { ToastViewport } from './components/Toast';
+import { SsoBindingsPage } from './pages/account/SsoBindingsPage';
 import { AgentManagePage } from './pages/AgentManagePage';
 import { AuditPage } from './pages/AuditPage';
-import { SsoBindingsPage } from './pages/account/SsoBindingsPage';
 import { BindSsoPage } from './pages/auth/BindSsoPage';
+import { DashboardPage } from './pages/DashboardPage';
 import { DepartmentsPage } from './pages/DepartmentsPage';
 import { KitManagePage } from './pages/KitManagePage';
 import { LoginPage } from './pages/LoginPage';
@@ -52,7 +53,11 @@ export function App(): JSX.Element {
           path="/"
           element={
             <AuthGuard>
-              <Shell><div className="p-8"><h1 className="text-2xl font-bold">Dashboard</h1></div></Shell>
+              {/* Open to every signed-in member: the server trims each section
+                  by permission point, so a member with only `mcp:view` sees
+                  the half of the board they are entitled to rather than a
+                  403. Gating the whole page would hide that half. */}
+              <Shell><DashboardPage /></Shell>
             </AuthGuard>
           }
         />
@@ -147,7 +152,7 @@ export function App(): JSX.Element {
         <Route
           path="/monitoring/usage"
           element={
-            <AuthGuard>
+            <AuthGuard requires="usage:view">
               <Shell><UsagePage /></Shell>
             </AuthGuard>
           }
@@ -155,7 +160,7 @@ export function App(): JSX.Element {
         <Route
           path="/monitoring/audit"
           element={
-            <AuthGuard requires="auditor">
+            <AuthGuard requires="audit:view">
               <Shell><AuditPage /></Shell>
             </AuthGuard>
           }

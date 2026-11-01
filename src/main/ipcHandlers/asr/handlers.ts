@@ -8,11 +8,6 @@ import {
   type AsrRealtimeSessionResult,
 } from '../../../shared/asr/constants';
 
-type AuthTokens = {
-  accessToken: string;
-  refreshToken: string;
-};
-
 type AsrResponseBody = {
   code?: number;
   message?: string;
@@ -37,13 +32,23 @@ const getSafeWebSocketEndpoint = (wsUrl: string): string => {
 };
 
 export interface AsrHandlerDeps {
-  getAuthTokens: () => AuthTokens | null;
+  /**
+   * The enterprise org JWT, from the enterprise session.
+   *
+   * NOT the consumer `auth_tokens`: MixCWork no longer talks to any youdao
+   * backend, so for an enterprise-only deployment those are always empty and
+   * the consumer path answered every ASR request with 401 "Unauthorized" —
+   * which the UI rendered as "登录后可使用语音输入" for a user who WAS signed
+   * in.
+   */
+  getEnterpriseJwt: () => string | null;
+  /** An enterprise-authenticated fetch (org JWT on the Authorization header). */
   fetchWithAuth: (url: string, options?: RequestInit) => Promise<Response>;
   getServerApiBaseUrl: () => string;
 }
 
 export function registerAsrIpcHandlers({
-  getAuthTokens,
+  getEnterpriseJwt,
   fetchWithAuth,
   getServerApiBaseUrl,
 }: AsrHandlerDeps): void {
@@ -51,9 +56,9 @@ export function registerAsrIpcHandlers({
     AsrIpcChannel.CreateRealtimeSession,
     async (_event, options?: AsrRealtimeSessionRequest): Promise<AsrRealtimeSessionResult> => {
       try {
-        const tokens = getAuthTokens();
-        if (!tokens) {
-          console.warn('[ASR] realtime session request was rejected because no auth tokens are available');
+        const jwt = getEnterpriseJwt();
+        if (!jwt) {
+          console.warn('[ASR] realtime session request was rejected because no enterprise session is available');
           return { success: false, code: AsrApiCode.Unauthorized, error: 'Unauthorized' };
         }
 

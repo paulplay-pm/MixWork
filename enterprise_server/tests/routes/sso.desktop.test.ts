@@ -73,6 +73,17 @@ describe('routes/sso — desktop callback', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: 'AT' }), { status: 200, headers: { 'content-type': 'application/json' } }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ sub: 'ext-1', email: 'a@x.com' }), { status: 200, headers: { 'content-type': 'application/json' } }));
 
+    // require_prebinding defaults to true (migration 044), so finishSsoCallback
+    // hands the token to the loopback ONLY for an identity that is already
+    // bound to a user; an unbound one is deliberately diverted to the browser
+    // bind page (302 /bind-sso?state=…, the same pendingBind shape the
+    // production POST /auth/sso/desktop/exchange surfaces as HTTP 409).
+    // Binding ext-1 first is the steady state this route exists to serve.
+    await testPool.query(
+      `INSERT INTO users(id, org_id, username, password_hash, sso_connection_id, sso_external_id)
+       VALUES ('u-ext1','o1','ext1','x','c1','ext-1')`
+    );
+
     const cb = await a.request(`/auth/sso/desktop/callback?state=${encodeURIComponent(state)}&code=CODE`);
     expect(cb.status).toBe(302);
     const loc = cb.headers.get('location')!;

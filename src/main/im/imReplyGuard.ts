@@ -1,4 +1,4 @@
-import type { GenWorkMessage } from '../genworkStore';
+import type { MixCWorkMessage } from '../mixcworkStore';
 
 export const DEFAULT_IM_EMPTY_REPLY = '处理完成，但没有生成回复。';
 export const UNSCHEDULED_REMINDER_FAILURE_REPLY = '这次没有真正创建定时任务，所以不会自动提醒。请重试。';
@@ -40,7 +40,7 @@ export const stripThinkingBlocks = (value: string): string => {
     .trim();
 };
 
-const getToolInputAction = (message: GenWorkMessage): string => {
+const getToolInputAction = (message: MixCWorkMessage): string => {
   const toolInput = message.metadata?.toolInput;
   if (!toolInput || typeof toolInput !== 'object') {
     return '';
@@ -49,13 +49,13 @@ const getToolInputAction = (message: GenWorkMessage): string => {
   return typeof action === 'string' ? action.trim().toLowerCase() : '';
 };
 
-const isCronAddToolUseMessage = (message: GenWorkMessage): boolean => {
+const isCronAddToolUseMessage = (message: MixCWorkMessage): boolean => {
   if (message.type !== 'tool_use') return false;
   if (normalizeToolName(message.metadata?.toolName) !== 'cron') return false;
   return getToolInputAction(message) === 'add';
 };
 
-const extractToolResultError = (message: GenWorkMessage): string | null => {
+const extractToolResultError = (message: MixCWorkMessage): string | null => {
   const candidates = [
     message.metadata?.error,
     message.metadata?.toolResult,
@@ -91,7 +91,7 @@ export function hasUnbackedReminderCommitment(text: string): boolean {
   return REMINDER_COMMITMENT_PATTERNS.some((pattern) => pattern.test(text));
 }
 
-export function analyzeIMReply(messages: GenWorkMessage[]): IMReplyAnalysis {
+export function analyzeIMReply(messages: MixCWorkMessage[]): IMReplyAnalysis {
   const assistantParts: string[] = [];
   const cronAddToolUseIds = new Set<string>();
   const successfulCronAddIds = new Set<string>();

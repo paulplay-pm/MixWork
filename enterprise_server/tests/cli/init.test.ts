@@ -1,4 +1,3 @@
-import { execSync as realExecSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -10,16 +9,20 @@ let tmp: string;
 beforeEach(() => {
   vi.resetModules();
   vi.spyOn(process, 'getuid').mockReturnValue(0);
-  vi.spyOn(realExecSync, 'call').mockImplementation(((..._args: unknown[]) => {
-    return Buffer.from('/usr/bin/docker');
-  }) as never);
+  // `init` runs the docker preflight check through `node:child_process`.
+  // Stub the module so the check does not depend on docker being installed
+  // on the machine running the tests.
+  vi.doMock('node:child_process', async () => {
+    const real = await vi.importActual<typeof import('node:child_process')>('node:child_process');
+    return { ...real, execSync: () => Buffer.from('/usr/bin/docker') };
+  });
   // Strong secrets
   process.env.JWT_SECRET = 'x'.repeat(40);
-  process.env.GENWORK_VAULT_MASTER_KEY = 'y'.repeat(40);
+  process.env.MIXCWORK_VAULT_MASTER_KEY = 'y'.repeat(40);
   process.env.DATABASE_URL = 'postgres://app:secret@host:5432/appdb';
   process.env.POSTGRES_SUPERUSER_URL = 'postgres://postgres:pw@host:5432/postgres';
   // Per-test scratch: tmp root, redirected data dir, and fake install dir
-  tmp = mkdtempSync(join(tmpdir(), 'genwork-init-'));
+  tmp = mkdtempSync(join(tmpdir(), 'mixcwork-init-'));
   process.env.INIT_DATA_DIR = join(tmp, 'data');
   mkdirSync(process.env.INIT_DATA_DIR, { recursive: true });
   process.env.INIT_SKIP_SYMLINK = '1';
@@ -47,7 +50,7 @@ describe('init subcommand', () => {
   });
 
   test('refuses when data dir is already initialized', async () => {
-    writeFileSync(join(tmp, 'data', 'compose.yml'), 'services:\n  app:\n    image: x\n', { recursive: true });
+    writeFileSync(join(tmp, 'data', 'compose.yml'), 'services:\n  app:\n    image: x\n');
     const exit = vi.spyOn(process, 'exit').mockImplementation((() => {}) as never);
     const err = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { run } = await import('../../src/cli/init.js');
@@ -57,7 +60,7 @@ describe('init subcommand', () => {
   });
 
   test('--force bypasses already-initialized check', async () => {
-    writeFileSync(join(tmp, 'data', 'compose.yml'), 'services:\n  app:\n    image: x\n', { recursive: true });
+    writeFileSync(join(tmp, 'data', 'compose.yml'), 'services:\n  app:\n    image: x\n');
     vi.doMock('pg', () => ({
       Client: vi.fn().mockImplementation(() => ({
         connect: () => Promise.resolve(),
@@ -94,7 +97,7 @@ describe('init subcommand', () => {
     writeFileSync(join(fakeInstall, 'caddyfile.example'), ':80 {}\n');
     writeFileSync(join(binDir, 'index.js'), '#!/usr/bin/env node\n');
     process.env.INSTALL_DIR = fakeInstall;
-    // init.ts hard-codes /usr/local/bin/genwork-server, which is not
+    // init.ts hard-codes /usr/local/bin/mixcwork-server, which is not
     // writable in CI. The surface we can test is the path-resolution
     // function — the symlink target must be derived from the install
     // dir and the file at the resolved path must exist on disk.

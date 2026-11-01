@@ -1,12 +1,13 @@
 import '../helpers/setupEnv';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('../../src/db/pool', async () => {
   const td = await import('../../src/db/testDb');
   return { pool: td.testPool };
 });
 
-import { resetSchema, testPool, runMigrations } from '../../src/db/testDb';
+import { resetSchema, runMigrations,testPool } from '../../src/db/testDb';
 import { timezone } from '../../src/org/timezone';
 
 describe('org/timezone', () => {

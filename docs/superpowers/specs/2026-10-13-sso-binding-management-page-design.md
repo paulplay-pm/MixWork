@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在 GenWork 桌面端的用户头像菜单里增加"绑定 SSO 账号"入口,打开一个新的桌面内嵌管理页（1:1 还原原型图 `Image #17`）,展示本组织所有可用的 SSO 连接、当前用户的绑定状态、已绑定的账号与时间,并支持绑定/解绑操作。
+**Goal:** 在 MixCWork 桌面端的用户头像菜单里增加"绑定 SSO 账号"入口,打开一个新的桌面内嵌管理页（1:1 还原原型图 `Image #17`）,展示本组织所有可用的 SSO 连接、当前用户的绑定状态、已绑定的账号与时间,并支持绑定/解绑操作。
 
 **Architecture:** 三层改动——服务端加一个新端点列出"连接 × 当前用户绑定状态"组合视图;桌面主进程扩展 IPC + 复用既有 OAuth 流程;桌面渲染器加新页面/路由/Slice/菜单项。i18n 同步新增键。已存在的 enterprise web 头像菜单 + `/me/sso-binding` POST/DELETE + migration 043 不动。
 
@@ -209,7 +209,7 @@ bind 流程也用 53231 端口(同 login)。`openOauthFlow` 内部用临时 part
 
 bind 流程的 OAuth 完成后,server `ready_to_finalize` finalize 重定向浏览器到 `redirectUri`,desktop loopback 收 `?token=`,跟 login 走同一条 settle 路径。**不**复用 `bindSuccessHtml`(那个是给 strict-mode 二次绑定用的,本流程的 user 早已 active,不会出现 strict-mode 路径)。
 
-**不**走 `genwork://` deep link(那个是给"绑定完成后让用户回到桌面"用的,本流程用户本来就在桌面里,不需要切窗口)。
+**不**走 `mixcwork://` deep link(那个是给"绑定完成后让用户回到桌面"用的,本流程用户本来就在桌面里,不需要切窗口)。
 
 ---
 
@@ -322,7 +322,7 @@ interface SsoBindingsState {
 | Key | zh | en |
 | --- | --- | --- |
 | `ssoBindings.title` | SSO 账号绑定 | SSO account binding |
-| `ssoBindings.subtitle` | 绑定企业身份源后,你可以使用对应的单点登录方式免密进入 GenWork。可以同时绑定多个身份源,互不影响。 | After binding an enterprise identity source, you can use the corresponding SSO sign-in to access GenWork without password. You can bind multiple sources simultaneously. |
+| `ssoBindings.subtitle` | 绑定企业身份源后,你可以使用对应的单点登录方式免密进入 MixCWork。可以同时绑定多个身份源,互不影响。 | After binding an enterprise identity source, you can use the corresponding SSO sign-in to access MixCWork without password. You can bind multiple sources simultaneously. |
 | `ssoBindings.statusBadge` | 已绑定 {bound} / {total} | Bound {bound} / {total} |
 | `ssoBindings.searchPlaceholder` | 搜索 SSO 类型或名称 | Search SSO type or name |
 | `ssoBindings.tabAll` | 全部 {n} | All {n} |

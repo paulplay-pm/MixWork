@@ -23,11 +23,14 @@ const admin = async () => signToken({ sub: 'a', orgId: 'o1', roles: ['super_admi
 const auth = (t: string) => ({ authorization: `Bearer ${t}` });
 const json = { 'content-type': 'application/json' };
 
-async function seedAgent(id: string, allowedRoles: string[]): Promise<void> {
+interface Scope { allCompany: boolean; deptIds: string[]; userIds: string[] }
+const ALL_COMPANY: Scope = { allCompany: true, deptIds: [], userIds: [] };
+
+async function seedAgent(id: string, scope: Scope = ALL_COMPANY): Promise<void> {
   await testPool.query(
-    `INSERT INTO agent_marketplace_agents (agent_id, name, allowed_roles, enabled)
-     VALUES ($1, $1, $2::jsonb, TRUE)`,
-    [id, JSON.stringify(allowedRoles)],
+    `INSERT INTO agent_marketplace_agents (agent_id, name, scope, enabled, org_id)
+     VALUES ($1, $1, $2::jsonb, TRUE, $3)`,
+    [id, JSON.stringify(scope), 'o1'],
   );
 }
 
@@ -43,30 +46,35 @@ describe('agents CRUD', () => {
       method: 'POST',
       headers: { ...auth(tok), ...json },
       body: JSON.stringify({
-        name: 'Reviewer', description: 'd', allowed_roles: ['org_admin'],
+        name: 'Reviewer', description: 'd', scope: ALL_COMPANY,
       }),
     });
     expect(res.status).toBe(200);
     const body = await res.json() as { agent_id: string };
-    expect(body.agent_id).toMatch(/^agent_\d+$/);
+    // Shape, not spelling: the prefix is the contract (it is what makes an
+    // agent id recognisable in a log), the body is opaque. An earlier version
+    // pinned `\d+` and therefore locked in a millisecond-clock generator that
+    // 500'd whenever two admins created an agent in the same millisecond.
+    expect(body.agent_id).toMatch(/^agent_[0-9a-f-]{36}$/);
   });
 
   test('non-admin gets 403', async () => {
     const tok = await signToken({ sub: 'u', orgId: 'o1', roles: ['user'] });
     const res = await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ name: 'X', allowed_roles: ['org_admin'] }),
+      body: JSON.stringify({ name: 'X', scope: ALL_COMPANY }),
     });
     expect(res.status).toBe(403);
   });
 
-  test('empty allowed_roles -> 400', async () => {
+  test('empty scope -> 400', async () => {
     const tok = await admin();
     const res = await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ name: 'X', allowed_roles: [] }),
+      body: JSON.stringify({ name: 'X', scope: { allCompany: false, deptIds: [], userIds: [] } }),
     });
     expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: 'no_scope' });
   });
 
   test('unknown skill_id -> 400', async () => {
@@ -74,7 +82,7 @@ describe('agents CRUD', () => {
     const res = await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
       body: JSON.stringify({
-        name: 'X', allowed_roles: ['org_admin'], skill_ids: ['nope'],
+        name: 'X', scope: ALL_COMPANY, skill_ids: ['nope'],
       }),
     });
     expect(res.status).toBe(400);
@@ -84,12 +92,12 @@ describe('agents CRUD', () => {
     const tok = await admin();
     const created = await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ name: 'X', allowed_roles: ['org_admin'] }),
+      body: JSON.stringify({ name: 'X', scope: ALL_COMPANY }),
     });
     const { agent_id } = await created.json() as { agent_id: string };
     const bad = await app.request(`/api/admin/agent-marketplace/agents/${agent_id}`, {
       method: 'PUT', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ allowed_roles: [] }),
+      body: JSON.stringify({ scope: { allCompany: false, deptIds: [], userIds: [] } }),
     });
     expect(bad.status).toBe(400);
   });
@@ -98,14 +106,14 @@ describe('agents CRUD', () => {
     const tok = await admin();
     const a = await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ name: 'A', allowed_roles: ['org_admin'] }),
+      body: JSON.stringify({ name: 'A', scope: ALL_COMPANY }),
     });
     const { agent_id: aId } = await a.json() as { agent_id: string };
 
     const b = await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
       body: JSON.stringify({
-        name: 'B', allowed_roles: ['org_admin'], subagent_allow_agent_ids: [aId],
+        name: 'B', scope: ALL_COMPANY, subagent_allow_agent_ids: [aId],
       }),
     });
     const { agent_id: bId } = await b.json() as { agent_id: string };
@@ -130,7 +138,11 @@ describe('agents CRUD', () => {
 
   test('list includes disabled rows', async () => {
     const tok = await admin();
-    await seedAgent('a', ['org_admin']);
+    // The scope used to be seeded as a roles list from an older scope shape;
+    // the column has taken an object for a while. The admin list does not
+    // filter by scope, so the seeded value does not matter here — it only
+    // has to be a shape the column accepts.
+    await seedAgent('a');
     await testPool.query(`UPDATE agent_marketplace_agents SET enabled = FALSE WHERE agent_id = 'a'`);
     const res = await app.request('/api/admin/agent-marketplace/agents', { headers: auth(tok) });
     const body = await res.json() as Array<{ agentId: string; enabled: boolean }>;
@@ -139,7 +151,11 @@ describe('agents CRUD', () => {
 
   test('update toggles enabled and it persists on the row', async () => {
     const tok = await admin();
-    await seedAgent('a', ['org_admin']);
+    // The scope used to be seeded as a roles list from an older scope shape;
+    // the column has taken an object for a while. The admin list does not
+    // filter by scope, so the seeded value does not matter here — it only
+    // has to be a shape the column accepts.
+    await seedAgent('a');
 
     const off = await app.request('/api/admin/agent-marketplace/agents/a', {
       method: 'PUT', headers: { ...auth(tok), ...json },
@@ -168,7 +184,7 @@ describe('about_you and icon_color', () => {
     const tok = await admin();
     const res = await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ name: 'N', allowed_roles: ['org_admin'], about_you: 'hi', icon_color: 2 }),
+      body: JSON.stringify({ name: 'N', scope: ALL_COMPANY, about_you: 'hi', icon_color: 2 }),
     });
     expect(res.status).toBe(200);
     const { rows } = await testPool.query<{ about_you: string; icon_color: number }>(
@@ -181,7 +197,7 @@ describe('about_you and icon_color', () => {
     const tok = await admin();
     await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ name: 'N', allowed_roles: ['org_admin'] }),
+      body: JSON.stringify({ name: 'N', scope: ALL_COMPANY }),
     });
     const row = (await testPool.query<{ agent_id: string }>('SELECT agent_id FROM agent_marketplace_agents')).rows[0];
     const res = await app.request(`/api/admin/agent-marketplace/agents/${row.agent_id}`, {
@@ -201,7 +217,7 @@ describe('im_channels', () => {
     const tok = await admin();
     const res = await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ name: 'IM', allowed_roles: ['org_admin'], im_channels: ['feishu', 'weixin'] }),
+      body: JSON.stringify({ name: 'IM', scope: ALL_COMPANY, im_channels: ['feishu', 'weixin'] }),
     });
     expect(res.status).toBe(200);
     const { rows } = await testPool.query<{ im_channels: string[] }>(
@@ -213,7 +229,7 @@ describe('im_channels', () => {
     const tok = await admin();
     const res = await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ name: 'NOIM', allowed_roles: ['org_admin'] }),
+      body: JSON.stringify({ name: 'NOIM', scope: ALL_COMPANY }),
     });
     expect(res.status).toBe(200);
     const { rows } = await testPool.query<{ im_channels: string[] }>(
@@ -225,18 +241,18 @@ describe('im_channels', () => {
     const tok = await admin();
     await app.request('/api/admin/agent-marketplace/agents', {
       method: 'POST', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ name: 'IM', allowed_roles: ['org_admin'], im_channels: ['qq'] }),
+      body: JSON.stringify({ name: 'IM', scope: ALL_COMPANY, im_channels: ['qq'] }),
     });
     const row = (await testPool.query<{ agent_id: string }>('SELECT agent_id FROM agent_marketplace_agents')).rows[0];
     // First set a second channel, then clear the whole list (all-off is valid).
     const r1 = await app.request(`/api/admin/agent-marketplace/agents/${row.agent_id}`, {
       method: 'PUT', headers: { ...auth(tok), ...json },
-      body: JSON.stringify({ im_channels: ['qq', 'popo'] }),
+      body: JSON.stringify({ im_channels: ['qq', 'wecom'] }),
     });
     expect(r1.status).toBe(204);
     let after = (await testPool.query<{ im_channels: string[] }>(
       'SELECT im_channels FROM agent_marketplace_agents')).rows[0];
-    expect(after.im_channels).toEqual(['qq', 'popo']);
+    expect(after.im_channels).toEqual(['qq', 'wecom']);
 
     const r2 = await app.request(`/api/admin/agent-marketplace/agents/${row.agent_id}`, {
       method: 'PUT', headers: { ...auth(tok), ...json },
@@ -246,5 +262,90 @@ describe('im_channels', () => {
     after = (await testPool.query<{ im_channels: string[] }>(
       'SELECT im_channels FROM agent_marketplace_agents')).rows[0];
     expect(after.im_channels).toEqual([]);
+  });
+});
+
+describe('department scope', () => {
+  beforeEach(async () => {
+    // The admin token's org must exist before users/departments can reference it.
+    await testPool.query(`INSERT INTO orgs(id, name) VALUES ('o1','T1') ON CONFLICT DO NOTHING`);
+  });
+
+  test('POST persists the granted departments', async () => {
+    await testPool.query(
+      `INSERT INTO departments(id, org_id, name, parent_id, path) VALUES ('d1','o1','研发',NULL,'/d1')`);
+    const tok = await admin();
+    const res = await app.request('/api/admin/agent-marketplace/agents', {
+      method: 'POST', headers: { ...auth(tok), ...json },
+      body: JSON.stringify({
+        name: 'S', scope: { allCompany: false, deptIds: ['d1'], userIds: [] },
+      }),
+    });
+    expect(res.status).toBe(200);
+    const { rows } = await testPool.query<{ scope: Scope }>(
+      'SELECT scope FROM agent_marketplace_agents WHERE name = $1', ['S']);
+    expect(rows[0].scope).toEqual({ allCompany: false, deptIds: ['d1'], userIds: [] });
+  });
+
+  test('POST persists a member exception', async () => {
+    await testPool.query(
+      `INSERT INTO users(id, org_id, username, password_hash, display_name)
+       VALUES ('u1','o1','u1','x','U1')`);
+    const tok = await admin();
+    const res = await app.request('/api/admin/agent-marketplace/agents', {
+      method: 'POST', headers: { ...auth(tok), ...json },
+      body: JSON.stringify({
+        name: 'M', scope: { allCompany: false, deptIds: [], userIds: ['u1'] },
+      }),
+    });
+    expect(res.status).toBe(200);
+    const { rows } = await testPool.query<{ scope: Scope }>(
+      'SELECT scope FROM agent_marketplace_agents WHERE name = $1', ['M']);
+    expect(rows[0].scope).toEqual({ allCompany: false, deptIds: [], userIds: ['u1'] });
+  });
+
+  test('a department from another org is dropped, leaving an empty grant -> 400', async () => {
+    await testPool.query(`INSERT INTO orgs(id, name) VALUES ('o2','T2') ON CONFLICT DO NOTHING`);
+    await testPool.query(
+      `INSERT INTO departments(id, org_id, name, parent_id, path) VALUES ('d2','o2','其他',NULL,'/d2')`);
+    const tok = await admin();
+    const res = await app.request('/api/admin/agent-marketplace/agents', {
+      method: 'POST', headers: { ...auth(tok), ...json },
+      body: JSON.stringify({
+        name: 'X', scope: { allCompany: false, deptIds: ['d2'], userIds: [] },
+      }),
+    });
+    expect(res.status).toBe(400);
+    expect(await res.json()).toMatchObject({ error: 'no_scope' });
+  });
+
+  test('PUT replaces the scope', async () => {
+    await testPool.query(
+      `INSERT INTO departments(id, org_id, name, parent_id, path) VALUES ('d1','o1','研发',NULL,'/d1')`);
+    const tok = await admin();
+    const created = await app.request('/api/admin/agent-marketplace/agents', {
+      method: 'POST', headers: { ...auth(tok), ...json },
+      body: JSON.stringify({ name: 'S', scope: ALL_COMPANY }),
+    });
+    const { agent_id } = await created.json() as { agent_id: string };
+
+    const res = await app.request(`/api/admin/agent-marketplace/agents/${agent_id}`, {
+      method: 'PUT', headers: { ...auth(tok), ...json },
+      body: JSON.stringify({ scope: { allCompany: false, deptIds: ['d1'], userIds: [] } }),
+    });
+    expect(res.status).toBe(204);
+    const { rows } = await testPool.query<{ scope: Scope }>(
+      'SELECT scope FROM agent_marketplace_agents WHERE agent_id = $1', [agent_id]);
+    expect(rows[0].scope).toEqual({ allCompany: false, deptIds: ['d1'], userIds: [] });
+  });
+
+  test('the admin list returns the scope', async () => {
+    const tok = await admin();
+    await seedAgent('a', { allCompany: false, deptIds: ['d1'], userIds: [] });
+    const res = await app.request('/api/admin/agent-marketplace/agents', { headers: auth(tok) });
+    const body = await res.json() as Array<{ agentId: string; scope: Scope }>;
+    expect(body.find(x => x.agentId === 'a')?.scope).toEqual({
+      allCompany: false, deptIds: ['d1'], userIds: [],
+    });
   });
 });

@@ -6,7 +6,7 @@ export interface ConsoleCallbackArgs {
 }
 
 // The SPA's auth store reads from localStorage key
-// 'genwork.enterprise.auth.token' (see web/src/auth/store.ts:44). Setting it
+// 'mixcwork.enterprise.auth.token' (see web/src/auth/store.ts:44). Setting it
 // here lets the SPA pick up the JWT on its next render. Per Ruling R3.
 export function renderConsoleCallbackHtml(args: ConsoleCallbackArgs): string {
   const esc = (s: string): string => s.replace(/[\\'<>]/g, (c) => `\\${c}`);
@@ -24,7 +24,7 @@ export function renderConsoleCallbackHtml(args: ConsoleCallbackArgs): string {
 <html><head><meta charset="utf-8"><title>Signing in…</title></head>
 <body>${err}<script>
 try {
-  localStorage.setItem('genwork.enterprise.auth.token', '${token}');
+  localStorage.setItem('mixcwork.enterprise.auth.token', '${token}');
 } catch (e) { document.body.textContent = 'Failed to store session: ' + e; }
 location.assign('${redirect}');
 </script></body></html>`;
@@ -53,7 +53,7 @@ export function renderWebBindCallbackHtml(args: {
 <html><head><meta charset="utf-8"><title>SSO bind…</title></head>
 <body><script>
 try {
-  localStorage.setItem('genwork.enterprise.auth.token', '${token}');
+  localStorage.setItem('mixcwork.enterprise.auth.token', '${token}');
   sessionStorage.setItem('ssoBindJustSucceeded', '1');
 } catch (e) { document.body.textContent = 'Failed to store session: ' + e; }
 location.assign('${redirect}');

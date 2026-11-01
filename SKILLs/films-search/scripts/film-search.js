@@ -17,7 +17,7 @@ const execFileAsync = promisify(execFile);
 // [1] Configuration
 // =============================================
 
-const CACHE_DIR = path.join(os.tmpdir(), 'genwork-film-cache');
+const CACHE_DIR = path.join(os.tmpdir(), 'mixcwork-film-cache');
 
 const DEFAULT_CONFIG = {
   preferredPan: ['quark', 'aliyun', 'baidu', 'uc'],
@@ -230,7 +230,7 @@ function buildSearchQueries(keyword, panTypes) {
  */
 function getWebSearchScriptPath() {
   const skillsRoot = process.env.SKILLS_ROOT
-    || process.env.GENWORK_SKILLS_ROOT
+    || process.env.MIXCWORK_SKILLS_ROOT
     || path.resolve(__dirname, '..', '..');
 
   const candidates = [

@@ -1,5 +1,6 @@
 import { session } from 'electron';
 
+import { LoginErrorCode } from '../../shared/enterpriseAccount/loginErrorCodes';
 import { type ConnectorSubmitRequest } from '../../shared/mcp/constants';
 import { type SkillSubmitRequest } from '../../shared/skills/constants';
 import { SSO_OAUTH_PARTITION } from '../mcp/oauthBrowserFlow';
@@ -54,6 +55,27 @@ export interface PolicyView {
   [k: string]: unknown;
 }
 
+/**
+ * Department-based authorization scope of a catalog entry (agents, skills).
+ * The enterprise server filters the catalog by it before answering, so the
+ * desktop only carries it for display/telemetry.
+ */
+export interface EnterpriseCatalogScope {
+  allCompany: boolean;
+  deptIds: string[];
+  userIds: string[];
+}
+
+/** Parse a wire scope defensively — a missing/garbled scope grants nothing. */
+function parseCatalogScope(raw: unknown): EnterpriseCatalogScope {
+  const s = (raw ?? {}) as Partial<EnterpriseCatalogScope>;
+  return {
+    allCompany: Boolean(s.allCompany),
+    deptIds: Array.isArray(s.deptIds) ? s.deptIds.map(String) : [],
+    userIds: Array.isArray(s.userIds) ? s.userIds.map(String) : [],
+  };
+}
+
 let baseUrl = '';
 let tokenProvider: () => string | null = () => null;
 
@@ -64,6 +86,26 @@ function sanitize<T extends Record<string, unknown>>(obj: T): T {
     out[k] = v;
   }
   return out as T;
+}
+
+/**
+ * An HTTP (or network) failure from the enterprise server.
+ *
+ * `code` carries the server's `error` field — e.g. `user_not_found` for a
+ * login attempt — so the renderer can show the user WHICH part of the
+ * credential was wrong instead of a bare HTTP status. `status` is null when
+ * the request never reached the server.
+ */
+export class EnterpriseApiError extends Error {
+  readonly status: number | null;
+  readonly code: string | null;
+
+  constructor(message: string, status: number | null, code: string | null) {
+    super(message);
+    this.name = 'EnterpriseApiError';
+    this.status = status;
+    this.code = code;
+  }
 }
 
 async function call<T>(path: string, init: RequestInit = {}, retry = true): Promise<T> {
@@ -79,26 +121,51 @@ async function call<T>(path: string, init: RequestInit = {}, retry = true): Prom
       await new Promise((r) => setTimeout(r, 200));
       return call<T>(path, init, false);
     }
-    throw new Error(`network: ${(e as Error).message}`);
+    throw new EnterpriseApiError(
+      `network: ${(e as Error).message}`,
+      null,
+      LoginErrorCode.Network,
+    );
   }
-  if (res.status === 401) {
-    // Distinguish an expired/invalid session (error: 'unauthorized') from a
-    // business 401 such as a wrong current password ('invalid_current'), which
-    // must NOT lock the gate and kick the user out.
+  if (!res.ok) {
+    // Every error response carries a JSON envelope with an `error` code
+    // (e.g. 'user_not_found', 'invalid_password', 'rate_limited'). Parse it
+    // so the caller can report the actual cause.
     let body: { error?: string } = {};
     try {
       body = await res.json();
     } catch {
       body = {};
     }
-    if (body.error !== 'unauthorized') {
-      throw new Error(`http ${res.status}: ${body.error ?? 'unauthorized'}`);
+    const code = body.error ?? null;
+    if (res.status === 401) {
+      // Distinguish an expired/invalid session (error: 'unauthorized') from a
+      // business 401 such as a wrong current password ('invalid_current'),
+      // which must NOT lock the gate and kick the user out.
+      if (code !== 'unauthorized') {
+        throw new EnterpriseApiError(
+          `http ${res.status}: ${code ?? 'unauthorized'}`,
+          res.status,
+          code,
+        );
+      }
+      // 401 → lock the gate so the renderer returns to LoginPage.
+      loginGate.lock();
+      throw new EnterpriseApiError('unauthorized', res.status, code);
     }
-    // 401 → lock the gate so the renderer returns to LoginPage.
-    loginGate.lock();
-    throw new Error('unauthorized');
+    if (res.status >= 500) {
+      throw new EnterpriseApiError(
+        `http ${res.status}${code ? `: ${code}` : ''}`,
+        res.status,
+        LoginErrorCode.Server,
+      );
+    }
+    throw new EnterpriseApiError(
+      `http ${res.status}${code ? `: ${code}` : ''}`,
+      res.status,
+      code,
+    );
   }
-  if (!res.ok) throw new Error(`http ${res.status}`);
   return res.json() as Promise<T>;
 }
 
@@ -360,6 +427,8 @@ export const enterpriseClient = {
       serverKey: string;
       name: string;
       nameZh: string | null;
+      /** Brand logo URL; absent when the admin set none. */
+      icon?: string | null;
       description: string;
       category: string;
       version: string;
@@ -373,9 +442,29 @@ export const enterpriseClient = {
       enabled: boolean;
       toolCount: number;
       /** Present only for `user-oauth` with complete endpoints (non-secret). */
-      oauth?: { authorizeUrl: string; tokenUrl: string; clientId: string; scopes?: string[] };
+      oauth?: {
+        authorizeUrl?: string;
+        tokenUrl?: string;
+        clientId?: string;
+        scopes?: string[];
+        /** The loopback redirect URI the enterprise server issued — the
+         *  desktop binds its port and sends it as `redirect_uri`. */
+        redirectUri?: string;
+      };
       /** Present only for `user-key` with a header name set (non-secret). */
       apiKeyHeaderName?: string;
+      /** The org's per-tool toggles in OpenClaw's tool-filter shape; absent
+       *  when the connector allows every tool. */
+      toolFilter?: { include?: string[]; exclude?: string[] };
+      /** The admin's per-call timeout in seconds; absent means the runtime's
+       *  own default. */
+      timeoutSeconds?: number;
+      /** How the desktop reaches this connector: `gateway` means the org key
+       *  is injected server-side and the local record must never dial the
+       *  upstream directly. Absent on older servers → `direct`. */
+      consumption?: 'direct' | 'gateway';
+      /** The org credential is stored server-side and ready to use. */
+      orgCredentialReady?: boolean;
     }>;
   }> {
     const url = `${baseUrl}/api/mcp-marketplace`;
@@ -387,13 +476,15 @@ export const enterpriseClient = {
     if (!res.ok) {
       throw new Error(`enterprise-mcp-marketplace fetch failed: HTTP ${res.status}`);
     }
-    return res.json() as Promise<{
+    const body = (await res.json()) as {
       categories: Array<{ id: string; name_zh: string; name_en: string }>;
       servers: Array<{
         id: string;
         serverKey: string;
         name: string;
         nameZh: string | null;
+        /** Brand logo URL; absent when the admin set none. */
+        icon?: string | null;
         description: string;
         category: string;
         version: string;
@@ -407,11 +498,59 @@ export const enterpriseClient = {
         enabled: boolean;
         toolCount: number;
         /** Present only for `user-oauth` with complete endpoints (non-secret). */
-        oauth?: { authorizeUrl: string; tokenUrl: string; clientId: string; scopes?: string[] };
+        oauth?: {
+          authorizeUrl?: string;
+          tokenUrl?: string;
+          clientId?: string;
+          scopes?: string[];
+          /** The loopback redirect URI the enterprise server issued — the
+           *  desktop binds its port and sends it as `redirect_uri`. */
+          redirectUri?: string;
+        };
         /** Present only for `user-key` with a header name set (non-secret). */
         apiKeyHeaderName?: string;
+        /** The org's per-tool toggles in OpenClaw's tool-filter shape; absent
+         *  when the connector allows every tool. */
+        toolFilter?: { include?: string[]; exclude?: string[] };
+        /** The admin's per-call timeout in seconds; absent means the
+         *  runtime's own default. */
+        timeoutSeconds?: number;
+        /** How the desktop reaches this connector: `gateway` means the org key
+         *  is injected server-side and the local record must never dial the
+         *  upstream directly. Absent on older servers → `direct`. */
+        consumption?: 'direct' | 'gateway';
+        /** The org credential is stored server-side and ready to use. */
+        orgCredentialReady?: boolean;
       }>;
-    }>;
+    };
+    return {
+      ...body,
+      // An uploaded icon is stored as a path on the enterprise server. The
+      // desktop renders it in an <img>, so it has to be absolute — and only
+      // the desktop knows the base URL that actually reaches the server from
+      // here.
+      servers: body.servers.map((server) => ({
+        ...server,
+        icon:
+          typeof server.icon === 'string' && server.icon.startsWith('/')
+            ? `${baseUrl.replace(/\/+$/, '')}${server.icon}`
+            : server.icon,
+      })),
+    };
+  },
+
+  /**
+   * Mint (or refresh) the gateway service token for one MCP connector.
+   *
+   * The org key itself lives server-side; this token only authorizes the
+   * desktop to have the gateway attach it. `call` already sends the member's
+   * enterprise JWT, which is the endpoint's whole prerequisite.
+   */
+  async issueGatewayToken(serverKey: string): Promise<{ token: string; expiresAt: string }> {
+    return call<{ token: string; expiresAt: string }>(
+      `/mcp/gateway/${encodeURIComponent(serverKey)}/token`,
+      { method: 'POST' },
+    );
   },
 
   /**
@@ -474,9 +613,11 @@ export const enterpriseClient = {
     model: string;
     thinkingLevel: string;
     icon: string;
+    /** Index into the console's tint palette; 0 when the server did not send it. */
+    iconColor: number;
     skillIds: string[];
     subagentAllowAgentIds: string[];
-    allowedRoles: string[];
+    scope: EnterpriseCatalogScope;
     enabled: boolean;
     imChannels: string[];
   }>> {
@@ -499,10 +640,17 @@ export const enterpriseClient = {
       aboutYou: String(a.aboutYou ?? ''),
       model: String(a.model ?? ''),
       thinkingLevel: String(a.thinkingLevel ?? ''),
-      icon: String(a.icon ?? ''),
+      // An uploaded icon is a path on the enterprise server; the desktop
+      // renders it in an <img>, so it has to be absolute. A built-in avatar
+      // value (`agent-avatar-svg:<name>`) is not a path and passes through.
+      icon:
+        typeof a.icon === 'string' && a.icon.startsWith('/')
+          ? `${baseUrl}${a.icon}`
+          : String(a.icon ?? ''),
+      iconColor: typeof a.iconColor === 'number' ? a.iconColor : 0,
       skillIds: Array.isArray(a.skillIds) ? (a.skillIds as string[]) : [],
       subagentAllowAgentIds: Array.isArray(a.subagentAllowAgentIds) ? (a.subagentAllowAgentIds as string[]) : [],
-      allowedRoles: Array.isArray(a.allowedRoles) ? (a.allowedRoles as string[]) : [],
+      scope: parseCatalogScope(a.scope),
       enabled: Boolean(a.enabled),
       // Wire field is camelCase `imChannels` (server `AgentMarketplaceView`),
       // matching the sibling mappings above.

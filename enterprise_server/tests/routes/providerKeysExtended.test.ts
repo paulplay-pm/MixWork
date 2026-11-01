@@ -94,7 +94,8 @@ describe('admin/provider-keys/:id mutations', () => {
       body: JSON.stringify({}),
     });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true });
+    // `clearedModels` rides every PATCH response (0 when no protocol changed).
+    expect(await res.json()).toEqual({ ok: true, clearedModels: 0 });
     const audit = await testPool.query<{ id: string }>(
       `SELECT id FROM audit_events WHERE action='provider_key_update'`,
     );

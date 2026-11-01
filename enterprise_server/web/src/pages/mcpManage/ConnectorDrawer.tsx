@@ -1,7 +1,8 @@
+import dayjs from 'dayjs';
 import type { JSX } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import dayjs from 'dayjs';
 
+import { ApiError } from '../../api/client';
 import type {
   AuthMode6,
   Connector,
@@ -12,30 +13,31 @@ import type {
   VersionRow,
 } from '../../api/connectors';
 import { connectorApi } from '../../api/connectors';
-import { ApiError } from '../../api/client';
 import type { DeptNode } from '../../api/departments';
 import type { UserRow } from '../../api/users';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { useToast } from '../../components/toastStore';
 import { t } from '../../i18n';
+import {
+  normalizeLegacyAuthMode,
+  readOAuthFields,
+  serverCanDiscoverTools,
+} from './connectorAuthModeOptions';
 import { ConnectorBasicInfo } from './ConnectorBasicInfo';
-import { ConnectorConnConfig, AUTH_MODE_LABEL, SSE_INCOMPATIBLE_AUTH_MODES } from './ConnectorConnConfig';
-import { SSO_APP_OPTIONS } from './ConnectorAuthFields';
+import { AUTH_MODE_LABEL, ConnectorConnConfig, SSE_INCOMPATIBLE_AUTH_MODES } from './ConnectorConnConfig';
+import { readTimeoutSeconds, timeoutAuthConfigEntry } from './connectorRuntimeOptions';
 import { ConnectorScopeSelector } from './ConnectorScopeSelector';
+import {
+  declaredToolNames,
+  mergeToolEntries,
+  parseToolNames,
+} from './connectorToolManifest';
 import { ConnectorToolPermissions } from './ConnectorToolPermissions';
+import { AUTH_FIELD_LABEL_KEY, missingAuthField, orgKeyUrlIsInsecure } from './connectorValidation';
 import { ConnectorVersionHistory } from './ConnectorVersionHistory';
 import { DeleteConnectorModal } from './DeleteConnectorModal';
 import { fill } from './types';
 
-/** Default OAuth callback endpoint issued by the enterprise server. */
-export const CALLBACK_URL_DEFAULT = 'https://oauth.genwork.cn/mcp/callback';
-
-const TIMEOUT_MIN = 5;
-const TIMEOUT_MAX = 300;
-const TIMEOUT_DEFAULT = 30;
-const RETRY_MIN = 0;
-const RETRY_MAX = 5;
-const RETRY_DEFAULT = 2;
 const DESCRIPTION_MAX = 200;
 
 /** Single form state for the whole create/edit drawer: basic fields, scope,
@@ -53,23 +55,20 @@ export interface ConnectorFormState {
   authMode: AuthMode6;
   scope: ConnectorScope;
   toolToggles: Record<string, boolean>;
+  /** The tool names the admin wrote by hand (one per line). The server can
+   *  only list a connector's tools when it holds that connector's
+   *  credential; when it does not, this list is the list. */
+  toolManifestText: string;
   // authConfig sub-fields (stored under `authConfig` in the wire body).
   apiKey: string;
   clientId: string;
   clientSecret: string;
   tokenUrl: string;
   authorizeUrl: string;
-  callbackUrl: string;
   scopes: string[];
-  ssoApp: string;
-  ssoAuthorizeUrl: string;
-  ssoTokenUrl: string;
-  ssoClientId: string;
-  ssoScopes: string[];
-  ssoClientSecret: string;
   apiKeyHeaderName: string;
-  timeoutSeconds: number;
-  retryCount: number;
+  /** Empty means "use the runtime default" — nothing is stored. */
+  timeoutSeconds: number | '';
 }
 
 interface Props {
@@ -94,23 +93,22 @@ interface Props {
   /** After a completed server probe (test-connection) — refetch the row so the
    * tool list + publish working-copy reflect the synced manifest. */
   onTested?: () => void;
+  /** The loopback redirect URI the enterprise server issues for a
+   *  `user-oauth` connector (from the org settings endpoint). The admin
+   *  registers it at the upstream IdP; the desktop sends the same value. */
+  oauthRedirectUri?: string;
 }
 
-function clampTimeout(n: number): number {
-  if (!Number.isFinite(n)) return TIMEOUT_DEFAULT;
-  return Math.min(TIMEOUT_MAX, Math.max(TIMEOUT_MIN, Math.round(n)));
-}
-
-function clampRetry(n: number): number {
-  if (!Number.isFinite(n)) return RETRY_DEFAULT;
-  return Math.min(RETRY_MAX, Math.max(RETRY_MIN, Math.round(n)));
-}
 
 function initState(mode: 'create' | 'edit', connector: Connector | undefined): ConnectorFormState {
   void mode;
   const cfg = connector?.authConfig ?? {};
   const str = (v: unknown): string => (typeof v === 'string' ? v : '');
   const scope: ConnectorScope = connector?.scope ?? { allCompany: false, deptIds: [], userIds: [] };
+  // A legacy `sso` connector opens as `user-oauth` with its `sso*` fields
+  // copied over: one mode instead of two, same three endpoints underneath.
+  const authMode = normalizeLegacyAuthMode(connector?.authMode ?? 'none');
+  const oauth = readOAuthFields(connector?.authMode ?? 'none', cfg);
   return {
     serverKey: connector?.serverKey ?? '',
     url: connector?.url ?? '',
@@ -120,7 +118,7 @@ function initState(mode: 'create' | 'edit', connector: Connector | undefined): C
     categoryId: connector?.categoryId ?? '',
     description: connector?.description ?? '',
     transport: connector?.transport ?? 'http',
-    authMode: connector?.authMode ?? 'none',
+    authMode,
     scope: {
       allCompany: !!scope.allCompany,
       deptIds: [...(scope.deptIds ?? [])],
@@ -129,39 +127,35 @@ function initState(mode: 'create' | 'edit', connector: Connector | undefined): C
     toolToggles: Object.fromEntries(
       (connector?.tools ?? []).map((tool): [string, boolean] => [tool.name, tool.enabled]),
     ),
+    // The tools the server never stamped are the ones an admin declared by
+    // hand — the declaration box starts with them.
+    toolManifestText: declaredToolNames(connector?.tools ?? []).join('\n'),
     // Secrets are never pre-filled: a blank secret on edit means "keep the
     // stored ciphertext" (the backend preserves it); the masked value is shown
     // as a placeholder instead.
     apiKey: '',
-    clientId: str(cfg.clientId),
+    clientId: oauth.clientId,
     clientSecret: '',
-    tokenUrl: str(cfg.tokenUrl),
-    authorizeUrl: str(cfg.authorizeUrl),
-    callbackUrl: str(cfg.callbackUrl) || CALLBACK_URL_DEFAULT,
-    scopes: Array.isArray(cfg.scopes) ? cfg.scopes.filter((s): s is string => typeof s === 'string') : [],
-    ssoApp: str(cfg.ssoApp) || SSO_APP_OPTIONS[0],
-    ssoAuthorizeUrl: str(cfg.ssoAuthorizeUrl),
-    ssoTokenUrl: str(cfg.ssoTokenUrl),
-    ssoClientId: str(cfg.ssoClientId),
-    ssoScopes: Array.isArray(cfg.ssoScopes) ? (cfg.ssoScopes as unknown[]).filter((s): s is string => typeof s === 'string') : [],
-    ssoClientSecret: '',
+    tokenUrl: oauth.tokenUrl,
+    authorizeUrl: oauth.authorizeUrl,
+    scopes: oauth.scopes,
     apiKeyHeaderName: str(cfg.apiKeyHeaderName),
-    timeoutSeconds: typeof cfg.timeoutSeconds === 'number' ? cfg.timeoutSeconds : TIMEOUT_DEFAULT,
-    retryCount: typeof cfg.retryCount === 'number' ? cfg.retryCount : RETRY_DEFAULT,
+    timeoutSeconds: readTimeoutSeconds(cfg),
   };
 }
 
 /** Override a connector-based form state with the fields the staged (masked)
  * draft carries — only the keys the draft has; absent keys keep the base
  * value. The draft's `authConfig` is masked on the wire, so the non-secret
- * sub-fields (clientId, tokenUrl, authorizeUrl, callbackUrl, scopes, ssoApp,
- * timeouts) can
+ * sub-fields (clientId, tokenUrl, authorizeUrl, scopes, timeouts) can
  * be seeded safely; `apiKey`/`clientSecret` are ALWAYS left blank (the masked
  * value only feeds `hasSecret` / the placeholder — never a pre-filled value). */
 function applyDraft(base: ConnectorFormState, draft: ConnectorDraftWire): ConnectorFormState {
   const cfg = draft.authConfig ?? {};
   const str = (v: unknown): string => (typeof v === 'string' ? v : '');
   const scope = draft.scope ?? base.scope;
+  const draftMode = normalizeLegacyAuthMode(draft.authMode ?? base.authMode);
+  const oauth = readOAuthFields(draft.authMode ?? base.authMode, cfg);
   return {
     ...base,
     url: draft.url !== undefined ? draft.url : base.url,
@@ -171,7 +165,7 @@ function applyDraft(base: ConnectorFormState, draft: ConnectorDraftWire): Connec
     categoryId: draft.categoryId !== undefined ? (draft.categoryId ?? '') : base.categoryId,
     description: draft.description !== undefined ? (draft.description ?? '') : base.description,
     transport: draft.transport ?? base.transport,
-    authMode: draft.authMode ?? base.authMode,
+    authMode: draftMode,
     scope: {
       allCompany: !!scope.allCompany,
       deptIds: [...(scope.deptIds ?? [])],
@@ -180,21 +174,16 @@ function applyDraft(base: ConnectorFormState, draft: ConnectorDraftWire): Connec
     toolToggles: draft.tools
       ? Object.fromEntries(draft.tools.map((tool): [string, boolean] => [tool.name, tool.enabled]))
       : base.toolToggles,
-    clientId: str(cfg.clientId),
+    toolManifestText: draft.tools
+      ? declaredToolNames(draft.tools).join('\n')
+      : base.toolManifestText,
+    clientId: oauth.clientId,
     clientSecret: '',
-    tokenUrl: str(cfg.tokenUrl),
-    authorizeUrl: str(cfg.authorizeUrl),
-    callbackUrl: str(cfg.callbackUrl) || CALLBACK_URL_DEFAULT,
-    scopes: Array.isArray(cfg.scopes) ? cfg.scopes.filter((s): s is string => typeof s === 'string') : base.scopes,
-    ssoApp: str(cfg.ssoApp) || base.ssoApp,
-    ssoAuthorizeUrl: str(cfg.ssoAuthorizeUrl),
-    ssoTokenUrl: str(cfg.ssoTokenUrl),
-    ssoClientId: str(cfg.ssoClientId),
-    ssoScopes: Array.isArray(cfg.ssoScopes) ? (cfg.ssoScopes as unknown[]).filter((s): s is string => typeof s === 'string') : base.ssoScopes,
-    ssoClientSecret: '',
+    tokenUrl: oauth.tokenUrl,
+    authorizeUrl: oauth.authorizeUrl,
+    scopes: oauth.scopes,
     apiKeyHeaderName: str(cfg.apiKeyHeaderName) || base.apiKeyHeaderName,
-    timeoutSeconds: typeof cfg.timeoutSeconds === 'number' ? cfg.timeoutSeconds : base.timeoutSeconds,
-    retryCount: typeof cfg.retryCount === 'number' ? cfg.retryCount : base.retryCount,
+    timeoutSeconds: readTimeoutSeconds(cfg),
     apiKey: '',
   };
 }
@@ -203,30 +192,25 @@ function applyDraft(base: ConnectorFormState, draft: ConnectorDraftWire): Connec
  * omitted so the backend keeps the stored ciphertext (encrypt-at-write
  * contract — no client-side encryption). */
 function buildAuthConfig(s: ConnectorFormState): Record<string, unknown> {
-  const cfg: Record<string, unknown> = {
-    timeoutSeconds: clampTimeout(s.timeoutSeconds),
-    retryCount: clampRetry(s.retryCount),
-  };
+  const cfg: Record<string, unknown> = {};
+  // Empty means "use the runtime default" — sent as an explicit null so a
+  // timeout the admin set earlier is really cleared, not left behind.
+  cfg.timeoutSeconds = timeoutAuthConfigEntry(s.timeoutSeconds);
   if (s.authMode === 'shared-key') {
     if (s.apiKey.trim()) cfg.apiKey = s.apiKey.trim();
   } else if (s.authMode === 'user-oauth') {
-    cfg.callbackUrl = s.callbackUrl.trim() || CALLBACK_URL_DEFAULT;
     cfg.clientId = s.clientId.trim();
     cfg.authorizeUrl = s.authorizeUrl.trim();
     cfg.tokenUrl = s.tokenUrl.trim();
-    if (s.clientSecret.trim()) cfg.clientSecret = s.clientSecret.trim();
+    // No client secret: the desktop drives a PKCE public client
+    // (`token_endpoint_auth_method=none`), so a secret here would never be
+    // used. The redirect URI is not stored either — the server generates it
+    // and sends it with the connector.
     cfg.scopes = s.scopes;
   } else if (s.authMode === 'client-creds') {
     cfg.tokenUrl = s.tokenUrl.trim();
     cfg.clientId = s.clientId.trim();
     if (s.clientSecret.trim()) cfg.clientSecret = s.clientSecret.trim();
-  } else if (s.authMode === 'sso') {
-    cfg.ssoApp = s.ssoApp;
-    cfg.ssoClientId = s.ssoClientId.trim();
-    cfg.ssoAuthorizeUrl = s.ssoAuthorizeUrl.trim();
-    cfg.ssoTokenUrl = s.ssoTokenUrl.trim();
-    if (s.ssoClientSecret.trim()) cfg.ssoClientSecret = s.ssoClientSecret.trim();
-    if (s.ssoScopes.length > 0) cfg.ssoScopes = s.ssoScopes;
   } else if (s.authMode === 'user-key') {
     if (s.apiKeyHeaderName.trim()) cfg.apiKeyHeaderName = s.apiKeyHeaderName.trim();
   }
@@ -237,9 +221,6 @@ const FIELD_LABEL: Record<string, string> = {
   apiKey: 'mcpDrawer.auth.orgApiKey',
   clientId: 'mcpDrawer.auth.clientId',
   clientSecret: 'mcpDrawer.auth.clientSecret',
-  ssoClientId: 'mcpDrawer.auth.ssoClientId',
-  ssoAuthorizeUrl: 'mcpDrawer.auth.ssoAuthorizeUrl',
-  ssoTokenUrl: 'mcpDrawer.auth.ssoTokenUrl',
 };
 
 /** Map a thrown connector error to a localized message. */
@@ -261,6 +242,9 @@ export function ConnectorDrawer(p: Props): JSX.Element {
   const toast = useToast();
   const [state, setState] = useState<ConnectorFormState>(() => initState(p.mode, p.connector));
   const [busy, setBusy] = useState(false);
+  /** Create mode: an icon picked before the connector exists, uploaded once
+   *  the create response gives it an id. */
+  const [pendingIcon, setPendingIcon] = useState<File | null>(null);
   const [authSwitchOpen, setAuthSwitchOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -304,6 +288,19 @@ export function ConnectorDrawer(p: Props): JSX.Element {
     setState((s) => ({ ...s, ...patch }));
   };
 
+  /** The tool rows the panel shows and the working copy publishes: what the
+   * server discovered (the entries it stamped) plus what the admin declared
+   * by hand, with the form's per-tool toggles applied. */
+  const toolRows = useMemo(
+    () =>
+      mergeToolEntries(
+        (p.connector?.tools ?? []).filter((tool) => tool.syncedAt),
+        parseToolNames(state.toolManifestText),
+        state.toolToggles,
+      ),
+    [p.connector?.tools, state.toolManifestText, state.toolToggles],
+  );
+
   /** The full working copy (save-draft / publish body): the form state mapped
    * to the wire, with tools from the live connector and the per-tool toggles
    * applied. Secrets are blank = keep the stored ciphertext. */
@@ -321,10 +318,7 @@ export function ConnectorDrawer(p: Props): JSX.Element {
       authMode: s.authMode,
       authConfig: buildAuthConfig(s),
       scope: s.scope,
-      tools: (p.connector?.tools ?? []).map((tool) => ({
-        ...tool,
-        enabled: s.toolToggles[tool.name] ?? tool.enabled,
-      })),
+      tools: toolRows,
     };
   };
 
@@ -359,34 +353,16 @@ export function ConnectorDrawer(p: Props): JSX.Element {
     if (state.transport === 'sse' && SSE_INCOMPATIBLE_AUTH_MODES.includes(state.authMode)) {
       return t('mcpDrawer.error.sseOAuth');
     }
-    if (state.authMode === 'shared-key' && !state.apiKey.trim() && !hasSecret.apiKey) {
-      return fill(t('mcpDrawer.error.authField'), { field: t('mcpDrawer.auth.orgApiKey') });
+    // The organization key must never cross the wire in the clear (spec D17).
+    if (orgKeyUrlIsInsecure(state.authMode, state.url)) {
+      return t('mcpDrawer.url.errorPlaintextOrgKey');
     }
-    if (state.authMode === 'user-oauth' || state.authMode === 'client-creds') {
-      if (!state.clientId.trim()) {
-        return fill(t('mcpDrawer.error.authField'), { field: t('mcpDrawer.auth.clientId') });
-      }
-      if (state.authMode === 'client-creds') {
-        if (!state.clientSecret.trim() && !hasSecret.clientSecret) {
-          return fill(t('mcpDrawer.error.authField'), { field: t('mcpDrawer.auth.clientSecret') });
-        }
-      } else {
-        // user-oauth: public client (PKCE) is valid with endpoints + no secret;
-        // the confidential client still needs a secret when endpoints are absent.
-        const hasPublicEndpoints = Boolean(state.authorizeUrl.trim()) && Boolean(state.tokenUrl.trim());
-        if (!hasPublicEndpoints && !state.clientSecret.trim() && !hasSecret.clientSecret) {
-          return fill(t('mcpDrawer.error.authField'), { field: t('mcpDrawer.auth.clientSecret') });
-        }
-      }
-    }
-    if (state.authMode === 'sso') {
-      if (!state.ssoClientId.trim()) {
-        return fill(t('mcpDrawer.error.authField'), { field: t('mcpDrawer.auth.ssoClientId') });
-      }
-      const hasSsoEndpoints = Boolean(state.ssoAuthorizeUrl.trim()) && Boolean(state.ssoTokenUrl.trim());
-      if (!hasSsoEndpoints) {
-        return fill(t('mcpDrawer.error.authField'), { field: t('mcpDrawer.auth.ssoAuthorizeUrl') });
-      }
+    // Per-mode required fields live in `connectorValidation` so the rules can be
+    // tested without rendering the drawer. User-level modes never demand a
+    // secret: the desktop drives a PKCE public client.
+    const missing = missingAuthField(state.authMode, state, hasSecret);
+    if (missing) {
+      return fill(t('mcpDrawer.error.authField'), { field: t(AUTH_FIELD_LABEL_KEY[missing]) });
     }
     return null;
   };
@@ -414,10 +390,16 @@ export function ConnectorDrawer(p: Props): JSX.Element {
           authMode: s.authMode,
           authConfig,
           scope: s.scope,
+          // A connector created before its first successful connection has no
+          // discovered tools — the admin's declaration is the list.
+          tools: toolRows,
         };
         // The backend requires `orgId` in the create body; the api client's
         // ConnectorInput type omits it, so it is added here at the boundary.
-        await connectorApi.create({ ...input, orgId: p.orgId } as ConnectorInput);
+        const created = await connectorApi.create({ ...input, orgId: p.orgId } as ConnectorInput);
+        // The icon was picked before the connector existed; it can only be
+        // attached now that there is an id.
+        if (pendingIcon) await connectorApi.uploadIcon(created.id, pendingIcon);
         toast.success(fill(t('mcpDrawer.toast.created'), { name: displayName }));
       } else if (p.connector) {
         const res = await connectorApi.publish(p.connector.id, workingCopy());
@@ -531,6 +513,10 @@ export function ConnectorDrawer(p: Props): JSX.Element {
           <ConnectorBasicInfo
             mode={p.mode}
             connectorId={p.connector?.id}
+            icon={p.connector?.icon ?? null}
+            pendingIcon={pendingIcon}
+            onPickIcon={setPendingIcon}
+            onClearPickedIcon={() => setPendingIcon(null)}
             state={state}
             onChange={onChange}
             categories={p.categories}
@@ -542,12 +528,16 @@ export function ConnectorDrawer(p: Props): JSX.Element {
             onChange={onChange}
             secretMeta={secretMeta}
             hasSecret={hasSecret}
+            oauthRedirectUri={p.oauthRedirectUri}
           />
           <ConnectorToolPermissions
             mode={p.mode}
-            tools={p.connector?.tools ?? []}
+            tools={toolRows}
             toolToggles={state.toolToggles}
             onToggle={(name, enabled) => onChange({ toolToggles: { ...state.toolToggles, [name]: enabled } })}
+            declaredText={state.toolManifestText}
+            onDeclaredChange={(text) => onChange({ toolManifestText: text })}
+            serverCanDiscover={serverCanDiscoverTools(state.authMode)}
           />
 
           <section className="mt-5 border-t border-dashed border-[var(--border-default)] pt-4">

@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest';
 import {
   type CoworkPendingSteer,
   CoworkSteerStatus,
-} from '../../shared/genwork/steer';
+} from '../../shared/mixcwork/steer';
 import { selectQueuedFollowUp } from './queuedFollowUpSelection';
 
 const makePendingSteer = (id: string): CoworkPendingSteer => ({

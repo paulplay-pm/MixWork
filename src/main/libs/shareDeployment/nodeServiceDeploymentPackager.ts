@@ -14,7 +14,7 @@ import {
   ShareDeploymentPersistenceBindingKind,
   type ShareDeploymentProjectAnalysis,
 } from '../../../shared/shareDeployment/constants';
-import { getNodeToolEnv } from '../genworkUtil';
+import { getNodeToolEnv } from '../mixcworkUtil';
 import {
   buildNodeServiceProjectPackagePlan,
   collectNodeServiceDeploymentPackageEntries,
@@ -41,7 +41,7 @@ const STALE_BUILD_OUTPUT_DIRECTORY_NAMES = [
   '.nuxt',
   '.svelte-kit',
   '.output',
-  '.genwork-static-runtime',
+  '.mixcwork-static-runtime',
   'dist',
   'build',
   'out',
@@ -75,7 +75,7 @@ async function writeZip(entries: NodeServicePackageEntry[]): Promise<{
   sourceSha256: string;
   archiveBytes: number;
 }> {
-  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'genwork-node-deploy-'));
+  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixcwork-node-deploy-'));
   const archivePath = path.join(tempDir, 'deployment.zip');
   const zipFile = new yazl.ZipFile();
 
@@ -805,7 +805,7 @@ export async function packageNodeServiceDeployment(
   }
 
   const commandEnv = await getNodeToolEnv();
-  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'genwork-node-build-'));
+  const tempDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixcwork-node-build-'));
   const projectDir = path.join(tempDir, 'project');
   const commandWarnings: string[] = [];
   const isPlainStaticDeployment =

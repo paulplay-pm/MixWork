@@ -2,8 +2,10 @@ import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 
 import { connectorApi } from '../../api/connectors';
+import { IconUploadField } from '../../components/IconUploadField';
 import { t } from '../../i18n';
 import type { ConnectorFormState } from './ConnectorDrawer';
+import { orgKeyUrlIsInsecure } from './connectorValidation';
 import { fill } from './types';
 
 /** Internal/reserved-address detection for the client-side URL validation
@@ -20,6 +22,13 @@ interface Props {
   state: ConnectorFormState;
   onChange: (patch: Partial<ConnectorFormState>) => void;
   categories: { id: string; name: string }[];
+  /** The connector's current brand icon (a server path), or null. */
+  icon?: string | null;
+  /** Create mode: an icon picked before the connector exists, held until the
+   *  save gives it an id. */
+  pendingIcon?: File | null;
+  onPickIcon?: (file: File) => void;
+  onClearPickedIcon?: () => void;
   /** Called after a completed server probe (edit mode) so the caller can
    * refetch the connector row — the test persists `last_test_*` and, on
    * success, syncs the tool manifest. Without this the drawer's tool list
@@ -27,12 +36,14 @@ interface Props {
   onTested?: () => void;
 }
 
+/** `warn` is for a result that is neither a success nor a defect the admin
+ *  can fix here (the server holds no credential for the connector). */
 interface TestResult {
-  ok: boolean;
+  kind: 'ok' | 'warn' | 'error';
   text: string;
 }
 
-type UrlHint = { kind: 'info' | 'warn' | 'ok'; text: string };
+type UrlHint = { kind: 'info' | 'warn' | 'ok' | 'error'; text: string };
 
 /** 基本信息 section: Server Key, URL + 测试连接, names, version, category, description. */
 export function ConnectorBasicInfo(p: Props): JSX.Element {
@@ -47,11 +58,18 @@ export function ConnectorBasicInfo(p: Props): JSX.Element {
   const hint: UrlHint = useMemo(() => {
     if (!url) return { kind: 'info', text: t('mcpDrawer.url.hint') };
     if (INTERNAL_URL_RE.test(url)) return { kind: 'warn', text: t('mcpDrawer.url.warnInternal') };
+    // The org key is a shared secret — plaintext is a hard stop, not a warning.
+    if (orgKeyUrlIsInsecure(p.state.authMode, url)) {
+      return { kind: 'error', text: t('mcpDrawer.url.errorPlaintextOrgKey') };
+    }
     if (!url.startsWith('https://') && PLAINTEXT_RISK_MODES.includes(p.state.authMode)) {
       return { kind: 'warn', text: t('mcpDrawer.url.warnPlaintext') };
     }
     return { kind: 'ok', text: t('mcpDrawer.url.ok') };
   }, [url, p.state.authMode]);
+
+  /** Edit mode only: a file can only be attached to a connector that exists. */
+  const iconTargetId = p.connectorId;
 
   const setField = (patch: Partial<ConnectorFormState>): void => {
     p.onChange(patch);
@@ -62,17 +80,20 @@ export function ConnectorBasicInfo(p: Props): JSX.Element {
   /** Create-mode "test": client-side URL validation only (no server call —
    * the connector does not exist yet). */
   const clientSideTest = (): TestResult => {
-    if (!url) return { ok: false, text: t('mcpDrawer.test.noUrl') };
-    if (INTERNAL_URL_RE.test(url)) return { ok: false, text: t('mcpDrawer.test.errInternal') };
+    if (!url) return { kind: 'error', text: t('mcpDrawer.test.noUrl') };
+    if (INTERNAL_URL_RE.test(url)) return { kind: 'error', text: t('mcpDrawer.test.errInternal') };
+    if (orgKeyUrlIsInsecure(p.state.authMode, url)) {
+      return { kind: 'error', text: t('mcpDrawer.url.errorPlaintextOrgKey') };
+    }
     if (!url.startsWith('https://') && PLAINTEXT_RISK_MODES.includes(p.state.authMode)) {
       return {
-        ok: false,
+        kind: 'error',
         text: fill(t('mcpDrawer.test.errPlaintext'), {
           kind: p.state.authMode === 'user-oauth' ? 'OAuth' : 'API Key',
         }),
       };
     }
-    return { ok: true, text: t('mcpDrawer.test.ok') };
+    return { kind: 'ok', text: t('mcpDrawer.test.ok') };
   };
 
   const onTest = async (): Promise<void> => {
@@ -84,13 +105,18 @@ export function ConnectorBasicInfo(p: Props): JSX.Element {
     setTesting(true);
     try {
       const res = await connectorApi.test(p.connectorId);
-      if (res.status === 'connected') {
+      if (res.status === 'needs-user-auth') {
+        // The endpoint answered — that is all the server could have learned.
+        // It holds no credential for this connector (the member authorizes on
+        // their own desktop), so this is not a failure the admin can fix here.
+        setResult({ kind: 'warn', text: t('mcpDrawer.test.needsUserAuth') });
+      } else if (res.status === 'connected') {
         // A real handshake succeeded and the server synced the tool list —
         // surface how many tools are now on the manifest.
         if (p.mode === 'edit') {
-          setResult({ ok: true, text: fill(t('mcpDrawer.test.toolsSynced'), { n: res.toolCount ?? 0 }) });
+          setResult({ kind: 'ok', text: fill(t('mcpDrawer.test.toolsSynced'), { n: res.toolCount ?? 0 }) });
         } else {
-          setResult({ ok: true, text: t('mcpDrawer.test.ok') });
+          setResult({ kind: 'ok', text: t('mcpDrawer.test.ok') });
         }
       } else {
         // Map the probe's error taxonomy to a localized reason.
@@ -106,10 +132,10 @@ export function ConnectorBasicInfo(p: Props): JSX.Element {
                     ? `HTTP ${res.error.slice(5)}`
                     : res.error
                   : 'unknown';
-        setResult({ ok: false, text: fill(t('mcp.test.err'), { msg: reason }) });
+        setResult({ kind: 'error', text: fill(t('mcp.test.err'), { msg: reason }) });
       }
     } catch {
-      setResult({ ok: false, text: t('common.error') });
+      setResult({ kind: 'error', text: t('common.error') });
     } finally {
       setTesting(false);
     }
@@ -165,22 +191,33 @@ export function ConnectorBasicInfo(p: Props): JSX.Element {
           </div>
           <span
             className={
-              hint.kind === 'warn'
-                ? 'text-xs text-[#B45309]'
-                : hint.kind === 'ok'
-                  ? 'text-xs text-[#047857]'
-                  : 'text-xs text-[var(--text-tertiary)]'
+              hint.kind === 'error'
+                ? 'text-xs text-[#B91C1C]'
+                : hint.kind === 'warn'
+                  ? 'text-xs text-[#B45309]'
+                  : hint.kind === 'ok'
+                    ? 'text-xs text-[#047857]'
+                    : 'text-xs text-[var(--text-tertiary)]'
             }
           >
             {hint.text}
           </span>
+          {p.state.authMode === 'shared-key' && (
+            <span className="text-xs text-[var(--text-tertiary)]">
+              {t('mcpDrawer.test.orgKeyHint')}
+            </span>
+          )}
           {result && (
             <span
               className={
-                result.ok ? 'text-[12.5px] text-[#047857]' : 'text-[12.5px] text-[#B91C1C]'
+                result.kind === 'ok'
+                  ? 'text-[12.5px] text-[#047857]'
+                  : result.kind === 'warn'
+                    ? 'text-[12.5px] text-[#B45309]'
+                    : 'text-[12.5px] text-[#B91C1C]'
               }
             >
-              {result.ok ? '✓ ' : '✕ '}
+              {result.kind === 'ok' ? '✓ ' : result.kind === 'warn' ? '⚠ ' : '✕ '}
               {result.text}
             </span>
           )}
@@ -206,6 +243,18 @@ export function ConnectorBasicInfo(p: Props): JSX.Element {
             onChange={(e) => setField({ nameZh: e.target.value })}
           />
         </label>
+        <div className={`col-span-2 ${labelCls}`}>
+          <IconUploadField
+            label={t('mcpDrawer.icon')}
+            icon={p.icon ?? null}
+            pendingFile={p.pendingIcon ?? null}
+            onPick={p.onPickIcon}
+            onClearPick={p.onClearPickedIcon}
+            onUpload={iconTargetId ? (file) => connectorApi.uploadIcon(iconTargetId, file) : undefined}
+            onClear={iconTargetId ? () => connectorApi.clearIcon(iconTargetId) : undefined}
+            onChanged={() => p.onTested?.()}
+          />
+        </div>
 
         <label className={labelCls}>
           {t('mcpDrawer.version')}

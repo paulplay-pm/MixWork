@@ -123,8 +123,8 @@ async function seedOrg(): Promise<void> {
 }
 
 const installers: ReleaseInstallers = {
-  macArm: { id: 'file-mac', fileName: 'GenWork.dmg', fileSize: 10, sha256: 'mac-sha' },
-  windowsX64: { id: 'file-win', fileName: 'GenWork.exe', fileSize: 20, sha256: 'win-sha' },
+  macArm: { id: 'file-mac', fileName: 'MixCWork.dmg', fileSize: 10, sha256: 'mac-sha' },
+  windowsX64: { id: 'file-win', fileName: 'MixCWork.exe', fileSize: 20, sha256: 'win-sha' },
 };
 
 async function makeRelease(
@@ -181,7 +181,7 @@ describe('models/appRelease (installers)', () => {
   test('getInstallerMeta resolves a fileId to owner + metadata', async () => {
     await makeRelease('1.0.0');
     const meta = await appRelease.getInstallerMeta('file-win');
-    expect(meta).toEqual({ orgId: 'o1', fileName: 'GenWork.exe', fileSize: 20, sha256: 'win-sha' });
+    expect(meta).toEqual({ orgId: 'o1', fileName: 'MixCWork.exe', fileSize: 20, sha256: 'win-sha' });
     expect(await appRelease.getInstallerMeta('missing')).toBeNull();
   });
 });
@@ -600,8 +600,8 @@ describe('routes/updates (installers)', () => {
       published_at: '2026-08-27T00:00:00Z',
       change_log: { zh: { title: 'zh', content: ['a'] }, en: { title: 'en', content: ['b'] } },
       installers: {
-        macArm: { id: 'mac-file', fileName: 'GenWork.dmg', fileSize: 100, sha256: 'x' },
-        windowsX64: { id: 'win-file', fileName: 'GenWork.exe', fileSize: 200, sha256: 'y' },
+        macArm: { id: 'mac-file', fileName: 'MixCWork.dmg', fileSize: 100, sha256: 'x' },
+        windowsX64: { id: 'win-file', fileName: 'MixCWork.exe', fileSize: 200, sha256: 'y' },
       },
     });
     await appRelease.setLatest(id);
@@ -624,7 +624,7 @@ describe('routes/updates (installers)', () => {
     const { id } = await appRelease.add('o1', {
       version: '1.2.3',
       change_log: {},
-      installers: { windowsX64: { id: 'win-file', fileName: 'GenWork.exe', fileSize: 200, sha256: 'y' } },
+      installers: { windowsX64: { id: 'win-file', fileName: 'MixCWork.exe', fileSize: 200, sha256: 'y' } },
     });
     await appRelease.setLatest(id);
     const a = buildApp();
@@ -797,7 +797,7 @@ describe('routes/releaseInstallerUploads', () => {
     const r = await a.request('/admin/releases/installers/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({ platform: 'windowsX64', fileName: 'genwork.dmg', fileSize: 100 }),
+      body: JSON.stringify({ platform: 'windowsX64', fileName: 'mixcwork.dmg', fileSize: 100 }),
     });
     expect(r.status).toBe(400);
     expect((await r.json()) as any).toMatchObject({ error: 'bad_extension' });
@@ -809,7 +809,7 @@ describe('routes/releaseInstallerUploads', () => {
     const init = await a.request('/admin/releases/installers/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({ platform: 'windowsX64', fileName: 'genwork.exe', fileSize: 5 }),
+      body: JSON.stringify({ platform: 'windowsX64', fileName: 'mixcwork.exe', fileSize: 5 }),
     });
     expect(init.status).toBe(200);
     const { uploadId, chunkSize } = (await init.json()) as any;
@@ -831,7 +831,7 @@ describe('routes/releaseInstallerUploads', () => {
     expect(done.status).toBe(200);
     const meta = (await done.json()) as any;
     expect(meta.id).toBe(uploadId);
-    expect(meta.fileName).toBe('genwork.exe');
+    expect(meta.fileName).toBe('mixcwork.exe');
     expect(meta.fileSize).toBe(5);
     expect(meta.sha256).toMatch(/^[0-9a-f]{64}$/);
 
@@ -847,7 +847,7 @@ describe('routes/releaseInstallerUploads', () => {
     const init = await a.request('/admin/releases/installers/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({ platform: 'windowsX64', fileName: 'genwork.exe', fileSize: 5 }),
+      body: JSON.stringify({ platform: 'windowsX64', fileName: 'mixcwork.exe', fileSize: 5 }),
     });
     const { uploadId } = (await init.json()) as any;
     // Send index 1 before index 0 -> gap.
@@ -865,7 +865,7 @@ describe('routes/releaseInstallerUploads', () => {
     const init = await a.request('/admin/releases/installers/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({ platform: 'windowsX64', fileName: 'genwork.exe', fileSize: 100 }),
+      body: JSON.stringify({ platform: 'windowsX64', fileName: 'mixcwork.exe', fileSize: 100 }),
     });
     const { uploadId } = (await init.json()) as any;
     const put = await a.request(`/admin/releases/installers/${uploadId}/chunks/0`, {
@@ -889,7 +889,7 @@ describe('routes/releaseInstallerUploads', () => {
     const init = await a.request('/admin/releases/installers/init', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...auth },
-      body: JSON.stringify({ platform: 'windowsX64', fileName: 'genwork.exe', fileSize: 5 }),
+      body: JSON.stringify({ platform: 'windowsX64', fileName: 'mixcwork.exe', fileSize: 5 }),
     });
     const { uploadId } = (await init.json()) as any;
     const done = await a.request(`/admin/releases/installers/${uploadId}/complete`, {
@@ -1180,7 +1180,7 @@ async function seedInstaller(orgId: string): Promise<void> {
   const { id } = await appRelease.add(orgId, {
     version: '9.9.9',
     change_log: {},
-    installers: { windowsX64: { id: FILE_ID, fileName: 'genwork.exe', fileSize: CONTENT.length, sha256: 'x' } },
+    installers: { windowsX64: { id: FILE_ID, fileName: 'mixcwork.exe', fileSize: CONTENT.length, sha256: 'x' } },
   });
   await appRelease.setLatest(id);
   // Write the on-disk file the download route will serve.
@@ -1208,7 +1208,7 @@ describe('routes/releaseDownloads', () => {
     expect(r.status).toBe(200);
     expect(r.headers.get('accept-ranges')).toBe('bytes');
     expect(r.headers.get('content-length')).toBe(String(CONTENT.length));
-    expect(r.headers.get('content-disposition')).toContain('genwork.exe');
+    expect(r.headers.get('content-disposition')).toContain('mixcwork.exe');
     expect(Buffer.from(await r.arrayBuffer()).toString()).toBe(CONTENT.toString());
   });
 
@@ -1456,7 +1456,7 @@ describe('downloadUpdate auth + range resume', () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-dl-auth-'));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-dl-auth-'));
     mocks.getPath.mockReset();
     mocks.getPath.mockReturnValue(tmpDir);
     mocks.fetch.mockReset();
@@ -1591,7 +1591,7 @@ export function buildDownloadPaths(
   ext: string,
 ): DownloadPaths {
   const nameKey = crypto.createHash('sha256').update(url).digest('hex').slice(0, 16);
-  const base = `genwork-update-${source}-${nameKey}${ext}`;
+  const base = `mixcwork-update-${source}-${nameKey}${ext}`;
   return {
     downloadPath: path.join(updateDir, `${base}.download`),
     finalPath: path.join(updateDir, base),
@@ -1615,8 +1615,8 @@ In `downloadUpdate`, replace the URL-parse/extension/path block. Find this regio
   const ext = path.extname(parsedUrl.pathname) || (process.platform === 'darwin' ? '.dmg' : '.exe');
   const updateDir = path.join(app.getPath('userData'), 'updates');
   const ts = Date.now();
-  const downloadPath = path.join(updateDir, `genwork-update-${source}-${ts}${ext}.download`);
-  const finalPath = path.join(updateDir, `genwork-update-${source}-${ts}${ext}`);
+  const downloadPath = path.join(updateDir, `mixcwork-update-${source}-${ts}${ext}.download`);
+  const finalPath = path.join(updateDir, `mixcwork-update-${source}-${ts}${ext}`);
 
   console.log(`[AppUpdate] Temp path: ${downloadPath}`);
   console.log(`[AppUpdate] Final path: ${finalPath}`);
@@ -1933,14 +1933,14 @@ describe('api/releaseInstallers.uploadInstaller', () => {
   });
 
   test('init -> chunks -> complete posts the right endpoints and returns meta', async () => {
-    const file = new File([new Uint8Array(5).fill(65)], 'genwork.exe', { type: 'application/octet-stream' });
+    const file = new File([new Uint8Array(5).fill(65)], 'mixcwork.exe', { type: 'application/octet-stream' });
 
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { uploadId: 'up1', chunkSize: 8 * 1024 * 1024 })); // init
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { acceptedIndex: 0, totalAccepted: 1 })); // chunk 0
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: 'up1', fileName: 'genwork.exe', fileSize: 5, sha256: 'abc' })); // complete
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: 'up1', fileName: 'mixcwork.exe', fileSize: 5, sha256: 'abc' })); // complete
 
     const meta = await uploadInstaller({ platform: 'windowsX64', file, getToken, onProgress: vi.fn() });
-    expect(meta).toEqual({ id: 'up1', fileName: 'genwork.exe', fileSize: 5, sha256: 'abc' });
+    expect(meta).toEqual({ id: 'up1', fileName: 'mixcwork.exe', fileSize: 5, sha256: 'abc' });
 
     const urls = fetchMock.mock.calls.map((c) => c[0] as string);
     expect(urls[0]).toBe('http://test/admin/releases/installers/init');
@@ -1948,13 +1948,13 @@ describe('api/releaseInstallers.uploadInstaller', () => {
     expect(urls[2]).toBe('http://test/admin/releases/installers/up1/complete');
 
     const initBody = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string);
-    expect(initBody).toMatchObject({ platform: 'windowsX64', fileName: 'genwork.exe', fileSize: 5 });
+    expect(initBody).toMatchObject({ platform: 'windowsX64', fileName: 'mixcwork.exe', fileSize: 5 });
     const authHeader = (fetchMock.mock.calls[0][1] as RequestInit).headers as Record<string, string>;
     expect(authHeader.authorization).toBe('Bearer tok');
   });
 
   test('a failed chunk surfaces a resumable InstallerUploadError', async () => {
-    const file = new File([new Uint8Array(5).fill(65)], 'genwork.exe', { type: 'application/octet-stream' });
+    const file = new File([new Uint8Array(5).fill(65)], 'mixcwork.exe', { type: 'application/octet-stream' });
 
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { uploadId: 'up1', chunkSize: 8 * 1024 * 1024 })); // init
     fetchMock.mockResolvedValueOnce(jsonResponse(500, { error: 'boom' })); // chunk 0 fails
@@ -1972,10 +1972,10 @@ describe('api/releaseInstallers.uploadInstaller', () => {
   test('resume skips already-accepted chunks', async () => {
     // 8-byte file with a 4-byte chunkSize = 2 chunks; resume from totalAccepted=1
     // sends only chunk 1 (not chunk 0) and does not call init.
-    const file = new File([new Uint8Array(8).fill(65)], 'genwork.exe', { type: 'application/octet-stream' });
+    const file = new File([new Uint8Array(8).fill(65)], 'mixcwork.exe', { type: 'application/octet-stream' });
 
     fetchMock.mockResolvedValueOnce(jsonResponse(200, { acceptedIndex: 1, totalAccepted: 2 })); // chunk 1
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: 'up9', fileName: 'genwork.exe', fileSize: 8, sha256: 'z' })); // complete
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { id: 'up9', fileName: 'mixcwork.exe', fileSize: 8, sha256: 'z' })); // complete
 
     const meta = await uploadInstaller({
       platform: 'windowsX64',
@@ -2200,7 +2200,7 @@ git commit -m "feat(enterprise-web): installer upload client + installer types"
 
 In `enterprise_server/web/tests/pages/VersionsPage.test.tsx`, replace the `downloads: { macArm: { url: 'https://cdn.example.com/a.dmg' } }` in the "lists releases" fixture with:
 ```ts
-        installers: { macArm: { id: 'file-1', fileName: 'GenWork.dmg', fileSize: 100, sha256: 's' } },
+        installers: { macArm: { id: 'file-1', fileName: 'MixCWork.dmg', fileSize: 100, sha256: 's' } },
 ```
 and add a new test to the `describe` block:
 

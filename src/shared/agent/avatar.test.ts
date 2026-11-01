@@ -5,6 +5,7 @@ import {
   DefaultAgentAvatar,
   DefaultAgentAvatarIcon,
   encodeAgentAvatarIcon,
+  isAgentIconImage,
   isDesignedAgentAvatarIcon,
   normalizeAgentAvatarIcon,
   parseAgentAvatarIcon,
@@ -50,5 +51,22 @@ describe('agent avatar icon encoding', () => {
     expect(parseAgentAvatarIcon('agent-avatar:blue:missing')).toBeNull();
     expect(parseAgentAvatarIcon('agent-avatar:missing:code')).toBeNull();
     expect(parseAgentAvatarIcon('agent-avatar-svg:missing')).toBeNull();
+  });
+});
+
+describe('an org-uploaded agent icon', () => {
+  test('is recognized as an image, not as a broken avatar', () => {
+    expect(isAgentIconImage('/agent-icons/uploads/a1.png')).toBe(true);
+    expect(isAgentIconImage('https://org.example.com/agent-icons/uploads/a1.png')).toBe(true);
+    expect(isAgentIconImage('data:image/png;base64,AA')).toBe(true);
+    expect(isAgentIconImage('agent-avatar-svg:code')).toBe(false);
+    expect(isAgentIconImage('')).toBe(false);
+  });
+
+  test('survives normalization instead of collapsing to the default avatar', () => {
+    // The enterprise console stores an uploaded logo as a served path; the
+    // agent record must keep it or the desktop shows the generic avatar.
+    expect(normalizeAgentAvatarIcon('/agent-icons/uploads/a1.png'))
+      .toBe('/agent-icons/uploads/a1.png');
   });
 });

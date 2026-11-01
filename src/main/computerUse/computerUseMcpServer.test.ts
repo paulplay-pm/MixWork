@@ -97,7 +97,7 @@ describe('resolveComputerUseRuntimePaths', () => {
     expect(paths).toEqual({ clientModulePath, helperExePath, rootDir, runtimePackageRoot });
   });
 
-  test('configures the helper with GenWork branding', () => {
+  test('configures the helper with MixcWork branding', () => {
     writeRuntimeFixture();
 
     const server = resolveComputerUseMcpServer({
@@ -123,7 +123,7 @@ describe('resolveComputerUseRuntimePaths', () => {
     expect(server?.env?.[ComputerUseMcpEnv.LogDir]).toBe(path.join(TEST_USER_DATA, 'computer-use', 'logs'));
     expect(server?.env?.[ComputerUseMcpEnv.LogLevel]).toBe('info');
     expect(server?.env?.[ComputerUseMcpEnv.LogRetentionDays]).toBe('7');
-    expect(config.strings?.usingComputer).toBe('GenWork正在使用你的电脑');
+    expect(config.strings?.usingComputer).toBe('MixcWork正在使用你的电脑');
     expect(config.strings?.escToCancel).toBe('按 Esc 取消');
   });
 
@@ -132,7 +132,7 @@ describe('resolveComputerUseRuntimePaths', () => {
     const script = fs.readFileSync(scriptPath, 'utf8');
 
     expect(script).toContain("requireEnv('LOBSTER_COMPUTER_USE_HOME')");
-    expect(script).toContain("requireEnv('GENWORK_COMPUTER_USE_CLIENT_MODULE')");
+    expect(script).toContain("requireEnv('MIXCWORK_COMPUTER_USE_CLIENT_MODULE')");
     expect(script).not.toContain("requireEnv('CODEX_HOME')");
     expect(script).not.toContain('sky_js');
     expect(script).not.toContain('@oai');

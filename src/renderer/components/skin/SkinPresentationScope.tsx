@@ -5,22 +5,22 @@ import React, { type CSSProperties } from 'react';
 import type { SkinPresentation } from '../../../shared/skin/presentation';
 import { useSkin } from '../../providers/SkinProvider';
 
-type SkinPresentationStyle = CSSProperties & Record<`--genwork-skin-${string}`, string>;
+type SkinPresentationStyle = CSSProperties & Record<`--mixcwork-skin-${string}`, string>;
 
 export const buildSkinPresentationStyle = (
   presentation: SkinPresentation,
 ): SkinPresentationStyle => ({
-  '--genwork-skin-canvas': presentation.palette.canvas,
-  '--genwork-skin-panel': presentation.palette.panel,
-  '--genwork-skin-panel-raised': presentation.palette.panelRaised,
-  '--genwork-skin-accent': presentation.palette.accent,
-  '--genwork-skin-accent-foreground': presentation.palette.accentForeground,
-  '--genwork-skin-accent-alt': presentation.palette.accentAlt,
-  '--genwork-skin-foreground': presentation.palette.foreground,
-  '--genwork-skin-muted': presentation.palette.muted,
-  '--genwork-skin-border': presentation.palette.border,
-  '--genwork-skin-focus-x': `${(presentation.art?.focusX ?? 0.5) * 100}%`,
-  '--genwork-skin-focus-y': `${(presentation.art?.focusY ?? 0.5) * 100}%`,
+  '--mixcwork-skin-canvas': presentation.palette.canvas,
+  '--mixcwork-skin-panel': presentation.palette.panel,
+  '--mixcwork-skin-panel-raised': presentation.palette.panelRaised,
+  '--mixcwork-skin-accent': presentation.palette.accent,
+  '--mixcwork-skin-accent-foreground': presentation.palette.accentForeground,
+  '--mixcwork-skin-accent-alt': presentation.palette.accentAlt,
+  '--mixcwork-skin-foreground': presentation.palette.foreground,
+  '--mixcwork-skin-muted': presentation.palette.muted,
+  '--mixcwork-skin-border': presentation.palette.border,
+  '--mixcwork-skin-focus-x': `${(presentation.art?.focusX ?? 0.5) * 100}%`,
+  '--mixcwork-skin-focus-y': `${(presentation.art?.focusY ?? 0.5) * 100}%`,
 });
 
 interface SkinPresentationScopeProps extends React.HTMLAttributes<HTMLDivElement> {

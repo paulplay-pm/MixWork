@@ -3,8 +3,8 @@ import { existsSync, readFileSync } from 'node:fs';
 
 import { assertDockerOnPath } from './lib/preflight.js';
 
-const COMPOSE = process.env.COMPOSE_FILE ?? '/etc/genwork/compose.yml';
-const CURRENT_VERSION_FILE = process.env.CURRENT_VERSION_FILE ?? '/etc/genwork/current-version';
+const COMPOSE = process.env.COMPOSE_FILE ?? '/etc/mixcwork/compose.yml';
+const CURRENT_VERSION_FILE = process.env.CURRENT_VERSION_FILE ?? '/etc/mixcwork/current-version';
 
 async function tryHealth(): Promise<{ ok: boolean; latencyMs: number | null }> {
   const start = Date.now();

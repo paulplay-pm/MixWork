@@ -64,7 +64,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ action, onPromptSelect, onClo
                 border text-left transition-all duration-200
                 ${
                   isPromptSelected
-                    ? 'dark:bg-primary-muted bg-primary-muted border-[color-mix(in_srgb,var(--genwork-primary)_50%,transparent)]'
+                    ? 'dark:bg-primary-muted bg-primary-muted border-[color-mix(in_srgb,var(--mixcwork-primary)_50%,transparent)]'
                     : 'bg-surface border-border hover:border-primary/30 hover:bg-surface-raised'
                 }
               `}

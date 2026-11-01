@@ -1,5 +1,7 @@
 import '../helpers/setupEnv';
+
 import { describe, expect, test } from 'vitest';
+
 import { idempotency } from '../../src/proxy/idempotency';
 
 describe('proxy/idempotency', () => {

@@ -1,3 +1,5 @@
+import { type CatalogScope, scopeSummary } from './catalogScope';
+
 export const UNCATEGORIZED = 'uncategorized' as const;
 
 /** DB row shape for a marketplace category (same as MCP). */
@@ -8,11 +10,9 @@ export interface CategoryRow {
   display_order: number;
 }
 
-export interface SkillScope {
-  allCompany: boolean;
-  deptIds: string[];
-  userIds: string[];
-}
+/** The skill scope IS the shared catalog scope — the same grant shape the
+ *  agent catalog uses (migration 057). */
+export type SkillScope = CatalogScope;
 
 /** A skill's scope grants a caller access iff allCompany, or the caller is a
  * member exception (userIds), or any granted dept id is present in the caller's
@@ -28,13 +28,7 @@ export function scopeMatches(
 }
 
 /** Compact display string for a scope. */
-export function scopeSummary(scope: SkillScope): string {
-  if (scope.allCompany) return 'all';
-  const d = scope.deptIds?.length ?? 0;
-  const u = scope.userIds?.length ?? 0;
-  if (d === 0 && u === 0) return 'none';
-  return `depts:${d}` + (u ? `,users:${u}` : '');
-}
+export { scopeSummary };
 
 /** Columns for the public (desktop) list. No `allowed_roles`/`enabled` — the
  * public list only returns enabled rows for the caller's org/scope. */

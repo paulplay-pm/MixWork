@@ -1,11 +1,11 @@
 import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 
-const GENWORK_VAULT_MASTER_KEY = 'GENWORK_VAULT_MASTER_KEY';
+const MIXCWORK_VAULT_MASTER_KEY = 'MIXCWORK_VAULT_MASTER_KEY';
 
 function masterKey(): Buffer {
-  const b64 = process.env[GENWORK_VAULT_MASTER_KEY];
+  const b64 = process.env[MIXCWORK_VAULT_MASTER_KEY];
   if (!b64) {
-    throw new Error(`${GENWORK_VAULT_MASTER_KEY} not set`);
+    throw new Error(`${MIXCWORK_VAULT_MASTER_KEY} not set`);
   }
   const buf = Buffer.from(b64, 'base64');
   if (buf.length !== 32) throw new Error('master key must be 32 bytes');

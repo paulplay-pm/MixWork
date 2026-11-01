@@ -3,8 +3,8 @@
 /**
  * Multi-tenant workspace migration.
  *
- * Pre-multi-tenant path: %APPDATA%/GenWork/openclaw/state/workspace-main
- * Post-multi-tenant path: %APPDATA%/GenWork/openclaw/state/<orgId>/<userId>/workspace-main
+ * Pre-multi-tenant path: %APPDATA%/MixCWork/openclaw/state/workspace-main
+ * Post-multi-tenant path: %APPDATA%/MixCWork/openclaw/state/<orgId>/<userId>/workspace-main
  *
  * Provider config that lived in the local SQLite providers table is NOT
  * migrated. Per spec §7.1, providers move to enterprise_server's
@@ -23,7 +23,7 @@ async function migrateToMultiTenant({ userData, enterpriseLogin }) {
   const userId = await enterpriseLogin();
   if (!userId) throw new Error('enterpriseLogin returned no userId');
 
-  const orgId = process.env.GENWORK_DEFAULT_ORG_ID ?? 'default-org';
+  const orgId = process.env.MIXCWORK_DEFAULT_ORG_ID ?? 'default-org';
 
   const oldWs = path.join(userData, 'openclaw', 'state', 'workspace-main');
   const newWs = path.join(
@@ -45,7 +45,7 @@ async function migrateToMultiTenant({ userData, enterpriseLogin }) {
 
   // Drop the local SQLite `users` table (old auth model).
   // The new auth flow uses enterprise_session stored in `kv` (see sessionStorage.ts).
-  const dbPath = path.join(userData, 'genwork.sqlite');
+  const dbPath = path.join(userData, 'mixcwork.sqlite');
   if (fs.existsSync(dbPath)) {
     try {
       // Prefer Node's built-in node:sqlite (Node 22+, no native binding).

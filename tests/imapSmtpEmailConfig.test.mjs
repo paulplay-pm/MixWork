@@ -61,7 +61,7 @@ async function loadConfigModule(tempDir, env = {}) {
 
 function withTempDir(fn) {
   return async () => {
-    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-email-config-'));
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-email-config-'));
     try {
       await fn(tempDir);
     } finally {

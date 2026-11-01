@@ -12,7 +12,7 @@ import { isComputerUseKitInstalled } from '../computerUse/computerUseKit';
 import { cpRecursiveSync } from '../fsCompat';
 import { t } from '../i18n';
 import { getEnterpriseServerUrl } from '../libs/endpoints';
-import { getElectronNodeRuntimePath } from '../libs/genworkUtil';
+import { getElectronNodeRuntimePath } from '../libs/mixcworkUtil';
 import { resolveNodeRuntimeForSpawn } from '../libs/nodeRuntime';
 import { appendPythonRuntimeToEnv } from '../libs/pythonRuntime';
 import { mergeReports,scanMultipleSkillDirs } from '../libs/skillSecurity/skillSecurityScanner';
@@ -312,7 +312,7 @@ function buildSkillEnv(): Record<string, string | undefined> {
 
   // Expose Electron executable so skill scripts can run JS with ELECTRON_RUN_AS_NODE
   // even when system Node.js is not installed.
-  env.GENWORK_ELECTRON_PATH = getElectronNodeRuntimePath();
+  env.MIXCWORK_ELECTRON_PATH = getElectronNodeRuntimePath();
   appendPythonRuntimeToEnv(env);
 
   // Re-normalize after appendPythonRuntimeToEnv may have added a PATH key
@@ -406,6 +406,17 @@ const SKILL_FILE_NAME = 'SKILL.md';
 const SKILLS_CONFIG_FILE = 'skills.config.json';
 const SKILL_STATE_KEY = 'skills_state';
 const SKILL_CATALOG_KEY = 'skills_catalog';
+/**
+ * Catalog version of each installed skill, keyed by the INSTALLED local id.
+ *
+ * An enterprise catalog package carries no `version:` in its SKILL.md, so the
+ * installed skill cannot say what it is. The marketplace card then compared the
+ * catalog version against that blank, decided the skill was out of date, and
+ * offered 更新 forever — a successful upgrade could never clear it because the
+ * new files were just as silent as the old ones. The marketplace version is
+ * only known at install/upgrade time, so it is recorded there.
+ */
+const SKILL_CATALOG_VERSION_KEY = 'skills_catalog_versions';
 const WATCH_DEBOUNCE_MS = 250;
 
 /**
@@ -974,15 +985,15 @@ const downloadGithubArchive = async (
     archiveUrlCandidates.push(
       {
         url: `https://github.com/${source.owner}/${source.repo}/archive/refs/heads/${encodedRef}.zip`,
-        headers: { 'User-Agent': 'GenWork Skill Downloader' },
+        headers: { 'User-Agent': 'MixCWork Skill Downloader' },
       },
       {
         url: `https://github.com/${source.owner}/${source.repo}/archive/refs/tags/${encodedRef}.zip`,
-        headers: { 'User-Agent': 'GenWork Skill Downloader' },
+        headers: { 'User-Agent': 'MixCWork Skill Downloader' },
       },
       {
         url: `https://github.com/${source.owner}/${source.repo}/archive/${encodedRef}.zip`,
-        headers: { 'User-Agent': 'GenWork Skill Downloader' },
+        headers: { 'User-Agent': 'MixCWork Skill Downloader' },
       }
     );
   }
@@ -991,7 +1002,7 @@ const downloadGithubArchive = async (
     url: `https://api.github.com/repos/${source.owner}/${source.repo}/zipball${encodedRef ? `/${encodedRef}` : ''}`,
     headers: {
       Accept: 'application/vnd.github+json',
-      'User-Agent': 'GenWork Skill Downloader',
+      'User-Agent': 'MixCWork Skill Downloader',
       'X-GitHub-Api-Version': '2022-11-28',
     },
   });
@@ -1297,7 +1308,7 @@ const isRemoteZipSource = (source: string): boolean =>
   isRemoteZipUrl(source) || catalogSkillIdForSource(source) !== null;
 
 const downloadZipUrl = async (zipUrl: string, tempRoot: string, expectedSha256?: string): Promise<string> => {
-  const headers: Record<string, string> = { 'User-Agent': 'GenWork Skill Downloader' };
+  const headers: Record<string, string> = { 'User-Agent': 'MixCWork Skill Downloader' };
   try {
     if (new URL(zipUrl).origin === getEnterpriseServerUrl()) {
       const token = await enterpriseClient.getToken();
@@ -1450,6 +1461,28 @@ const isWebSearchSkillBroken = (skillRoot: string): boolean => {
   return false;
 };
 
+function coerceVersion(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : typeof value === 'number' ? String(value) : undefined;
+}
+
+/**
+ * A skill's version: what the package declares in its frontmatter, else the
+ * catalog version recorded when it was installed from the enterprise
+ * marketplace. Packages that ship their own version stay authoritative — it is
+ * the version actually on disk.
+ */
+export function resolveSkillVersion(
+  frontmatter: Record<string, unknown>,
+  recordedCatalogVersion: string | undefined
+): string | undefined {
+  const meta = frontmatter.metadata as Record<string, unknown> | undefined;
+  return (
+    coerceVersion(frontmatter.version)
+    ?? coerceVersion(meta?.version)
+    ?? recordedCatalogVersion
+  );
+}
+
 export class SkillManager {
   private watchers: fs.FSWatcher[] = [];
   private notifyTimer: NodeJS.Timeout | null = null;
@@ -1463,6 +1496,7 @@ export class SkillManager {
     isUpgrade?: boolean;
     existingSkillDir?: string;
     catalogId?: string | null;
+    catalogVersion?: string | null;
   }>();
   private upgradingSkillIds = new Set<string>();
   private deletingSkillIds = new Set<string>();
@@ -1980,7 +2014,7 @@ export class SkillManager {
     }
   }
 
-  async downloadSkill(source: string): Promise<{
+  async downloadSkill(source: string, catalogVersion?: string): Promise<{
     success: boolean;
     skills?: SkillRecord[];
     error?: string;
@@ -2008,7 +2042,7 @@ export class SkillManager {
         if (stat.isFile()) {
           if (isZipFile(localSource)) {
             console.log('[SkillManager] downloadSkill: detected local zip file');
-            const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'genwork-skill-zip-'));
+            const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-zip-'));
             await extractZip(localSource, { dir: tempRoot });
             localSource = tempRoot;
             cleanupPath = tempRoot;
@@ -2023,19 +2057,19 @@ export class SkillManager {
         }
       } else if (isRemoteZipSource(trimmed)) {
         console.log('[SkillManager] downloadSkill: detected remote zip URL');
-        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'genwork-skill-zip-'));
+        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-zip-'));
         cleanupPath = tempRoot;
         localSource = await downloadZipUrl(trimmed, tempRoot, await this.resolveExpectedSha256(trimmed));
       } else if (isNpmPackageSpec(trimmed)) {
         console.log(`[SkillManager] downloadSkill: detected npm package spec "${trimmed}"`);
-        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'genwork-skill-npm-'));
+        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-npm-'));
         cleanupPath = tempRoot;
         localSource = await downloadNpmPackage(trimmed, tempRoot);
         console.log(`[SkillManager] downloadSkill: npm package extracted to ${localSource}`);
       } else if (parseClawhubUrl(trimmed)) {
         const clawhubParsed = parseClawhubUrl(trimmed)!;
         console.log(`[SkillManager] downloadSkill: detected ClawHub URL, skill name="${clawhubParsed.name}"`);
-        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'genwork-skill-clawhub-'));
+        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-clawhub-'));
         cleanupPath = tempRoot;
         const env = buildSkillEnv();
         await downloadClawhubSkill(clawhubParsed.name, tempRoot, env);
@@ -2045,7 +2079,7 @@ export class SkillManager {
         if (!normalized) {
           return { success: false, error: t('skillErrInvalidSource') };
         }
-        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'genwork-skill-'));
+        const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-'));
         cleanupPath = tempRoot;
         const repoName = normalizeFolderName(normalized.repoNameHint || deriveRepoName(normalized.repoUrl));
         const clonePath = path.join(tempRoot, repoName);
@@ -2152,6 +2186,7 @@ export class SkillManager {
           skillDirs,
           timer,
           catalogId,
+          catalogVersion,
         });
 
         return {
@@ -2174,6 +2209,7 @@ export class SkillManager {
         cpRecursiveSync(skillDir, targetDir);
         if (catalogId) {
           this.recordCatalogSkill(catalogId, path.basename(targetDir));
+          this.recordCatalogVersion(path.basename(targetDir), catalogVersion);
         }
         const normalizeResult = normalizeWindowsSkillDirectoryAttrs(targetDir);
         if (normalizeResult.success) {
@@ -2195,7 +2231,11 @@ export class SkillManager {
     }
   }
 
-  async upgradeSkill(skillId: string, downloadUrl: string): Promise<{
+  async upgradeSkill(
+    skillId: string,
+    downloadUrl: string,
+    catalogVersion?: string
+  ): Promise<{
     success: boolean;
     skills?: SkillRecord[];
     error?: string;
@@ -2221,13 +2261,23 @@ export class SkillManager {
 
     this.upgradingSkillIds.add(skillId);
     try {
-      return await this.performUpgradeDownload(skillId, downloadUrl, existingSkillDir);
+      return await this.performUpgradeDownload(
+        skillId,
+        downloadUrl,
+        existingSkillDir,
+        catalogVersion
+      );
     } finally {
       this.upgradingSkillIds.delete(skillId);
     }
   }
 
-  private async performUpgradeDownload(skillId: string, downloadUrl: string, existingSkillDir: string): Promise<{
+  private async performUpgradeDownload(
+    skillId: string,
+    downloadUrl: string,
+    existingSkillDir: string,
+    catalogVersion?: string
+  ): Promise<{
     success: boolean;
     skills?: SkillRecord[];
     error?: string;
@@ -2239,7 +2289,7 @@ export class SkillManager {
       const root = this.ensureSkillsRoot();
 
       // Download new version (reuse downloadSkill's download logic)
-      const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'genwork-skill-upgrade-'));
+      const tempRoot = fs.mkdtempSync(path.join(app.getPath('temp'), 'mixcwork-skill-upgrade-'));
       cleanupPath = tempRoot;
 
       let localSource: string;
@@ -2326,6 +2376,7 @@ export class SkillManager {
           timer,
           isUpgrade: true,
           existingSkillDir,
+          catalogVersion,
         });
 
         // Ownership of cleanupPath transferred to pendingInstalls
@@ -2335,6 +2386,7 @@ export class SkillManager {
 
       // Safe — perform upgrade
       this.performSkillUpgrade(matchingSkillDir, existingSkillDir);
+      this.recordCatalogVersion(skillId, catalogVersion);
 
       cleanupPathSafely(cleanupPath);
       cleanupPath = null;
@@ -2448,6 +2500,12 @@ export class SkillManager {
         if (pending.catalogId) {
           this.recordCatalogSkill(pending.catalogId, path.basename(targetDir));
         }
+      }
+    }
+
+    if (pending.catalogVersion) {
+      for (const id of installedIds) {
+        this.recordCatalogVersion(id, pending.catalogVersion);
       }
     }
 
@@ -2593,11 +2651,9 @@ export class SkillManager {
       const name = (String(frontmatter.name || '') || path.basename(dir)).trim() || path.basename(dir);
       const description = (String(frontmatter.description || '') || extractDescription(content) || name).trim();
       const isOfficial = isTruthy(frontmatter.official) || isTruthy(frontmatter.isOfficial);
-      const meta = frontmatter.metadata as Record<string, unknown> | undefined;
-      const v = frontmatter.version ?? meta?.version;
-      const version = typeof v === 'string' ? v : typeof v === 'number' ? String(v) : undefined;
       const updatedAt = fs.statSync(skillFile).mtimeMs;
       const id = path.basename(dir);
+      const version = resolveSkillVersion(frontmatter, this.getInstalledCatalogVersion(id));
       const prompt = content.trim();
       const defaultEnabled = defaults[id]?.enabled ?? true;
       const enabled = state[id]?.enabled ?? defaultEnabled;
@@ -2662,6 +2718,37 @@ export class SkillManager {
 
   private saveCatalogMap(map: Record<string, string>): void {
     this.getStore().set(SKILL_CATALOG_KEY, map);
+  }
+
+  private loadCatalogVersionMap(): Record<string, string> {
+    const raw = this.getStore().get(SKILL_CATALOG_VERSION_KEY) as
+      | Record<string, string>
+      | undefined;
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+    const map: Record<string, string> = {};
+    for (const [localId, version] of Object.entries(raw)) {
+      if (typeof version === 'string' && version.trim()) map[localId] = version.trim();
+    }
+    return map;
+  }
+
+  private saveCatalogVersionMap(map: Record<string, string>): void {
+    this.getStore().set(SKILL_CATALOG_VERSION_KEY, map);
+  }
+
+  /** Remember the marketplace version an installed skill was placed from. */
+  recordCatalogVersion(localId: string, version: string | null | undefined): void {
+    if (!localId || !version || !version.trim()) return;
+    const map = this.loadCatalogVersionMap();
+    if (map[localId] === version.trim()) return;
+    map[localId] = version.trim();
+    this.saveCatalogVersionMap(map);
+  }
+
+  /** The marketplace version this installed skill was placed from, if known. */
+  getInstalledCatalogVersion(localId: string): string | undefined {
+    if (!localId) return undefined;
+    return this.loadCatalogVersionMap()[localId];
   }
 
   private recordCatalogSkill(catalogId: string, localId: string): void {

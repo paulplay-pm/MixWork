@@ -1,6 +1,6 @@
 import { AgentAvatarSvg, encodeAgentAvatarIcon } from '../shared/agent/avatar';
-import type { CreateAgentRequest } from './genworkStore';
 import { getLanguage } from './i18n';
+import type { CreateAgentRequest } from './mixcworkStore';
 
 export interface PresetAgent {
   id: string;

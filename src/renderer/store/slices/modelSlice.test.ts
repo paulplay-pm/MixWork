@@ -14,10 +14,10 @@ import modelReducer, {
 const modelA: Model = { id: 'gpt-4o', name: 'GPT-4o', providerKey: 'openai' };
 const modelB: Model = { id: 'glm-5.1', name: 'GLM 5.1', providerKey: 'zhipu' };
 const modelC: Model = { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet', providerKey: 'anthropic' };
-const serverModel: Model = { id: 'server-model', name: 'Server Model', providerKey: 'genwork-server', isServerModel: true };
+const serverModel: Model = { id: 'server-model', name: 'Server Model', providerKey: 'mixcwork-server', isServerModel: true };
 const lockedServerModel: Model = { ...serverModel, accessible: false };
 const customKimiModel: Model = { id: 'kimi-k2.6', name: 'Kimi K2.6', providerKey: 'moonshot' };
-const serverKimiModel: Model = { id: 'kimi-k2.6', name: 'Kimi K2.6', providerKey: 'genwork-server', isServerModel: true };
+const serverKimiModel: Model = { id: 'kimi-k2.6', name: 'Kimi K2.6', providerKey: 'mixcwork-server', isServerModel: true };
 
 function makeState(overrides?: Partial<ReturnType<typeof modelReducer>>) {
   const base = modelReducer(undefined, { type: 'init' });
@@ -214,14 +214,14 @@ describe('selectAgentSelectedModel', () => {
 
   test('resolves a server model by its catalog-UUID ref, not by name or provider label', () => {
     // Under the UUID-identity contract a server model's ref is
-    // `genwork-server/<catalog UUID>` and its `id` IS that UUID, so it never
+    // `mixcwork-server/<catalog UUID>` and its `id` IS that UUID, so it never
     // collides with a custom model that happens to share the upstream slug.
     // No per-agent override: the ref resolves to the server model by exact
     // ref match even though a custom model with the same display name exists.
     const uuidServerModel: Model = {
       id: '21e3e29a-a900-4574-b1bd-aaa8fb803ff1',
       name: 'Kimi K2.6',
-      providerKey: 'genwork-server',
+      providerKey: 'mixcwork-server',
       isServerModel: true,
     };
     const state = makeState({
@@ -230,7 +230,7 @@ describe('selectAgentSelectedModel', () => {
       defaultSelectedModel: customKimiModel,
     });
 
-    const result = selectAgentSelectedModel(state, 'agent-1', 'genwork-server/21e3e29a-a900-4574-b1bd-aaa8fb803ff1');
+    const result = selectAgentSelectedModel(state, 'agent-1', 'mixcwork-server/21e3e29a-a900-4574-b1bd-aaa8fb803ff1');
 
     expect(result).toEqual(uuidServerModel);
   });
@@ -257,7 +257,7 @@ describe('selectAgentSelectedModel', () => {
       defaultSelectedModel: modelA,
     });
 
-    const result = selectAgentSelectedModel(state, 'agent-1', 'genwork-server/server-model');
+    const result = selectAgentSelectedModel(state, 'agent-1', 'mixcwork-server/server-model');
 
     expect(result).toEqual(modelA);
   });

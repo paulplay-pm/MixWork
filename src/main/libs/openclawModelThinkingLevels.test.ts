@@ -6,7 +6,7 @@ describe('resolveOpenClawThinkingLevelForModel', () => {
   test('does not rewrite other providers or unconfigured levels', () => {
     expect(resolveOpenClawThinkingLevelForModel('openai/gpt-5', 'max')).toBe('max');
     expect(resolveOpenClawThinkingLevelForModel(
-      'genwork-server/deepseek-v4-flash',
+      'mixcwork-server/deepseek-v4-flash',
       'high',
     )).toBe('high');
   });

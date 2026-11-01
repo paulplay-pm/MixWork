@@ -13,13 +13,9 @@ import {
   DEFAULT_DINGTALK_OPENCLAW_CONFIG,
   DEFAULT_DISCORD_MULTI_INSTANCE_CONFIG,
   DEFAULT_DISCORD_OPENCLAW_CONFIG,
-  DEFAULT_EMAIL_INSTANCE_CONFIG,
-  DEFAULT_EMAIL_MULTI_INSTANCE_CONFIG,
   DEFAULT_FEISHU_MULTI_INSTANCE_CONFIG,
   DEFAULT_FEISHU_OPENCLAW_CONFIG,
   DEFAULT_IM_SETTINGS,
-  DEFAULT_POPO_CONFIG,
-  DEFAULT_POPO_MULTI_INSTANCE_CONFIG,
   DEFAULT_QQ_CONFIG,
   DEFAULT_QQ_MULTI_INSTANCE_CONFIG,
   DEFAULT_TELEGRAM_MULTI_INSTANCE_CONFIG,
@@ -33,8 +29,6 @@ import {
   DiscordInstanceConfig,
   DiscordMultiInstanceConfig,
   DiscordOpenClawConfig,
-  EmailInstanceConfig,
-  EmailMultiInstanceConfig,
   FeishuInstanceConfig,
   FeishuMultiInstanceConfig,
   FeishuOpenClawConfig,
@@ -42,9 +36,6 @@ import {
   IMSessionMapping,
   IMSettings,
   Platform,
-  PopoInstanceConfig,
-  PopoMultiInstanceConfig,
-  PopoOpenClawConfig,
   QQConfig,
   QQInstanceConfig,
   QQMultiInstanceConfig,
@@ -569,81 +560,6 @@ export class IMStore {
       }
     }
 
-    // Migrate popo configs that have token but no connectionMode:
-    // These are existing webhook users from before connectionMode was introduced.
-    // Preserve their setup by explicitly setting connectionMode to 'webhook'.
-    const popoRow = this.db.prepare('SELECT value FROM im_config WHERE key = ?').get('popo') as
-      | { value: string }
-      | undefined;
-    if (popoRow) {
-      try {
-        const popoConfig = JSON.parse(popoRow.value) as Partial<PopoOpenClawConfig>;
-        if (popoConfig.token && !popoConfig.connectionMode) {
-          popoConfig.connectionMode = 'webhook';
-          const now = Date.now();
-          this.db
-            .prepare('UPDATE im_config SET value = ?, updated_at = ? WHERE key = ?')
-            .run(JSON.stringify(popoConfig), now, 'popo');
-          console.log(
-            '[IMStore] Migrated popo config: inferred connectionMode=webhook from existing token',
-          );
-        }
-      } catch {
-        // Ignore parse errors
-      }
-    }
-
-    // Migrate single popo config to multi-instance format
-    const oldPopoSingleRow = this.db
-      .prepare('SELECT value FROM im_config WHERE key = ?')
-      .get('popo') as { value: string } | undefined;
-    const existingPopoInstances = this.db
-      .prepare('SELECT key FROM im_config WHERE key LIKE ?')
-      .all('popo:%') as Array<{ key: string }>;
-    if (oldPopoSingleRow && !existingPopoInstances.length) {
-      try {
-        const oldPopoConfig = JSON.parse(oldPopoSingleRow.value) as PopoOpenClawConfig;
-        const popoInstanceId = randomUUID();
-        const popoInstanceConfig: PopoInstanceConfig = {
-          ...DEFAULT_POPO_CONFIG,
-          ...oldPopoConfig,
-          instanceId: popoInstanceId,
-          instanceName: 'POPO Bot 1',
-        };
-        const now = Date.now();
-        this.db
-          .prepare('INSERT INTO im_config (key, value, updated_at) VALUES (?, ?, ?)')
-          .run(`popo:${popoInstanceId}`, JSON.stringify(popoInstanceConfig), now);
-        this.db.prepare('DELETE FROM im_config WHERE key = ?').run('popo');
-        // Migrate session mappings
-        this.db
-          .prepare('UPDATE im_session_mappings SET platform = ? WHERE platform = ?')
-          .run(`popo:${popoInstanceId}`, 'popo');
-        // Migrate agent bindings
-        const settingsRowPopo = this.db
-          .prepare('SELECT value FROM im_config WHERE key = ?')
-          .get('settings') as { value: string } | undefined;
-        if (settingsRowPopo) {
-          try {
-            const settings = JSON.parse(settingsRowPopo.value) as IMSettings;
-            if (settings.platformAgentBindings?.['popo']) {
-              settings.platformAgentBindings[`popo:${popoInstanceId}`] =
-                settings.platformAgentBindings['popo'];
-              delete settings.platformAgentBindings['popo'];
-              this.db
-                .prepare('UPDATE im_config SET value = ?, updated_at = ? WHERE key = ?')
-                .run(JSON.stringify(settings), now, 'settings');
-            }
-          } catch {
-            // Ignore parse errors
-          }
-        }
-        console.log('[IMStore] Migrated single POPO config to multi-instance format');
-      } catch {
-        // Ignore parse errors
-      }
-    }
-
     // Migrate single QQ config to multi-instance format
     const oldQQRow = this.db.prepare('SELECT value FROM im_config WHERE key = ?').get('qq') as
       | { value: string }
@@ -871,10 +787,8 @@ export class IMStore {
     const qqMulti = this.getQQMultiInstanceConfig();
     const feishuMulti = this.getFeishuMultiInstanceConfig();
     const wecomMulti = this.getWecomMultiInstanceConfig();
-    const popoMulti = this.getPopoMultiInstanceConfig();
     const weixin = this.getConfigValue<WeixinOpenClawConfig>('weixin') ?? DEFAULT_WEIXIN_CONFIG;
     const settings = this.getConfigValue<IMSettings>('settings') ?? DEFAULT_IM_SETTINGS;
-    const email = this.getEmailConfig();
 
     // Resolve enabled field: default to false for safety
     // User must explicitly enable the service by setting enabled: true
@@ -894,9 +808,7 @@ export class IMStore {
       discord: discordMulti,
       qq: qqMulti,
       wecom: wecomMulti,
-      popo: popoMulti,
       weixin: resolveEnabled(weixin, DEFAULT_WEIXIN_CONFIG),
-      email,
       settings: { ...DEFAULT_IM_SETTINGS, ...settings },
     };
   }
@@ -920,14 +832,8 @@ export class IMStore {
     if (config.wecom) {
       this.setWecomMultiInstanceConfig(config.wecom);
     }
-    if (config.popo) {
-      this.setPopoMultiInstanceConfig(config.popo);
-    }
     if (config.weixin) {
       this.setWeixinConfig(config.weixin);
-    }
-    if (config.email) {
-      this.setEmailConfig(config.email);
     }
     if (config.settings) {
       this.setIMSettings(config.settings);
@@ -1368,78 +1274,6 @@ export class IMStore {
     }
   }
 
-  // ==================== POPO ====================
-
-  /** @deprecated Use getPopoMultiInstanceConfig() or getPopoInstances() instead */
-  getPopoConfig(): PopoOpenClawConfig {
-    const stored = this.getConfigValue<PopoOpenClawConfig>('popo');
-    return { ...DEFAULT_POPO_CONFIG, ...stored };
-  }
-
-  /** @deprecated Use setPopoInstanceConfig() instead */
-  setPopoConfig(config: Partial<PopoOpenClawConfig>): void {
-    const current = this.getPopoConfig();
-    this.setConfigValue('popo', { ...current, ...config });
-  }
-
-  // ==================== POPO Multi-Instance Config ====================
-
-  getPopoInstances(): PopoInstanceConfig[] {
-    const rows = this.db
-      .prepare('SELECT key, value FROM im_config WHERE key LIKE ?')
-      .all('popo:%') as Array<{ key: string; value: string }>;
-    if (!rows.length) return [];
-    const instances: PopoInstanceConfig[] = [];
-    for (const row of rows) {
-      try {
-        const config = JSON.parse(row.value) as PopoInstanceConfig;
-        instances.push({ ...DEFAULT_POPO_CONFIG, ...config });
-      } catch {
-        // Ignore parse errors
-      }
-    }
-    return instances;
-  }
-
-  getPopoInstanceConfig(instanceId: string): PopoInstanceConfig | null {
-    const stored = this.getConfigValue<PopoInstanceConfig>(`popo:${instanceId}`);
-    if (!stored) return null;
-    return { ...DEFAULT_POPO_CONFIG, ...stored };
-  }
-
-  setPopoInstanceConfig(instanceId: string, config: Partial<PopoInstanceConfig>): void {
-    const current = this.getPopoInstanceConfig(instanceId);
-    if (current) {
-      this.setConfigValue(`popo:${instanceId}`, { ...current, ...config });
-    } else {
-      this.setConfigValue(`popo:${instanceId}`, {
-        ...DEFAULT_POPO_CONFIG,
-        instanceId,
-        instanceName: config.instanceName || 'POPO Bot',
-        ...config,
-      });
-    }
-  }
-
-  deletePopoInstance(instanceId: string): void {
-    this.db.prepare('DELETE FROM im_config WHERE key = ?').run(`popo:${instanceId}`);
-    this.db
-      .prepare('DELETE FROM im_session_mappings WHERE platform = ?')
-      .run(`popo:${instanceId}`);
-  }
-
-  getPopoMultiInstanceConfig(): PopoMultiInstanceConfig {
-    const instances = this.getPopoInstances();
-    if (instances.length === 0) return DEFAULT_POPO_MULTI_INSTANCE_CONFIG;
-    return { instances };
-  }
-
-  setPopoMultiInstanceConfig(config: PopoMultiInstanceConfig): void {
-    for (const inst of config.instances) {
-      this.setPopoInstanceConfig(inst.instanceId, inst);
-    }
-  }
-
   // ==================== Weixin (微信) ====================
 
   getWeixinConfig(): WeixinOpenClawConfig {
@@ -1462,87 +1296,6 @@ export class IMStore {
   setIMSettings(settings: Partial<IMSettings>): void {
     const current = this.getIMSettings();
     this.setConfigValue('settings', { ...current, ...settings });
-  }
-
-  // ==================== Email Channel Config ====================
-
-  /**
-   * Get email channel multi-instance configuration
-   */
-  getEmailConfig(): EmailMultiInstanceConfig {
-    const raw = this.db.prepare('SELECT value FROM im_config WHERE key = ?').get('email') as
-      | { value: string }
-      | undefined;
-
-    if (!raw?.value) {
-      return DEFAULT_EMAIL_MULTI_INSTANCE_CONFIG;
-    }
-
-    try {
-      const parsed = JSON.parse(raw.value);
-
-      // Migration logic: detect v1 format (single account) and convert to v2 (multi-instance)
-      if (parsed.email && !parsed.instances) {
-        console.log('[EmailChannel] Migrating from v1 config format');
-        return {
-          instances: [
-            {
-              instanceId: 'email-1',
-              instanceName: 'Default',
-              enabled: parsed.enabled ?? false,
-              transport: 'imap',
-              email: parsed.email,
-              password: parsed.password,
-              agentId: 'main',
-              ...DEFAULT_EMAIL_INSTANCE_CONFIG,
-            },
-          ],
-        };
-      }
-
-      // v2 format: multi-instance mode
-      return {
-        instances: (parsed.instances || []).map((inst: any) => ({
-          ...DEFAULT_EMAIL_INSTANCE_CONFIG,
-          ...inst,
-        })),
-      };
-    } catch (error) {
-      console.error('[EmailChannel] Failed to parse config:', error);
-      return DEFAULT_EMAIL_MULTI_INSTANCE_CONFIG;
-    }
-  }
-
-  /**
-   * Set email channel multi-instance configuration
-   */
-  setEmailConfig(config: EmailMultiInstanceConfig): void {
-    this.setConfigValue('email', config);
-  }
-
-  setEmailInstanceConfig(instanceId: string, config: Partial<EmailInstanceConfig>): void {
-    const current = this.getEmailConfig();
-    const existing = current.instances.find(i => i.instanceId === instanceId);
-    if (existing) {
-      const updated = current.instances.map(i =>
-        i.instanceId === instanceId ? { ...i, ...config } : i,
-      );
-      this.setEmailConfig({ instances: updated });
-    } else {
-      this.setEmailConfig({
-        instances: [...current.instances, { ...DEFAULT_EMAIL_INSTANCE_CONFIG, ...config, instanceId } as EmailInstanceConfig],
-      });
-    }
-  }
-
-  deleteEmailInstance(instanceId: string): void {
-    const current = this.getEmailConfig();
-    const updated = current.instances.filter(i => i.instanceId !== instanceId);
-    this.setEmailConfig({ instances: updated });
-    // Clean up session mappings for this instance
-    this.db
-      .prepare('DELETE FROM im_session_mappings WHERE platform = ?')
-      .run(`email:${instanceId}`);
   }
 
   // ==================== Utility ====================

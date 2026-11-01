@@ -9,6 +9,10 @@ export interface UsePermissionsResult {
   hasPermission: (point: string) => boolean;
   /** Coarse data-scope axis from `/me`: 'all' | 'self' | 'dept' (or '' until loaded). */
   effectiveDataScope: string;
+  /** True while `/me` is still in flight. A gate must WAIT on this rather than
+   * read "not loaded yet" as "not permitted" — that mistake redirects the user
+   * out of a page they are entitled to, then lets them back in. */
+  loading: boolean;
 }
 
 /**
@@ -21,12 +25,12 @@ export interface UsePermissionsResult {
  * which stays the coarse role-based gate used by Sidebar/AuthGuard/UserMenu.
  */
 export function usePermissions(): UsePermissionsResult {
-  const { profile } = useMe();
+  const { profile, loading } = useMe();
   const permissions = useMemo(() => new Set<string>(profile?.permissions ?? []), [profile]);
   const effectiveDataScope = profile?.effectiveDataScope ?? '';
   const hasPermission = useMemo(
     () => (point: string) => permissions.has(point),
     [permissions]
   );
-  return { permissions, hasPermission, effectiveDataScope };
+  return { permissions, hasPermission, effectiveDataScope, loading };
 }

@@ -1,92 +1,131 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, test, vi } from 'vitest';
 
+import type { ProviderCardView } from '../../../src/api/providerCards';
 import { ProviderRail } from '../../../src/pages/providersModels/ProviderRail';
 
-const mk = (over: Partial<import('../../../src/api/providers').ProviderKeyView> = {}) => ({
-  id: 'id',
-  provider: 'openai',
-  endpoint: null,
-  label: 'OpenAI',
+const card = (over: Partial<ProviderCardView> = {}): ProviderCardView => ({
+  id: 'c1',
+  provider: 'minimax',
+  label: 'MiniMax',
+  createdAt: '2026-01-01T00:00:00Z',
+  isBuiltin: true,
   enabled: true,
-  region: 'global' as const,
-  default_base_url: null,
-  website: null,
-  description: null,
-  api_key_masked: null,
-  status: 'connected' as const,
-  latency_ms: null,
-  last_test_at: null,
-  created_at: '2026-01-01T00:00:00Z',
-  is_builtin: true,
-  protocol: 'openai' as const,
-  coding_plan: false,
+  sections: [
+    {
+      providerKeyId: 'k1',
+      protocol: 'openai',
+      label: null,
+      endpoint: null,
+      enabled: true,
+      isBuiltin: true,
+      codingPlan: false,
+      apiKeyMasked: null,
+      modelCount: 9,
+    },
+  ],
   ...over,
 });
 
-const providers = [
-  mk({ id: 'p1', provider: 'openai', label: 'OpenAI', is_builtin: true }),
-  mk({ id: 'p2', provider: 'vllm', label: 'vllm', is_builtin: false, status: 'failed' }),
+const cards = [
+  card(),
+  card({ id: 'c2', provider: 'vllm', label: 'vllm', isBuiltin: false, sections: [] }),
 ];
 
 const renderRail = (props: Partial<Parameters<typeof ProviderRail>[0]> = {}) =>
   render(
     <ProviderRail
-      providers={providers}
-      modelCounts={{}}
+      cards={cards}
+      modelCounts={{ c1: 9 }}
       selectedId={null}
       onSelect={() => {}}
       canManage={true}
-      onDeleteProvider={vi.fn()}
-      onToggleProvider={vi.fn()}
+      onDeleteCard={vi.fn()}
+      onToggleCard={vi.fn()}
       {...props}
-    />
+    />,
   );
 
 describe('pages/providersModels/ProviderRail', () => {
-  test('renders both sections', () => {
+  test('renders both sections and one row per card', () => {
     renderRail();
     expect(screen.getByPlaceholderText(/Search/i)).toBeInTheDocument();
     expect(screen.getByText(/Built-in/)).toBeInTheDocument();
-    expect(screen.getByText(/OpenAI/)).toBeInTheDocument();
-    expect(screen.getByText(/vllm/)).toBeInTheDocument();
+    expect(screen.getByText('MiniMax')).toBeInTheDocument();
+    expect(screen.getByText('vllm')).toBeInTheDocument();
+  });
+
+  test('a card shows its model count', () => {
+    renderRail();
+    expect(screen.getByText('9')).toBeInTheDocument();
+  });
+
+  test('the rail row does not tag the vendor with its model types', () => {
+    // The tags crowded the vendor name out of the row; the model type is
+    // shown where it belongs — on the card's own tabs.
+    renderRail({
+      cards: [
+        card({
+          sections: [
+            card().sections[0],
+            {
+              providerKeyId: 'k2',
+              protocol: 'image-gen',
+              label: null,
+              endpoint: null,
+              enabled: true,
+              isBuiltin: false,
+              codingPlan: false,
+              apiKeyMasked: null,
+              modelCount: 2,
+            },
+          ],
+        }),
+      ],
+    });
+    expect(screen.queryByText('LLM')).toBeNull();
+    expect(screen.queryByText('Image')).toBeNull();
+    // The count badge and the enable switch stay.
+    expect(screen.getByText('9')).toBeInTheDocument();
+    expect(screen.getByRole('switch')).toBeInTheDocument();
   });
 
   test('filters by search text', () => {
     renderRail();
-    fireEvent.change(screen.getByPlaceholderText(/Search/i), {
-      target: { value: 'vll' },
-    });
-    expect(screen.queryByText(/OpenAI/)).not.toBeInTheDocument();
-    expect(screen.getByText(/vllm/)).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText(/Search/i), { target: { value: 'vll' } });
+    expect(screen.queryByText('MiniMax')).not.toBeInTheDocument();
   });
 
-  test('clicking a row invokes onSelect', () => {
+  test('a card with a built-in section has no delete button', () => {
+    renderRail();
+    const builtinRow = screen.getByText('MiniMax').closest('[role="button"]')!;
+    expect(builtinRow.querySelector('[aria-label="delete-provider"]')).toBeNull();
+  });
+
+  test('a fully custom card has a delete button', () => {
+    renderRail();
+    const customRow = screen.getByText('vllm').closest('[role="button"]')!;
+    expect(customRow.querySelector('[aria-label="delete-provider"]')).not.toBeNull();
+  });
+
+  test('deleting asks the caller with the card', () => {
+    const onDeleteCard = vi.fn();
+    renderRail({ onDeleteCard });
+    fireEvent.click(screen.getByLabelText('delete-provider'));
+    expect(onDeleteCard).toHaveBeenCalledWith(expect.objectContaining({ id: 'c2' }));
+  });
+
+  test('the enable switch reports the new state', () => {
+    const onToggleCard = vi.fn();
+    renderRail({ onToggleCard });
+    fireEvent.click(screen.getAllByRole('switch')[0]);
+    expect(onToggleCard).toHaveBeenCalledWith('c1', false);
+  });
+
+  test('selecting a row reports the card id', () => {
     const onSelect = vi.fn();
     renderRail({ onSelect });
-    fireEvent.click(screen.getByText(/OpenAI/));
-    expect(onSelect).toHaveBeenCalledWith('p1');
-  });
-
-  test('hides add provider button when canManage is false', () => {
-    renderRail({ canManage: false });
-    expect(screen.queryByText(/add provider/i)).not.toBeInTheDocument();
-  });
-
-  test('shows model count badge per provider', () => {
-    renderRail({ modelCounts: { openai: 5, vllm: 1 } });
-    // The OpenAI row should show "5", the vllm row should show "1".
-    const openaiRow = screen.getByText(/OpenAI/).closest('[role="button"]');
-    expect(openaiRow).not.toBeNull();
-    expect(openaiRow).toHaveTextContent('5');
-    const vllmRow = screen.getByText(/^vllm$/).closest('[role="button"]');
-    expect(vllmRow).not.toBeNull();
-    expect(vllmRow).toHaveTextContent('1');
-  });
-
-  test('defaults missing count to 0', () => {
-    renderRail({ providers: [providers[0]], modelCounts: {} });
-    const openaiRow = screen.getByText(/OpenAI/).closest('[role="button"]');
-    expect(openaiRow).toHaveTextContent('0');
+    fireEvent.click(screen.getByText('vllm'));
+    expect(onSelect).toHaveBeenCalledWith('c2');
   });
 });

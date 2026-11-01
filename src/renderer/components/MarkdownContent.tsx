@@ -500,17 +500,17 @@ const createMarkdownComponents = (
     </h1>
   ),
   h2: ({ node: _node, className: _className, children, ...props }: any) => (
-    <h2 className={`${spacing === 'compact' ? 'mt-2.5 mb-1' : 'mt-5 mb-2.5'} text-[length:var(--genwork-text-markdownH2)] font-semibold leading-snug first:mt-0 text-foreground`} {...props}>
+    <h2 className={`${spacing === 'compact' ? 'mt-2.5 mb-1' : 'mt-5 mb-2.5'} text-[length:var(--mixcwork-text-markdownH2)] font-semibold leading-snug first:mt-0 text-foreground`} {...props}>
       {children}
     </h2>
   ),
   h3: ({ node: _node, className: _className, children, ...props }: any) => (
-    <h3 className={`${spacing === 'compact' ? 'mt-2 mb-1' : 'mt-4 mb-2'} text-[length:var(--genwork-text-markdownH3)] font-semibold leading-snug first:mt-0 text-foreground`} {...props}>
+    <h3 className={`${spacing === 'compact' ? 'mt-2 mb-1' : 'mt-4 mb-2'} text-[length:var(--mixcwork-text-markdownH3)] font-semibold leading-snug first:mt-0 text-foreground`} {...props}>
       {children}
     </h3>
   ),
   h4: ({ node: _node, className: _className, children, ...props }: any) => (
-    <h4 className={`${spacing === 'compact' ? 'mt-2 mb-1' : 'mt-4 mb-1.5'} text-[length:var(--genwork-text-markdownH4)] font-semibold leading-snug first:mt-0 text-foreground`} {...props}>
+    <h4 className={`${spacing === 'compact' ? 'mt-2 mb-1' : 'mt-4 mb-1.5'} text-[length:var(--mixcwork-text-markdownH4)] font-semibold leading-snug first:mt-0 text-foreground`} {...props}>
       {children}
     </h4>
   ),

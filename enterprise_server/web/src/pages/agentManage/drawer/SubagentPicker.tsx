@@ -2,7 +2,7 @@ import { Check } from 'lucide-react';
 import type { JSX } from 'react';
 
 import type { AgentMarketplaceItem } from '../../../api/agentMarketplace';
-import { tileClass } from '../agentTile';
+import { tileStyle } from '../agentTile';
 import { t } from '../types';
 
 interface Props { agents: AgentMarketplaceItem[]; currentId: string | null; selected: string[]; onToggle: (id: string) => void; }
@@ -19,7 +19,7 @@ export function SubagentPicker({ agents, currentId, selected, onToggle }: Props)
         return (
           <button key={a.agentId} type="button" disabled={cycle} onClick={() => onToggle(a.agentId)}
                   className={`mb-2 flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left ${on ? 'border-[var(--accent-primary)] bg-[var(--accent-primary)]/5' : 'border-[var(--border-subtle)]'} ${cycle ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[var(--bg-tertiary)]'}`}>
-            <span className={`flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold ${tileClass(a.iconColor)}`}>{a.name.charAt(0)}</span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg text-sm font-bold" style={tileStyle(a.iconColor)}>{a.name.charAt(0)}</span>
             <span className="flex-1 min-w-0">
               <span className="block text-[13.5px] font-medium">{a.name}</span>
               <span className="block text-[11px] text-[var(--text-tertiary)]">{a.agentId}</span>

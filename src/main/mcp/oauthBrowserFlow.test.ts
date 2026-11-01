@@ -165,7 +165,12 @@ vi.mock('electron', () => {
 });
 
 // Import after vi.mock so the mock is in place.
-import { deriveIdpAllowlist, openOauthFlow } from './oauthBrowserFlow';
+import {
+  decideOauthRequest,
+  deriveIdpAllowlist,
+  OAuthNetworkPolicy,
+  openOauthFlow,
+} from './oauthBrowserFlow';
 
 describe('openOauthFlow', () => {
   beforeEach(() => {
@@ -188,7 +193,7 @@ describe('openOauthFlow', () => {
     expect(opts.webPreferences.sandbox).toBe(true);
     expect(opts.webPreferences.contextIsolation).toBe(true);
     expect(opts.webPreferences.nodeIntegration).toBe(false);
-    expect(opts.webPreferences.partition).toBe('genwork-sso-oauth');
+    expect(opts.webPreferences.partition).toBe('mixcwork-sso-oauth');
     // The window was closed after settlement.
     expect(win._closed).toBe(true);
   });
@@ -215,7 +220,7 @@ describe('openOauthFlow', () => {
     const partitions = lastWindows.map(
       (w) => (w._opts as { webPreferences: { partition: string } }).webPreferences.partition
     );
-    expect(partitions).toEqual(['genwork-sso-oauth', 'genwork-sso-oauth']);
+    expect(partitions).toEqual(['mixcwork-sso-oauth', 'mixcwork-sso-oauth']);
   });
 
   test('rejects when timeout elapses with no credential', async () => {
@@ -751,5 +756,191 @@ describe('Feishu preset is fully under feishu.cn', () => {
     expect(deriveIdpAllowlist(feishu.authorizeUrl).etld1).toBe('feishu.cn');
     expect(deriveIdpAllowlist(feishu.tokenUrl).etld1).toBe('feishu.cn');
     expect(deriveIdpAllowlist(feishu.userinfoUrl).etld1).toBe('feishu.cn');
+  });
+});
+
+// DingTalk's login page ships its JS bundle from Alibaba's shared CDN
+// (`g.alicdn.com`), not from a DingTalk-owned host. The desktop SSO
+// BrowserWindow's webRequest filter cancels any host that is neither the
+// eTLD+1, a subdomain of it, nor a registered resource eTLD+1 — so
+// omitting `alicdn.com` made the bundle request die and the page stick
+// on "Page Failed to Load". The web console has no such filter, which is
+// why the desktop client was the only surface that broke.
+describe('DingTalk asset CDN is reachable from the SSO window', () => {
+  test('g.alicdn.com (the login.js host from the production failure) is in resourceEtld1s', () => {
+    const dt = PRESETS.dingtalk!;
+    const r = deriveIdpAllowlist(dt.authorizeUrl);
+    expect(r.etld1).toBe('dingtalk.com');
+    expect(r.resourceEtld1s).toContain('alicdn.com');
+    // Kept for older authorize pages that still reference DingTalk's
+    // own asset host.
+    expect(r.resourceEtld1s).toContain('dingtalkstatic.com');
+  });
+
+  test('every DingTalk preset URL resolves to a dingtalk.com-rooted allowlist', () => {
+    const dt = PRESETS.dingtalk!;
+    for (const url of [dt.authorizeUrl, dt.tokenUrl, dt.userinfoUrl]) {
+      expect(deriveIdpAllowlist(url).etld1).toBe('dingtalk.com');
+    }
+  });
+});
+
+// WeCom's scan-code page (`open.work.weixin.qq.com/wwopen/sso/qrConnect`)
+// pulls assets from two distinct hosts; both must survive the filter or
+// the desktop window renders a blank page. The WeCom desktop failure in
+// the field was `redirect_uri` mismatch (a backend 授权回调域名 config
+// gap), not this filter — but the asset coverage is asserted here so a
+// future CDN migration is caught before a release rather than during a
+// login attempt.
+describe('WeCom asset hosts are reachable from the SSO window', () => {
+  test('qrConnect page hosts resolve to the weixin.qq.com allowlist', () => {
+    const wc = PRESETS.wecom!;
+    const r = deriveIdpAllowlist(wc.authorizeUrl);
+    expect(r.etld1).toBe('weixin.qq.com');
+    // Hosts observed serving the qrConnect page (2026-10-21).
+    for (const host of ['wwcdn.weixin.qq.com', 'wework.qpic.cn']) {
+      const covered =
+        host === r.etld1 ||
+        host.endsWith('.' + r.etld1) ||
+        r.resourceEtld1s.some((d) => host === d || host.endsWith('.' + d));
+      expect(covered).toBe(true);
+    }
+  });
+});
+
+describe('decideOauthRequest', () => {
+  // 纷享销客's authorization server is open.fxiaoke.com; its login page loads
+  // its bundle from a9.fspage.com. The user's first real connector hit exactly
+  // this pair and the login page rendered blank because the strict identity
+  // filter cancelled every asset request.
+  const FXIAOKE_STATE = {
+    etld1: 'fxiaoke.com',
+    extraHosts: new Set<string>(),
+    resourceEtld1s: new Set<string>(),
+  };
+
+  test('identity policy still blocks an asset CDN the IdP does not own', () => {
+    const decision = decideOauthRequest(
+      'https://a9.fspage.com/static/login.js',
+      OAuthNetworkPolicy.Idp,
+      FXIAOKE_STATE
+    );
+    expect(decision).toEqual({ kind: 'deny', reason: 'third-party' });
+  });
+
+  test('connector policy allows that same CDN so the login page can render', () => {
+    const decision = decideOauthRequest(
+      'https://a9.fspage.com/static/login.js',
+      OAuthNetworkPolicy.Open,
+      FXIAOKE_STATE
+    );
+    expect(decision).toEqual({ kind: 'allow' });
+  });
+
+  test('connector policy keeps the IdP allowlist: plain idp-owned hosts still pass', () => {
+    expect(
+      decideOauthRequest('https://open.fxiaoke.com/mcp/x', OAuthNetworkPolicy.Open, FXIAOKE_STATE)
+    ).toEqual({ kind: 'allow' });
+  });
+
+  test('connector policy still blocks plaintext http to a host outside the allowlist', () => {
+    const decision = decideOauthRequest(
+      'http://a9.fspage.com/static/login.js',
+      OAuthNetworkPolicy.Open,
+      FXIAOKE_STATE
+    );
+    expect(decision).toEqual({ kind: 'deny', reason: 'insecure-http' });
+  });
+
+  test('connector policy allows plaintext http to the IdP itself (admin pinned an http IdP)', () => {
+    expect(
+      decideOauthRequest('http://sso.acme.example.com/login', OAuthNetworkPolicy.Open, {
+        etld1: 'example.com',
+        extraHosts: new Set<string>(),
+        resourceEtld1s: new Set<string>(),
+      })
+    ).toEqual({ kind: 'allow' });
+  });
+
+  test('both policies allow the loopback callback on any port', () => {
+    for (const policy of [OAuthNetworkPolicy.Idp, OAuthNetworkPolicy.Open]) {
+      expect(decideOauthRequest('http://127.0.0.1:53232/callback', policy, FXIAOKE_STATE)).toEqual({
+        kind: 'allow',
+      });
+      expect(decideOauthRequest('http://localhost:53232/callback', policy, FXIAOKE_STATE)).toEqual({
+        kind: 'allow',
+      });
+    }
+  });
+
+  test('both policies pass through non-http schemes (devtools://, chrome-extension://)', () => {
+    for (const policy of [OAuthNetworkPolicy.Idp, OAuthNetworkPolicy.Open]) {
+      expect(decideOauthRequest('devtools://devtools/bundled/x.js', policy, FXIAOKE_STATE)).toEqual({
+        kind: 'allow',
+      });
+    }
+  });
+
+  test('reports malformed URLs instead of throwing', () => {
+    expect(
+      decideOauthRequest('https://', OAuthNetworkPolicy.Open, FXIAOKE_STATE)
+    ).toEqual({ kind: 'deny', reason: 'malformed' });
+  });
+});
+
+describe('openOauthFlow network policy', () => {
+  beforeEach(() => {
+    lastWindows.length = 0;
+  });
+
+  test('a connector window (networkPolicy: open) lets the IdP login page load its off-domain CDN', async () => {
+    __testWebRequest.reset();
+    const p = openOauthFlow({
+      title: 'MCP OAuth Authorization',
+      authorizeUrl: 'https://open.fxiaoke.com/mcp/nuobo2026/ai',
+      networkPolicy: OAuthNetworkPolicy.Open,
+      probe: vi.fn(async () => null),
+      pollIntervalMs: 100_000,
+      timeoutMs: 100_000,
+      loadTimeoutMs: 100_000,
+    });
+    await new Promise((r) => queueMicrotask(r));
+    const listener = __testWebRequest.listeners[0] as (
+      details: { url?: string },
+      callback: (response: { cancel: boolean }) => void
+    ) => void;
+    const cb = vi.fn();
+    listener({ url: 'https://a9.fspage.com/static/login.js' }, cb);
+    expect(cb).toHaveBeenCalledWith({ cancel: false });
+    // No redirect listener is installed for the open policy: there is no
+    // allowlist to grow.
+    expect(__testWebRequest.redirectListeners).toHaveLength(0);
+    p.catch(() => undefined);
+    lastWindows[lastWindows.length - 1]!.close();
+    await p.catch(() => undefined);
+  });
+
+  test('an SSO window (default policy) keeps blocking the same CDN', async () => {
+    __testWebRequest.reset();
+    const p = openOauthFlow({
+      title: 'Feishu',
+      authorizeUrl: 'https://open.feishu.cn/open-apis/authen/v1/index',
+      probe: vi.fn(async () => null),
+      pollIntervalMs: 100_000,
+      timeoutMs: 100_000,
+      loadTimeoutMs: 100_000,
+    });
+    await new Promise((r) => queueMicrotask(r));
+    const listener = __testWebRequest.listeners[0] as (
+      details: { url?: string },
+      callback: (response: { cancel: boolean }) => void
+    ) => void;
+    const cb = vi.fn();
+    listener({ url: 'https://a9.fspage.com/static/login.js' }, cb);
+    expect(cb).toHaveBeenCalledWith({ cancel: true });
+    expect(__testWebRequest.redirectListeners).toHaveLength(1);
+    p.catch(() => undefined);
+    lastWindows[lastWindows.length - 1]!.close();
+    await p.catch(() => undefined);
   });
 });

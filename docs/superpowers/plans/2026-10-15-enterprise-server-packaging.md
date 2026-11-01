@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Deliver a Docker image, a host-side `genwork-server` CLI, and a deploy manual so a customer IT engineer can stand up the GenWork Enterprise Server on a clean Linux host with one `docker compose up -d`, and upgrade it in place with `genwork-server upgrade`.
+**Goal:** Deliver a Docker image, a host-side `mixcwork-server` CLI, and a deploy manual so a customer IT engineer can stand up the MixCWork Enterprise Server on a clean Linux host with one `docker compose up -d`, and upgrade it in place with `mixcwork-server upgrade`.
 
-**Architecture:** Multi-stage Dockerfile (web SPA build → TS compile → `node:24-alpine` runtime). A single `genwork-server` CLI source dispatches `init` / `start` / `migrate` / `status` / `logs` / `backup` / `restore` / `upgrade` / `version` subcommands; the same binary is installed host-side by `init` and runs as the container `ENTRYPOINT`. Postgres is external and customer-owned. The reverse proxy is customer-managed. The existing `/health` endpoint in `src/server.ts` is reused as the `HEALTHCHECK` probe.
+**Architecture:** Multi-stage Dockerfile (web SPA build → TS compile → `node:24-alpine` runtime). A single `mixcwork-server` CLI source dispatches `init` / `start` / `migrate` / `status` / `logs` / `backup` / `restore` / `upgrade` / `version` subcommands; the same binary is installed host-side by `init` and runs as the container `ENTRYPOINT`. Postgres is external and customer-owned. The reverse proxy is customer-managed. The existing `/health` endpoint in `src/server.ts` is reused as the `HEALTHCHECK` probe.
 
 **Tech Stack:** TypeScript (existing), Node.js ≥24.15, Hono (existing), `pg` (existing), Docker / docker compose, `tini`, `postgresql16-client`, vitest (existing), `tar`, `pg_dump` / `pg_restore` via `child_process`.
 
@@ -23,14 +23,14 @@ These constraints travel with every task. They are the spec's project-wide requi
 - **Image is built only locally / customer's registry. No public publish.** CI workflow exists but defaults to no-push.
 - **Postgres is external.** Never bundle it. The container's only DB connection is `DATABASE_URL`.
 - **Reverse proxy is external.** The container's only exposed port is `127.0.0.1:8787:8787`; public TLS is the customer's job.
-- **All new env vars** (`POSTGRES_SUPERUSER_URL`, `IMAGE_TAG`, `IMAGE_REPO`, `DATA_DIR`, `INSTALL_DIR`, `GENWORK_MIGRATE_DRY_RUN`) are constants or named once per file; never bare string literals when used as a discriminant (e.g. the `GENWORK_MIGRATE_DRY_RUN=1` gate, the `--to <version>` flag).
+- **All new env vars** (`POSTGRES_SUPERUSER_URL`, `IMAGE_TAG`, `IMAGE_REPO`, `DATA_DIR`, `INSTALL_DIR`, `MIXCWORK_MIGRATE_DRY_RUN`) are constants or named once per file; never bare string literals when used as a discriminant (e.g. the `MIXCWORK_MIGRATE_DRY_RUN=1` gate, the `--to <version>` flag).
 - **Commit messages** are Conventional Commits, English, no `Co-Authored-By`.
 - **Branches** are `feat/...` or `fix/...` — never `codex/...` unless the user asks.
 - **Auto-commit local only.** Do not push to remote.
 - **ESLint** on touched TS/TSX files must pass: `npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 <files>`.
 - **Style:** 2-space indent, single quotes, semicolons, `camelCase` functions, `PascalCase` types. No bare string literals for discriminants.
 - **New tests** live under `enterprise_server/tests/cli/`. The vitest config (`include: ['tests/**/*.test.ts']`) is unchanged.
-- **`genwork-server` and `genwork-server-cli` use `node:fs` / `node:child_process` synchronously when possible; the `init` step is the only host-side blocking CLI and the customer accepts the few-second wait.**
+- **`mixcwork-server` and `mixcwork-server-cli` use `node:fs` / `node:child_process` synchronously when possible; the `init` step is the only host-side blocking CLI and the customer accepts the few-second wait.**
 
 ---
 
@@ -38,10 +38,10 @@ These constraints travel with every task. They are the spec's project-wide requi
 
 These are the spec-implied failure modes that no single task's tests pin. Each line below names the input, the expected behavior, and the task that owns the test that pins it.
 
-1. **`/etc/genwork/data` already exists at `init` time.** Expected: `init` refuses with a clear "already initialized" error unless `--force` is passed. Pinned by Task 5 (init preflight test for `dataDirExists`).
-2. **`genwork-server` invoked host-side while `docker` is missing.** Expected: every host-side subcommand (`init`, `upgrade`, `status`, `backup`, `restore`) preflights `docker` on `PATH` and exits 1 with "install Docker first" before doing any work. Pinned by Task 5 (init preflight) and Task 7 (status preflight) — the first one ships; subsequent commands inherit the same preflight via the shared helper in `src/cli/lib/preflight.ts`.
+1. **`/etc/mixcwork/data` already exists at `init` time.** Expected: `init` refuses with a clear "already initialized" error unless `--force` is passed. Pinned by Task 5 (init preflight test for `dataDirExists`).
+2. **`mixcwork-server` invoked host-side while `docker` is missing.** Expected: every host-side subcommand (`init`, `upgrade`, `status`, `backup`, `restore`) preflights `docker` on `PATH` and exits 1 with "install Docker first" before doing any work. Pinned by Task 5 (init preflight) and Task 7 (status preflight) — the first one ships; subsequent commands inherit the same preflight via the shared helper in `src/cli/lib/preflight.ts`.
 3. **`DATABASE_URL` role equals `POSTGRES_SUPERUSER_URL` role.** Expected: `init` refuses with explicit "refusing to drop privileges" message; never silently re-grants to the same role. Pinned by Task 5.
-4. **`upgrade` mid-flight failure (image starts, healthcheck times out).** Expected: `image:` field in `/etc/genwork/compose.yml` is reverted to `previous-version`, container is restarted, error output is preserved. The database is *not* rolled back. Pinned by Task 6.
+4. **`upgrade` mid-flight failure (image starts, healthcheck times out).** Expected: `image:` field in `/etc/mixcwork/compose.yml` is reverted to `previous-version`, container is restarted, error output is preserved. The database is *not* rolled back. Pinned by Task 6.
 5. **`restore` while `status` reports the server healthy.** Expected: `restore` refuses unless `--force`; even with `--force`, prints a loud warning before destructive work. Pinned by Task 8.
 6. **Container `start` with `POSTGRES_SUPERUSER_URL` still in `.env`.** Expected: log a debug line and continue; the variable is unused at runtime. Pinned by Task 4.
 
@@ -51,12 +51,12 @@ These are the spec-implied failure modes that no single task's tests pin. Each l
 
 Rulings made during the plan's self-review. Each line is `Ruling — why — what it costs if wrong`.
 
-- **Test-only `INIT_DATA_DIR` env override on `init.ts`.** Adding one env-var lookup in the production code so tests can run without root and without writing to `/etc/genwork`. The cost: one extra env var; if a customer's setup script uses `INIT_DATA_DIR` it would shadow the real path — negligible because the spec already names every new env var and `INIT_DATA_DIR` is not in `.env.example`. **Why:** without it, `init.test.ts` either needs root or it tests a code path that does not match production. **Wrong-direction cost:** one extra env var, no behavioral change.
-- **`COMPOSE_FILE` env override on `upgrade.ts` and `status.ts`.** Same pattern as `INIT_DATA_DIR`. The dispatcher already uses `COMPOSE_FILE` for `logs`; extending it to the other two host-side compose commands keeps the test surface uniform. **Why:** without it, the upgrade and status tests would have to redirect at the `docker compose -f /etc/genwork/...` level via process mock only, and the `--force` / `--to` parsing tests could not pin the compose file. **Wrong-direction cost:** one env var, no behavioral change.
-- **`/etc/genwork` paths in `upgrade.ts.recordVersion` and `status.ts.versionPath` are NOT env-redirected.** They are post-deploy runtime state files. Tests do not exercise them; if a future test wants to, add the same env-var pattern. **Why:** the spec says "current-version" lives at `/etc/genwork`; making it env-redirectable would imply a customer can move it, which they should not. **Wrong-direction cost:** if a customer has `/etc` on a read-only mount, the `current-version` file would fail to write — out of scope for this plan.
+- **Test-only `INIT_DATA_DIR` env override on `init.ts`.** Adding one env-var lookup in the production code so tests can run without root and without writing to `/etc/mixcwork`. The cost: one extra env var; if a customer's setup script uses `INIT_DATA_DIR` it would shadow the real path — negligible because the spec already names every new env var and `INIT_DATA_DIR` is not in `.env.example`. **Why:** without it, `init.test.ts` either needs root or it tests a code path that does not match production. **Wrong-direction cost:** one extra env var, no behavioral change.
+- **`COMPOSE_FILE` env override on `upgrade.ts` and `status.ts`.** Same pattern as `INIT_DATA_DIR`. The dispatcher already uses `COMPOSE_FILE` for `logs`; extending it to the other two host-side compose commands keeps the test surface uniform. **Why:** without it, the upgrade and status tests would have to redirect at the `docker compose -f /etc/mixcwork/...` level via process mock only, and the `--force` / `--to` parsing tests could not pin the compose file. **Wrong-direction cost:** one env var, no behavioral change.
+- **`/etc/mixcwork` paths in `upgrade.ts.recordVersion` and `status.ts.versionPath` are NOT env-redirected.** They are post-deploy runtime state files. Tests do not exercise them; if a future test wants to, add the same env-var pattern. **Why:** the spec says "current-version" lives at `/etc/mixcwork`; making it env-redirectable would imply a customer can move it, which they should not. **Wrong-direction cost:** if a customer has `/etc` on a read-only mount, the `current-version` file would fail to write — out of scope for this plan.
 - **`init.ts` SQL injection-shaped bug at `CREATE ROLE` (line 691).** The current sketch interpolates `target.password` into a string. **Ruling:** the implementer MUST replace it with `pg-format`-style parameterization OR use `pg`'s `Client` with `query({ text, values })`. **Why:** the test mocks `Client` and never validates SQL syntax, so this bug would not be caught by the test. **Wrong-direction cost:** if not fixed, a customer password containing `'`, `;`, or `--` breaks `init` or worse. Marked `Ruling: must-fix-before-commit` for Task 5.
 - **All new CLI files export `run()` and self-invoke when run directly via `if (import.meta.url === file://argv[1])`.** The dispatcher in `index.ts` calls `m.run()`. **Why:** this matches the `reinit.ts` shape's spirit (top-level function with a single exit point) while keeping the per-subcommand file independently runnable for `npm run start` / `npm run migrate` etc. **Wrong-direction cost:** none, just convention.
-- **`package.json` `genwork-server` bin field not added.** The dispatcher is run via `node dist/cli/index.js`, not via `npx genwork-server`. The customer's `/usr/local/bin/genwork-server` symlink is created by `init.ts` to point at the in-install-tree `cli/dist/index.js`. **Why:** this keeps the dist artifact un-versioned for npm registry concerns (the spec explicitly says no public publish). **Wrong-direction cost:** none.
+- **`package.json` `mixcwork-server` bin field not added.** The dispatcher is run via `node dist/cli/index.js`, not via `npx mixcwork-server`. The customer's `/usr/local/bin/mixcwork-server` symlink is created by `init.ts` to point at the in-install-tree `cli/dist/index.js`. **Why:** this keeps the dist artifact un-versioned for npm registry concerns (the spec explicitly says no public publish). **Wrong-direction cost:** none.
 
 ---
 
@@ -74,8 +74,8 @@ The packaging change touches 16 files. Most are net-new; the existing `src/serve
 | `enterprise_server/nginx.conf.example` | Equivalent nginx snippet. Documentation only. |
 | `enterprise_server/src/cli/index.ts` | Subcommand dispatcher. Reads `argv[2]` and delegates. Also handles `migrate`, `version`, `logs` (delegated to `child_process.spawn('docker', ['compose', 'logs', ...])`). |
 | `enterprise_server/src/cli/lib/preflight.ts` | `assertDockerOnPath()` and `assertRoot()` shared helpers. |
-| `enterprise_server/src/cli/lib/runMigrations.ts` | Wrapper that calls `runMigrations()` from `src/db/migrate.ts`, honoring `GENWORK_MIGRATE_DRY_RUN=1`. |
-| `enterprise_server/src/cli/init.ts` | Host-side. Idempotent. Writes `/etc/genwork/`, runs DB bootstrap, installs host-side symlink. |
+| `enterprise_server/src/cli/lib/runMigrations.ts` | Wrapper that calls `runMigrations()` from `src/db/migrate.ts`, honoring `MIXCWORK_MIGRATE_DRY_RUN=1`. |
+| `enterprise_server/src/cli/init.ts` | Host-side. Idempotent. Writes `/etc/mixcwork/`, runs DB bootstrap, installs host-side symlink. |
 | `enterprise_server/src/cli/start.ts` | Container-side. Run migrations, then `import('../server.js').serve()`. |
 | `enterprise_server/src/cli/migrate.ts` | Container-side. Run or dry-run migrations. |
 | `enterprise_server/src/cli/status.ts` | Host-side. `docker compose ps` + `/health` + version. Exit codes 0/1/2. |
@@ -83,7 +83,7 @@ The packaging change touches 16 files. Most are net-new; the existing `src/serve
 | `enterprise_server/src/cli/restore.ts` | Host-side. `pg_restore` + `tar xf` with `--force` guard. |
 | `enterprise_server/src/cli/upgrade.ts` | Host-side. Pull, pre-migrate dry-run, swap image, restart, healthcheck poll, rollback on fail. |
 | `enterprise_server/src/cli/version.ts` | Reads `VERSION` env baked at build time; prints and exits. |
-| `enterprise_server/src/cli/logs.ts` | `child_process.spawn('docker', ['compose', '-f', '/etc/genwork/compose.yml', 'logs', ...])`. |
+| `enterprise_server/src/cli/logs.ts` | `child_process.spawn('docker', ['compose', '-f', '/etc/mixcwork/compose.yml', 'logs', ...])`. |
 | `scripts/build-enterprise-image.sh` | `docker buildx build` with tag from `git describe` or arg. |
 | `docs/enterprise-server-deploy.md` | Customer-facing manual. |
 | `.github/workflows/enterprise-server-image.yml` | Optional image-build CI. `workflow_dispatch` + tag push. |
@@ -92,7 +92,7 @@ The packaging change touches 16 files. Most are net-new; the existing `src/serve
 
 | Path | What changes |
 | --- | --- |
-| `enterprise_server/package.json` | Add `build` script (TS compile), add `genwork-server` bin entry, add `pg` start point. |
+| `enterprise_server/package.json` | Add `build` script (TS compile), add `mixcwork-server` bin entry, add `pg` start point. |
 | `enterprise_server/.env.example` | Append `IMAGE_TAG`, `IMAGE_REPO`, `DATA_DIR`, `POSTGRES_SUPERUSER_URL` per spec §6.1. |
 | `enterprise_server/tsconfig.build.json` | **New** small file overriding `noEmit: false` + `outDir: dist` for the production build. The dev `tsconfig.json` keeps `noEmit: true` so `tsx` still works. |
 | `enterprise_server/src/server.ts` | Export the `serve()` function so `cli/start.ts` can call it (currently it is invoked at module load). |
@@ -158,10 +158,10 @@ In the `scripts` block, after the existing `reinit` entry, add:
 ```json
 "build": "tsc -p tsconfig.build.json",
 "start": "node --enable-source-maps dist/server.js",
-"genwork-server": "node --enable-source-maps dist/cli/index.js"
+"mixcwork-server": "node --enable-source-maps dist/cli/index.js"
 ```
 
-The `reinit` script is unchanged. `start` and `genwork-server` use the compiled output (production entry points), `dev` and `reinit` still use `tsx` (dev experience).
+The `reinit` script is unchanged. `start` and `mixcwork-server` use the compiled output (production entry points), `dev` and `reinit` still use `tsx` (dev experience).
 
 - [ ] **Step 3: Add a one-line header comment in `tsconfig.json`**
 
@@ -285,7 +285,7 @@ git commit -m "refactor(enterprise-server): export serve() from src/server.ts"
 - Create: `enterprise_server/src/cli/lib/runMigrations.ts`
 - Create: `enterprise_server/src/cli/migrate.ts`
 - Create: `enterprise_server/src/cli/version.ts`
-- Modify: `enterprise_server/package.json` (add `genwork-server` bin; already in Task 1)
+- Modify: `enterprise_server/package.json` (add `mixcwork-server` bin; already in Task 1)
 - Test: `enterprise_server/tests/cli/preflight.test.ts`
 - Test: `enterprise_server/tests/cli/version.test.ts`
 
@@ -328,7 +328,7 @@ export function requireEnv(name: string): string {
 import { runMigrations } from '../db/migrate.js';
 import { pool } from '../db/pool.js';
 
-const dryRun = process.env.GENWORK_MIGRATE_DRY_RUN === '1';
+const dryRun = process.env.MIXCWORK_MIGRATE_DRY_RUN === '1';
 
 export async function runMigrationsOnce(): Promise<void> {
   if (dryRun) {
@@ -348,8 +348,8 @@ import { runMigrationsOnce } from './lib/runMigrations.js';
 import { pool } from '../db/pool.js';
 
 export async function run(): Promise<void> {
-  if (process.env.GENWORK_MIGRATE_DRY_RUN === '1') {
-    console.log('[migrate] GENWORK_MIGRATE_DRY_RUN=1 — running in dry-run mode');
+  if (process.env.MIXCWORK_MIGRATE_DRY_RUN === '1') {
+    console.log('[migrate] MIXCWORK_MIGRATE_DRY_RUN=1 — running in dry-run mode');
   }
   await runMigrationsOnce();
   await pool.end();
@@ -369,7 +369,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 const VERSION = process.env.VERSION ?? 'dev';
 
 export function run(): void {
-  console.log(`genwork-server ${VERSION}`);
+  console.log(`mixcwork-server ${VERSION}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -415,7 +415,7 @@ async function main(): Promise<void> {
       await import('./upgrade.js').then((m) => m.run());
       break;
     case 'logs': {
-      const composeFile = process.env.COMPOSE_FILE ?? '/etc/genwork/compose.yml';
+      const composeFile = process.env.COMPOSE_FILE ?? '/etc/mixcwork/compose.yml';
       const child = spawn('docker', ['compose', '-f', composeFile, 'logs', ...process.argv.slice(3)], {
         stdio: 'inherit',
       });
@@ -444,15 +444,15 @@ async function main(): Promise<void> {
 
 function printHelp(): void {
   const lines = [
-    'genwork-server — Enterprise Server lifecycle CLI',
+    'mixcwork-server — Enterprise Server lifecycle CLI',
     '',
     'Subcommands:',
-    '  init       Host-side: prepare /etc/genwork/ and bootstrap the database',
+    '  init       Host-side: prepare /etc/mixcwork/ and bootstrap the database',
     '  start      Container-side: run migrations and start the server',
-    '  migrate    Container-side: apply pending DB migrations (or dry-run if GENWORK_MIGRATE_DRY_RUN=1)',
+    '  migrate    Container-side: apply pending DB migrations (or dry-run if MIXCWORK_MIGRATE_DRY_RUN=1)',
     '  status     Host-side: report health / version / uptime',
     '  logs       Host-side: tail docker compose logs',
-    '  backup     Host-side: dump the database and tar /etc/genwork/data',
+    '  backup     Host-side: dump the database and tar /etc/mixcwork/data',
     '  restore    Host-side: restore from a backup tarball',
     '  upgrade    Host-side: pull a new image and restart with rollback on failure',
     '  reinit     Legacy: re-open the /setup flow (preserved unchanged)',
@@ -507,7 +507,7 @@ If the `vi.spyOn` approach above feels heavy, replace it with a `vi.mock('node:c
 ```ts
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-describe('genwork-server version', () => {
+describe('mixcwork-server version', () => {
   let prevVersion: string | undefined;
   let log: ReturnType<typeof vi.spyOn>;
 
@@ -526,7 +526,7 @@ describe('genwork-server version', () => {
   test('prints VERSION env when set', async () => {
     const { run } = await import('../../src/cli/version.js');
     run();
-    expect(log).toHaveBeenCalledWith('genwork-server v2026.10.15-test');
+    expect(log).toHaveBeenCalledWith('mixcwork-server v2026.10.15-test');
   });
 });
 ```
@@ -579,7 +579,7 @@ import { serve } from '../server.js';
 export async function run(): Promise<void> {
   await runMigrationsOnce();
   // If we are running in dry-run mode, exit before binding the port.
-  if (process.env.GENWORK_MIGRATE_DRY_RUN === '1') {
+  if (process.env.MIXCWORK_MIGRATE_DRY_RUN === '1') {
     console.log('[start] dry-run complete; skipping serve()');
     await pool.end();
     return;
@@ -602,12 +602,12 @@ import { describe, expect, test, vi } from 'vitest';
 
 describe('start subcommand', () => {
   test('skips serve() in dry-run mode', async () => {
-    process.env.GENWORK_MIGRATE_DRY_RUN = '1';
+    process.env.MIXCWORK_MIGRATE_DRY_RUN = '1';
     const { run } = await import('../../src/cli/start.js');
     // Stub serve so it never binds a port; we just assert dry-run returns.
     const exit = vi.fn();
     await expect(run()).resolves.toBeUndefined();
-    delete process.env.GENWORK_MIGRATE_DRY_RUN;
+    delete process.env.MIXCWORK_MIGRATE_DRY_RUN;
   });
 });
 ```
@@ -643,18 +643,18 @@ Append the spec's §6.1 block (existing fields stay; new fields go at the bottom
 ```bash
 # --- Image & install paths (NEW) -----------------------------------------
 # Where the CLI looks for compose.yml / Dockerfile before init. Defaults to
-# the install path of the genwork-server binary.
-# INSTALL_DIR=/opt/genwork
+# the install path of the mixcwork-server binary.
+# INSTALL_DIR=/opt/mixcwork
 
 # Image tag for `docker compose pull`. Bump during upgrade.
 IMAGE_TAG=latest
-# Image repo, e.g. registry.example.com/genwork/enterprise-server
+# Image repo, e.g. registry.example.com/mixcwork/enterprise-server
 # IMAGE_REPO=enterprise-server
 
 # Persistent data dir inside the container. Keep as /data.
 DATA_DIR=/data
 
-# --- One-time DB bootstrap (NEW, used by `genwork-server init` only) -----
+# --- One-time DB bootstrap (NEW, used by `mixcwork-server init` only) -----
 # A superuser URL with CREATEDB / CREATEROLE privileges. The app container
 # does NOT need this; it uses DATABASE_URL. After init, you can delete this
 # line.
@@ -669,7 +669,7 @@ import { dirname, join, resolve } from 'node:path';
 import { Client } from 'pg';
 import { assertDockerOnPath, assertRoot, requireEnv } from './lib/preflight.js';
 
-const DEFAULT_DATA_DIR = '/etc/genwork';
+const DEFAULT_DATA_DIR = '/etc/mixcwork';
 const DEFAULT_INSTALL_DIR = process.env.INSTALL_DIR ?? dirname(new URL(import.meta.url).pathname);
 
 type Options = {
@@ -723,7 +723,7 @@ function writeFiles(installDir: string, dataDir: string, imageTag: string): void
   copyFileSync(join(installDir, 'caddyfile.example'), join(dataDir, 'caddyfile.example'));
   writeFileSync(join(dataDir, 'current-version'), imageTag);
   // Host-side binary symlink
-  const link = '/usr/local/bin/genwork-server';
+  const link = '/usr/local/bin/mixcwork-server';
   const target = join(installDir, 'cli', 'dist', 'index.js');
   try {
     if (!existsSync(link)) symlinkSync(target, link);
@@ -738,7 +738,7 @@ function printEnvTemplate(): void {
     'Required .env keys (fill in, do not commit):',
     '  DATABASE_URL=postgres://<role>:<password>@<host>:<port>/<db>',
     '  JWT_SECRET=<openssl rand -hex 32>',
-    '  GENWORK_VAULT_MASTER_KEY=<openssl rand -base64 32>',
+    '  MIXCWORK_VAULT_MASTER_KEY=<openssl rand -base64 32>',
     '  PORT=8787',
     '  IMAGE_TAG=latest',
     '  DATA_DIR=/data',
@@ -753,9 +753,9 @@ function validateEnvStrength(): void {
     console.error('JWT_SECRET must be ≥32 chars. Generate with: openssl rand -hex 32');
     process.exit(1);
   }
-  const vault = process.env.GENWORK_VAULT_MASTER_KEY ?? '';
+  const vault = process.env.MIXCWORK_VAULT_MASTER_KEY ?? '';
   if (!vault) {
-    console.error('GENWORK_VAULT_MASTER_KEY is required. Generate with: openssl rand -base64 32');
+    console.error('MIXCWORK_VAULT_MASTER_KEY is required. Generate with: openssl rand -base64 32');
     process.exit(1);
   }
 }
@@ -786,7 +786,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
   const imageTag = process.env.IMAGE_TAG ?? 'latest';
   writeFiles(DEFAULT_INSTALL_DIR, dataDir, imageTag);
   validateEnvStrength();
-  console.log('[init] done. Next: edit .env, then `genwork-server start` (or `docker compose -f /etc/genwork/compose.yml up -d`).');
+  console.log('[init] done. Next: edit .env, then `mixcwork-server start` (or `docker compose -f /etc/mixcwork/compose.yml up -d`).');
 }
 ```
 
@@ -798,7 +798,7 @@ The test mocks `pg.Client` so it never actually connects. It exercises:
 - **Review Focus #3**: role == superuser role → refuse.
 - **Review Focus on weak secrets**: `JWT_SECRET < 32` chars → refuse after writing files.
 
-`init.ts` writes to `DEFAULT_DATA_DIR` which is `/etc/genwork`. The test points it at a temp dir via the `INIT_DATA_DIR` env override (added below as a small extension to `init.ts` so the test does not need root or write to `/etc`).
+`init.ts` writes to `DEFAULT_DATA_DIR` which is `/etc/mixcwork`. The test points it at a temp dir via the `INIT_DATA_DIR` env override (added below as a small extension to `init.ts` so the test does not need root or write to `/etc`).
 
 First, extend `init.ts` to honor `INIT_DATA_DIR` (small surgical change to the existing `init.ts` code above). Replace the line:
 
@@ -820,7 +820,7 @@ import { mkdtempSync, rmSync, existsSync, readFileSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const tmp = mkdtempSync(join(tmpdir(), 'genwork-init-'));
+const tmp = mkdtempSync(join(tmpdir(), 'mixcwork-init-'));
 
 beforeEach(() => {
   vi.resetModules();
@@ -828,7 +828,7 @@ beforeEach(() => {
   vi.spyOn(require('node:child_process'), 'execSync').mockReturnValue(Buffer.from('/usr/bin/docker'));
   // Strong secrets
   process.env.JWT_SECRET = 'x'.repeat(40);
-  process.env.GENWORK_VAULT_MASTER_KEY = 'y'.repeat(40);
+  process.env.MIXCWORK_VAULT_MASTER_KEY = 'y'.repeat(40);
   process.env.DATABASE_URL = 'postgres://app:secret@host:5432/appdb';
   process.env.POSTGRES_SUPERUSER_URL = 'postgres://postgres:pw@host:5432/postgres';
   // Redirect the production data dir to a temp dir for the test
@@ -915,7 +915,7 @@ git commit -m "feat(enterprise-server): cli init subcommand and .env.example ext
 - Create: `enterprise_server/src/cli/upgrade.ts`
 - Test: `enterprise_server/tests/cli/upgrade.test.ts`
 
-The hardest subcommand. Pulls the new image, runs a pre-migration dry-run, swaps the `image:` field in `/etc/genwork/compose.yml`, restarts the container, polls `/health` for 30s, and rolls back on failure. The database is *not* rolled back (the dry-run never wrote).
+The hardest subcommand. Pulls the new image, runs a pre-migration dry-run, swaps the `image:` field in `/etc/mixcwork/compose.yml`, restarts the container, polls `/health` for 30s, and rolls back on failure. The database is *not* rolled back (the dry-run never wrote).
 
 - [ ] **Step 1: Write `upgrade.ts`**
 
@@ -924,7 +924,7 @@ import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { assertDockerOnPath, assertRoot, requireEnv } from './lib/preflight.js';
 
-const COMPOSE = process.env.COMPOSE_FILE ?? '/etc/genwork/compose.yml';
+const COMPOSE = process.env.COMPOSE_FILE ?? '/etc/mixcwork/compose.yml';
 const HEALTH_TIMEOUT_MS = 30_000;
 const HEALTH_POLL_MS = 1_000;
 
@@ -942,8 +942,8 @@ function writeComposeImage(image: string): void {
 }
 
 function recordVersion(previous: string, current: string): void {
-  writeFileSync('/etc/genwork/previous-version', previous);
-  writeFileSync('/etc/genwork/current-version', current);
+  writeFileSync('/etc/mixcwork/previous-version', previous);
+  writeFileSync('/etc/mixcwork/current-version', current);
 }
 
 async function pollHealth(): Promise<boolean> {
@@ -964,7 +964,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
     if (argv[i] === '--to') to = argv[++i];
     else { console.error(`Unknown arg: ${argv[i]}`); process.exit(2); }
   }
-  if (!to) { console.error('Usage: genwork-server upgrade --to <version>'); process.exit(2); }
+  if (!to) { console.error('Usage: mixcwork-server upgrade --to <version>'); process.exit(2); }
 
   assertRoot();
   assertDockerOnPath();
@@ -979,7 +979,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
   console.log(`[upgrade] dry-run pre-migration`);
   try {
     execSync(
-      `docker run --rm --env-file .env -e GENWORK_MIGRATE_DRY_RUN=1 ${newImage} genwork-server migrate`,
+      `docker run --rm --env-file .env -e MIXCWORK_MIGRATE_DRY_RUN=1 ${newImage} mixcwork-server migrate`,
       { stdio: 'inherit' }
     );
   } catch (e) {
@@ -1015,7 +1015,7 @@ import { mkdtempSync, rmSync, writeFileSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const tmp = mkdtempSync(join(tmpdir(), 'genwork-upgrade-'));
+const tmp = mkdtempSync(join(tmpdir(), 'mixcwork-upgrade-'));
 
 beforeEach(() => {
   vi.resetModules();
@@ -1087,7 +1087,7 @@ import { execSync } from 'node:child_process';
 import { readFileSync, existsSync } from 'node:fs';
 import { assertDockerOnPath } from './lib/preflight.js';
 
-const COMPOSE = process.env.COMPOSE_FILE ?? '/etc/genwork/compose.yml';
+const COMPOSE = process.env.COMPOSE_FILE ?? '/etc/mixcwork/compose.yml';
 
 async function tryHealth(): Promise<{ ok: boolean; latencyMs: number | null }> {
   const start = Date.now();
@@ -1111,7 +1111,7 @@ export async function run(): Promise<void> {
     process.exit(2);
   }
   const health = await tryHealth();
-  const versionPath = '/etc/genwork/current-version';
+  const versionPath = '/etc/mixcwork/current-version';
   const version = existsSync(versionPath) ? readFileSync(versionPath, 'utf8').trim() : 'unknown';
   console.log(`Service: running`);
   console.log(`Health:  ${health.ok ? 'ok' : 'unhealthy'}${health.latencyMs != null ? ` (${health.latencyMs}ms)` : ''}`);
@@ -1185,7 +1185,7 @@ import { join } from 'node:path';
 import { requireEnv, assertRoot, assertDockerOnPath } from './lib/preflight.js';
 
 export async function run(argv: string[] = process.argv.slice(2)): Promise<void> {
-  let out = `./genwork-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`;
+  let out = `./mixcwork-backup-${new Date().toISOString().slice(0, 10)}.tar.gz`;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--out') out = argv[++i];
     else { console.error(`Unknown arg: ${argv[i]}`); process.exit(2); }
@@ -1193,7 +1193,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
   assertRoot();
   assertDockerOnPath();
   const dbUrl = requireEnv('DATABASE_URL');
-  const work = mkdtempSync(join(tmpdir(), 'genwork-backup-'));
+  const work = mkdtempSync(join(tmpdir(), 'mixcwork-backup-'));
   const dump = join(work, 'dump.sql.gz');
   console.log(`[backup] pg_dump → ${dump}`);
   const dumpRes = spawnSync('pg_dump', ['--no-owner', '--no-privileges', '--format=custom', `--file=${dump}`, dbUrl], { stdio: 'inherit' });
@@ -1202,7 +1202,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
     process.exit(dumpRes.status ?? 1);
   }
   console.log(`[backup] tar → ${out}`);
-  execSync(`tar czf ${out} -C /etc/genwork data ${dump}`, { stdio: 'inherit' });
+  execSync(`tar czf ${out} -C /etc/mixcwork data ${dump}`, { stdio: 'inherit' });
   console.log(`[backup] wrote ${out}`);
 }
 ```
@@ -1241,7 +1241,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
     else if (a === '--force') force = true;
     else { console.error(`Unknown arg: ${a}`); process.exit(2); }
   }
-  if (!archive) { console.error('Usage: genwork-server restore --from <archive.tar.gz> [--force]'); process.exit(2); }
+  if (!archive) { console.error('Usage: mixcwork-server restore --from <archive.tar.gz> [--force]'); process.exit(2); }
   assertRoot();
   assertDockerOnPath();
 
@@ -1256,7 +1256,7 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
     const ok = await confirm('About to overwrite the database. This is destructive.');
     if (!ok) { console.log('Aborted.'); process.exit(0); }
   }
-  const work = mkdtempSync(join(tmpdir(), 'genwork-restore-'));
+  const work = mkdtempSync(join(tmpdir(), 'mixcwork-restore-'));
   console.log(`[restore] extracting ${archive}`);
   execSync(`tar xzf ${archive} -C ${work}`, { stdio: 'inherit' });
   const dump = join(work, 'dump.sql.gz');
@@ -1267,8 +1267,8 @@ export async function run(argv: string[] = process.argv.slice(2)): Promise<void>
     console.error(`[restore] pg_restore exited ${r.status}`);
     process.exit(r.status ?? 1);
   }
-  console.log(`[restore] copying /etc/genwork/data`);
-  execSync(`rm -rf /etc/genwork/data && mkdir -p /etc/genwork && tar xzf ${archive} -C /etc/genwork data`, { stdio: 'inherit' });
+  console.log(`[restore] copying /etc/mixcwork/data`);
+  execSync(`rm -rf /etc/mixcwork/data && mkdir -p /etc/mixcwork && tar xzf ${archive} -C /etc/mixcwork data`, { stdio: 'inherit' });
   console.log('[restore] done.');
 }
 ```
@@ -1415,7 +1415,7 @@ CMD ["start"]
 - [ ] **Step 2: Create `docker-compose.yml`**
 
 ```yaml
-name: genwork-enterprise
+name: mixcwork-enterprise
 
 services:
   app:
@@ -1425,7 +1425,7 @@ services:
     ports:
       - "127.0.0.1:8787:8787"
     volumes:
-      - genwork_data:/data
+      - mixcwork_data:/data
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 15s
@@ -1437,14 +1437,14 @@ services:
       options: { max-size: "20m", max-file: "5" }
 
 volumes:
-  genwork_data:
+  mixcwork_data:
 ```
 
 - [ ] **Step 3: Create `caddyfile.example`**
 
 ```caddyfile
 # Variant 1: public host with auto-issued cert
-api.genwork.example.com {
+api.mixcwork.example.com {
     reverse_proxy 127.0.0.1:8787 {
         transport http {
             read_timeout 120s
@@ -1465,10 +1465,10 @@ api.genwork.example.com {
 ```nginx
 server {
     listen 443 ssl;
-    server_name api.genwork.example.com;
+    server_name api.mixcwork.example.com;
 
-    ssl_certificate     /etc/ssl/certs/genwork.crt;
-    ssl_certificate_key /etc/ssl/private/genwork.key;
+    ssl_certificate     /etc/ssl/certs/mixcwork.crt;
+    ssl_certificate_key /etc/ssl/private/mixcwork.key;
 
     location / {
         proxy_pass http://127.0.0.1:8787;
@@ -1557,7 +1557,7 @@ jobs:
 - [ ] **Step 7: Verify the Dockerfile builds (locally)**
 
 ```bash
-cd /Users/paulwang/work/GenWork
+cd /Users/paulwang/work/MixCWork
 chmod +x scripts/build-enterprise-image.sh
 ./scripts/build-enterprise-image.sh --version test-local
 ```
@@ -1613,46 +1613,46 @@ or pull from your internal registry.
 
 ## Step 2 — Prepare `.env`
 Copy `enterprise_server/.env.example` to `.env`. Fill in `DATABASE_URL`,
-`JWT_SECRET` (`openssl rand -hex 32`), `GENWORK_VAULT_MASTER_KEY`
+`JWT_SECRET` (`openssl rand -hex 32`), `MIXCWORK_VAULT_MASTER_KEY`
 (`openssl rand -base64 32`), `IMAGE_TAG`, and `POSTGRES_SUPERUSER_URL`
 (used by `init` only — remove the line after init).
 
-## Step 3 — `genwork-server init`
+## Step 3 — `mixcwork-server init`
 On the production host, with `.env` in the cwd:
-`genwork-server init` (or `node enterprise_server/dist/cli/index.js init`).
+`mixcwork-server init` (or `node enterprise_server/dist/cli/index.js init`).
 
 This:
 - Validates docker / root.
 - Connects to `POSTGRES_SUPERUSER_URL` and creates the application role + DB.
-- Writes `/etc/genwork/{compose.yml, caddyfile.example, current-version}`.
-- Installs `/usr/local/bin/genwork-server` symlink.
+- Writes `/etc/mixcwork/{compose.yml, caddyfile.example, current-version}`.
+- Installs `/usr/local/bin/mixcwork-server` symlink.
 
 ## Step 4 — Start
-`docker compose -f /etc/genwork/compose.yml up -d` (or `genwork-server start`).
+`docker compose -f /etc/mixcwork/compose.yml up -d` (or `mixcwork-server start`).
 Wait for `docker compose ps` to show `Up (healthy)`.
 
 ## Step 5 — First-run setup
 Open `https://<host>/setup` and create the org + super-admin.
 
 ## Step 6 — Reverse proxy
-Edit `/etc/genwork/caddyfile.example` (or your own nginx config) and reload
+Edit `/etc/mixcwork/caddyfile.example` (or your own nginx config) and reload
 the proxy. Confirm `https://<host>/api/health` returns 200.
 
 ## Step 7 — Upgrade later
-`genwork-server upgrade --to v2026.11.1`. The CLI pulls, dry-runs the
+`mixcwork-server upgrade --to v2026.11.1`. The CLI pulls, dry-runs the
 migrations, swaps the image, restarts, and rolls back on healthcheck
 failure (the database is not rolled back).
 
 ## Step 8 — Backup
-`genwork-server backup` writes `genwork-backup-<date>.tar.gz` to cwd.
+`mixcwork-server backup` writes `mixcwork-backup-<date>.tar.gz` to cwd.
 
 ## Step 9 — Restore
-Stop the server first, then `genwork-server restore --from <archive>`.
+Stop the server first, then `mixcwork-server restore --from <archive>`.
 With `--force`, the "service is up" guard is bypassed (not recommended).
 
 ## Monitoring
-- `genwork-server status` — health, version, exit 0/1/2.
-- `genwork-server logs` — `docker compose logs` passthrough.
+- `mixcwork-server status` — health, version, exit 0/1/2.
+- `mixcwork-server logs` — `docker compose logs` passthrough.
 - Container logs also live at `/var/lib/docker/containers/.../<id>-json.log`
   (or the customer's logging driver).
 
@@ -1675,7 +1675,7 @@ Installation & Deployment" section with a short pointer:
 
 > For production deployment on a customer-managed Linux host, see
 > [`docs/enterprise-server-deploy.md`](docs/enterprise-server-deploy.md).
-> That document covers the Docker image, the `genwork-server` CLI,
+> That document covers the Docker image, the `mixcwork-server` CLI,
 > TLS termination, upgrades, and backups. The "Quick Start" steps above
 > remain valid for local development.
 
@@ -1725,7 +1725,7 @@ node dist/cli/index.js version
 node dist/cli/index.js help
 ```
 
-Expected: `version` prints `genwork-server dev`. `help` prints the subcommand list.
+Expected: `version` prints `mixcwork-server dev`. `help` prints the subcommand list.
 
 - [ ] **Step 4: Confirm no regression in `reinit`**
 

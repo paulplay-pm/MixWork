@@ -1,5 +1,5 @@
 # Variant 1: public host with auto-issued cert
-api.genwork.example.com {
+api.mixcwork.example.com {
     reverse_proxy 127.0.0.1:8787 {
         transport http {
             read_timeout 120s

@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **Working dir for all backend files:** `enterprise_server/`. Backend runs via `tsx` (no tsc build gate); tests via Vitest. Full backend suite runs with `--no-file-parallelism`.
-- **Credential crypto:** reuse `encrypt`/`decrypt` from `enterprise_server/src/vault/crypto.ts` (AES-256-GCM). Test env sets `GENWORK_VAULT_MASTER_KEY` (see `tests/helpers/setupEnv.ts`). Never return plaintext; expose a masked value (`••••<last4>`).
+- **Credential crypto:** reuse `encrypt`/`decrypt` from `enterprise_server/src/vault/crypto.ts` (AES-256-GCM). Test env sets `MIXCWORK_VAULT_MASTER_KEY` (see `tests/helpers/setupEnv.ts`). Never return plaintext; expose a masked value (`••••<last4>`).
 - **Roles / enforcement:** JWT `claims.roles` is the `extra_roles` set. `super_admin` short-circuits (sees/uses all). MCP access = `allowed_roles ∩ claims.roles ≠ ∅` OR `super_admin`. Position-inherited roles deliberately excluded.
 - **Auth gates:** new public endpoints use `requireAuth`; new admin endpoints use `requireAuth` + `requireCapability('org_admin')` (imported from `src/auth/middleware`).
 - **i18n:** every user-visible string goes through `t('key')` in `web/src/i18n.ts` with **both** `en` and `zh` keys. `t()` does NOT interpolate `{x}` placeholders — avoid placeholders; build phrases by concatenation in components or use distinct keys.

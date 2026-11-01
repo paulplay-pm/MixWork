@@ -14,8 +14,11 @@ import { kitCatalog } from '../../src/models/kitCatalog';
 
 async function org(): Promise<string> {
   const id = `org-${randomUUID().slice(0, 8)}`;
-  const r = await testPool.query('INSERT INTO orgs(id, name) VALUES ($1,$2) RETURNING id', [id, id]);
-  return r.rows[0].id as string;
+  const r = await testPool.query<{ id: string }>(
+    'INSERT INTO orgs(id, name) VALUES ($1,$2) RETURNING id',
+    [id, id]
+  );
+  return r.rows[0].id;
 }
 const scope = () => ({ allCompany: true, deptIds: [], userIds: [] });
 const zip = { size: 10, sha256: 'x', fileName: 'a.zip' };

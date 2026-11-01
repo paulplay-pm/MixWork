@@ -6,7 +6,8 @@ import { draftFromAgent, emptyDraft, isDirty, validateDraft } from '../../../src
 const item = (): AgentMarketplaceItem => ({
   agentId: 'a1', name: 'N', description: 'd', identity: 'i', systemPrompt: 'p',
   model: 'gpt-5', thinkingLevel: 'medium', icon: 'bot', iconColor: 2, aboutYou: 'me',
-  skillIds: ['s1'], subagentAllowAgentIds: ['a2'], allowedRoles: ['org_admin'], enabled: true,
+  skillIds: ['s1'], subagentAllowAgentIds: ['a2'],
+  scope: { allCompany: false, deptIds: ['d1'], userIds: [] }, enabled: true,
   imChannels: ['feishu'],
 });
 
@@ -27,11 +28,18 @@ describe('drawerForm', () => {
     const changed = { ...base, name: 'M' };
     expect(isDirty(changed, base)).toBe(true);
   });
-  test('validateDraft flags empty name and empty roles', () => {
+  test('validateDraft flags empty name and an empty scope', () => {
     expect(validateDraft(emptyDraft()).name).toBeTruthy();
     const withName = { ...emptyDraft(), name: 'x' };
-    expect(validateDraft(withName).roles).toBeTruthy();
-    const ok = { ...withName, allowedRoles: ['org_admin'] };
-    expect(validateDraft(ok)).toEqual({});
+    expect(validateDraft(withName).scope).toBeTruthy();
+    // A department grant is enough; a member exception is enough too.
+    expect(validateDraft({ ...withName, scope: { allCompany: false, deptIds: ['d1'], userIds: [] } })).toEqual({});
+    expect(validateDraft({ ...withName, scope: { allCompany: false, deptIds: [], userIds: ['u1'] } })).toEqual({});
+    expect(validateDraft({ ...withName, scope: { allCompany: true, deptIds: [], userIds: [] } })).toEqual({});
+  });
+
+  test('draftFromAgent copies the scope', () => {
+    const d = draftFromAgent(item());
+    expect(d.scope).toEqual({ allCompany: false, deptIds: ['d1'], userIds: [] });
   });
 });

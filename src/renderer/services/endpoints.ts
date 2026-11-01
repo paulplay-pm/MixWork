@@ -28,7 +28,7 @@ export const getKitStoreUrl = (): string => '';
 // configured enterprise console.
 export const getLoginOvermindUrl = (): string => '';
 
-// Portal URLs — removed. All previously routed to genwork.youdao.com.
+// Portal URLs — removed. All previously routed to mixcwork.youdao.com.
 // Return '' so existing `shell.openExternal(url || fallback)` call sites
 // gracefully skip the open.
 export const getPortalLoginUrl = (): string => '';

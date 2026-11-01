@@ -2,7 +2,7 @@
  * OpenClaw Channel Session Sync
  *
  * Discovers and maps sessions created by OpenClaw channel extensions (e.g. Telegram)
- * to local GenWork sessions so that conversations are visible in the GenWork UI.
+ * to local MixCWork sessions so that conversations are visible in the MixCWork UI.
  */
 
 import { DeliveryMode as ScheduledTaskDeliveryMode } from '../../scheduledTask/constants';
@@ -10,14 +10,14 @@ import type { ScheduledTaskJobDelivery } from '../../scheduledTask/cronJobServic
 import {
   isOpenClawCronSessionKey,
   parseOpenClawCronSessionKey,
-} from '../../shared/genwork/openclawCronSessionKey';
+} from '../../shared/mixcwork/openclawCronSessionKey';
 import { parseImConversationId, PlatformRegistry } from '../../shared/platform';
-import type { GenWorkSession, GenWorkStore } from '../genworkStore';
 import { t } from '../i18n';
 import type { IMStore } from '../im/imStore';
 import type { Platform } from '../im/types';
+import type { MixCWorkSession, MixCWorkStore } from '../mixcworkStore';
 
-const GENWORK_SESSION_PREFIX = 'genwork:';
+const MIXCWORK_SESSION_PREFIX = 'mixcwork:';
 const FEISHU_GROUP_CHAT_ID_RE = /^oc_/i;
 export const DEFAULT_MANAGED_AGENT_ID = 'main';
 
@@ -32,7 +32,7 @@ export function buildManagedSessionKey(
 ): string {
   const normalizedSessionId = sessionId.trim();
   const normalizedAgentId = agentId.trim() || DEFAULT_MANAGED_AGENT_ID;
-  return `agent:${normalizedAgentId}:genwork:${normalizedSessionId}`;
+  return `agent:${normalizedAgentId}:mixcwork:${normalizedSessionId}`;
 }
 
 export function parseManagedSessionKey(
@@ -41,8 +41,8 @@ export function parseManagedSessionKey(
   const raw = (sessionKey ?? '').trim();
   if (!raw) return null;
 
-  if (raw.startsWith(GENWORK_SESSION_PREFIX)) {
-    const sessionId = raw.slice(GENWORK_SESSION_PREFIX.length).trim();
+  if (raw.startsWith(MIXCWORK_SESSION_PREFIX)) {
+    const sessionId = raw.slice(MIXCWORK_SESSION_PREFIX.length).trim();
     return sessionId ? { agentId: null, sessionId } : null;
   }
 
@@ -51,7 +51,7 @@ export function parseManagedSessionKey(
   }
 
   const parts = raw.split(':');
-  if (parts.length < 4 || parts[0] !== 'agent' || parts[2] !== 'genwork') {
+  if (parts.length < 4 || parts[0] !== 'agent' || parts[2] !== 'mixcwork') {
     return null;
   }
 
@@ -203,7 +203,7 @@ export function extractAccountIdFromKey(sessionKey: string): string | null {
   return null;
 }
 
-const MULTI_INSTANCE_PLATFORMS = new Set<Platform>(['dingtalk', 'feishu', 'qq', 'email', 'wecom', 'telegram', 'discord', 'popo']);
+const MULTI_INSTANCE_PLATFORMS = new Set<Platform>(['dingtalk', 'feishu', 'qq', 'wecom', 'telegram', 'discord']);
 
 /**
  * Resolve the agent binding for a platform, supporting per-instance bindings.
@@ -254,8 +254,6 @@ function getChannelTitlePrefix(platform: string): string {
     telegram: 'TG',
     discord: 'Discord',
     qq: 'QQ',
-    popo: 'POPO',
-    email: t('channelPrefixEmail'),
   };
   const label = i18nMap[platform] ?? staticMap[platform] ?? platform;
   return `[${label}]`;
@@ -272,7 +270,7 @@ const PEER_KIND_LABELS: Record<string, string> = {
  *
  * conversationId formats (from parseChannelSessionKey):
  *   - "{peerKind}:{peerId}"                  e.g. "direct:alice@corp.example.com"
- *   - "{accountId}:{peerKind}:{peerId}"      e.g. "bot1:group:12345@popo.netease.com"
+ *   - "{accountId}:{peerKind}:{peerId}"      e.g. "bot1:group:12345@corp.example.com"
  *   - plain id                               e.g. "123456789"
  *
  * Steps:
@@ -304,7 +302,7 @@ export function buildChannelDisplayName(conversationId: string): string {
 }
 
 export interface ChannelSessionSyncDeps {
-  genworkStore: GenWorkStore;
+  mixcworkStore: MixCWorkStore;
   imStore: IMStore;
   getDefaultCwd: (agentId?: string) => string;
   /** Optional synchronous lookup: jobId → human-readable name (for cron session titles). */
@@ -315,7 +313,7 @@ export interface ChannelSessionSyncDeps {
 }
 
 export class OpenClawChannelSessionSync {
-  private readonly genworkStore: GenWorkStore;
+  private readonly mixcworkStore: MixCWorkStore;
   private readonly imStore: IMStore;
   private readonly getDefaultCwd: (agentId?: string) => string;
   private readonly resolveJobName: ((jobId: string) => string | null) | null;
@@ -335,25 +333,25 @@ export class OpenClawChannelSessionSync {
   private readonly agentChangedSessionIds = new Set<string>();
 
   constructor(deps: ChannelSessionSyncDeps) {
-    this.genworkStore = deps.genworkStore;
+    this.mixcworkStore = deps.mixcworkStore;
     this.imStore = deps.imStore;
     this.getDefaultCwd = deps.getDefaultCwd;
     this.resolveJobName = deps.resolveJobName ?? null;
     this.resolveJobDelivery = deps.resolveJobDelivery ?? null;
   }
 
-  private updateLocalSessionCwdIfNeeded(session: GenWorkSession, agentId: string): void {
+  private updateLocalSessionCwdIfNeeded(session: MixCWorkSession, agentId: string): void {
     const resolvedCwd = this.getDefaultCwd(agentId).trim();
     if (!resolvedCwd || session.cwd === resolvedCwd) {
       return;
     }
 
-    const updateSession = (this.genworkStore as { updateSession?: GenWorkStore['updateSession'] }).updateSession;
+    const updateSession = (this.mixcworkStore as { updateSession?: MixCWorkStore['updateSession'] }).updateSession;
     if (!updateSession) {
       return;
     }
 
-    updateSession.call(this.genworkStore, session.id, { cwd: resolvedCwd }, { touchUpdatedAt: false });
+    updateSession.call(this.mixcworkStore, session.id, { cwd: resolvedCwd }, { touchUpdatedAt: false });
     console.debug(
       `[ChannelSessionSync] corrected local session ${session.id} cwd for agent ${agentId} to ${resolvedCwd}`,
     );
@@ -381,7 +379,7 @@ export class OpenClawChannelSessionSync {
   private createChannelSession(
     parsed: { platform: Platform; conversationId: string },
     agentId: string,
-  ): GenWorkSession {
+  ): MixCWorkSession {
     const titlePrefix = getChannelTitlePrefix(parsed.platform);
     const title = `${titlePrefix} ${buildChannelDisplayName(parsed.conversationId)}`;
     const cwd = this.getDefaultCwd(agentId);
@@ -394,7 +392,7 @@ export class OpenClawChannelSessionSync {
       agentId,
     );
 
-    const session = this.genworkStore.createSession(title, cwd, '', 'local', [], agentId);
+    const session = this.mixcworkStore.createSession(title, cwd, '', 'local', [], agentId);
     console.log(
       `[ChannelSessionSync] Created session for ${parsed.platform} conversation ${parsed.conversationId}: ${session.id}`,
     );
@@ -431,13 +429,13 @@ export class OpenClawChannelSessionSync {
   }
 
   /**
-   * Try to resolve or create a local GenWork session for a channel-originated sessionKey.
+   * Try to resolve or create a local MixCWork session for a channel-originated sessionKey.
    * Returns the local sessionId if the sessionKey belongs to a channel, or null if not.
    */
   resolveOrCreateSession(sessionKey: string): string | null {
-    // 1. Skip GenWork-originated sessions
+    // 1. Skip MixCWork-originated sessions
     if (isManagedSessionKey(sessionKey)) {
-      console.log('[ChannelSessionSync] skipped: GenWork-originated session');
+      console.log('[ChannelSessionSync] skipped: MixCWork-originated session');
       return null;
     }
 
@@ -483,8 +481,8 @@ export class OpenClawChannelSessionSync {
         : 'none',
     );
     if (existingMapping) {
-      // Verify the GenWork session still exists
-      const session = this.genworkStore.getSession(existingMapping.coworkSessionId);
+      // Verify the MixCWork session still exists
+      const session = this.mixcworkStore.getSession(existingMapping.coworkSessionId);
       if (session) {
         const currentAgentId = agentId;
         if (existingMapping.agentId !== currentAgentId) {
@@ -498,7 +496,7 @@ export class OpenClawChannelSessionSync {
           const titlePrefix = getChannelTitlePrefix(parsed.platform);
           const title = `${titlePrefix} ${buildChannelDisplayName(parsed.conversationId)}`;
           const cwd = this.getDefaultCwd(currentAgentId);
-          const newSession = this.genworkStore.createSession(
+          const newSession = this.mixcworkStore.createSession(
             title,
             cwd,
             '',
@@ -554,7 +552,7 @@ export class OpenClawChannelSessionSync {
       );
     }
 
-    // 5. Create new GenWork session
+    // 5. Create new MixCWork session
     const session = this.createChannelSession(parsed, agentId);
 
     // 6. Persist mapping
@@ -573,7 +571,7 @@ export class OpenClawChannelSessionSync {
   }
 
   /**
-   * Try to resolve (but NOT create) a local GenWork session for a channel sessionKey.
+   * Try to resolve (but NOT create) a local MixCWork session for a channel sessionKey.
    * Used by polling to avoid creating empty sessions when no new messages have arrived.
    * Returns the local sessionId if found, or null if not mapped.
    */
@@ -613,7 +611,7 @@ export class OpenClawChannelSessionSync {
       }
     }
     if (existingMapping) {
-      const session = this.genworkStore.getSession(existingMapping.coworkSessionId);
+      const session = this.mixcworkStore.getSession(existingMapping.coworkSessionId);
       if (session) {
         this.updateLocalSessionCwdIfNeeded(session, existingMapping.agentId);
         this.syncedSessionKeys.set(sessionKey, existingMapping.coworkSessionId);
@@ -675,7 +673,7 @@ export class OpenClawChannelSessionSync {
       if (accountId && parsed.accountId && parsed.accountId !== accountId) continue;
       const sessionKey = mapping.openClawSessionKey?.trim();
       if (!sessionKey) continue;
-      if (!this.genworkStore.getSession(mapping.coworkSessionId)) continue;
+      if (!this.mixcworkStore.getSession(mapping.coworkSessionId)) continue;
       const candidate = { sessionId: mapping.coworkSessionId, sessionKey };
       if (accountId && parsed.accountId === accountId) return candidate;
       if (
@@ -736,7 +734,7 @@ export class OpenClawChannelSessionSync {
     return this.resolveConversationByDeliveryTarget(channel, peerId, normalizedAccountId);
   }
 
-  getOpenClawSessionKeyForGenWorkSession(sessionId: string): {
+  getOpenClawSessionKeyForMixCWorkSession(sessionId: string): {
     isChannelSession: boolean;
     sessionKey: string | null;
   } {
@@ -764,7 +762,7 @@ export class OpenClawChannelSessionSync {
   }
 
   /**
-   * Resolve or create a local GenWork session for the OpenClaw main agent session
+   * Resolve or create a local MixCWork session for the OpenClaw main agent session
    * (e.g. "agent:main:main"). This handles events that flow through the main session
    * rather than per-channel sessions.
    */
@@ -779,7 +777,7 @@ export class OpenClawChannelSessionSync {
 
     const cwd = this.getDefaultCwd('main');
     console.log('[ChannelSessionSync] creating main agent session: key=', sessionKey, 'cwd=', cwd);
-    const session = this.genworkStore.createSession('[OpenClaw]', cwd, '', 'local');
+    const session = this.mixcworkStore.createSession('[OpenClaw]', cwd, '', 'local');
     console.log('[ChannelSessionSync] created main agent session:', session.id);
 
     this.syncedSessionKeys.set(sessionKey, session.id);
@@ -787,7 +785,7 @@ export class OpenClawChannelSessionSync {
   }
 
   /**
-   * Resolve or create a local GenWork session for an OpenClaw cron-isolated session key.
+   * Resolve or create a local MixCWork session for an OpenClaw cron-isolated session key.
    * Supported formats:
    *   - "cron:{jobId}"
    *   - "agent:{agentId}:cron:{jobId}"
@@ -821,11 +819,11 @@ export class OpenClawChannelSessionSync {
 
     const jobId = cronKey.scheduledTaskId;
     const agentId = cronKey.agentId || DEFAULT_MANAGED_AGENT_ID;
-    const persistedSessionId = typeof this.genworkStore.getSessionIdByScheduledTaskId === 'function'
-      ? this.genworkStore.getSessionIdByScheduledTaskId(jobId, agentId)
+    const persistedSessionId = typeof this.mixcworkStore.getSessionIdByScheduledTaskId === 'function'
+      ? this.mixcworkStore.getSessionIdByScheduledTaskId(jobId, agentId)
       : null;
     if (persistedSessionId) {
-      const persistedSession = this.genworkStore.getSession(persistedSessionId, 0);
+      const persistedSession = this.mixcworkStore.getSession(persistedSessionId, 0);
       if (persistedSession) {
         this.updateLocalSessionCwdIfNeeded(persistedSession, agentId);
         this.syncedSessionKeys.set(cronKey.cacheKey, persistedSessionId);
@@ -856,7 +854,7 @@ export class OpenClawChannelSessionSync {
       'cwd=',
       cwd,
     );
-    const session = this.genworkStore.createSession(
+    const session = this.mixcworkStore.createSession(
       title,
       cwd,
       '',

@@ -12,7 +12,7 @@ import {
 } from '../auth/loginRateLimit';
 import { pool } from '../db/pool';
 import { loginRecord } from '../org/loginRecord';
-import { AuditAction } from '../shared/enterpriseServerConstants';
+import { AuditAction, LoginErrorCode } from '../shared/enterpriseServerConstants';
 
 export const authRoutes = new Hono();
 
@@ -68,7 +68,7 @@ authRoutes.post('/auth/login', async (c) => {
     })
     .safeParse(await c.req.json().catch(() => ({})));
   if (!parsed.success) {
-    return c.json({ error: 'invalid' }, 400);
+    return c.json({ error: LoginErrorCode.Invalid }, 400);
   }
   const body = parsed.data;
   // Client metadata for login-event recording (Task 10). Both are
@@ -82,20 +82,20 @@ authRoutes.post('/auth/login', async (c) => {
       `SELECT name FROM orgs ORDER BY created_at ASC LIMIT 2`
     );
     if (r.rows.length === 0) {
-      return c.json({ error: 'invalid' }, 401);
+      return c.json({ error: LoginErrorCode.Invalid }, 401);
     }
     if (r.rows.length > 1) {
       // Multiple orgs and the SPA didn't tell us which one — force the
       // user to pick. The LoginPage will render the selector on the
       // next render.
-      return c.json({ error: 'org_required' }, 400);
+      return c.json({ error: LoginErrorCode.OrgRequired }, 400);
     }
     orgName = r.rows[0]!.name;
   }
 
   const key = `${orgName}:${body.username}`;
   if (!checkLoginRate(key)) {
-    return c.json({ error: 'rate_limited' }, 429);
+    return c.json({ error: LoginErrorCode.RateLimited }, 429);
   }
 
   try {
@@ -151,7 +151,10 @@ authRoutes.post('/auth/login', async (c) => {
       } catch {
         // Best-effort recording: fall through to the 401 either way.
       }
-      return c.json({ error: 'invalid' }, 401);
+      // The failure code tells the client WHICH part of the credential was
+      // wrong (unknown org / unknown user / wrong password / disabled
+      // account) so it can show a specific message instead of a bare 401.
+      return c.json({ error: e.code }, 401);
     }
     throw e;
   }

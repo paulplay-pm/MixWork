@@ -1,5 +1,5 @@
 {
-  "name": "@genwork/skill-web-search",
+  "name": "@mixcwork/skill-web-search",
   "version": "1.0.2",
   "description": "Web search skill using Playwright-controlled browser for real-time information retrieval",
   "main": "dist/server/index.js",
@@ -9,13 +9,13 @@
     "dev": "tsc && node dist/server/index.js"
   },
   "keywords": [
-    "genwork",
+    "mixcwork",
     "skill",
     "web-search",
     "playwright",
     "cdp"
   ],
-  "author": "GenWork",
+  "author": "MixCWork",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",

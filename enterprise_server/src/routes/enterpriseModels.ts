@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
-import { requireAuth } from '../auth/middleware';
+
 import { auditStore } from '../audit/auditStore';
+import { requireAuth } from '../auth/middleware';
 import { enterpriseModels } from '../models/enterpriseModels';
 import { AuditAction } from '../shared/enterpriseServerConstants';
 

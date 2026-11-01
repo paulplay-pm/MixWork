@@ -1,9 +1,11 @@
 // enterprise_server/tests/vault/ssoSecret.test.ts
-import { describe, expect, test } from 'vitest';
 import '../helpers/setupEnv';
+
+import { describe, expect, test } from 'vitest';
+
 import {
-  encryptClientSecret,
   decryptClientSecret,
+  encryptClientSecret,
   maskClientSecret,
   redactConnectionSecrets,
 } from '../../src/vault/ssoSecret';

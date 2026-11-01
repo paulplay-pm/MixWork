@@ -1,10 +1,10 @@
+import { fireEvent,render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route,Routes } from 'react-router-dom';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
 
-import { LoginPage, safeNextRedirect } from '../../src/pages/LoginPage';
 import { apiClient } from '../../src/api/client';
 import { useAuthStore } from '../../src/auth/store';
+import { LoginPage, safeNextRedirect } from '../../src/pages/LoginPage';
 
 const fetchMock = vi.fn();
 (globalThis as unknown as { fetch: unknown }).fetch = fetchMock;
@@ -74,12 +74,36 @@ describe('safeNextRedirect (open-redirect guard)', () => {
 describe('pages/LoginPage ?next= handling', () => {
   const orgsResp = (orgs: { id: string; name: string }[]) =>
     new Response(JSON.stringify({ orgs }), { status: 200 });
+  const loginResp = () => new Response(JSON.stringify({ token: 'jwt-1' }), { status: 200 });
+
+  /**
+   * Route by URL, never by call order.
+   *
+   * The component fires a THIRD request — `ssoApi.providers(orgName)` — as soon
+   * as the org list resolves and pre-selects the single org. Whether that
+   * happens before or after the click is microtask timing, so a queue of
+   * `mockResolvedValueOnce` sometimes hands the SSO request the response meant
+   * for `authApi.login`, and the login then resolves to `undefined` and never
+   * navigates. That is the whole flake: it passed or failed depending on
+   * whether the click won the race.
+   *
+   * Matching on the path makes the test independent of request order and of how
+   * many background calls the page decides to make.
+   */
+  const routeByUrl = (): void => {
+    fetchMock.mockImplementation((url: string) => {
+      if (url.includes('/auth/orgs')) return Promise.resolve(orgsResp([{ id: 'o1', name: 'Acme' }]));
+      if (url.includes('/auth/login')) return Promise.resolve(loginResp());
+      if (url.includes('/sso/')) return Promise.resolve(new Response(JSON.stringify({ providers: [] }), { status: 200 }));
+      if (url.includes('/me')) return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
+      return Promise.resolve(new Response(JSON.stringify({}), { status: 200 }));
+    });
+  };
 
   test('after login, a valid ?next= triggers a full navigation to that path', async () => {
     const assignSpy = vi.fn();
     stubAssign(assignSpy);
-    fetchMock.mockResolvedValueOnce(orgsResp([{ id: 'o1', name: 'Acme' }]));
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ token: 'jwt-1' }), { status: 200 }));
+    routeByUrl();
 
     render(
       <MemoryRouter initialEntries={['/login?next=' + encodeURIComponent('/api/pages/abc/index.html')]}>
@@ -99,8 +123,7 @@ describe('pages/LoginPage ?next= handling', () => {
   test('an unsafe ?next= does NOT full-navigate to a foreign target', async () => {
     const assignSpy = vi.fn();
     stubAssign(assignSpy);
-    fetchMock.mockResolvedValueOnce(orgsResp([{ id: 'o1', name: 'Acme' }]));
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ token: 'jwt-1' }), { status: 200 }));
+    routeByUrl();
 
     render(
       <MemoryRouter initialEntries={['/login?next=' + encodeURIComponent('//evil.com/x')]}>

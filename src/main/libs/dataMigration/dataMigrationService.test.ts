@@ -19,7 +19,7 @@ import {
 const tempRoots: string[] = [];
 
 const makeTempDir = (): string => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-data-migration-test-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-data-migration-test-'));
   tempRoots.push(dir);
   return dir;
 };
@@ -81,8 +81,6 @@ const writeSqliteFixture = (dbPath: string, label: string): void => {
 
     const now = Date.now();
     const insertKv = db.prepare('INSERT INTO kv (key, value, updated_at) VALUES (?, ?, ?)');
-    insertKv.run('auth_tokens', JSON.stringify({ accessToken: `${label}-access`, refreshToken: `${label}-refresh` }), now);
-    insertKv.run('auth_user', JSON.stringify({ id: `${label}-user` }), now);
     insertKv.run('app_config', JSON.stringify({ providers: { custom: { models: [`${label}-model`] } } }), now);
     insertKv.run('skills_state', JSON.stringify({ [`${label}-skill`]: { enabled: true } }), now);
     insertKv.run('openclaw_session_policy', JSON.stringify({ mode: label }), now);
@@ -237,11 +235,11 @@ const extractArchive = (archivePath: string): string => {
 
 const writeManifestFixture = (userDataPath: string): void => {
   writeFile(
-    path.join(userDataPath, '.genwork-migration.json'),
+    path.join(userDataPath, '.mixcwork-migration.json'),
     JSON.stringify({
-      format: 'genwork-data-migration',
+      format: 'mixcwork-data-migration',
       version: 2,
-      archiveRoot: 'GenWork',
+      archiveRoot: 'MixcWork',
       sqlite: { exists: true },
       openclawState: { exists: false },
     }),
@@ -256,7 +254,7 @@ afterEach(() => {
 
 test('createMigrationArchive excludes cache and log data and writes a manifest', () => {
   const root = makeTempDir();
-  const userData = path.join(root, 'GenWork');
+  const userData = path.join(root, 'MixcWork');
   const archivePath = path.join(root, 'backup.tar.gz');
 
   writeFile(path.join(userData, 'Cache', 'cache.bin'), 'cache');
@@ -272,8 +270,8 @@ test('createMigrationArchive excludes cache and log data and writes a manifest',
   writeFile(path.join(userData, 'SharedStorage'), 'shared-storage');
   writeFile(path.join(userData, 'SharedStorage-wal'), 'shared-storage-wal');
   writeFile(path.join(userData, 'logs', 'main.log'), 'log');
-  writeFile(path.join(userData, 'backups', 'sqlite', 'snapshots', 'genwork-latest.sqlite'), 'old-snapshot');
-  writeFile(path.join(userData, 'sqlite-backups', 'genwork-latest.sqlite'), 'legacy-snapshot');
+  writeFile(path.join(userData, 'backups', 'sqlite', 'snapshots', 'mixcwork-latest.sqlite'), 'old-snapshot');
+  writeFile(path.join(userData, 'sqlite-backups', 'mixcwork-latest.sqlite'), 'legacy-snapshot');
   writeFile(path.join(userData, 'Cookies'), 'cookies');
   writeFile(path.join(userData, 'DIPS-journal'), 'dips');
   writeFile(path.join(userData, '.com.github.Electron.test'), 'electron-marker');
@@ -291,10 +289,10 @@ test('createMigrationArchive excludes cache and log data and writes a manifest',
   createMigrationArchiveSync({ userDataPath: userData, outputPath: archivePath });
 
   const entries = listArchiveEntries(archivePath);
-  expect(entries).toContain('GenWork/.genwork-migration.json');
-  expect(entries).toContain(`GenWork/${DB_FILENAME}`);
-  expect(entries).toContain('GenWork/openclaw/state/openclaw.json');
-  expect(entries).toContain('GenWork/SKILLs/demo/SKILL.md');
+  expect(entries).toContain('MixcWork/.mixcwork-migration.json');
+  expect(entries).toContain(`MixcWork/${DB_FILENAME}`);
+  expect(entries).toContain('MixcWork/openclaw/state/openclaw.json');
+  expect(entries).toContain('MixcWork/SKILLs/demo/SKILL.md');
   expect(entries.some(entry => entry.includes('/Cache/'))).toBe(false);
   expect(entries.some(entry => entry.includes('/Code Cache/'))).toBe(false);
   expect(entries.some(entry => entry.includes('/cowork/'))).toBe(false);
@@ -322,15 +320,15 @@ test('createMigrationArchive excludes cache and log data and writes a manifest',
 
   const extractRoot = extractArchive(archivePath);
   const manifest = JSON.parse(
-    fs.readFileSync(path.join(extractRoot, 'GenWork', '.genwork-migration.json'), 'utf8'),
+    fs.readFileSync(path.join(extractRoot, 'MixcWork', '.mixcwork-migration.json'), 'utf8'),
   ) as {
     format?: string;
     archiveRoot?: string;
     sqlite?: { rowCounts?: Record<string, number>; tableContentChecksums?: Record<string, string> };
     openclawState?: { cronFileCount?: number; agentSessionFileCount?: number; openclawConfigExists?: boolean };
   };
-  expect(manifest.format).toBe('genwork-data-migration');
-  expect(manifest.archiveRoot).toBe('GenWork');
+  expect(manifest.format).toBe('mixcwork-data-migration');
+  expect(manifest.archiveRoot).toBe('MixcWork');
   expect(manifest.sqlite?.rowCounts?.scheduled_task_meta).toBe(1);
   expect(manifest.sqlite?.tableContentChecksums?.im_config).toBeTruthy();
   expect(manifest.openclawState?.openclawConfigExists).toBe(true);
@@ -340,7 +338,7 @@ test('createMigrationArchive excludes cache and log data and writes a manifest',
 
 test('createMigrationArchive replaces the live sqlite database with the snapshot', () => {
   const root = makeTempDir();
-  const userData = path.join(root, 'GenWork');
+  const userData = path.join(root, 'MixcWork');
   const archivePath = path.join(root, 'backup.tar.gz');
   const sqliteSnapshotPath = path.join(root, 'snapshot.sqlite');
 
@@ -355,9 +353,9 @@ test('createMigrationArchive replaces the live sqlite database with the snapshot
   });
 
   const extractRoot = extractArchive(archivePath);
-  expect(readSqliteString(path.join(extractRoot, 'GenWork', DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['auth_tokens']))
-    .toContain('snapshot-refresh');
-  expect(fs.existsSync(path.join(extractRoot, 'GenWork', `${DB_FILENAME}-wal`))).toBe(false);
+  expect(readSqliteString(path.join(extractRoot, 'MixcWork', DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['installation_uuid']))
+    .toContain('snapshot-install');
+  expect(fs.existsSync(path.join(extractRoot, 'MixcWork', `${DB_FILENAME}-wal`))).toBe(false);
 });
 
 test('assertDataMigrationSqliteSnapshotMatchesLiveSync rejects stale snapshots that lost agents and provider keys', () => {
@@ -374,7 +372,7 @@ test('assertDataMigrationSqliteSnapshotMatchesLiveSync rejects stale snapshots t
 
 test('createMigrationArchive rejects a source without a sqlite database', () => {
   const root = makeTempDir();
-  const userData = path.join(root, 'GenWork');
+  const userData = path.join(root, 'MixcWork');
   const archivePath = path.join(root, 'backup.tar.gz');
 
   writeFile(path.join(userData, 'SKILLs', 'demo', 'SKILL.md'), '# Demo');
@@ -386,7 +384,7 @@ test('createMigrationArchive rejects a source without a sqlite database', () => 
 
 test('inspectMigrationArchive rejects legacy Windows PowerShell archive root', () => {
   const root = makeTempDir();
-  const legacyRoot = path.join(root, 'AppData', 'Roaming', 'Genwork');
+  const legacyRoot = path.join(root, 'AppData', 'Roaming', 'Mixcwork');
   const archivePath = path.join(root, 'legacy.tar.gz');
   writeSqliteFixture(path.join(legacyRoot, DB_FILENAME), 'legacy');
 
@@ -402,7 +400,7 @@ test('inspectMigrationArchive rejects legacy Windows PowerShell archive root', (
 
 test('inspectMigrationArchive rejects archives without a migration manifest', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'GenWork');
+  const sourceUserData = path.join(root, 'MixcWork');
   const archivePath = path.join(root, 'missing-manifest.tar.gz');
   writeSqliteFixture(path.join(sourceUserData, DB_FILENAME), 'source');
 
@@ -411,9 +409,9 @@ test('inspectMigrationArchive rejects archives without a migration manifest', ()
     gzip: true,
     file: archivePath,
     cwd: root,
-  }, ['GenWork']);
+  }, ['MixcWork']);
 
-  expect(() => inspectMigrationArchiveSync(archivePath)).toThrow(/missing \.genwork-migration\.json/);
+  expect(() => inspectMigrationArchiveSync(archivePath)).toThrow(/missing \.mixcwork-migration\.json/);
 });
 
 test('inspectMigrationArchive rejects unsupported archive extensions', () => {
@@ -426,14 +424,14 @@ test('inspectMigrationArchive rejects unsupported archive extensions', () => {
 
 test('inspectMigrationArchive rejects archives whose manifest does not match sqlite content', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'source', 'GenWork');
+  const sourceUserData = path.join(root, 'source', 'MixcWork');
   const archivePath = path.join(root, 'source-backup.tar.gz');
   const tamperedArchivePath = path.join(root, 'tampered-backup.tar.gz');
   writeSqliteFixture(path.join(sourceUserData, DB_FILENAME), 'source');
 
   createMigrationArchiveSync({ userDataPath: sourceUserData, outputPath: archivePath });
   const extractRoot = extractArchive(archivePath);
-  const manifestPath = path.join(extractRoot, 'GenWork', '.genwork-migration.json');
+  const manifestPath = path.join(extractRoot, 'MixcWork', '.mixcwork-migration.json');
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as {
     sqlite?: { checksumSha256?: string };
   };
@@ -444,14 +442,14 @@ test('inspectMigrationArchive rejects archives whose manifest does not match sql
     gzip: true,
     file: tamperedArchivePath,
     cwd: extractRoot,
-  }, ['GenWork']);
+  }, ['MixcWork']);
 
   expect(() => inspectMigrationArchiveSync(tamperedArchivePath)).toThrow(/sqlite checksum mismatch/);
 });
 
 test('inspectMigrationArchive rejects unreadable sqlite database', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'GenWork');
+  const sourceUserData = path.join(root, 'MixcWork');
   const archivePath = path.join(root, 'invalid.tar.gz');
   writeFile(path.join(sourceUserData, DB_FILENAME), 'not a sqlite database');
   writeManifestFixture(sourceUserData);
@@ -461,7 +459,7 @@ test('inspectMigrationArchive rejects unreadable sqlite database', () => {
     gzip: true,
     file: archivePath,
     cwd: root,
-  }, ['GenWork']);
+  }, ['MixcWork']);
 
   expect(() => inspectMigrationArchiveSync(archivePath)).toThrow(`unreadable ${DB_FILENAME}`);
 });
@@ -485,8 +483,8 @@ test('inspectMigrationArchive rejects parent-directory archive paths', () => {
 
 test('performPendingDataMigrationRestoreSync creates rollback and restores backup data', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'source', 'Genwork');
-  const targetUserData = path.join(root, 'target', 'Genwork');
+  const sourceUserData = path.join(root, 'source', 'Mixcwork');
+  const targetUserData = path.join(root, 'target', 'Mixcwork');
   const rollbackRoot = path.join(root, 'rollbacks');
   const archivePath = path.join(root, 'source-backup.tar.gz');
 
@@ -508,8 +506,8 @@ test('performPendingDataMigrationRestoreSync creates rollback and restores backu
   expect(result?.status).toBe(DataMigrationRestoreStatus.Success);
   expect(result?.rollbackPath).toBeTruthy();
   expect(fs.existsSync(result?.rollbackPath || '')).toBe(true);
-  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['auth_tokens']))
-    .toContain('source-refresh');
+  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['installation_uuid']))
+    .toContain('source-install');
   expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT id FROM cowork_sessions')).toBe('source-session');
   expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT id FROM agents')).toBe('source-agent');
   expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT id FROM mcp_servers')).toBe('source-mcp');
@@ -528,8 +526,8 @@ test('performPendingDataMigrationRestoreSync creates rollback and restores backu
 
 test('performDataMigrationRestoreSync restores backup data without a pending marker', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'source', 'Genwork');
-  const targetUserData = path.join(root, 'target', 'Genwork');
+  const sourceUserData = path.join(root, 'source', 'Mixcwork');
+  const targetUserData = path.join(root, 'target', 'Mixcwork');
   const rollbackRoot = path.join(root, 'rollbacks');
   const archivePath = path.join(root, 'source-backup.tar.gz');
 
@@ -554,8 +552,8 @@ test('performDataMigrationRestoreSync restores backup data without a pending mar
 
 test('performDataMigrationRestoreSync preserves multiple agents, their sessions, and custom provider api keys', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'source', 'Genwork');
-  const targetUserData = path.join(root, 'target', 'Genwork');
+  const sourceUserData = path.join(root, 'source', 'Mixcwork');
+  const targetUserData = path.join(root, 'target', 'Mixcwork');
   const rollbackRoot = path.join(root, 'rollbacks');
   const archivePath = path.join(root, 'source-backup.tar.gz');
 
@@ -588,8 +586,8 @@ test('performDataMigrationRestoreSync preserves multiple agents, their sessions,
 
 test('performDataMigrationRestoreSync checkpoints archived WAL data into the restored sqlite database', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'source', 'Genwork');
-  const targetUserData = path.join(root, 'target', 'Genwork');
+  const sourceUserData = path.join(root, 'source', 'Mixcwork');
+  const targetUserData = path.join(root, 'target', 'Mixcwork');
   const rollbackRoot = path.join(root, 'rollbacks');
   const archivePath = path.join(root, 'source-backup.tar.gz');
 
@@ -620,8 +618,8 @@ test('performDataMigrationRestoreSync checkpoints archived WAL data into the res
 
 test('performDataMigrationRestoreSync restores valid backup when current sqlite is unreadable', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'source', 'Genwork');
-  const targetUserData = path.join(root, 'target', 'Genwork');
+  const sourceUserData = path.join(root, 'source', 'Mixcwork');
+  const targetUserData = path.join(root, 'target', 'Mixcwork');
   const rollbackRoot = path.join(root, 'rollbacks');
   const archivePath = path.join(root, 'source-backup.tar.gz');
 
@@ -641,22 +639,22 @@ test('performDataMigrationRestoreSync restores valid backup when current sqlite 
   expect(result?.status).toBe(DataMigrationRestoreStatus.Success);
   expect(result?.rollbackPath).toBeTruthy();
   expect(fs.existsSync(result?.rollbackPath || '')).toBe(true);
-  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['auth_tokens']))
-    .toContain('source-refresh');
+  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['installation_uuid']))
+    .toContain('source-install');
   expect(fs.existsSync(path.join(targetUserData, 'old-only.txt'))).toBe(false);
 });
 
 test('performPendingDataMigrationRestoreSync replaces data in place and preserves runtime locks', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'source', 'GenWork');
-  const targetUserData = path.join(root, 'target', 'GenWork');
+  const sourceUserData = path.join(root, 'source', 'MixcWork');
+  const targetUserData = path.join(root, 'target', 'MixcWork');
   const rollbackRoot = path.join(root, 'rollbacks');
   const archivePath = path.join(root, 'source-backup.tar.gz');
 
   writeSqliteFixture(path.join(sourceUserData, DB_FILENAME), 'source');
   writeFile(path.join(sourceUserData, 'openclaw', 'state', 'openclaw.json'), '{"source":true}');
-  writeFile(path.join(sourceUserData, 'backups', 'sqlite', 'snapshots', 'genwork-latest.sqlite'), 'source-backup');
-  writeFile(path.join(sourceUserData, 'sqlite-backups', 'genwork-latest.sqlite'), 'source-legacy-backup');
+  writeFile(path.join(sourceUserData, 'backups', 'sqlite', 'snapshots', 'mixcwork-latest.sqlite'), 'source-backup');
+  writeFile(path.join(sourceUserData, 'sqlite-backups', 'mixcwork-latest.sqlite'), 'source-legacy-backup');
   writeFile(path.join(sourceUserData, 'cowork', 'bin', 'node.cmd'), 'source-shim');
   writeFile(path.join(sourceUserData, 'install-timing.log'), 'source-install-log');
   writeFile(path.join(sourceUserData, 'skill-migrate.log'), 'source-skill-migrate-log');
@@ -679,8 +677,8 @@ test('performPendingDataMigrationRestoreSync replaces data in place and preserve
   writeFile(path.join(targetUserData, `${DB_FILENAME}-wal`), 'target-wal');
   writeFile(path.join(targetUserData, `${DB_FILENAME}-shm`), 'target-shm');
   writeFile(path.join(targetUserData, 'old-only.txt'), 'old');
-  writeFile(path.join(targetUserData, 'backups', 'sqlite', 'snapshots', 'genwork-latest.sqlite'), 'target-backup');
-  writeFile(path.join(targetUserData, 'sqlite-backups', 'genwork-latest.sqlite'), 'target-legacy-backup');
+  writeFile(path.join(targetUserData, 'backups', 'sqlite', 'snapshots', 'mixcwork-latest.sqlite'), 'target-backup');
+  writeFile(path.join(targetUserData, 'sqlite-backups', 'mixcwork-latest.sqlite'), 'target-legacy-backup');
   writeFile(path.join(targetUserData, 'cowork', 'bin', 'node.cmd'), 'target-shim');
   writeFile(path.join(targetUserData, 'install-timing.log'), 'target-install-log');
   writeFile(path.join(targetUserData, 'skill-migrate.log'), 'target-skill-migrate-log');
@@ -701,25 +699,25 @@ test('performPendingDataMigrationRestoreSync replaces data in place and preserve
 
   createMigrationArchiveSync({ userDataPath: sourceUserData, outputPath: archivePath });
   const extractRoot = extractArchive(archivePath);
-  writeFile(path.join(extractRoot, 'GenWork', 'backups', 'sqlite', 'snapshots', 'genwork-latest.sqlite'), 'legacy-source-backup');
-  writeFile(path.join(extractRoot, 'GenWork', 'sqlite-backups', 'genwork-latest.sqlite'), 'legacy-source-legacy-backup');
-  writeFile(path.join(extractRoot, 'GenWork', 'cowork', 'bin', 'node.cmd'), 'legacy-source-shim');
-  writeFile(path.join(extractRoot, 'GenWork', 'install-timing.log'), 'legacy-source-install-log');
-  writeFile(path.join(extractRoot, 'GenWork', 'skill-migrate.log'), 'legacy-source-skill-migrate-log');
-  writeFile(path.join(extractRoot, 'GenWork', 'Dictionaries', 'source.bdic'), 'legacy-source-dictionary');
-  writeFile(path.join(extractRoot, 'GenWork', 'Local Storage', 'leveldb', 'source.log'), 'legacy-source-local-storage');
-  writeFile(path.join(extractRoot, 'GenWork', 'Preferences'), 'legacy-source-preferences');
-  writeFile(path.join(extractRoot, 'GenWork', 'Session Storage', 'leveldb', 'source.log'), 'legacy-source-session-storage');
-  writeFile(path.join(extractRoot, 'GenWork', 'openclaw', 'logs', 'gateway-2026-06-10.log'), 'legacy-source-gateway-log');
-  writeFile(path.join(extractRoot, 'GenWork', 'openclaw', 'mcp-packages', 'demo', 'node_modules', 'native.node'), 'legacy-source-native');
-  writeFile(path.join(extractRoot, 'GenWork', 'openclaw', 'state', 'logs', 'commands.log'), 'legacy-source-commands-log');
-  writeFile(path.join(extractRoot, 'GenWork', 'runtimes', 'python', 'python.exe'), 'legacy-source-runtime');
+  writeFile(path.join(extractRoot, 'MixcWork', 'backups', 'sqlite', 'snapshots', 'mixcwork-latest.sqlite'), 'legacy-source-backup');
+  writeFile(path.join(extractRoot, 'MixcWork', 'sqlite-backups', 'mixcwork-latest.sqlite'), 'legacy-source-legacy-backup');
+  writeFile(path.join(extractRoot, 'MixcWork', 'cowork', 'bin', 'node.cmd'), 'legacy-source-shim');
+  writeFile(path.join(extractRoot, 'MixcWork', 'install-timing.log'), 'legacy-source-install-log');
+  writeFile(path.join(extractRoot, 'MixcWork', 'skill-migrate.log'), 'legacy-source-skill-migrate-log');
+  writeFile(path.join(extractRoot, 'MixcWork', 'Dictionaries', 'source.bdic'), 'legacy-source-dictionary');
+  writeFile(path.join(extractRoot, 'MixcWork', 'Local Storage', 'leveldb', 'source.log'), 'legacy-source-local-storage');
+  writeFile(path.join(extractRoot, 'MixcWork', 'Preferences'), 'legacy-source-preferences');
+  writeFile(path.join(extractRoot, 'MixcWork', 'Session Storage', 'leveldb', 'source.log'), 'legacy-source-session-storage');
+  writeFile(path.join(extractRoot, 'MixcWork', 'openclaw', 'logs', 'gateway-2026-06-10.log'), 'legacy-source-gateway-log');
+  writeFile(path.join(extractRoot, 'MixcWork', 'openclaw', 'mcp-packages', 'demo', 'node_modules', 'native.node'), 'legacy-source-native');
+  writeFile(path.join(extractRoot, 'MixcWork', 'openclaw', 'state', 'logs', 'commands.log'), 'legacy-source-commands-log');
+  writeFile(path.join(extractRoot, 'MixcWork', 'runtimes', 'python', 'python.exe'), 'legacy-source-runtime');
   tar.create({
     sync: true,
     gzip: true,
     file: archivePath,
     cwd: extractRoot,
-  }, ['GenWork']);
+  }, ['MixcWork']);
   writePendingRestoreRequestSync(targetUserData, archivePath);
 
   const result = performPendingDataMigrationRestoreSync({
@@ -742,15 +740,15 @@ test('performPendingDataMigrationRestoreSync replaces data in place and preserve
   expect(rollbackEntries.some(entry => entry.includes('/sqlite-backups/'))).toBe(false);
   expect(rollbackEntries.some(entry => entry.endsWith('/install-timing.log'))).toBe(false);
   expect(rollbackEntries.some(entry => entry.endsWith('/skill-migrate.log'))).toBe(false);
-  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['auth_tokens']))
-    .toContain('source-refresh');
+  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['installation_uuid']))
+    .toContain('source-install');
   expect(fs.readFileSync(path.join(targetUserData, 'openclaw', 'state', 'openclaw.json'), 'utf8')).toBe('{"source":true}');
   expect(fs.existsSync(path.join(targetUserData, `${DB_FILENAME}-wal`))).toBe(false);
   expect(fs.existsSync(path.join(targetUserData, `${DB_FILENAME}-shm`))).toBe(false);
   expect(fs.existsSync(path.join(targetUserData, 'old-only.txt'))).toBe(false);
-  expect(fs.readFileSync(path.join(targetUserData, 'backups', 'sqlite', 'snapshots', 'genwork-latest.sqlite'), 'utf8'))
+  expect(fs.readFileSync(path.join(targetUserData, 'backups', 'sqlite', 'snapshots', 'mixcwork-latest.sqlite'), 'utf8'))
     .toBe('target-backup');
-  expect(fs.readFileSync(path.join(targetUserData, 'sqlite-backups', 'genwork-latest.sqlite'), 'utf8'))
+  expect(fs.readFileSync(path.join(targetUserData, 'sqlite-backups', 'mixcwork-latest.sqlite'), 'utf8'))
     .toBe('target-legacy-backup');
   expect(fs.readFileSync(path.join(targetUserData, 'cowork', 'bin', 'node.cmd'), 'utf8')).toBe('target-shim');
   expect(fs.readFileSync(path.join(targetUserData, 'install-timing.log'), 'utf8')).toBe('target-install-log');
@@ -780,7 +778,7 @@ test('performPendingDataMigrationRestoreSync replaces data in place and preserve
 
 test('performPendingDataMigrationRestoreSync keeps existing data when restore fails', () => {
   const root = makeTempDir();
-  const targetUserData = path.join(root, 'target', 'Genwork');
+  const targetUserData = path.join(root, 'target', 'Mixcwork');
   const rollbackRoot = path.join(root, 'rollbacks');
   const archivePath = path.join(root, 'missing-backup.tar.gz');
 
@@ -794,14 +792,14 @@ test('performPendingDataMigrationRestoreSync keeps existing data when restore fa
   });
 
   expect(result?.status).toBe(DataMigrationRestoreStatus.Failed);
-  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['auth_tokens']))
-    .toContain('target-refresh');
+  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['installation_uuid']))
+    .toContain('target-install');
 });
 
 test('performDataMigrationRestoreSync rolls back when the backup is missing sqlite data', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'source', 'GenWork');
-  const targetUserData = path.join(root, 'target', 'Genwork');
+  const sourceUserData = path.join(root, 'source', 'MixcWork');
+  const targetUserData = path.join(root, 'target', 'Mixcwork');
   const rollbackRoot = path.join(root, 'rollbacks');
   const archivePath = path.join(root, 'source-backup.tar.gz');
 
@@ -815,7 +813,7 @@ test('performDataMigrationRestoreSync rolls back when the backup is missing sqli
     gzip: true,
     file: archivePath,
     cwd: sourceParent,
-  }, ['GenWork']);
+  }, ['MixcWork']);
 
   const result = performDataMigrationRestoreSync({
     userDataPath: targetUserData,
@@ -826,15 +824,15 @@ test('performDataMigrationRestoreSync rolls back when the backup is missing sqli
 
   expect(result?.status).toBe(DataMigrationRestoreStatus.Failed);
   expect(result?.error).toContain(`missing ${DB_FILENAME}`);
-  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['auth_tokens']))
-    .toContain('target-refresh');
+  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['installation_uuid']))
+    .toContain('target-install');
   expect(fs.existsSync(path.join(targetUserData, 'SKILLs', 'demo', 'SKILL.md'))).toBe(false);
 });
 
 test('performDataMigrationRestoreSync rejects unreadable backup sqlite before touching target data', () => {
   const root = makeTempDir();
-  const sourceUserData = path.join(root, 'source', 'GenWork');
-  const targetUserData = path.join(root, 'target', 'Genwork');
+  const sourceUserData = path.join(root, 'source', 'MixcWork');
+  const targetUserData = path.join(root, 'target', 'Mixcwork');
   const rollbackRoot = path.join(root, 'rollbacks');
   const archivePath = path.join(root, 'source-backup.tar.gz');
 
@@ -843,14 +841,14 @@ test('performDataMigrationRestoreSync rejects unreadable backup sqlite before to
   writeFile(path.join(sourceUserData, 'SKILLs', 'demo', 'SKILL.md'), '# Demo');
   writeManifestFixture(sourceUserData);
   writeSqliteFixture(path.join(targetUserData, DB_FILENAME), 'target');
-  writeFile(path.join(targetUserData, 'backups', 'sqlite', 'snapshots', 'genwork-latest.sqlite'), 'target-backup');
+  writeFile(path.join(targetUserData, 'backups', 'sqlite', 'snapshots', 'mixcwork-latest.sqlite'), 'target-backup');
 
   tar.create({
     sync: true,
     gzip: true,
     file: archivePath,
     cwd: sourceParent,
-  }, ['GenWork']);
+  }, ['MixcWork']);
 
   const result = performDataMigrationRestoreSync({
     userDataPath: targetUserData,
@@ -861,9 +859,9 @@ test('performDataMigrationRestoreSync rejects unreadable backup sqlite before to
 
   expect(result?.status).toBe(DataMigrationRestoreStatus.Failed);
   expect(result?.error).toContain(`unreadable ${DB_FILENAME}`);
-  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['auth_tokens']))
-    .toContain('target-refresh');
-  expect(fs.readFileSync(path.join(targetUserData, 'backups', 'sqlite', 'snapshots', 'genwork-latest.sqlite'), 'utf8'))
+  expect(readSqliteString(path.join(targetUserData, DB_FILENAME), 'SELECT value FROM kv WHERE key = ?', ['installation_uuid']))
+    .toContain('target-install');
+  expect(fs.readFileSync(path.join(targetUserData, 'backups', 'sqlite', 'snapshots', 'mixcwork-latest.sqlite'), 'utf8'))
     .toBe('target-backup');
   expect(fs.existsSync(path.join(targetUserData, 'SKILLs', 'demo', 'SKILL.md'))).toBe(false);
 });

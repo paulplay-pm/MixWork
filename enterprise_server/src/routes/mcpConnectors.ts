@@ -7,8 +7,10 @@ import { auditStore } from '../audit/auditStore';
 import { requireAuth, requirePermission } from '../auth/middleware';
 import { pool } from '../db/pool';
 import type { TxClient } from '../db/testDb';
-import { COLUMNS, type ConnectorRow, type ConnectorScope, type ToolEntry, type VersionRow, mapAdminConnector, scopeSummary } from '../models/connectorView';
 import { probeConnector } from '../mcp/handshake';
+import { buildOrgCredentialHeaders } from '../mcp/orgCredential';
+import { mcpOAuthRedirectUri } from '../models/connectorOauthRedirect';
+import { COLUMNS, type ConnectorRow, type ConnectorScope, mapAdminConnector, scopeSummary,type ToolEntry, type VersionRow } from '../models/connectorView';
 import { AuditAction } from '../shared/enterpriseServerConstants';
 import { PermissionPoint as PP } from '../shared/permissionPoints';
 import { decryptConnectorSecrets, encryptConnectorSecrets, hasStoredSecret, maskConnectorSecrets } from '../vault/connectorSecret';
@@ -20,7 +22,33 @@ const scopeSchema = z.object({
 });
 
 const authModeEnum = z.enum(['none', 'shared-key', 'user-key', 'user-oauth', 'client-creds', 'sso']);
+
+/**
+ * Modes the enterprise server cannot authenticate a probe with.
+ *
+ * `shared-key` carries the org's apiKey and `none` needs no credential, so
+ * both can run a full MCP handshake. The rest cannot: the credential is the
+ * member's (a key they type, a token they obtain through PKCE) or it needs
+ * a client-credentials exchange that belongs to the enterprise gateway.
+ */
+const UNAUTHENTICATABLE_MODES: readonly string[] = [
+  'user-key',
+  'user-oauth',
+  'sso',
+  'client-creds',
+];
 const transportEnum = z.enum(['http', 'sse']);
+
+/** A tool entry as carried by a working copy / version snapshot.
+ *  `syncedAt` is what separates a discovered tool from one the admin
+ *  declared by hand: the server stamps it when it lists the tools itself. */
+const toolEntrySchema = z.object({
+  name: z.string().min(1),
+  desc: z.string().optional(),
+  enabled: z.boolean(),
+  syncedAt: z.string().optional(),
+  removed: z.boolean().optional(),
+});
 
 /** The connector body minus `orgId`. Shared by the admin create route and the
  * member submission queue: a submission's `cfg` is exactly this shape, so an
@@ -30,6 +58,9 @@ export const connectorCfgSchema = z.object({
   url: z.string().min(1),
   nameEn: z.string().optional(),
   nameZh: z.string().optional(),
+  /** Brand logo URL. Optional: a connector without one falls back to the
+   *  generic glyph on the desktop. */
+  icon: z.string().optional(),
   version: z.string().optional().default('1.0.0'),
   categoryId: z.string().nullable().optional(),
   description: z.string().max(200).optional(),
@@ -37,6 +68,10 @@ export const connectorCfgSchema = z.object({
   authMode: authModeEnum.optional().default('none'),
   authConfig: z.record(z.unknown()).optional().default({}),
   scope: scopeSchema.optional(),
+  /** The tool list, when the admin declares it by hand: the server cannot
+   *  discover the tools of a connector whose credential belongs to the
+   *  member, so the policy starts from what the admin writes here. */
+  tools: z.array(toolEntrySchema).optional(),
 });
 export type ConnectorCfg = z.infer<typeof connectorCfgSchema>;
 
@@ -45,6 +80,7 @@ const createSchema = connectorCfgSchema.extend({ orgId: z.string() });
 const patchSchema = z.object({
   nameEn: z.string().nullable().optional(),
   nameZh: z.string().nullable().optional(),
+  icon: z.string().nullable().optional(),
   url: z.string().min(1).optional(),
   version: z.string().optional(),
   categoryId: z.string().nullable().optional(),
@@ -58,15 +94,6 @@ const patchSchema = z.object({
 
 const categoryWriteSchema = z.object({ name: z.string().min(1) });
 const settingsPatchSchema = z.object({ membersCanSubmit: z.boolean() });
-
-/** A tool entry as carried by a working copy / version snapshot. */
-const toolEntrySchema = z.object({
-  name: z.string().min(1),
-  desc: z.string().optional(),
-  enabled: z.boolean(),
-  syncedAt: z.string().optional(),
-  removed: z.boolean().optional(),
-});
 
 /** The connector's full working copy — the body of save-draft and publish.
  * It is the live fields the drawer edits plus the per-tool toggles and the
@@ -86,7 +113,6 @@ const workingCopySchema = z.object({
   scope: scopeSchema.optional(),
   tools: z.array(toolEntrySchema).optional(),
 });
-type WorkingCopy = z.infer<typeof workingCopySchema>;
 
 /** `mcp_connector_versions` row (DB shape). */
 interface VersionDbRow {
@@ -155,18 +181,17 @@ function authStatusFor(authMode: string): 'configured' | 'pending' {
 /** Per-mode required non-secret fields that must be present to publish. */
 export function missingAuthField(authMode: string, authConfig: Record<string, unknown>): string | null {
   if (authMode === 'shared-key') return authConfig.apiKey ? null : 'apiKey';
-  if (authMode === 'user-oauth' || authMode === 'client-creds') {
+  if (authMode === 'user-oauth') {
+    // Nothing is required up front. The desktop completes the public-client
+    // profile itself: it discovers the provider's endpoints from the MCP
+    // server URL (RFC 8414 / RFC 9728) and registers a PKCE client when the
+    // org did not pin one (RFC 7591). A required field here would force every
+    // admin to know the upstream IdP's internals — exactly what discovery
+    // removes.
+    return null;
+  }
+  if (authMode === 'client-creds') {
     if (!authConfig.clientId) return 'clientId';
-    if (authMode === 'user-oauth') {
-      // Public client + PKCE (desktop-driven): complete authorize/token endpoints
-      // are enough — no client secret crosses the wire. Confidential client: a
-      // clientSecret is still required (used by the server-side gateway, not the
-      // desktop). The relaxation is additive — the existing confidential path is
-      // preserved when endpoints are absent.
-      const hasPublicEndpoints = Boolean(authConfig.authorizeUrl) && Boolean(authConfig.tokenUrl);
-      if (authConfig.clientSecret || hasPublicEndpoints) return null;
-      return 'clientSecret';
-    }
     return authConfig.clientSecret ? null : 'clientSecret';
   }
   if (authMode === 'sso') {
@@ -183,7 +208,11 @@ export function missingAuthField(authMode: string, authConfig: Record<string, un
 }
 
 export function sseOauthCombination(transport: string, authMode: string): boolean {
-  return transport === 'sse' && ['user-oauth', 'client-creds', 'sso'].includes(authMode);
+  // `shared-key` is included even though the org key travels through the
+  // gateway: an SSE upstream needs a credential the gateway would have to
+  // inject into a long-lived stream it only authorizes at connect time, and
+  // the transport itself is deprecated on the desktop side.
+  return transport === 'sse' && ['user-oauth', 'client-creds', 'sso', 'shared-key'].includes(authMode);
 }
 
 /** Canonical JSON for scope equality checks (stable key order). */
@@ -224,6 +253,14 @@ function mergeAuthConfig(
         secretChanged = true;
       }
       // empty/absent → keep the stored secret
+      continue;
+    }
+    // An explicit null clears a stored non-secret field. The admin emptied
+    // it, and "no timeout" / "no header name" has to mean "not set" — a
+    // merge that kept the old value would leave the desktop running with a
+    // setting the admin just removed.
+    if (v === null) {
+      delete merged[k];
       continue;
     }
     merged[k] = v;
@@ -297,13 +334,13 @@ export async function createConnectorFromCfg(
   await db.query(
     `INSERT INTO mcp_connectors
        (id, org_id, server_key, name_en, name_zh, version, category_id, description,
-        connector_type, url, transport, auth_mode, auth_config, auth_status, enabled, scope, tools, draft)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'mcp',$9,$10,$11,$12,$13,TRUE,$14,$15,NULL)`,
+        connector_type, url, transport, auth_mode, auth_config, auth_status, icon, enabled, scope, tools, draft)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'mcp',$9,$10,$11,$12,$13,$14,TRUE,$15,$16,NULL)`,
     [
       id, orgId, serverKey, cfg.nameEn ?? null, cfg.nameZh ?? null, cfg.version,
       cfg.categoryId ?? null, cfg.description ?? null, cfg.url, cfg.transport,
       cfg.authMode, JSON.stringify(authConfig), authStatusFor(cfg.authMode),
-      JSON.stringify(scope), JSON.stringify([]),
+      cfg.icon ?? null, JSON.stringify(scope), JSON.stringify(cfg.tools ?? []),
     ],
   );
   await auditStore.write({
@@ -330,6 +367,7 @@ mcpConnectorsRoutes.post('/admin/mcp-connectors', requirePermission(PP.McpCreate
       serverKey: b.serverKey, url: b.url, nameEn: b.nameEn, nameZh: b.nameZh,
       version: b.version, categoryId: b.categoryId, description: b.description,
       transport: b.transport, authMode: b.authMode, authConfig: b.authConfig, scope: b.scope,
+      tools: b.tools,
     },
     { createdBy: claims.sub, onKeyCollision: 'reject' },
   );
@@ -436,7 +474,14 @@ mcpConnectorsRoutes.get('/admin/mcp-connectors/settings', requirePermission(PP.M
     [org],
   );
   if (r.rowCount === 0) return c.json({ error: 'org_not_found' }, 404);
-  return c.json({ membersCanSubmit: r.rows[0].members_can_submit_connectors });
+  return c.json({
+    membersCanSubmit: r.rows[0].members_can_submit_connectors,
+    // The loopback redirect URI a `user-oauth` connector's desktop sends and
+    // the admin registers at the upstream IdP. The console shows it so the
+    // two can never disagree; the desktop gets the same value with the
+    // connector (`oauth.redirectUri`).
+    oauthRedirectUri: mcpOAuthRedirectUri(),
+  });
 });
 
 mcpConnectorsRoutes.patch('/admin/mcp-connectors/settings', requirePermission(PP.McpEdit), async c => {
@@ -506,6 +551,7 @@ mcpConnectorsRoutes.patch('/admin/mcp-connectors/:id', requirePermission(PP.McpE
 
   if (b.nameEn !== undefined) push('name_en', b.nameEn ?? null);
   if (b.nameZh !== undefined) push('name_zh', b.nameZh ?? null);
+  if (b.icon !== undefined) push('icon', b.icon ?? null);
   if (b.url !== undefined) push('url', b.url);
   if (b.version !== undefined) push('version', b.version);
   if (b.categoryId !== undefined) push('category_id', b.categoryId ?? null);
@@ -545,6 +591,7 @@ mcpConnectorsRoutes.patch('/admin/mcp-connectors/:id', requirePermission(PP.McpE
   const fields: Record<string, unknown> = {};
   if (b.nameEn !== undefined && (b.nameEn ?? null) !== row.name_en) fields.nameEn = b.nameEn ?? null;
   if (b.nameZh !== undefined && (b.nameZh ?? null) !== row.name_zh) fields.nameZh = b.nameZh ?? null;
+  if (b.icon !== undefined && (b.icon ?? null) !== row.icon) fields.icon = b.icon ?? null;
   if (b.url !== undefined && b.url !== row.url) fields.url = b.url;
   if (b.version !== undefined && b.version !== row.version) fields.version = b.version;
   if (b.categoryId !== undefined && (b.categoryId ?? null) !== row.category_id) fields.categoryId = b.categoryId ?? null;
@@ -604,16 +651,19 @@ mcpConnectorsRoutes.post('/admin/mcp-connectors/:id/test', requirePermission(PP.
   if (!row) return c.json({ error: 'not_found' }, 404);
   if (!row.url) return c.json({ error: 'no_url' }, 400);
 
-  // Build the auth header from the decrypted stored secret: shared-key ->
-  // Bearer <apiKey>; other modes -> a stored token, if any. The P0/P1 admin
-  // model only fills apiKey/clientId/clientSecret, so shared-key is the
-  // primary bearer path.
+  // The server can only authenticate a probe with a credential it holds:
+  // `shared-key` has the org's apiKey, `none` needs none. The other modes
+  // cannot be probed at all — the credential is the member's (a key they
+  // type, a token they obtain through PKCE) or it needs a client-credentials
+  // exchange that belongs to the enterprise gateway. For those the probe is
+  // a reachability check, and a 401 is the expected answer rather than a
+  // defect the admin can fix.
+  const memberCredential = UNAUTHENTICATABLE_MODES.includes(row.auth_mode);
+
   const plain = decryptConnectorSecrets(row.auth_config);
-  const headers: Record<string, string> = {};
-  const bearer = row.auth_mode === 'shared-key' ? plain.apiKey : plain.accessToken;
-  if (typeof bearer === 'string' && bearer.length > 0) {
-    headers.Authorization = `Bearer ${bearer}`;
-  }
+  // Same builder the gateway uses, so a probe that succeeds means a real call
+  // will succeed too (and honours `apiKeyHeaderName`).
+  const headers = buildOrgCredentialHeaders(row.auth_mode, plain);
 
   const probe = await probeConnector({
     url: row.url,
@@ -627,6 +677,10 @@ mcpConnectorsRoutes.post('/admin/mcp-connectors/:id/test', requirePermission(PP.
     // Merge the server's tool list into the stored tools (upsert by name).
     const serverTools = probe.tools ?? [];
     const merged: ToolEntry[] = row.tools.map((t) => {
+      // A hand-declared tool (no `syncedAt`) was never on the server's list,
+      // so it cannot be "no longer listed" — marking it removed would
+      // silently drop the admin's declaration.
+      if (!t.syncedAt) return t;
       const s = serverTools.find((x) => x.name === t.name);
       if (s) {
         // Still listed: keep the admin's toggle, refresh desc/syncedAt.
@@ -657,20 +711,34 @@ mcpConnectorsRoutes.post('/admin/mcp-connectors/:id/test', requirePermission(PP.
   }
 
   // A failed probe persists the result (never an HTTP error) and leaves
-  // `tools` untouched.
+  // `tools` untouched. A 401 on a connector whose credential belongs to the
+  // member is not a failure: the endpoint answered, which is all the server
+  // could have learned. It is recorded as its own state so the console can
+  // say what it means instead of showing an error the admin cannot fix.
+  const needsUserAuth = memberCredential && probe.error === 'unauthorized';
   await pool.query(
     `UPDATE mcp_connectors
-     SET last_test_at = $3, last_test_status = 'failed', last_latency_ms = $4,
+     SET last_test_at = $3, last_test_status = $4, last_latency_ms = $5,
          updated_at = NOW()
      WHERE id = $1 AND org_id = $2`,
-    [id, claims.orgId, lastTestAt, probe.latencyMs],
+    [id, claims.orgId, lastTestAt, needsUserAuth ? 'needs_user_auth' : 'failed', probe.latencyMs],
   );
   await auditStore.write({
     orgId: claims.orgId, userId: claims.sub,
     action: AuditAction.McpConnectorTest, targetType: 'connector', targetId: id,
-    payload: { status: 'failed', latencyMs: probe.latencyMs, error: probe.error ?? null },
+    payload: {
+      status: needsUserAuth ? 'needs_user_auth' : 'failed',
+      latencyMs: probe.latencyMs,
+      error: probe.error ?? null,
+    },
   });
-  return c.json({ status: 'failed', error: probe.error, latencyMs: probe.latencyMs, lastTestAt });
+  return c.json({
+    status: needsUserAuth ? 'needs-user-auth' : 'failed',
+    error: probe.error,
+    latencyMs: probe.latencyMs,
+    lastTestAt,
+    needsUserAuth,
+  });
 });
 
 /**
@@ -807,6 +875,7 @@ mcpConnectorsRoutes.post('/admin/mcp-connectors/:id/publish', requirePermission(
   const fields: Record<string, unknown> = {};
   if (b.nameEn !== undefined && (b.nameEn ?? null) !== row.name_en) fields.nameEn = b.nameEn ?? null;
   if (b.nameZh !== undefined && (b.nameZh ?? null) !== row.name_zh) fields.nameZh = b.nameZh ?? null;
+  // The icon is uploaded separately, so a publish never changes it.
   if (b.url !== row.url) fields.url = b.url;
   if (newVersion !== row.version) fields.version = newVersion;
   if (b.categoryId !== undefined && (b.categoryId ?? null) !== row.category_id) {

@@ -5,7 +5,7 @@ import {
   LibraryRelationKind,
 } from '../../shared/library/constants';
 import type { LibraryArtifactCandidate } from '../../shared/library/types';
-import type { GenWorkMessage } from '../types/genwork';
+import type { MixCWorkMessage } from '../types/mixcwork';
 import { collectSessionArtifacts } from './artifactDetection';
 
 const SESSION_BATCH_SIZE = 8;
@@ -39,8 +39,8 @@ const waitForIdle = (): Promise<void> => new Promise(resolve => {
   }
 });
 
-const loadAllMessages = async (sessionId: string): Promise<GenWorkMessage[]> => {
-  const messages: GenWorkMessage[] = [];
+const loadAllMessages = async (sessionId: string): Promise<MixCWorkMessage[]> => {
+  const messages: MixCWorkMessage[] = [];
   let offset = 0;
   let total = Number.POSITIVE_INFINITY;
   while (offset < total) {
@@ -50,7 +50,7 @@ const loadAllMessages = async (sessionId: string): Promise<GenWorkMessage[]> => 
       offset,
     });
     if (!result.success || !result.messages?.length) break;
-    messages.push(...result.messages as GenWorkMessage[]);
+    messages.push(...result.messages as MixCWorkMessage[]);
     offset += result.messages.length;
     total = result.total ?? offset;
     if (result.messages.length < MESSAGE_PAGE_SIZE) break;

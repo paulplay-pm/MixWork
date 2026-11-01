@@ -13,11 +13,11 @@ NODE_ENV_PREFIX=()
 
 if command -v node > /dev/null 2>&1; then
   NODE_BIN="node"
-elif [ -n "${GENWORK_ELECTRON_PATH:-}" ] && [ -x "${GENWORK_ELECTRON_PATH}" ]; then
-  NODE_BIN="$GENWORK_ELECTRON_PATH"
+elif [ -n "${MIXCWORK_ELECTRON_PATH:-}" ] && [ -x "${MIXCWORK_ELECTRON_PATH}" ]; then
+  NODE_BIN="$MIXCWORK_ELECTRON_PATH"
   NODE_ENV_PREFIX=("ELECTRON_RUN_AS_NODE=1")
 else
-  echo '{"success":false,"error":"未找到 Node.js 运行时。请安装 Node.js 或确保 GenWork Electron 可用。"}' >&2
+  echo '{"success":false,"error":"未找到 Node.js 运行时。请安装 Node.js 或确保 MixCWork Electron 可用。"}' >&2
   exit 1
 fi
 

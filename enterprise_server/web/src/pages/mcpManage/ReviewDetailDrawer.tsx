@@ -139,6 +139,14 @@ export function ReviewDetailDrawer(p: Props): JSX.Element {
                 {str(s.cfg.url) || '—'}
               </dd>
             </div>
+            {/* Approving is the moment the org key becomes spendable against
+                this address. Name it here: the approver, not the submitter,
+                owns the decision to trust it. */}
+            {s.cfg.authMode === 'shared-key' && str(s.cfg.url) && (
+              <p className="col-span-2 rounded-[7px] border border-[var(--warning-primary)]/40 bg-[var(--warning-light)] px-3 py-2 text-[12.5px] leading-relaxed text-[#92400E]">
+                {fill(t('mcp.review.detail.orgKeyTarget'), { url: str(s.cfg.url) })}
+              </p>
+            )}
             <div>
               <dt className={LABEL}>{t('mcp.review.detail.authMode')}</dt>
               <dd className={VALUE}>{authModeLabel(s.cfg)}</dd>

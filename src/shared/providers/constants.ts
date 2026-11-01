@@ -17,7 +17,7 @@
 // ═══════════════════════════════════════════════════════
 
 // ─── Provider Name ──────────────────────────────────────────────────────
-// providerName identifies the GenWork internal provider (config key).
+// providerName identifies the MixCWork internal provider (config key).
 export const ProviderName = {
   OpenAI: 'openai',
   Gemini: 'gemini',
@@ -37,7 +37,7 @@ export const ProviderName = {
   Ollama: 'ollama',
   LmStudio: 'lm-studio',
   Custom: 'custom',
-  GenworkServer: 'genwork-server',
+  MixcworkServer: 'mixcwork-server',
   Copilot: 'github-copilot',
 } as const;
 export type ProviderName = typeof ProviderName[keyof typeof ProviderName];
@@ -45,7 +45,7 @@ export type ProviderName = typeof ProviderName[keyof typeof ProviderName];
 // ─── OpenClaw Provider ID ───────────────────────────────────────────────
 // OpenClaw gateway provider identifiers. May differ from ProviderName.
 export const OpenClawProviderId = {
-  GenworkServer: 'genwork-server',
+  MixcworkServer: 'mixcwork-server',
   Moonshot: 'moonshot',
   Google: 'google',
   Xai: 'xai',
@@ -64,10 +64,10 @@ export const OpenClawProviderId = {
   Xiaomi: 'xiaomi',
   OpenRouter: 'openrouter',
   Copilot: 'github-copilot',
-  GenworkCopilot: 'genwork-copilot',
+  MixcworkCopilot: 'mixcwork-copilot',
   Ollama: 'ollama',
   LmStudio: 'lm-studio',
-  Genwork: 'genwork',
+  Mixcwork: 'mixcwork',
 } as const;
 export type OpenClawProviderId = typeof OpenClawProviderId[keyof typeof OpenClawProviderId];
 

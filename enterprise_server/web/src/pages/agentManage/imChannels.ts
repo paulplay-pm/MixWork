@@ -20,8 +20,6 @@ export const IM_CHANNELS: readonly ImChannelDef[] = [
   { id: 'feishu', name: '飞书', logo: '/im-logos/feishu.png' },
   { id: 'wecom', name: '企业微信', logo: '/im-logos/wecom.png' },
   { id: 'qq', name: 'QQ', logo: '/im-logos/qq_bot.jpeg' },
-  { id: 'popo', name: 'POPO', logo: '/im-logos/popo.png' },
-  { id: 'email', name: '龙虾邮箱', logo: '/im-logos/email.svg' },
 ];
 
 /** Resolve a channel's display name (falls back to the raw id). */

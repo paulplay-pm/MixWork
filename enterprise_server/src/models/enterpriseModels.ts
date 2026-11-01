@@ -1,5 +1,6 @@
 import { pool } from '../db/pool';
 import { providerKeyVault } from '../vault/providerKeyVault';
+import { SESSION_MODEL_TYPES } from './modelCatalog';
 
 export interface EnterpriseModelEntry {
   id: string;
@@ -30,7 +31,9 @@ export interface DecryptedKey {
  * `enterpriseModels` is the per-org catalog accessor the desktop hits at
  * startup. It reuses `providerKeyVault` for key decryption and the same
  * `model_catalog` + `model_policies` filters as `modelCatalog.list` so the
- * two endpoints stay in lock-step about what is "available" for an org.
+ * two endpoints stay in lock-step about what is "available" for an org —
+ * including the SESSION type filter: a media/ASR model is not a session
+ * model and never reaches the desktop's model picker.
  */
 const ENTERPRISE_MODEL_LIST_COLS = `c.id, c.provider, c.model, c.display_name,
   c.quota_per_user_per_day,
@@ -63,8 +66,9 @@ export const enterpriseModels = {
        LEFT JOIN model_policies p ON p.org_id = c.org_id AND p.model_id = c.id
        WHERE c.org_id = $1 AND c.enabled = true AND k.enabled = true
          AND COALESCE(p.disabled, false) = false
+         AND c.types && $2::text[]
        ORDER BY c.model`,
-      [orgId],
+      [orgId, SESSION_MODEL_TYPES],
     );
     return r.rows.map(row => {
       // The admin UI expresses vision and reasoning capability exclusively
@@ -113,8 +117,9 @@ export const enterpriseModels = {
        JOIN provider_keys k ON k.id = c.provider_key_id
        LEFT JOIN model_policies p ON p.org_id = c.org_id AND p.model_id = c.id
        WHERE c.org_id = $1 AND c.enabled = true AND k.enabled = true
-         AND COALESCE(p.disabled, false) = false`,
-      [orgId],
+         AND COALESCE(p.disabled, false) = false
+         AND c.types && $2::text[]`,
+      [orgId, SESSION_MODEL_TYPES],
     );
     const out = new Map<string, string>();
     for (const row of r.rows) {
@@ -125,7 +130,7 @@ export const enterpriseModels = {
         // Skip models whose key can't decrypt; the model entry still appears
         // in the catalog with `_k: null` (see /enterprise-models handler).
         // Log the failure explicitly — the silent skip above means a missing
-        // or mismatched GENWORK_VAULT_MASTER_KEY surfaces downstream only as a
+        // or mismatched MIXCWORK_VAULT_MASTER_KEY surfaces downstream only as a
         // desktop "model unavailable" prompt with no server-side trace.
         console.error('[enterpriseModels] failed to decrypt provider key', {
           modelId: row.id,

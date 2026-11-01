@@ -12,7 +12,11 @@ const { handlers, syncFromServerMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('electron', () => ({
-  ipcMain: { handle: vi.fn((channel: string, fn: unknown) => { handlers.set(channel, fn); }) },
+  ipcMain: {
+    handle: vi.fn((channel: string, fn: (...args: unknown[]) => unknown) => {
+      handlers.set(channel, fn);
+    }),
+  },
 }));
 vi.mock('../../auth/enterpriseClient', () => ({
   enterpriseClient: { listEnterpriseAgents: vi.fn() },
@@ -34,10 +38,11 @@ import { registerAgentEnterpriseHandlers } from './handlers.enterprise';
 
 function deps(): Parameters<typeof registerAgentEnterpriseHandlers>[0] {
   return {
-    getGenWorkStore: () => ({}) as never,
+    getMixCWorkStore: () => ({}) as never,
     getEnterpriseAgentPrefsStore: () => ({ remove: vi.fn() }) as never,
     getSkillManager: () => ({ getCatalogLocalId: (id: string) => id }) as never,
     getAvailableModelsRef: () => '',
+    getServerModels: () => [],
   };
 }
 
@@ -51,8 +56,9 @@ describe('agents:fetchEnterpriseAgents', () => {
     syncFromServerMock.mockClear();
     vi.mocked(enterpriseClient.listEnterpriseAgents).mockResolvedValue([{
       agentId: 'agent_a1', name: 'Reviewer', description: 'd',
-      identity: '', systemPrompt: '', model: '', thinkingLevel: '', icon: '',
-      skillIds: [], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true,
+      identity: '', aboutYou: '', systemPrompt: '', model: '', thinkingLevel: '', icon: '',
+      skillIds: [], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] },
+      imChannels: [], enabled: true,
     }]);
     registerAgentEnterpriseHandlers(deps());
     const out = await handlers.get(AgentIpcChannel.FetchEnterpriseAgents)!(undefined, undefined) as {
@@ -79,6 +85,9 @@ describe('agents:fetchEnterpriseAgents', () => {
     // through Electron's IPC plumbing. The renderer's `void`-mounted
     // useEffect already drops the `{ success: false, error }` payload.
     vi.mocked(loginGate.requireEnterprise).mockImplementationOnce(() => { throw new Error('not logged in'); });
+    // The mock is module-level and shared by the whole file: clear the calls
+    // the earlier tests made, or this assertion sees their requests too.
+    vi.mocked(enterpriseClient.listEnterpriseAgents).mockClear();
     vi.mocked(enterpriseClient.listEnterpriseAgents).mockResolvedValue([]);
     registerAgentEnterpriseHandlers(deps());
     const out = await handlers.get(AgentIpcChannel.FetchEnterpriseAgents)!(undefined, undefined) as { success: boolean; error?: string };
@@ -90,8 +99,9 @@ describe('agents:fetchEnterpriseAgents', () => {
     vi.mocked(enterpriseClient.listEnterpriseAgents).mockClear();
     vi.mocked(enterpriseClient.listEnterpriseAgents).mockResolvedValue([{
       agentId: 'agent_a1', name: 'Reviewer', description: 'd',
-      identity: '', systemPrompt: '', model: '', thinkingLevel: '', icon: '',
-      skillIds: [], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true,
+      identity: '', aboutYou: '', systemPrompt: '', model: '', thinkingLevel: '', icon: '',
+      skillIds: [], subagentAllowAgentIds: [], scope: { allCompany: false, deptIds: [], userIds: [] },
+      imChannels: [], enabled: true,
     }]);
     syncFromServerMock.mockClear();
     registerAgentEnterpriseHandlers(deps());
@@ -136,21 +146,22 @@ describe('agents:enterprise agent model override', () => {
   const prefs = { getModel: vi.fn(), setModel: vi.fn() };
   function modelDeps(): Parameters<typeof registerAgentEnterpriseHandlers>[0] {
     return {
-      getGenWorkStore: () => ({
+      getMixCWorkStore: () => ({
         listAgents: () => [{ source: 'enterprise' as const, enterpriseAgentId: 'agent_a1', id: 'agent_a1' }],
       }) as never,
       getEnterpriseAgentPrefsStore: () => prefs as never,
       getSkillManager: () => ({ getCatalogLocalId: (id: string) => id }) as never,
       getAvailableModelsRef: () => '',
+      getServerModels: () => [],
     };
   }
   beforeEach(() => { prefs.getModel.mockClear(); prefs.setModel.mockClear(); });
 
   test('GetEnterpriseAgentModel returns the stored override for a known enterprise agent', async () => {
-    prefs.getModel.mockReturnValue('genwork/opus-4');
+    prefs.getModel.mockReturnValue('mixcwork/opus-4');
     registerAgentEnterpriseHandlers(modelDeps());
     const out = await handlers.get(AgentIpcChannel.GetEnterpriseAgentModel)!(undefined, 'agent_a1') as { success: boolean; modelRef?: string };
-    expect(out).toEqual({ success: true, modelRef: 'genwork/opus-4' });
+    expect(out).toEqual({ success: true, modelRef: 'mixcwork/opus-4' });
     expect(prefs.getModel).toHaveBeenCalledWith('agent_a1');
   });
 
@@ -162,8 +173,8 @@ describe('agents:enterprise agent model override', () => {
 
   test('SetEnterpriseAgentModel persists via the prefs store', async () => {
     registerAgentEnterpriseHandlers(modelDeps());
-    const out = await handlers.get(AgentIpcChannel.SetEnterpriseAgentModel)!(undefined, { agentId: 'agent_a1', modelRef: 'genwork/sonnet-5' }) as { success: boolean };
+    const out = await handlers.get(AgentIpcChannel.SetEnterpriseAgentModel)!(undefined, { agentId: 'agent_a1', modelRef: 'mixcwork/sonnet-5' }) as { success: boolean };
     expect(out).toEqual({ success: true });
-    expect(prefs.setModel).toHaveBeenCalledWith('agent_a1', 'genwork/sonnet-5');
+    expect(prefs.setModel).toHaveBeenCalledWith('agent_a1', 'mixcwork/sonnet-5');
   });
 });

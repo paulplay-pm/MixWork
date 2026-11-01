@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Rebuild GenWork MCP management against the PRD + HTML prototype: org-scoped **connectors** (two-tab admin console: 企业连接器 + 连接器审核), 6-mode auth, **dept+member scope** (replacing role authz), draft/publish, version history/rollback, per-tool toggles, real MCP handshake, member submit-request flow. Drop call metrics + call-audit drawer.
+**Goal:** Rebuild MixCWork MCP management against the PRD + HTML prototype: org-scoped **connectors** (two-tab admin console: 企业连接器 + 连接器审核), 6-mode auth, **dept+member scope** (replacing role authz), draft/publish, version history/rollback, per-tool toggles, real MCP handshake, member submit-request flow. Drop call metrics + call-audit drawer.
 
 **Architecture:** New `mcp_connectors`/`mcp_connector_versions`/`mcp_connector_submissions`/`mcp_connector_categories` tables + `orgs.members_can_submit_connectors`; retire the role-based `mcp_marketplace_servers` (public route re-pointed to connectors with **scope-based** visibility). Admin console (`enterprise_server/web`) rewritten to the prototype. Desktop 企业市场 re-pointed to the new wire + scope visibility + member submit entry.
 
@@ -19,7 +19,7 @@
 - **i18n (SPA):** every new/changed string in **both** `en` and `zh` blocks of `web/src/i18n.ts`.
 - **No new PermissionPoint** (V1): reuse `mcp:view/create/edit/delete` (`PP.McpView/McpCreate/McpEdit/McpDelete`, `src/shared/permissionPoints.ts:13`).
 - **Test code is authoritative:** treat existing test assertions as source of truth; only change them with explicit user sign-off.
-- **Run server AND web vitest per-file** (full suite hits sandbox EBADF/fd limit). Never touch the dev `gwork` Postgres `:5432`; tests use the pglite in-process harness (`src/db/testDb.ts`).
+- **Run server AND web vitest per-file** (full suite hits sandbox EBADF/fd limit). Never touch the dev `mixcwork` Postgres `:5432`; tests use the pglite in-process harness (`src/db/testDb.ts`).
 - **Migrations:** plain SQL, one `;`-statement at a time (`migrate.ts` `splitStatements` strips `--` comments); re-run-safe (`IF NOT EXISTS` / guarded seeds). Latest existing = 034 → this starts at **035**.
 - **transport** (`http`/`sse`) affects only test-connection/handshake transport + the auth-mode availability set (SSE disables `user-oauth`/`client-creds`/`sso`), never the desktop runtime.
 - **删除范围**（用户确认）：无调用指标（近30天调用/错误率/错误率高）、无调用审计日志抽屉。卡片元信息行只留版本号；卡片 ⋯ 菜单 = 编辑 / 停启用 / 删除。**保留**管理员写操作审计（`auditStore`，`{before,after}` diff）。
@@ -881,7 +881,7 @@ Holds a single form state object (all editable fields + `scope` set + `tools` to
   - `none` → warning card.
   - `shared-key` → 组织 API Key (password; edit placeholder = masked value; blank=keep) + secret-meta line.
   - `user-key` → explanation card (admin fills nothing).
-  - `user-oauth` → read-only callback URL (default `https://oauth.genwork.cn/mcp/callback`) + copy button, Client ID, Client Secret (password + secret-meta), **scope multi-select** (preset grouped list + custom input + chips).
+  - `user-oauth` → read-only callback URL (default `https://oauth.mixcwork.cn/mcp/callback`) + copy button, Client ID, Client Secret (password + secret-meta), **scope multi-select** (preset grouped list + custom input + chips).
   - `client-creds` → Token URL, Client ID, Client Secret.
   - `sso` → SSO app select (OIDC/飞书/钉钉/企业微信).
   - 超时时间 (5–300, default 30) / 重试次数 (0–5, default 2) (store in `authConfig.timeoutSeconds`/`retryCount`).

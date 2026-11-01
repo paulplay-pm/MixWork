@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 
 import { requirePermission } from '../../auth/middleware';
-import { modelCatalog, ModelType, ModelTypeValue, MODEL_TYPE_VALUES } from '../../models/modelCatalog';
+import { MODEL_TYPE_VALUES,modelCatalog, ModelType, ModelTypeValue } from '../../models/modelCatalog';
+import { modelTypeDefaults } from '../../models/modelTypeDefaults';
 import { PermissionPoint as PP } from '../../shared/permissionPoints';
 
 /** Legacy 6-value single-type vocabulary (deprecated `type` field). Distinct
@@ -27,6 +28,12 @@ interface ModelPatchBody {
     topP?: number | null;
     maxOutputTokens?: number | null;
   };
+  /** Mark this model as the org's default for one capability type. The type
+   * is inside the object because the path carries the model id but not the
+   * type, and "clear the default" is meaningless without naming the type. */
+  defaultForType?: { type: string; isDefault: boolean };
+  /** Free-form capability parameters; stored as JSONB in `parameter_spec`. */
+  parameterSpec?: Record<string, unknown>;
 }
 
 export const adminModelRoutes = new Hono();
@@ -66,6 +73,7 @@ adminModelRoutes.post('/admin/models', requirePermission(PP.ModelCreate), async 
           maxOutputTokens: z.number().int().min(1).max(200000).nullable().optional(),
         })
         .optional(),
+      parameterSpec: z.record(z.unknown()).optional(),
     })
     .safeParse(await c.req.json());
   if (!parsed.success) {
@@ -98,6 +106,7 @@ adminModelRoutes.post('/admin/models', requirePermission(PP.ModelCreate), async 
             max_output_tokens: body.capabilities.maxOutputTokens ?? null,
           }
         : undefined,
+      parameterSpec: body.parameterSpec,
     });
     return c.json({ id });
   } catch (e) {
@@ -139,8 +148,55 @@ adminModelRoutes.patch('/admin/models/:id', requirePermission(PP.ModelEdit), asy
     return c.json({ error: 'validation_error', field: 'types' }, 400);
   }
 
+  // `parameterSpec` is free-form JSON, so its shape is checked here: a
+  // non-object would not survive the JSONB column.
+  if (
+    body.parameterSpec !== undefined
+    && (
+      typeof body.parameterSpec !== 'object'
+      || body.parameterSpec === null
+      || Array.isArray(body.parameterSpec)
+    )
+  ) {
+    return c.json({ error: 'validation_error', field: 'parameterSpec' }, 400);
+  }
+
+  // The default-model flag: the type must be one the model actually carries.
+  let defaultForType: { type: ModelTypeValue; isDefault: boolean } | undefined;
+  if (body.defaultForType !== undefined) {
+    const dft = body.defaultForType;
+    if (
+      !dft
+      || typeof dft.type !== 'string'
+      || !MODEL_TYPE_VALUES.includes(dft.type as ModelTypeValue)
+    ) {
+      return c.json({ error: 'validation_error', field: 'defaultForType.type' }, 400);
+    }
+    if (typeof dft.isDefault !== 'boolean') {
+      return c.json({ error: 'validation_error', field: 'defaultForType.isDefault' }, 400);
+    }
+    defaultForType = { type: dft.type as ModelTypeValue, isDefault: dft.isDefault };
+  }
+
+  // Validate the default-model request BEFORE writing anything: a rejected
+  // request must not leave half of its fields applied.
+  if (defaultForType?.isDefault) {
+    const model = await modelCatalog.getById(id);
+    if (!model || model.org_id !== orgId) return c.json({ error: 'model_not_found' }, 404);
+    // The type list this request produces: the body may be re-typing the
+    // model in the same call.
+    const effectiveTypes = body.types ?? model.types;
+    if (!effectiveTypes.includes(defaultForType.type)) {
+      return c.json({ error: 'type_mismatch', field: 'defaultForType.type' }, 400);
+    }
+  }
+
   const ok = await modelCatalog.patch(orgId, id, {
-    display_name: body.displayName ?? null,
+    // Only write the display name when the request mentions it: this route is
+    // also the target of single-field PATCHes (the enable switch, the
+    // per-type default), and `?? null` would wipe the admin's label on every
+    // one of them.
+    display_name: 'displayName' in body ? (body.displayName ?? null) : undefined,
     type: body.type,
     // Validated against the 8-value set above.
     types: body.types as ModelTypeValue[] | undefined,
@@ -157,9 +213,36 @@ adminModelRoutes.patch('/admin/models/:id', requirePermission(PP.ModelEdit), asy
           max_output_tokens: body.capabilities.maxOutputTokens,
         }
       : undefined,
+    parameterSpec: body.parameterSpec,
   });
   if (!ok) return c.json({ error: 'model_not_found' }, 404);
+
+  if (defaultForType) {
+    if (defaultForType.isDefault) {
+      await modelTypeDefaults.set(orgId, defaultForType.type, id);
+    } else {
+      // Only clear when this model IS the current default: the console never
+      // asks to clear another model's default, and silently clearing it would
+      // be a surprise.
+      const current = await modelTypeDefaults.get(orgId, defaultForType.type);
+      if (current === id) await modelTypeDefaults.clear(orgId, defaultForType.type);
+    }
+  }
   return c.json({ ok: true });
+});
+
+/**
+ * The org's default model per capability type. The console renders the
+ * "默认" badge on the model's type chip, so it needs to know which
+ * (model, type) pairs are defaults.
+ */
+adminModelRoutes.get('/admin/model-type-defaults', requirePermission(PP.ModelView), async (c) => {
+  const orgId = c.req.query('orgId');
+  if (!orgId) return c.json({ error: 'orgId required' }, 400);
+  // Cross-tenant guard: the orgId query param must match the caller's token.
+  const claims = c.get('claims');
+  if (orgId !== claims.orgId) return c.json({ error: 'org_mismatch' }, 400);
+  return c.json(await modelTypeDefaults.listForOrg(orgId));
 });
 
 adminModelRoutes.delete('/admin/models/:id', requirePermission(PP.ModelDelete), async (c) => {

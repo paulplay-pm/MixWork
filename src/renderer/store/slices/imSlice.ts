@@ -12,17 +12,12 @@ import type {
   DiscordInstanceConfig,
   DiscordMultiInstanceConfig,
   DiscordOpenClawConfig,
-  EmailInstanceConfig,
-  EmailMultiInstanceConfig,
   FeishuInstanceConfig,
   FeishuMultiInstanceConfig,
   FeishuOpenClawConfig,
   IMGatewayConfig,
   IMGatewayStatus,
   IMSettings,
-  PopoInstanceConfig,
-  PopoMultiInstanceConfig,
-  PopoOpenClawConfig,
   QQInstanceConfig,
   QQMultiInstanceConfig,
   QQOpenClawConfig,
@@ -214,49 +209,8 @@ const imSlice = createSlice({
         i => i.instanceId !== action.payload
       );
     },
-    /** @deprecated Use setPopoInstanceConfig instead */
-    setPopoConfig: (state, action: PayloadAction<Partial<PopoOpenClawConfig>>) => {
-      const first = state.config.popo.instances[0];
-      if (first) Object.assign(first, action.payload);
-    },
-    setPopoInstances: (state, action: PayloadAction<PopoInstanceConfig[]>) => {
-      state.config.popo = { instances: action.payload };
-    },
-    setPopoMultiInstanceConfig: (state, action: PayloadAction<PopoMultiInstanceConfig>) => {
-      state.config.popo = action.payload;
-    },
-    setPopoInstanceConfig: (state, action: PayloadAction<{ instanceId: string; config: Partial<PopoOpenClawConfig> }>) => {
-      const inst = state.config.popo.instances.find(i => i.instanceId === action.payload.instanceId);
-      if (inst) Object.assign(inst, action.payload.config);
-    },
-    addPopoInstance: (state, action: PayloadAction<PopoInstanceConfig>) => {
-      state.config.popo.instances.push(action.payload);
-    },
-    removePopoInstance: (state, action: PayloadAction<string>) => {
-      state.config.popo.instances = state.config.popo.instances.filter(
-        i => i.instanceId !== action.payload
-      );
-    },
     setWeixinConfig: (state, action: PayloadAction<Partial<WeixinOpenClawConfig>>) => {
       state.config.weixin = { ...state.config.weixin, ...action.payload };
-    },
-    setEmailInstances: (state, action: PayloadAction<EmailInstanceConfig[]>) => {
-      state.config.email = { instances: action.payload };
-    },
-    setEmailMultiInstanceConfig: (state, action: PayloadAction<EmailMultiInstanceConfig>) => {
-      state.config.email = action.payload;
-    },
-    setEmailInstanceConfig: (state, action: PayloadAction<{ instanceId: string; config: Partial<EmailInstanceConfig> }>) => {
-      const inst = state.config.email.instances.find(i => i.instanceId === action.payload.instanceId);
-      if (inst) Object.assign(inst, action.payload.config);
-    },
-    addEmailInstance: (state, action: PayloadAction<EmailInstanceConfig>) => {
-      state.config.email.instances.push(action.payload);
-    },
-    removeEmailInstance: (state, action: PayloadAction<string>) => {
-      state.config.email.instances = state.config.email.instances.filter(
-        i => i.instanceId !== action.payload,
-      );
     },
     setIMSettings: (state, action: PayloadAction<Partial<IMSettings>>) => {
       state.config.settings = { ...state.config.settings, ...action.payload };
@@ -314,18 +268,7 @@ export const {
   setWecomInstanceConfig,
   addWecomInstance,
   removeWecomInstance,
-  setPopoConfig,
-  setPopoInstances,
-  setPopoMultiInstanceConfig,
-  setPopoInstanceConfig,
-  addPopoInstance,
-  removePopoInstance,
   setWeixinConfig,
-  setEmailInstances,
-  setEmailMultiInstanceConfig,
-  setEmailInstanceConfig,
-  addEmailInstance,
-  removeEmailInstance,
   setIMSettings,
   setStatus,
   setLoading,

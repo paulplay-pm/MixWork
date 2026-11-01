@@ -1,5 +1,6 @@
 import '../helpers/setupEnv';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('../../src/db/pool', async () => {
   const td = await import('../../src/db/testDb');
@@ -7,10 +8,11 @@ vi.mock('../../src/db/pool', async () => {
 });
 
 import { Hono } from 'hono';
-import { resetSchema, testPool, runMigrations } from '../../src/db/testDb';
+
+import { authService } from '../../src/auth/authService';
+import { resetSchema, runMigrations,testPool } from '../../src/db/testDb';
 import { authRoutes } from '../../src/routes/auth';
 import { changePasswordRoutes } from '../../src/routes/changePassword';
-import { authService } from '../../src/auth/authService';
 
 function buildApp(): Hono {
   const app = new Hono();

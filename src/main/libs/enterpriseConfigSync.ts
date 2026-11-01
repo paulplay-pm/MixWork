@@ -4,7 +4,6 @@ import path from 'path';
 
 import { OPENCLAW_PLUGIN_INDEX_MANAGED_KEYS } from '../../shared/openclawEngine/constants';
 import type { IMStore } from '../im/imStore';
-import type { PopoInstanceConfig } from '../im/types';
 import type { SqliteStore } from '../sqliteStore';
 import { safelyReplaceTextFileSync } from './safeFileReplace';
 
@@ -52,7 +51,7 @@ const SANDBOX_MODE_MAP: Record<string, string> = {
 
 const ENTERPRISE_CONFIG_DIR = 'enterprise-config';
 const MANIFEST_FILE = 'manifest.json';
-const ACCOUNT_COMPAT_CHANNEL_KEYS = ['feishu', 'dingtalk', 'dingtalk-connector', 'qqbot', 'wecom', 'moltbot-popo'] as const;
+const ACCOUNT_COMPAT_CHANNEL_KEYS = ['feishu', 'dingtalk', 'dingtalk-connector', 'qqbot', 'wecom'] as const;
 type AccountCompatChannelKey = typeof ACCOUNT_COMPAT_CHANNEL_KEYS[number];
 
 const ACCOUNT_COMPAT_CHANNEL_TOP_LEVEL_MAP: Record<AccountCompatChannelKey, Record<string, string>> = {
@@ -124,23 +123,6 @@ const ACCOUNT_COMPAT_CHANNEL_TOP_LEVEL_MAP: Record<AccountCompatChannelKey, Reco
     groupAllowFrom: 'groupAllowFrom',
     sendThinkingMessage: 'sendThinkingMessage',
   },
-  'moltbot-popo': {
-    enabled: 'enabled',
-    connectionMode: 'connectionMode',
-    appKey: 'appKey',
-    appSecret: 'appSecret',
-    token: 'token',
-    aesKey: 'aesKey',
-    webhookBaseUrl: 'webhookBaseUrl',
-    webhookPath: 'webhookPath',
-    webhookPort: 'webhookPort',
-    dmPolicy: 'dmPolicy',
-    allowFrom: 'allowFrom',
-    groupPolicy: 'groupPolicy',
-    groupAllowFrom: 'groupAllowFrom',
-    textChunkLimit: 'textChunkLimit',
-    richTextChunkLimit: 'richTextChunkLimit',
-  },
 };
 
 const ACCOUNT_COMPAT_CHANNEL_TOP_LEVEL_CREDENTIAL_KEYS: Record<AccountCompatChannelKey, string[]> = {
@@ -149,7 +131,6 @@ const ACCOUNT_COMPAT_CHANNEL_TOP_LEVEL_CREDENTIAL_KEYS: Record<AccountCompatChan
   'dingtalk-connector': ['clientId', 'clientSecret'],
   qqbot: ['appId', 'appSecret', 'clientSecret', 'clientSecretFile'],
   wecom: ['botId', 'secret'],
-  'moltbot-popo': ['appKey', 'appSecret', 'token', 'aesKey'],
 };
 
 const ACCOUNT_COMPAT_CHANNEL_ACCOUNT_CREDENTIAL_KEYS: Record<AccountCompatChannelKey, string[]> = {
@@ -158,7 +139,6 @@ const ACCOUNT_COMPAT_CHANNEL_ACCOUNT_CREDENTIAL_KEYS: Record<AccountCompatChanne
   'dingtalk-connector': ['clientId', 'clientSecret'],
   qqbot: ['appId', 'clientSecret', 'appSecret', 'clientSecretFile'],
   wecom: ['botId', 'secret'],
-  'moltbot-popo': ['appKey', 'appSecret', 'token', 'aesKey'],
 };
 
 function resolveMergeMode(value: boolean | 'merge' | 'overwrite' | undefined): 'merge' | 'overwrite' | null {
@@ -388,7 +368,7 @@ const API_FORMAT_MAP: Record<string, 'anthropic' | 'openai'> = {
 /**
  * Reverse-map openclaw.json models.providers → app_config.providers.
  * Enterprise openclaw.json should use real provider names as keys
- * (e.g., 'deepseek', 'anthropic') instead of the generic 'genwork'.
+ * (e.g., 'deepseek', 'anthropic') instead of the generic 'mixcwork'.
  */
 function syncModelConfig(configPath: string, store: SqliteStore): void {
   const openclawPath = path.join(configPath, 'openclaw.json');
@@ -419,7 +399,7 @@ function syncModelConfig(configPath: string, store: SqliteStore): void {
         supportsImage: Array.isArray(m.input) && m.input.includes('image'),
       }));
 
-      // Resolve apiKey: use plain text value, skip placeholders like ${GENWORK_...}
+      // Resolve apiKey: use plain text value, skip placeholders like ${MIXCWORK_...}
       const apiKey = typeof providerConfig.apiKey === 'string' && !providerConfig.apiKey.startsWith('${')
         ? providerConfig.apiKey
         : '';
@@ -694,27 +674,6 @@ function syncIMChannels(configPath: string, imStore: IMStore): void {
           imStore.setWecomConfig(cfg);
         }
       },
-      'moltbot-popo': (cfg) => {
-        const normalizedCfg = normalizeMultiAccountChannelConfig('moltbot-popo', cfg);
-        const accounts = readAccountsFromChannelConfig(normalizedCfg);
-        if (accounts) {
-          const instances = Object.entries(accounts).map(([accountId, accountCfg], idx) => ({
-            ...accountCfg,
-            instanceId: accountId,
-            instanceName: (accountCfg as Record<string, unknown>).name as string || `POPO Bot ${idx + 1}`,
-          })) as PopoInstanceConfig[];
-          imStore.setPopoMultiInstanceConfig({ instances });
-          return;
-        }
-        // Legacy single-account format: wrap as first instance
-        const { randomUUID } = require('crypto') as typeof import('crypto');
-        const instanceId = randomUUID();
-        imStore.setPopoInstanceConfig(instanceId, {
-          ...cfg,
-          instanceId,
-          instanceName: 'POPO Bot 1',
-        });
-      },
       'openclaw-weixin': (cfg) => imStore.setWeixinConfig(cfg),
     };
 
@@ -816,7 +775,7 @@ function syncOpenClawAgentList(
     }
 
     if (syncedCount > 0) {
-      console.log(`[Enterprise] synced ${syncedCount} agent config(s) to Genwork agents`);
+      console.log(`[Enterprise] synced ${syncedCount} agent config(s) to Mixcwork agents`);
     }
   } catch (error) {
     console.error('[Enterprise] failed to sync OpenClaw agents:', error);

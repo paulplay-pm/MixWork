@@ -1,46 +1,54 @@
 import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import type { AgentInput, AgentMarketplaceItem } from '../../../api/agentMarketplace';
+import { type AgentInput, agentMarketplaceApi,type AgentMarketplaceItem } from '../../../api/agentMarketplace';
+import type { DeptNode } from '../../../api/departments';
 import type { ModelView } from '../../../api/models';
 import type { ProviderKeyView } from '../../../api/providers';
+import type { UserRow } from '../../../api/users';
+import { IconUploadField } from '../../../components/IconUploadField';
 import { Switch } from '../../../components/Switch';
-import { autoIcon } from '../../../lib/autoIcon';
-import { GLYPH_ICON, isUrlIcon, tileClass } from '../agentTile';
+import AgentIconTile from '../AgentIconTile';
+import { isImageIcon } from '../agentTile';
 import { fill, t } from '../types';
+import { AgentScopeSelector } from './AgentScopeSelector';
 import {
   type AgentDraft,
   draftFromAgent,
   draftToInput,
   emptyDraft,
   isDirty,
+  isEmptyScope,
   validateDraft,
 } from './drawerForm';
 import { IconColorPicker } from './IconColorPicker';
 import { ImChannelPicker } from './ImChannelPicker';
 import { ModelSelect } from './ModelSelect';
-import { RolesPicker } from './RolesPicker';
 import { SkillPicker } from './SkillPicker';
 import { SubagentPicker } from './SubagentPicker';
 
 interface AgentDrawerProps {
   mode: 'create' | 'edit';
   agent?: AgentMarketplaceItem;
-  roleOptions: string[];
+  /** Department tree + org members, for the 可见范围 scope picker. */
+  depts: DeptNode[];
+  members: UserRow[];
   skills: Array<{ id: string; name: string; name_zh: string | null }>;
   agents: AgentMarketplaceItem[];
   models: ModelView[];
   /** Org providers (模型配置) for the model picker's vendor group labels. */
   providers?: ProviderKeyView[];
   modelsError?: boolean;
-  onSave: (input: AgentInput) => Promise<void>;
+  /** The icon, when one was picked before the agent existed, is uploaded by
+   *  the caller once the create response gives it an id. */
+  onSave: (input: AgentInput, newIcon?: File) => Promise<void>;
   onClose: () => void;
   /** Called instead of `onClose` when the draft has unsaved changes; the
    * caller (the page) shows a discard confirmation before actually closing. */
   onDiscardRequest?: () => void;
 }
 
-const TAB_IDS = ['identity', 'persona', 'about', 'skills', 'subs', 'im', 'roles'] as const;
+const TAB_IDS = ['identity', 'persona', 'about', 'skills', 'subs', 'im', 'scope'] as const;
 type TabId = (typeof TAB_IDS)[number];
 
 const THINKING_LEVELS: Array<{ value: string; key: string }> = [
@@ -55,14 +63,16 @@ const TEXTAREA_CLASS =
 /**
  * Unified create/edit drawer for enterprise agents: header (icon tile, name,
  * description), 7 tabs (identity / persona / about / skills / subs / im /
- * roles), and a footer (model, thinking level, enable, save). The im tab
- * renders the ImChannelPicker (per-channel 是否启动 switches); the roles tab
- * renders the RolesPicker (min 1 visible role).
+ * scope), and a footer (model, thinking level, enable, save). The im tab
+ * renders the ImChannelPicker (per-channel 是否启动 switches); the scope tab
+ * renders the AgentScopePicker (the department grant — min 1 department or
+ * member).
  */
 export function AgentDrawer({
   mode,
   agent,
-  roleOptions,
+  depts,
+  members,
   skills,
   agents,
   models,
@@ -77,15 +87,20 @@ export function AgentDrawer({
   const [tab, setTab] = useState<TabId>('identity');
   const [popOpen, setPopOpen] = useState<null | 'icon' | 'model'>(null);
   const [saving, setSaving] = useState(false);
+  /** Create mode: an icon picked before the agent exists, uploaded once the
+   *  create response gives it an id. */
+  const [pendingIcon, setPendingIcon] = useState<File | null>(null);
+  /** Wraps the icon tile and its popover, so a click inside the popover does
+   *  not count as "outside". */
+  const iconPopRef = useRef<HTMLDivElement>(null);
   const [nameErr, setNameErr] = useState(false);
-  const [rolesErr, setRolesErr] = useState(false);
+  const [scopeErr, setScopeErr] = useState(false);
 
   const set = <K extends keyof AgentDraft>(key: K, value: AgentDraft[K]): void => {
     setDraft(d => ({ ...d, [key]: value }));
   };
 
   // Header tile glyph; undefined for unknown values (falls back to autoIcon).
-  const Glyph = GLYPH_ICON[draft.icon];
 
   // Non-blocking duplicate-name note (edit mode): another agent in the
   // catalog shares the draft name (case-insensitive, excluding self).
@@ -102,18 +117,32 @@ export function AgentDrawer({
   const save = async (): Promise<void> => {
     const errs = validateDraft(draft);
     if (errs.name) { setNameErr(true); return; }
-    if (errs.roles) { setTab('roles'); setRolesErr(true); return; }
+    if (errs.scope) { setTab('scope'); setScopeErr(true); return; }
     setSaving(true);
     try {
-      await onSave(draftToInput(draft));
+      await onSave(draftToInput(draft), pendingIcon ?? undefined);
     } finally {
       setSaving(false);
     }
   };
 
+  // The popover had no way out other than pressing the tile again, which
+  // nothing on screen said. Clicking anywhere else closes it.
+  useEffect(() => {
+    if (popOpen !== 'icon') return;
+    const onDown = (e: MouseEvent): void => {
+      if (!iconPopRef.current?.contains(e.target as Node)) setPopOpen(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [popOpen]);
+
   useEffect(() => {
     const handler = (e: KeyboardEvent): void => {
       if (e.key !== 'Escape') return;
+      // The scope picker claims Escape (it prevents the default) so Esc
+      // closes the picker first and the drawer only on the next press.
+      if (e.defaultPrevented) return;
       if (popOpen) { setPopOpen(null); return; }
       requestClose();
     };
@@ -132,26 +161,37 @@ export function AgentDrawer({
     >
       {/* header: icon tile + name/description inputs + close */}
       <div className="flex items-start gap-3 border-b border-[var(--border-default)] p-4">
-        <div className="relative">
+        <div className="relative" ref={iconPopRef}>
           <button
             type="button"
             aria-label={t('agentmgmt.icon.change')}
             onClick={() => setPopOpen(popOpen === 'icon' ? null : 'icon')}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[20px] ${tileClass(draft.iconColor)}`}
+            className="shrink-0"
           >
-            {isUrlIcon(draft.icon)
-              ? <img src={draft.icon} alt="" className="h-11 w-11 object-cover" />
-              : Glyph
-                ? <Glyph className="h-5 w-5" />
-                : <span>{autoIcon(draft.name || draft.icon)}</span>}
+            <AgentIconTile
+              icon={draft.icon}
+              iconColor={draft.iconColor}
+              fallbackText={draft.name || draft.icon}
+            />
           </button>
           {popOpen === 'icon' ? (
             <IconColorPicker
               icon={draft.icon}
               iconColor={draft.iconColor}
-              onPick={g => set('icon', g)}
+              onPick={value => { set('icon', value); setPopOpen(null); }}
               onColor={c => set('iconColor', c)}
-            />
+            >
+              <IconUploadField
+                label={t('agentmgmt.icon')}
+                icon={isImageIcon(draft.icon) ? draft.icon : null}
+                pendingFile={pendingIcon}
+                onPick={setPendingIcon}
+                onClearPick={() => setPendingIcon(null)}
+                onUpload={draft.agentId ? (file) => agentMarketplaceApi.uploadIcon(draft.agentId!, file) : undefined}
+                onClear={draft.agentId ? () => agentMarketplaceApi.clearIcon(draft.agentId!) : undefined}
+                onChanged={(next) => set('icon', next ?? '')}
+              />
+            </IconColorPicker>
           ) : null}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -247,13 +287,19 @@ export function AgentDrawer({
             selected={draft.subagentAllowAgentIds}
             onToggle={(id) => setDraft(d => ({ ...d, subagentAllowAgentIds: d.subagentAllowAgentIds.includes(id) ? d.subagentAllowAgentIds.filter(x => x !== id) : [...d.subagentAllowAgentIds, id] }))}
           />
-        ) : tab === 'roles' ? (
-          <RolesPicker
-            options={roleOptions}
-            selected={draft.allowedRoles}
-            onChange={(v) => { setDraft(d => ({ ...d, allowedRoles: v })); if (v.length >= 1) setRolesErr(false); }}
-            error={rolesErr ? t('agentmgmt.roles.min') : undefined}
-          />
+        ) : tab === 'scope' ? (
+          <div>
+            <div className="mb-3 text-xs text-[var(--text-secondary)]">{t('agentmgmt.scope.hint')}</div>
+            <AgentScopeSelector
+              value={draft.scope}
+              onChange={(v) => { setDraft(d => ({ ...d, scope: v })); if (!isEmptyScope(v)) setScopeErr(false); }}
+              depts={depts}
+              members={members}
+            />
+            {scopeErr ? (
+              <div className="mt-2 text-xs text-[var(--danger-primary)]">{t('agentmgmt.scope.min')}</div>
+            ) : null}
+          </div>
         ) : (
           <ImChannelPicker
             selected={draft.imChannels}

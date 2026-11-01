@@ -1,6 +1,6 @@
 import { expect,test } from 'vitest';
 
-import { classifyErrorKey, isGenWorkQuotaExhaustedError } from './coworkErrorClassify';
+import { classifyErrorKey, isMixCWorkQuotaExhaustedError } from './coworkErrorClassify';
 
 const classifyError = (error: string) => classifyErrorKey(error) ?? error;
 
@@ -68,29 +68,29 @@ test('billing: OpenAI insufficient_quota', () => {
   expect(classifyError('You exceeded your current quota, please check your plan and billing details. insufficient_quota')).toBe('coworkErrorInsufficientBalance');
 });
 
-test('billing: GenWork free quota exhausted', () => {
+test('billing: MixCWork free quota exhausted', () => {
   expect(classifyError('免费额度已用完，请升级套餐')).toBe('coworkErrorQuotaExhausted');
 });
 
-test('billing: GenWork daily free quota code exhausted', () => {
+test('billing: MixCWork daily free quota code exhausted', () => {
   expect(classifyError('{"error":{"message":"今日免费额度已用完","code":40200}}')).toBe('coworkErrorQuotaExhausted');
 });
 
-test('billing: GenWork free quota code exhausted', () => {
+test('billing: MixCWork free quota code exhausted', () => {
   expect(classifyError('{"error":{"message":"免费额度已用完，请升级套餐","code":40201}}')).toBe('coworkErrorQuotaExhausted');
 });
 
-test('billing: GenWork monthly credits exhausted', () => {
+test('billing: MixCWork monthly credits exhausted', () => {
   expect(classifyError('本月积分已用完')).toBe('coworkErrorQuotaExhausted');
 });
 
-test('billing: GenWork monthly quota JSON payload', () => {
+test('billing: MixCWork monthly quota JSON payload', () => {
   expect(classifyError('{"type":"error","error":{"type":"proxy_error","message":"本月积分已用完","code":40202}}')).toBe('coworkErrorQuotaExhausted');
 });
 
-test('billing: detects GenWork quota exhausted for proxy helpers', () => {
-  expect(isGenWorkQuotaExhaustedError('monthly credits exhausted')).toBe(true);
-  expect(isGenWorkQuotaExhaustedError('Request failed with status 402')).toBe(false);
+test('billing: detects MixCWork quota exhausted for proxy helpers', () => {
+  expect(isMixCWorkQuotaExhaustedError('monthly credits exhausted')).toBe(true);
+  expect(isMixCWorkQuotaExhaustedError('Request failed with status 402')).toBe(false);
 });
 
 test('billing: OpenRouter insufficient credits', () => {

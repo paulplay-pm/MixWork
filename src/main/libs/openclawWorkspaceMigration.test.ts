@@ -12,7 +12,7 @@ vi.mock('electron', () => ({
 
 import { migrateMainAgentWorkspace } from './openclawWorkspaceMigration';
 
-const AGENTS_MARKER = '<!-- GenWork managed: do not edit below this line -->';
+const AGENTS_MARKER = '<!-- MixCWork managed: do not edit below this line -->';
 
 function createStore() {
   const values = new Map<string, string>();

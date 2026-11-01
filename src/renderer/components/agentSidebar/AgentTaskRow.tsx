@@ -4,12 +4,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { i18nService } from '../../services/i18n';
 import Modal from '../common/Modal';
-import {
-  getIMSessionDisplayTitle,
-  getIMSessionPlatformIconClassName,
-  getIMSessionPlatformLabel,
-  getIMSessionPlatformLogo,
-} from '../genwork/imSessionDisplay';
 import ClockIcon from '../icons/ClockIcon';
 import EditIcon from '../icons/EditIcon';
 import EllipsisHorizontalIcon from '../icons/EllipsisHorizontalIcon';
@@ -17,6 +11,12 @@ import ListChecksIcon from '../icons/ListChecksIcon';
 import LoadingIcon from '../icons/LoadingIcon';
 import PushPinIcon from '../icons/PushPinIcon';
 import TrashIcon from '../icons/TrashIcon';
+import {
+  getIMSessionDisplayTitle,
+  getIMSessionPlatformIconClassName,
+  getIMSessionPlatformLabel,
+  getIMSessionPlatformLogo,
+} from '../mixcwork/imSessionDisplay';
 import { AgentSidebarIndicator } from './constants';
 import {
   getScheduledTaskDisplayTitle,

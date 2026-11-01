@@ -1,5 +1,6 @@
 // enterprise_server/tests/sso/providerPresets.test.ts
 import { describe, expect, test } from 'vitest';
+
 import { PRESETS } from '../../src/sso/providerPresets';
 
 describe('providerPresets', () => {

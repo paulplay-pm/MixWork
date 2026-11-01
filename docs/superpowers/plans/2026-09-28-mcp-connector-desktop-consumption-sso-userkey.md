@@ -12,13 +12,13 @@
 
 ## Global Constraints
 
-- **Two apps, one repo:** repo root `/Users/paulwang/work/GenWork` = Electron desktop; `enterprise_server/` = Hono + Postgres backend + React SPA (a subdirectory, no own `.git`). Run each side's tests from its own dir.
+- **Two apps, one repo:** repo root `/Users/paulwang/work/MixCWork` = Electron desktop; `enterprise_server/` = Hono + Postgres backend + React SPA (a subdirectory, no own `.git`). Run each side's tests from its own dir.
 - **Per-file tests only.** `enterprise_server` and `web` full `vitest` runs hit `EBADF`/fd exhaustion in the sandbox → `npx vitest run <file>`. The desktop main-process store tests (`mcpStore.test.ts`, `mcpAuthFlows.test.ts`) have a pre-existing `better-sqlite3.node` ABI failure (NODE_MODULE_VERSION 143 vs 137) in the sandbox — treat as CI-gated, unrelated to this change; keep logic in pure functions where testable.
 - **Typecheck baselines:**
   - server: `cd enterprise_server && npx tsc --noEmit` → 0 errors
   - web: `cd enterprise_server/web && npx tsc --noEmit` → 0 errors
-  - desktop main: `cd /Users/paulwang/work/GenWork && npx tsc -p electron-tsconfig.json --noEmit` → 0 errors
-  - desktop renderer: `cd /Users/paulwang/work/GenWork && npx tsc --noEmit` → **exactly 1 pre-existing error** `src/renderer/components/mcp/bakeArtifactSharePage.ts(382,21)` (do NOT fix it; do not add new errors)
+  - desktop main: `cd /Users/paulwang/work/MixCWork && npx tsc -p electron-tsconfig.json --noEmit` → 0 errors
+  - desktop renderer: `cd /Users/paulwang/work/MixCWork && npx tsc --noEmit` → **exactly 1 pre-existing error** `src/renderer/components/mcp/bakeArtifactSharePage.ts(382,21)` (do NOT fix it; do not add new errors)
 - **Tests are authoritative.** Do not change the meaning of an existing assertion. Only ADD assertions. The two existing assertions this plan intentionally modifies are called out explicitly and require sign-off (see the task that changes them): (1) `enterpriseAuthMode.test.ts:23` — `sso` flips from `Bearer` to `OAuth` (this is the placeholder this feature replaces); (2) no other existing assertion is altered.
 - **Secrets:** the public view exposes **non-secret** fields only. Never project `*ClientSecret`, `ssoClientSecret`, or any `__enc__*` ciphertext to the desktop. The desktop never holds org secrets.
 - **SSO is public-client-only this period** (spec §13.5 default: "SSO 机密客户端 → 网关" = 否). The SSO `ssoClientSecret` field is accepted by the form (confidential client for a future gateway) but is NOT projected to the desktop and is NOT required. No vault changes (`secretFieldFor('sso')` stays `null`).
@@ -652,8 +652,8 @@ In `src/main/mcp/mcpStore.ts`:
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork && npx tsc -p electron-tsconfig.json --noEmit
-cd /Users/paulwang/work/GenWork && npx tsc --noEmit
+cd /Users/paulwang/work/MixCWork && npx tsc -p electron-tsconfig.json --noEmit
+cd /Users/paulwang/work/MixCWork && npx tsc --noEmit
 ```
 Expected: electron-tsconfig 0 errors; renderer `tsc` shows exactly the 1 pre-existing `bakeArtifactSharePage.ts(382,21)` error and nothing new.
 
@@ -730,7 +730,7 @@ Update the function's leading doc comment (lines 4–12): change "Org-credential
 Run:
 ```bash
 npx vitest run src/renderer/components/mcp/enterpriseAuthMode.test.ts
-cd /Users/paulwang/work/GenWork && npx tsc --noEmit
+cd /Users/paulwang/work/MixCWork && npx tsc --noEmit
 ```
 Expected: the test PASSES (all 7); renderer `tsc` shows only the pre-existing `bakeArtifactSharePage.ts(382,21)` error.
 
@@ -768,7 +768,7 @@ The other `setApiKeyName('X-Api-Key')` calls (create/edit/registry branches, lin
 
 ### Step 2: Typecheck
 
-Run: `cd /Users/paulwang/work/GenWork && npx tsc --noEmit`
+Run: `cd /Users/paulwang/work/MixCWork && npx tsc --noEmit`
 Expected: exactly 1 pre-existing error `bakeArtifactSharePage.ts(382,21)`, no new errors.
 
 ### Step 3: Commit
@@ -790,7 +790,7 @@ git commit -m "feat(desktop): prefill the admin-configured user-key header name 
 cd enterprise_server
 npx vitest run tests/models/connectorView.test.ts
 npx vitest run tests/routes/mcpConnectors.test.ts
-cd /Users/paulwang/work/GenWork
+cd /Users/paulwang/work/MixCWork
 npx vitest run src/renderer/components/mcp/enterpriseAuthMode.test.ts
 npx vitest run src/renderer/components/mcp/mcpAuthModalHelpers.test.ts
 # CI-gated (better-sqlite3 ABI in sandbox — note if they can't run here):
@@ -803,8 +803,8 @@ Expected: `connectorView`, `mcpConnectors`, `enterpriseAuthMode`, `mcpAuthModalH
 
 ```bash
 cd enterprise_server && npx tsc --noEmit                                   # 0
-cd /Users/paulwang/work/GenWork/enterprise_server/web && npx tsc --noEmit  # 0
-cd /Users/paulwang/work/GenWork && npx tsc -p electron-tsconfig.json --noEmit            # 0
+cd /Users/paulwang/work/MixCWork/enterprise_server/web && npx tsc --noEmit  # 0
+cd /Users/paulwang/work/MixCWork && npx tsc -p electron-tsconfig.json --noEmit            # 0
 npx tsc --noEmit        # renderer — only bakeArtifactSharePage.ts(382,21)
 ```
 

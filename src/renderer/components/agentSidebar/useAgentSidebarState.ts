@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 
-import { genworkService } from '../../services/genwork';
+import { mixcworkService } from '../../services/mixcwork';
 import { localStore } from '../../services/store';
 import { RootState } from '../../store';
 import {
@@ -10,8 +10,8 @@ import {
   selectCurrentSessionId,
   selectPendingPermissionSessionIds,
 } from '../../store/selectors/coworkSelectors';
-import type { GenWorkSessionSummary } from '../../types/genwork';
-import { GenWorkSessionStatusValue } from '../../types/genwork';
+import type { MixCWorkSessionSummary } from '../../types/mixcwork';
+import { MixCWorkSessionStatusValue } from '../../types/mixcwork';
 import {
   AgentSidebarIndicator,
   AgentSidebarPageSize,
@@ -60,8 +60,8 @@ export const logAgentSidebarDebug = (message: string): void => {
 };
 
 const hasSessionChanged = (
-  previous: GenWorkSessionSummary,
-  next: GenWorkSessionSummary,
+  previous: MixCWorkSessionSummary,
+  next: MixCWorkSessionSummary,
 ): boolean => {
   return previous.title !== next.title
     || previous.scheduledTaskId !== next.scheduledTaskId
@@ -76,17 +76,17 @@ const hasSessionChanged = (
 };
 
 const mergeSessions = (
-  current: GenWorkSessionSummary[],
-  incoming: GenWorkSessionSummary[],
-): GenWorkSessionSummary[] => {
-  const byId = new Map<string, GenWorkSessionSummary>();
+  current: MixCWorkSessionSummary[],
+  incoming: MixCWorkSessionSummary[],
+): MixCWorkSessionSummary[] => {
+  const byId = new Map<string, MixCWorkSessionSummary>();
   current.forEach((session) => byId.set(session.id, session));
   incoming.forEach((session) => byId.set(session.id, session));
   return Array.from(byId.values());
 };
 
 export const deriveAgentSidebarIndicator = (
-  session: GenWorkSessionSummary,
+  session: MixCWorkSessionSummary,
   completedUnreadSessionIds: Set<string>,
   pendingPermissionSessionIds: Set<string>,
 ) => {
@@ -96,15 +96,15 @@ export const deriveAgentSidebarIndicator = (
   if (completedUnreadSessionIds.has(session.id)) {
     return AgentSidebarIndicator.CompletedUnread;
   }
-  if (session.status === GenWorkSessionStatusValue.Running) {
+  if (session.status === MixCWorkSessionStatusValue.Running) {
     return AgentSidebarIndicator.Running;
   }
   return AgentSidebarIndicator.None;
 };
 
 export const sortAgentSidebarTasks = (
-  tasks: GenWorkSessionSummary[],
-): GenWorkSessionSummary[] => {
+  tasks: MixCWorkSessionSummary[],
+): MixCWorkSessionSummary[] => {
   return [...tasks].sort((a, b) => {
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     if (a.pinned && b.pinned) {
@@ -132,7 +132,7 @@ export const sortAgentSidebarAgents = (
 };
 
 export const toAgentSidebarTaskNode = (
-  session: GenWorkSessionSummary,
+  session: MixCWorkSessionSummary,
   currentSessionId: string | null,
   completedUnreadSessionIds: Set<string>,
   pendingPermissionSessionIds: Set<string>,
@@ -171,9 +171,9 @@ export const collapseAgentSidebarTaskList = (
 };
 
 export const removeAgentSidebarTaskPreviews = (
-  previewsByAgentId: Record<string, GenWorkSessionSummary[]>,
+  previewsByAgentId: Record<string, MixCWorkSessionSummary[]>,
   sessionIds: Iterable<string>,
-): Record<string, GenWorkSessionSummary[]> => {
+): Record<string, MixCWorkSessionSummary[]> => {
   const sessionIdSet = new Set(sessionIds);
   if (sessionIdSet.size === 0) return previewsByAgentId;
 
@@ -190,9 +190,9 @@ export const removeAgentSidebarTaskPreviews = (
 };
 
 export const removeAgentSidebarAgentTaskPreviews = (
-  previewsByAgentId: Record<string, GenWorkSessionSummary[]>,
+  previewsByAgentId: Record<string, MixCWorkSessionSummary[]>,
   agentId: string,
-): Record<string, GenWorkSessionSummary[]> => {
+): Record<string, MixCWorkSessionSummary[]> => {
   if (!Object.prototype.hasOwnProperty.call(previewsByAgentId, agentId)) {
     return previewsByAgentId;
   }
@@ -217,7 +217,7 @@ export const useAgentSidebarState = ({
   const [expandedAgentIds, setExpandedAgentIds] = useState<string[]>([]);
   const [expandedTaskListAgentIds, setExpandedTaskListAgentIds] = useState<string[]>([]);
   const [visibleTaskLimitByAgentId, setVisibleTaskLimitByAgentId] = useState<Record<string, number>>({});
-  const [taskPreviewsByAgentId, setTaskPreviewsByAgentId] = useState<Record<string, GenWorkSessionSummary[]>>({});
+  const [taskPreviewsByAgentId, setTaskPreviewsByAgentId] = useState<Record<string, MixCWorkSessionSummary[]>>({});
   const [hasMoreTasksByAgentId, setHasMoreTasksByAgentId] = useState<Record<string, boolean>>({});
   const [loadingAgentIds, setLoadingAgentIds] = useState<string[]>([]);
   const [failedAgentIds, setFailedAgentIds] = useState<string[]>([]);
@@ -349,7 +349,7 @@ export const useAgentSidebarState = ({
     setAgentFailed(agentId, false);
 
     try {
-      const result = await genworkService.listSessionsForAgentPreview(agentId, limit, offset);
+      const result = await mixcworkService.listSessionsForAgentPreview(agentId, limit, offset);
       if (!activeAgentIdsRef.current.has(agentId)) return;
       if (!result.success) {
         logAgentSidebarLoadIssue(
@@ -433,7 +433,7 @@ export const useAgentSidebarState = ({
 
     setTaskPreviewsByAgentId((previous) => {
       let changed = false;
-      const next: Record<string, GenWorkSessionSummary[]> = {};
+      const next: Record<string, MixCWorkSessionSummary[]> = {};
       Object.entries(previous).forEach(([agentId, tasks]) => {
         if (activeAgentIds.has(agentId)) {
           next[agentId] = tasks;
@@ -547,7 +547,7 @@ export const useAgentSidebarState = ({
 
     const loadNextPage = async () => {
       try {
-        const result = await genworkService.listSessionsForAgentPreview(agentId, limit, offset);
+        const result = await mixcworkService.listSessionsForAgentPreview(agentId, limit, offset);
         if (!activeAgentIdsRef.current.has(agentId)) return;
         if (!result.success) {
           logAgentSidebarLoadIssue(
@@ -629,7 +629,7 @@ export const useAgentSidebarState = ({
 
   const patchTaskPreview = useCallback((
     sessionId: string,
-    updates: Partial<Pick<GenWorkSessionSummary, 'title' | 'pinned' | 'pinOrder' | 'status'>>,
+    updates: Partial<Pick<MixCWorkSessionSummary, 'title' | 'pinned' | 'pinOrder' | 'status'>>,
     options: { preserveUpdatedAt?: boolean } = {},
   ) => {
     setTaskPreviewsByAgentId((previous) => {

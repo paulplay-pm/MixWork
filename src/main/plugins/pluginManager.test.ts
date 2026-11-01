@@ -22,8 +22,8 @@ afterEach(() => {
 
 test('resolveNpmCommand delegates to shared npm runtime resolution', () => {
   const resolved = {
-    command: 'C:\\GenWork\\GenWork.exe',
-    baseArgs: ['C:\\GenWork\\resources\\app.asar.unpacked\\node_modules\\npm\\bin\\npm-cli.js'],
+    command: 'C:\\MixCWork\\MixCWork.exe',
+    baseArgs: ['C:\\MixCWork\\resources\\app.asar.unpacked\\node_modules\\npm\\bin\\npm-cli.js'],
     env: { ELECTRON_RUN_AS_NODE: '1' },
     shell: false,
   };

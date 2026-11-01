@@ -160,6 +160,9 @@ const SkillsPopover: React.FC<SkillsPopoverProps> = ({
           icon={skillService.getSkillIcon(skill.id)}
           className={asSubmenu ? 'mt-[2px] h-[22px] w-[22px] rounded-md' : 'mt-0.5 h-7 w-7 rounded-lg'}
           iconClassName={asSubmenu ? 'h-[13px] w-[13px]' : 'h-4 w-4'}
+          seed={skill.id}
+          label={skill.name}
+          size={asSubmenu ? 'sm' : 'md'}
         />
         <div className="flex-1 min-w-0">
           <div className={asSubmenu ? 'flex min-w-0 items-center gap-1.5' : 'flex items-center gap-2'}>

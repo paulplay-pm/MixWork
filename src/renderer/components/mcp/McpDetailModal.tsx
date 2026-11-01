@@ -32,6 +32,8 @@ interface McpDetailModalProps {
   action?: React.ReactNode;
   /** Management strip along the bottom (enable, edit, delete). */
   footer?: React.ReactNode;
+  /** Extra sections under the info rows (e.g. the live tool list). */
+  children?: React.ReactNode;
   onClose: () => void;
 }
 
@@ -49,6 +51,7 @@ const McpDetailModal: React.FC<McpDetailModalProps> = ({
   info,
   action,
   footer,
+  children,
   onClose,
 }) => createPortal(
   <Modal
@@ -137,6 +140,8 @@ const McpDetailModal: React.FC<McpDetailModalProps> = ({
           </div>
         </>
       )}
+
+      {children}
     </div>
 
     {footer && (

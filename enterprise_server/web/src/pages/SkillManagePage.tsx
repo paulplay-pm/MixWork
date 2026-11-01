@@ -120,6 +120,11 @@ export function SkillManagePage(): JSX.Element {
         icon: input.icon,
         scope: input.scope,
       })
+      // The icon was picked before the skill existed; it can only be attached
+      // now that there is an id.
+      .then((created) => (input.newIcon
+        ? skillMarketplaceApi.uploadIcon(created.skill_id, input.newIcon)
+        : undefined))
       .then(() => {
         toast.success(t('skillmgmt.toast.created'));
         closeCreate();
@@ -142,6 +147,7 @@ export function SkillManagePage(): JSX.Element {
         category_id: input.category_id,
         scope: input.scope,
       })
+      .then(() => (input.newIcon ? skillMarketplaceApi.uploadIcon(id, input.newIcon) : undefined))
       .then(() => (input.newZip ? skillMarketplaceApi.uploadZip(id, input.newZip) : undefined))
       .then(() => {
         toast.success(t('skillmgmt.toast.updated'));

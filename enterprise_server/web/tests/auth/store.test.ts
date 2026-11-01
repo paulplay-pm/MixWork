@@ -1,4 +1,4 @@
-import { beforeEach,describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { isTokenExpired, readStoredSession, useAuthStore } from '../../src/auth/store';
 
@@ -58,7 +58,7 @@ describe('auth/store', () => {
 });
 
 describe('auth/store persistence', () => {
-  const TOKEN_KEY = 'genwork.enterprise.auth.token';
+  const TOKEN_KEY = 'mixcwork.enterprise.auth.token';
   beforeEach(() => {
     localStorage.clear();
     useAuthStore.getState().logout();
@@ -102,5 +102,54 @@ describe('auth/store persistence', () => {
     expect(isTokenExpired(makeJwtWithExp(Math.floor(Date.now() / 1000) + 3600))).toBe(false);
     expect(isTokenExpired(makeJwt({ roles: ['user'] }))).toBe(false); // no exp → not treated as expired
     expect(isTokenExpired('not.a.jwt')).toBe(false);
+  });
+
+  test('readStoredSession reports an expired token it dropped', () => {
+    localStorage.setItem(TOKEN_KEY, makeJwtWithExp(Math.floor(Date.now() / 1000) - 10));
+    // The page load needs to know WHY the session is empty so the login form
+    // can explain itself.
+    expect(readStoredSession().expired).toBe(true);
+
+    localStorage.setItem(TOKEN_KEY, makeJwtWithExp(Math.floor(Date.now() / 1000) + 3600));
+    expect(readStoredSession().expired).toBe(false);
+  });
+});
+
+describe('auth/store session-expiry notice', () => {
+  const TOKEN_KEY = 'mixcwork.enterprise.auth.token';
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  /** The store reads localStorage at module load, so each case needs its own
+   * module instance. */
+  async function loadStore() {
+    vi.resetModules();
+    return import('../../src/auth/store');
+  }
+
+  test('a stored token that has already expired signs the admin out with the session-expired reason', async () => {
+    localStorage.setItem(TOKEN_KEY, makeJwtWithExp(Math.floor(Date.now() / 1000) - 60));
+    const { useAuthStore: fresh } = await loadStore();
+    const state = fresh.getState();
+    expect(state.token).toBeNull();
+    // Reloading a tab after the session lapsed is the commonest way back to
+    // the login form; without this the form is empty with no explanation.
+    expect(state.logoutReason).toBe('session-expired');
+  });
+
+  test('a valid stored token restores the session with no sign-out reason', async () => {
+    localStorage.setItem(TOKEN_KEY, makeJwtWithExp(Math.floor(Date.now() / 1000) + 3600));
+    const { useAuthStore: fresh } = await loadStore();
+    expect(fresh.getState().token).not.toBeNull();
+    expect(fresh.getState().logoutReason).toBeNull();
+  });
+
+  test('logging in clears the sign-out reason', async () => {
+    localStorage.setItem(TOKEN_KEY, makeJwtWithExp(Math.floor(Date.now() / 1000) - 60));
+    const { useAuthStore: fresh } = await loadStore();
+    expect(fresh.getState().logoutReason).toBe('session-expired');
+    fresh.getState().login(makeJwtWithExp(Math.floor(Date.now() / 1000) + 3600));
+    expect(fresh.getState().logoutReason).toBeNull();
   });
 });

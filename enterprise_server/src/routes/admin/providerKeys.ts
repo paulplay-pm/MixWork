@@ -8,7 +8,30 @@ import { modelCatalog } from '../../models/modelCatalog';
 import { fetchProviderModels } from '../../models/providerModelFetcher';
 import { AuditAction } from '../../shared/enterpriseServerConstants';
 import { PermissionPoint as PP } from '../../shared/permissionPoints';
-import { providerKeyVault } from '../../vault/providerKeyVault';
+import {
+  isChatProtocol,
+  PROVIDER_PROTOCOL_VALUES,
+  providerKeyVault,
+  ProviderProtocol,
+} from '../../vault/providerKeyVault';
+
+/** Drop the retired legacy media-model field from a caller-supplied config.
+ *
+ * `provider_keys.config.models` used to be the console's media model list and
+ * was mirrored into `model_catalog`. The model table writes the catalog
+ * directly now, so the field is retired: an old cached console bundle that
+ * still sends it is accepted (its save must not 400) but the field is dropped
+ * before storage, so the model list cannot be changed through it. Every other
+ * key — the ASR daily cap, the sample rate — is not part of the model list and
+ * survives the strip. */
+function withoutLegacyMediaModels(
+  config: Record<string, unknown> | undefined,
+): Record<string, unknown> | undefined {
+  if (!config || !('models' in config)) return config;
+  const rest = { ...config };
+  delete rest.models;
+  return rest;
+}
 
 export const adminProviderKeyRoutes = new Hono();
 
@@ -23,7 +46,7 @@ adminProviderKeyRoutes.get('/admin/provider-keys', requirePermission(PP.Provider
 
 adminProviderKeyRoutes.post('/admin/provider-keys', requirePermission(PP.ProviderEdit), async c => {
   const claims = c.get('claims');
-  const body = z
+  const parsed = z
     .object({
       orgId: z.string(),
       provider: z.string(),
@@ -33,12 +56,51 @@ adminProviderKeyRoutes.post('/admin/provider-keys', requirePermission(PP.Provide
       region: z.enum(['china', 'global']).optional(),
       defaultBaseUrl: z.string().optional(),
       website: z.string().optional(),
-      protocol: z.enum(['openai', 'anthropic']).optional(),
+      protocol: z.enum(PROVIDER_PROTOCOL_VALUES).optional(),
       codingPlan: z.boolean().optional(),
+      // Provider-specific settings: the media model list, the ASR model /
+      // daily cap. A plain JSON object — the server stores it as JSONB.
+      config: z.record(z.unknown()).optional(),
+      // The vendor card this key is a section of. When absent, the server
+      // derives the card from the key's slot.
+      cardId: z.string().optional(),
     })
-    .parse(await c.req.json());
+    .safeParse(await c.req.json().catch(() => ({})));
+  // A rejected body is a client error, not a server failure: `.parse()` threw
+  // and Hono turned the ZodError into a 500, which told the console nothing
+  // about WHICH field was wrong.
+  if (!parsed.success) {
+    const field = parsed.error.issues[0]?.path.join('.') ?? 'body';
+    return c.json({ error: 'validation_error', field }, 400);
+  }
+  const body = parsed.data;
   // Cross-tenant guard: the body's orgId must match the caller's token.
   if (body.orgId !== claims.orgId) return c.json({ error: 'org_mismatch' }, 400);
+  // The card must exist in the caller's org, and it must be a card of the
+  // same vendor — a card IS one vendor, so a key cannot join another one's.
+  if (body.cardId) {
+    const card = await pool.query<{ provider: string }>(
+      `SELECT provider FROM provider_cards WHERE id = $1 AND org_id = $2`,
+      [body.cardId, claims.orgId],
+    );
+    if (card.rowCount === 0) return c.json({ error: 'card_not_found' }, 400);
+    if (card.rows[0].provider !== body.provider) {
+      return c.json({ error: 'card_vendor_mismatch' }, 400);
+    }
+    // One section per protocol per card. Two `openai` sections on one card
+    // would be indistinguishable in the console — it renders the LLM
+    // capability as one protocol radio plus one model table — and their
+    // catalog rows would shadow each other.
+    const protocol = body.protocol ?? ProviderProtocol.Openai;
+    const dup = await pool.query<{ id: string }>(
+      `SELECT id FROM provider_keys
+        WHERE card_id = $1 AND org_id = $2 AND protocol = $3 LIMIT 1`,
+      [body.cardId, claims.orgId, protocol],
+    );
+    if (dup.rowCount && dup.rowCount > 0) {
+      return c.json({ error: 'duplicate_section' }, 409);
+    }
+  }
   const { id } = await providerKeyVault.add({
     orgId: body.orgId,
     provider: body.provider,
@@ -54,6 +116,8 @@ adminProviderKeyRoutes.post('/admin/provider-keys', requirePermission(PP.Provide
     createdBy: body.apiKey ? claims.sub : undefined,
     protocol: body.protocol,
     codingPlan: body.codingPlan,
+    config: withoutLegacyMediaModels(body.config),
+    cardId: body.cardId,
   });
   await auditStore.write({
     orgId: body.orgId,
@@ -145,6 +209,16 @@ adminProviderKeyRoutes.post('/admin/provider-keys/:id/refresh-models', requirePe
   // (anthropic, gemini, openai-compat), and falls back to
   // probeModelsEndpoint for unknown OpenAI-shaped providers (vllm, internal
   // gateways, etc).
+  // `protocol` widened to the non-LLM adapters, but THIS route tests a chat
+  // provider by listing its models. An ASR/image credential has no model list,
+  // so it is reported as untested rather than dispatched to a chat fetcher
+  // that would report a spurious failure.
+  if (row.protocol !== ProviderProtocol.Openai && row.protocol !== ProviderProtocol.Anthropic) {
+    return c.json(
+      { status: 'unknown', latencyMs: null, lastTestAt: null, error: 'not_a_chat_provider' },
+      200,
+    );
+  }
   const fetched = await fetchProviderModels({
     provider: row.provider,
     endpoint,
@@ -198,40 +272,97 @@ adminProviderKeyRoutes.patch('/admin/provider-keys/:id', requirePermission(PP.Pr
       baseUrl?: string | null;
       label?: string | null;
       enabled?: boolean;
-      protocol?: 'openai' | 'anthropic';
+      protocol?: ProviderProtocol;
       codingPlan?: boolean;
       apiKey?: string;
+      config?: Record<string, unknown>;
     }>()
     .catch(() => ({}) as Record<string, unknown>);
 
   // Cross-org check: provider must exist and belong to caller's org
-  const exists = await pool.query<{ id: string; org_id: string }>(
-    `SELECT id, org_id FROM provider_keys WHERE id = $1`,
+  const exists = await pool.query<{
+    id: string;
+    org_id: string;
+    protocol: ProviderProtocol;
+    card_id: string | null;
+  }>(
+    `SELECT id, org_id, protocol, card_id FROM provider_keys WHERE id = $1`,
     [id],
   );
   if (exists.rowCount === 0 || exists.rows[0].org_id !== claims.orgId) {
     return c.json({ error: 'provider_not_found' }, 404);
   }
+  const storedProtocol = exists.rows[0].protocol;
+  const cardId = exists.rows[0].card_id;
 
   const fields: {
     description?: string | null;
     endpoint?: string | null;
     label?: string | null;
     enabled?: boolean;
-    protocol?: 'openai' | 'anthropic';
+    protocol?: ProviderProtocol;
     codingPlan?: boolean;
+    config?: Record<string, unknown>;
   } = {};
   if ('description' in body) fields.description = body.description as string | null;
   if ('baseUrl' in body) fields.endpoint = body.baseUrl as string | null;
   if ('label' in body) fields.label = body.label as string | null;
   if ('enabled' in body) fields.enabled = body.enabled as boolean;
-  if ('protocol' in body && body.protocol !== undefined && body.protocol !== 'openai' && body.protocol !== 'anthropic') {
+  if (
+    'protocol' in body
+    && body.protocol !== undefined
+    && !(PROVIDER_PROTOCOL_VALUES as string[]).includes(body.protocol as string)
+  ) {
     return c.json({ error: 'validation_error', field: 'protocol' }, 400);
   }
-  if ('protocol' in body) fields.protocol = body.protocol as 'openai' | 'anthropic';
+  if ('protocol' in body) fields.protocol = body.protocol as ProviderProtocol;
   if ('codingPlan' in body) fields.codingPlan = body.codingPlan as boolean;
+  // `config` is merged into the stored JSONB by the vault (top-level keys
+  // replace, the rest survive) — see providerKeyVault.patch. The PATCH body
+  // is unvalidated JSON, so the shape is checked here at runtime. The legacy
+  // media-model field is retired (the model table owns it now), so it is
+  // stripped before storage.
+  const rawConfig = body.config;
+  if (rawConfig && typeof rawConfig === 'object' && !Array.isArray(rawConfig)) {
+    fields.config = withoutLegacyMediaModels(rawConfig as Record<string, unknown>) ?? {};
+  }
+
+  // A protocol switch must honour the same invariant as POST: one section per
+  // protocol per card. Two `openai` (or two `anthropic`) sections on one card
+  // are indistinguishable in the console and their catalog rows shadow each
+  // other. Checked BEFORE the write so a rejected switch changes nothing.
+  if (
+    fields.protocol !== undefined
+    && fields.protocol !== storedProtocol
+    && cardId
+  ) {
+    const dup = await pool.query<{ id: string }>(
+      `SELECT id FROM provider_keys
+        WHERE card_id = $1 AND org_id = $2 AND protocol = $3 AND id <> $4 LIMIT 1`,
+      [cardId, claims.orgId, fields.protocol, id],
+    );
+    if (dup.rowCount && dup.rowCount > 0) {
+      return c.json({ error: 'duplicate_section' }, 409);
+    }
+  }
 
   const ok = await providerKeyVault.patch(id, fields);
+
+  // A protocol switch only invalidates the section's model list when it
+  // CROSSES the chat boundary: a chat model id means nothing to an ASR or
+  // image adapter, and keeping the rows would keep routing the desktop to a
+  // model this section can no longer serve. A switch WITHIN the chat family
+  // (openai <-> anthropic) keeps the list — both speak the same model ids,
+  // and the cataloged models are the admin's own work.
+  let clearedModels = 0;
+  if (
+    ok
+    && fields.protocol !== undefined
+    && fields.protocol !== storedProtocol
+    && !(isChatProtocol(fields.protocol) && isChatProtocol(storedProtocol))
+  ) {
+    clearedModels = await modelCatalog.deleteByProviderKey(claims.orgId, id);
+  }
   // `apiKey` is write-only: when a non-empty key is supplied, re-encrypt and
   // store a fresh mask (the plaintext is never echoed back by the route).
   if (typeof body.apiKey === 'string' && body.apiKey.length > 0) {
@@ -251,7 +382,7 @@ adminProviderKeyRoutes.patch('/admin/provider-keys/:id', requirePermission(PP.Pr
       payload: { fields, changedKey: !!body.apiKey },
     });
   }
-  return c.json({ ok });
+  return c.json({ ok, clearedModels });
 });
 
 adminProviderKeyRoutes.delete('/admin/provider-keys/:id', requirePermission(PP.ProviderEdit), async c => {
@@ -317,13 +448,22 @@ adminProviderKeyRoutes.post('/admin/provider-keys/:id/test', requirePermission(P
   const r = await pool.query<{
     provider: string;
     endpoint: string | null;
-    protocol: 'openai' | 'anthropic';
+    protocol: ProviderProtocol;
   }>(`SELECT provider, endpoint, protocol FROM provider_keys WHERE id = $1 AND org_id = $2`, [
     id,
     claims.orgId,
   ]);
   if (r.rowCount === 0) return c.json({ error: 'provider_not_found' }, 404);
   const { provider, endpoint, protocol } = r.rows[0];
+  // Same boundary as the list-test route: a non-LLM adapter has no /v1/models
+  // to probe, and probing it would report a connection failure for a credential
+  // that is perfectly valid for its actual purpose.
+  if (protocol !== ProviderProtocol.Openai && protocol !== ProviderProtocol.Anthropic) {
+    return c.json(
+      { status: 'unknown', latencyMs: null, lastTestAt: null, error: 'not_a_chat_provider' },
+      200,
+    );
+  }
   if (!endpoint) {
     const lastTestAt = new Date().toISOString();
     return c.json(

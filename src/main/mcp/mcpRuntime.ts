@@ -2,13 +2,12 @@ import crypto from 'crypto';
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
 
-import { ASK_USER_QUESTION_TOOL_NAME, SESSION_AGNOSTIC_PERMISSION_SESSION_ID } from '../../shared/genwork/constants';
-import { McpIpcChannel } from '../../shared/mcp/constants';
+import { ConnectorConsumption, McpIpcChannel } from '../../shared/mcp/constants';
+import { ASK_USER_QUESTION_TOOL_NAME, SESSION_AGNOSTIC_PERMISSION_SESSION_ID } from '../../shared/mixcwork/constants';
 import { isComputerUseKitInstalled } from '../computerUse/computerUseKit';
 import { resolveComputerUseMcpServer } from '../computerUse/computerUseMcpServer';
 import { installComputerUseRuntime } from '../computerUse/computerUseRuntime';
 import { resolveDshCodeMcpServerForConfig } from '../ipcHandlers/dsh/handlers';
-import { getElectronNodeRuntimePath } from '../libs/genworkUtil';
 import {
   type AskUserRequest,
   type AskUserResponse,
@@ -16,14 +15,17 @@ import {
   type MediaGenerationRequest,
   type MediaGenerationResponse,
 } from '../libs/mcpBridgeServer';
+import { getElectronNodeRuntimePath } from '../libs/mixcworkUtil';
 import { OpenClawConfigImpact } from '../libs/openclawConfigImpact';
 import type { ResolvedMcpServer } from '../libs/openclawConfigSync';
 import { resolveLocalDesktopCoworkSessionIdByOpenClawSessionKey } from '../libs/openclawLocalSessionResolver';
 import { resolveStdioCommand } from '../libs/resolveStdioCommand';
 import type { SqliteStore } from '../sqliteStore';
+import { ensureGatewayToken, storedGatewayTokenForCurrentMember } from './mcpGatewayToken';
 import { createMcpLaunchSourceFingerprint, McpLaunchResolutionStatus } from './mcpLaunchResolution';
 import { McpLaunchResolverManager } from './mcpLaunchResolverManager';
 import { McpStore } from './mcpStore';
+import { enterpriseBaseUrlOrNull, resolveMcpTarget } from './mcpTarget';
 
 export type { AskUserResponse, MediaGenerationRequest, MediaGenerationResponse };
 
@@ -138,7 +140,7 @@ export class McpRuntime {
       windows.forEach(win => {
         if (win.isDestroyed()) return;
         try {
-          win.webContents.send('genwork:stream:permission', {
+          win.webContents.send('mixcwork:stream:permission', {
             sessionId,
             request: {
               requestId: request.requestId,
@@ -164,7 +166,7 @@ export class McpRuntime {
       windows.forEach(win => {
         if (win.isDestroyed()) return;
         try {
-          win.webContents.send('genwork:stream:permissionDismiss', { requestId });
+          win.webContents.send('mixcwork:stream:permissionDismiss', { requestId });
         } catch {
           // ignore
         }
@@ -223,10 +225,10 @@ export class McpRuntime {
       : '';
     const buildShimEnv = (): Record<string, string> => {
       const shimEnv: Record<string, string> = {
-        GENWORK_ELECTRON_PATH: electronPath,
+        MIXCWORK_ELECTRON_PATH: electronPath,
       };
       if (npmBinDir) {
-        shimEnv.GENWORK_NPM_BIN_DIR = npmBinDir;
+        shimEnv.MIXCWORK_NPM_BIN_DIR = npmBinDir;
       }
       return shimEnv;
     };
@@ -234,6 +236,7 @@ export class McpRuntime {
       const r = await resolveStdioCommand(server);
       resolved.push({
         name: server.name,
+        serverKey: server.serverKey,
         transportType: 'stdio',
         command: r.command,
         args: r.args,
@@ -249,13 +252,14 @@ export class McpRuntime {
           if (readyResolution) {
             optimizedCount++;
             const shimEnv: Record<string, string> = {
-              GENWORK_ELECTRON_PATH: electronPath,
+              MIXCWORK_ELECTRON_PATH: electronPath,
             };
             if (npmBinDir) {
-              shimEnv.GENWORK_NPM_BIN_DIR = npmBinDir;
+              shimEnv.MIXCWORK_NPM_BIN_DIR = npmBinDir;
             }
             resolved.push({
               name: server.name,
+              serverKey: server.serverKey,
               transportType: 'stdio',
               command: readyResolution.command,
               args: readyResolution.args || [],
@@ -306,11 +310,70 @@ export class McpRuntime {
         rawCount++;
         await pushRawStdioServer(server);
       } else {
+        let url = server.url;
+        let headers = server.headers;
+
+        if (server.consumption === ConnectorConsumption.Gateway) {
+          // Only this member's token may stand in for a failed refresh: the
+          // previous member's 90-day token would otherwise authorize this
+          // session under their org identity.
+          let token = storedGatewayTokenForCurrentMember(server);
+          try {
+            const fresh = await ensureGatewayToken(server);
+            if (fresh) {
+              token = fresh.token;
+              // Persist a rotated token so the next build does not mint again
+              // (and so a 90-day token is not re-minted on every sync).
+              if (
+                fresh.token !== server.gatewayToken
+                || fresh.owner !== server.gatewayTokenOwner
+                || fresh.expiresAt !== server.gatewayTokenExpiresAt
+              ) {
+                this.getStore().saveGatewayToken(server.id, fresh.token, fresh.owner, fresh.expiresAt);
+              }
+            }
+          } catch (error) {
+            // A refresh failure must not change the config: any `mcp` section
+            // change restarts the gateway, and a transient network error would
+            // then take away tools the member is using mid-conversation.
+            console.warn(
+              `[MCP] gateway token refresh failed for connector "${server.name}"; using the stored token if there is one:`,
+              error,
+            );
+          }
+
+          const target = token
+            ? resolveMcpTarget(
+              { ...server, gatewayToken: token },
+              { enterpriseBaseUrl: enterpriseBaseUrlOrNull() },
+            )
+            : null;
+          if (!target) {
+            // Never fall back to the connector's own URL: the org key lives
+            // server-side, so a direct dial would reach the vendor with no
+            // authorization at all.
+            skippedCount++;
+            console.warn(
+              `[MCP] skipping gateway connector "${server.name}": no usable gateway token`,
+            );
+            continue;
+          }
+          url = target.url;
+          headers = target.headers;
+        }
+
         resolved.push({
           name: server.name,
+          serverKey: server.serverKey,
           transportType: server.transportType,
-          url: server.url,
-          headers: server.headers,
+          url,
+          headers,
+          // The org's tool policy travels with the connector; local servers
+          // simply have none.
+          toolFilter: server.toolFilter,
+          // The org's per-call timeout, in seconds. Absent means the
+          // runtime's own default.
+          timeoutSeconds: server.timeoutSeconds,
         });
       }
     }

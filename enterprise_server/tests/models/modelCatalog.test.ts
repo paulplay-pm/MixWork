@@ -1,15 +1,16 @@
 import '../helpers/setupEnv';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('../../src/db/pool', async () => {
   const td = await import('../../src/db/testDb');
   return { pool: td.testPool };
 });
 
-import { resetSchema, testPool, runMigrations } from '../../src/db/testDb';
-import { providerKeyVault } from '../../src/vault/providerKeyVault';
+import { resetSchema, runMigrations,testPool } from '../../src/db/testDb';
 import { modelCatalog } from '../../src/models/modelCatalog';
 import { tokenUsage } from '../../src/models/tokenUsage';
+import { providerKeyVault } from '../../src/vault/providerKeyVault';
 
 describe('models/modelCatalog + tokenUsage', () => {
   beforeEach(async () => {

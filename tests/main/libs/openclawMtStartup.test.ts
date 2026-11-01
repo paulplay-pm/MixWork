@@ -115,7 +115,7 @@ describe('main/libs/openclawMtStartup', () => {
     ]);
     const written: Array<Record<string, unknown>> = [];
     const r = await bootstrapEnterpriseMtGateway({
-      gatewayTokenPath: '/tmp/genwork-gw-token-' + Date.now(),
+      gatewayTokenPath: '/tmp/mixcwork-gw-token-' + Date.now(),
       readConfig: () => ({ gateway: { mode: 'local' } }),
       writeConfig: (cfg) => written.push(cfg),
     });

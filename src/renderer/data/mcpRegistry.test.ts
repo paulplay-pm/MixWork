@@ -18,7 +18,7 @@ const MIGRATED_IDS = [
   'firecrawl',
 ] as const;
 
-/** The 3 connectors GenWork already ships, which must NOT be duplicated. */
+/** The 3 connectors MixCWork already ships, which must NOT be duplicated. */
 const ALREADY_PRESENT_IDS = ['qichacha', 'github', 'notion'] as const;
 
 const registryIds = (): string[] => mcpRegistry.map((entry) => entry.id);

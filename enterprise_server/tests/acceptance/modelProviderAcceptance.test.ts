@@ -20,7 +20,7 @@ import { buildApp } from '../../src/server';
  * check — against a throwaway in-process Postgres (the pglite shim in
  * `src/db/testDb`), seeded exactly like the live server seeds it
  * (`seedBuiltinProviders`). Real HS256 JWTs are signed via `signToken` with
- * the same `JWT_SECRET` the server loads. The dev `gwork` DB is never touched.
+ * the same `JWT_SECRET` the server loads. The dev `mixcwork` DB is never touched.
  *
  * The six checks mirror the PRD §7 acceptance items:
  *   1. 9 built-ins present + non-deletable (409 + audit row each)

@@ -602,7 +602,7 @@ async function writeDeploymentPersistenceArchive(
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const projectDirectory = input.projectDirectory?.trim();
   const backupRoot = projectDirectory
-    ? path.join(projectDirectory, '.genwork', 'persistence', archiveId, timestamp)
+    ? path.join(projectDirectory, '.mixcwork', 'persistence', archiveId, timestamp)
     : path.join(os.homedir(), 'Downloads');
   const fileName = projectDirectory
     ? `${archiveId}-service-data.zip`

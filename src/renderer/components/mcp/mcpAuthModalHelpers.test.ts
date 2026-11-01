@@ -1,11 +1,15 @@
 import { describe, expect, test } from 'vitest';
 
-import { McpAuthMethod } from '../../../shared/mcp/constants';
+import { McpAuthMethod, QICHACHA_REGISTRY_ID } from '../../../shared/mcp/constants';
 import {
   buildSaveCredentialPayload,
   getAuthDotClass,
   mapProbeResultToUiState,
   type McpAuthProbeResult,
+  oauthUsesDiscovery,
+  probeLabelKey,
+  showsProbeDetail,
+  usesGenericOAuth,
 } from './mcpAuthModalHelpers';
 
 describe('buildSaveCredentialPayload', () => {
@@ -46,11 +50,21 @@ describe('buildSaveCredentialPayload', () => {
     ).toBeNull();
   });
 
-  test('oauth maps to qichacha by default', () => {
-    expect(buildSaveCredentialPayload(McpAuthMethod.OAuth, {})).toEqual({
+  test('only the built-in qichacha bundle drives the qichacha login page', () => {
+    expect(
+      buildSaveCredentialPayload(McpAuthMethod.OAuth, { registryId: QICHACHA_REGISTRY_ID }),
+    ).toEqual({
       kind: 'oauth',
       providerId: 'qichacha',
     });
+  });
+
+  test('a local OAuth connector with no serverKey drives its own flow, not qichacha', () => {
+    // The bug this guards: a hand-added OAuth server has no serverKey, and
+    // falling back to qichacha sent the user to the wrong provider's login.
+    expect(
+      buildSaveCredentialPayload(McpAuthMethod.OAuth, { serverId: 'srv-12' }),
+    ).toEqual({ kind: 'oauth', providerId: 'generic:srv-12' });
   });
 
   test('oauth with a serverKey and complete oauthConfig maps to a generic provider', () => {
@@ -60,21 +74,28 @@ describe('buildSaveCredentialPayload', () => {
     ).toEqual({ kind: 'oauth', providerId: 'generic:fxsk-mcp', oauthConfig: cfg });
   });
 
-  test('oauth with a serverKey but no endpoints returns null (guardrail, no qichacha fallback)', () => {
-    expect(buildSaveCredentialPayload(McpAuthMethod.OAuth, { serverKey: 'fxsk-mcp' })).toBeNull();
-    expect(
-      buildSaveCredentialPayload(McpAuthMethod.OAuth, {
-        serverKey: 'fxsk-mcp',
-        oauthConfig: { authorizeUrl: 'https://idp/a', tokenUrl: '', clientId: 'c' },
-      }),
-    ).toBeNull();
+  test('an enterprise connector with no client profile still drives its own flow — discovery, not qichacha', () => {
+    // The org may leave every field to RFC 8414/9728 discovery, and the client
+    // to RFC 7591 registration. The guardrail that matters is the provider id:
+    // an enterprise connector must NEVER fall through to the built-in qichacha
+    // entry, whatever its config looks like.
+    expect(buildSaveCredentialPayload(McpAuthMethod.OAuth, { serverKey: 'fxsk-mcp' })).toEqual({
+      kind: 'oauth',
+      providerId: 'generic:fxsk-mcp',
+    });
   });
 
-  test('oauth without a serverKey still defaults to qichacha (built-in regression)', () => {
-    expect(buildSaveCredentialPayload(McpAuthMethod.OAuth, { registryId: 'qichacha' as never })).toEqual({
-      kind: 'oauth',
-      providerId: 'qichacha',
-    });
+  test('a partial client profile is passed through for discovery to complete', () => {
+    const cfg = { authorizeUrl: 'https://idp/a', tokenUrl: '', clientId: 'c' };
+    expect(
+      buildSaveCredentialPayload(McpAuthMethod.OAuth, { serverKey: 'fxsk-mcp', oauthConfig: cfg }),
+    ).toEqual({ kind: 'oauth', providerId: 'generic:fxsk-mcp', oauthConfig: cfg });
+  });
+
+  test('the built-in qichacha bundle keeps its own path (regression)', () => {
+    expect(
+      buildSaveCredentialPayload(McpAuthMethod.OAuth, { registryId: QICHACHA_REGISTRY_ID }),
+    ).toEqual({ kind: 'oauth', providerId: 'qichacha' });
   });
 
   test('none returns null', () => {
@@ -175,5 +196,71 @@ describe('getAuthDotClass', () => {
   test('needs-auth → orange regardless of enabled', () => {
     expect(getAuthDotClass('needs-auth', true)).toBe('bg-orange-500');
     expect(getAuthDotClass('needs-auth', false)).toBe('bg-orange-500');
+  });
+});
+
+describe('oauthUsesDiscovery', () => {
+  test('a complete org profile needs no discovery', () => {
+    expect(
+      oauthUsesDiscovery(
+        { authorizeUrl: 'https://idp/a', tokenUrl: 'https://idp/t', clientId: 'c' },
+        true,
+      ),
+    ).toBe(false);
+  });
+
+  test('an empty or partial profile does', () => {
+    expect(oauthUsesDiscovery(undefined, true)).toBe(true);
+    expect(oauthUsesDiscovery({ authorizeUrl: 'https://idp/a' }, true)).toBe(true);
+    expect(
+      oauthUsesDiscovery({ authorizeUrl: 'https://idp/a', tokenUrl: 'https://idp/t' }, true),
+    ).toBe(true);
+  });
+
+  test('a connector that does not use the generic flow never claims discovery', () => {
+    expect(oauthUsesDiscovery(undefined, false)).toBe(false);
+  });
+
+  test('a local server with no profile at all does use discovery', () => {
+    expect(oauthUsesDiscovery(undefined, true)).toBe(true);
+  });
+});
+
+describe('usesGenericOAuth', () => {
+  test('every connector except the qichacha bundle runs the MCP-native flow', () => {
+    expect(usesGenericOAuth({ registryId: QICHACHA_REGISTRY_ID })).toBe(false);
+    expect(usesGenericOAuth({ registryId: 'figma' })).toBe(true);
+    expect(usesGenericOAuth({ registryId: undefined })).toBe(true);
+  });
+});
+
+describe('probeLabelKey', () => {
+  test('a save failure is its own label, never "missing credential"', () => {
+    // The user's 纷享销客 run: the IdP rejected the token exchange
+    // ("token已下发，请勿重复下发！") and the pill said 缺少认证字段 — a field
+    // they could fill that does not exist.
+    expect(probeLabelKey({ kind: 'missing-save', message: 'token已下发' })).toBe('mcpAuthFailedSave');
+    expect(probeLabelKey({ kind: 'missing-credential', message: 'OAuth token missing' })).toBe(
+      'mcpAuthFailedMissing',
+    );
+  });
+
+  test('maps every outcome to its own pill label', () => {
+    expect(probeLabelKey({ kind: 'success', message: 'authorized' })).toBe('mcpAuthSuccess');
+    expect(probeLabelKey({ kind: 'unauthorized', message: 'HTTP 401' })).toBe(
+      'mcpAuthFailedUnauthorized',
+    );
+    expect(probeLabelKey({ kind: 'connect-error', message: 'ECONNREFUSED' })).toBe(
+      'mcpAuthFailedConnect',
+    );
+  });
+});
+
+describe('showsProbeDetail', () => {
+  test('every failure prints the underlying reason; success does not', () => {
+    expect(showsProbeDetail({ kind: 'success', message: 'authorized' })).toBe(false);
+    for (const kind of ['unauthorized', 'connect-error', 'missing-credential', 'missing-save'] as const) {
+      expect(showsProbeDetail({ kind, message: 'x' })).toBe(true);
+    }
   });
 });

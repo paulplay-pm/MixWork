@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   MODEL_TYPE_VALUES,
@@ -14,6 +14,7 @@ import {
   nearestStopIndex,
   typeValueLabel,
 } from './modelType';
+import { defaultParameterSpecFor } from './parameterSpecDefaults';
 
 /** Payload for the single model editor (add + edit). `id` absent → new model. */
 export interface ModelSavePayload {
@@ -27,6 +28,12 @@ export interface ModelSavePayload {
   contextWindow: number | null;
   temperature: number | null;
   topP: number | null;
+  /** The default-model changes the admin made in the drawer. The page applies
+   * them AFTER the model is saved (a new model has no id until then). */
+  defaultChanges: Array<{ type: ModelTypeValue; isDefault: boolean }>;
+  /** The model's parameter spec (a free-form object the vendor documents).
+   * `undefined` leaves it alone. */
+  parameterSpec?: Record<string, unknown>;
 }
 
 interface Props {
@@ -36,6 +43,11 @@ interface Props {
   providerId: string;
   provider: string;
   busy: boolean;
+  /** The model types this section allows. When provided, the type grid shows
+   * only these; a single-type section locks its one type on. */
+  allowedTypes?: ModelTypeValue[];
+  /** The types this model is currently the default for. */
+  defaultTypes?: ModelTypeValue[];
   onSave: (payload: ModelSavePayload) => void;
   onClose: () => void;
 }
@@ -50,7 +62,34 @@ const TYPE_VALUE_DESC: Record<ModelTypeValue, string> = {
   'rerank': 'providersModels.drawer.desc.rerank',
   'asr': 'providersModels.drawer.desc.asr',
   'tts': 'providersModels.drawer.desc.tts',
+  'video-gen': 'providersModels.drawer.desc.video-gen',
 };
+
+/** The types whose models carry a vendor parameter spec. */
+const PARAMETER_SPEC_TYPES: ModelTypeValue[] = ['image-gen', 'video-gen', 'asr'];
+
+/** The textarea seed: empty for an absent/empty spec, pretty JSON otherwise. */
+function specSeed(spec: Record<string, unknown> | null | undefined): string {
+  if (!spec || Object.keys(spec).length === 0) return '';
+  return JSON.stringify(spec, null, 2);
+}
+
+/**
+ * Parse the spec textarea. `{ ok: true, value }` with `value` undefined means
+ * "no spec" (an empty box); a JSON value that is not a plain object is not a
+ * parameter spec.
+ */
+function parseSpec(text: string): { ok: true; value?: Record<string, unknown> } | { ok: false } {
+  const trimmed = text.trim();
+  if (!trimmed) return { ok: true };
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return { ok: false };
+    return { ok: true, value: parsed as Record<string, unknown> };
+  } catch {
+    return { ok: false };
+  }
+}
 
 /**
  * Unified slide-in drawer for adding and editing a model: basic info
@@ -62,9 +101,12 @@ const TYPE_VALUE_DESC: Record<ModelTypeValue, string> = {
 export function ModelDrawer({
   open,
   model,
-  providerId,
+  // Unused today: the drawer only needs `provider` to build the add payload.
+  providerId: _providerId,
   provider,
   busy,
+  allowedTypes,
+  defaultTypes,
   onSave,
   onClose,
 }: Props): JSX.Element | null {
@@ -75,20 +117,55 @@ export function ModelDrawer({
   const [temperature, setTemperature] = useState<number | null>(0.7);
   const [topP, setTopP] = useState<number | null>(0.9);
   const [err, setErr] = useState<string | null>(null);
+  const [specText, setSpecText] = useState('');
+  const [specError, setSpecError] = useState<string | null>(null);
+  /** Whether the admin has edited the spec box. Until they do, the box follows
+   * the type set (see the seeding effect below); after that their text wins. */
+  const specTouched = useRef(false);
+  // The default-model toggles the admin flipped, keyed by type. Only these
+  // reach the payload: an untouched default must not be re-applied.
+  const [toggledDefaults, setToggledDefaults] = useState<Partial<Record<ModelTypeValue, boolean>>>({});
+  // The callers may rebuild `allowedTypes` every render; its CONTENT is what
+  // the reset effect cares about, so it keys on the joined value.
+  const allowedKey = (allowedTypes ?? []).join(',');
 
   // (Re)initialize local state each time the drawer opens for a model.
   useEffect(() => {
     if (!open) return;
     setName(model?.display_name ?? '');
     setModelId(model?.model ?? '');
-    setTypes(model && model.types.length > 0 ? model.types : ['chat']);
+    const seedTypes: ModelTypeValue[] =
+      model && model.types.length > 0
+        ? model.types
+        : (allowedKey ? (allowedKey.split(',') as ModelTypeValue[]) : ['chat']);
+    setTypes(seedTypes);
     // Edit: keep the model's actual values (an untouched null must stay null,
     // not be materialized to a default on save). Add: fall back to the defaults.
     setContextWindow(model ? model.context_window : 200000);
     setTemperature(model ? model.temperature : 0.7);
     setTopP(model ? model.top_p : 0.9);
     setErr(null);
-  }, [open, model]);
+    // Adding: start from the type's documented defaults, so an admin who does
+    // not know the vendor's parameter names still gets a usable spec. Editing:
+    // show what is stored, and nothing when the row carries no spec — a save
+    // must not invent one the admin never saw.
+    setSpecText(specSeed(model ? model.parameter_spec : defaultParameterSpecFor(seedTypes)));
+    specTouched.current = false;
+    setSpecError(null);
+    setToggledDefaults({});
+  }, [open, model, allowedKey]);
+
+  // The spec follows the type set while the admin has not typed in the box: a
+  // model that gains 图像生成 gains the image defaults, and losing its last
+  // media type empties the box again.
+  const typesKey = types.join(',');
+  useEffect(() => {
+    if (!open || model || specTouched.current) return;
+    setSpecText(specSeed(defaultParameterSpecFor(types)));
+    setSpecError(null);
+    // Keyed on the type VALUES: `types` is a new array on every toggle.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, model, typesKey]);
 
   if (!open) return null;
 
@@ -98,9 +175,29 @@ export function ModelDrawer({
     setTypes((prev) => (on ? [...prev, value] : prev.filter((v) => v !== value)));
   }
 
+  // The type grid: a section limits the types it may carry, and a
+  // single-type section locks its one type on (a model cannot leave the
+  // capability it was created in).
+  const offeredTypes = allowedTypes ?? MODEL_TYPE_VALUES;
+  const lockedType = allowedTypes?.length === 1 ? allowedTypes[0] : null;
+
+  const isDefaultType = (value: ModelTypeValue): boolean =>
+    toggledDefaults[value] ?? (defaultTypes ?? []).includes(value);
+
+  function toggleDefault(value: ModelTypeValue): void {
+    setToggledDefaults((prev) => ({ ...prev, [value]: !isDefaultType(value) }));
+  }
+
+  const showsParameterSpec = types.some((v) => PARAMETER_SPEC_TYPES.includes(v));
+
   function submit(): void {
     if (!name.trim() || !modelId.trim()) {
       setErr(t('providersModels.drawer.required'));
+      return;
+    }
+    const spec: ReturnType<typeof parseSpec> = showsParameterSpec ? parseSpec(specText) : { ok: true };
+    if (!spec.ok) {
+      setErr(t('providersModels.drawer.parameterSpecInvalid'));
       return;
     }
     setErr(null);
@@ -112,6 +209,10 @@ export function ModelDrawer({
       contextWindow,
       temperature,
       topP,
+      defaultChanges: (Object.entries(toggledDefaults) as Array<[ModelTypeValue, boolean]>)
+        .filter(([type]) => types.includes(type))
+        .map(([type, isDefault]) => ({ type, isDefault })),
+      ...(spec.value ? { parameterSpec: spec.value } : {}),
     });
   }
 
@@ -198,8 +299,9 @@ export function ModelDrawer({
             hint={t('providersModels.drawer.typesHint')}
           >
             <div className="grid grid-cols-2 gap-2">
-              {MODEL_TYPE_VALUES.map((value) => {
+              {offeredTypes.map((value) => {
                 const checked = types.includes(value);
+                const locked = lockedType === value;
                 return (
                   <label
                     key={value}
@@ -212,6 +314,7 @@ export function ModelDrawer({
                     <input
                       type="checkbox"
                       checked={checked}
+                      disabled={locked}
                       onChange={(e) => toggleType(value, e.target.checked)}
                       className="mt-0.5 h-3.5 w-3.5 accent-[var(--accent-primary)]"
                     />
@@ -222,12 +325,59 @@ export function ModelDrawer({
                       <span className="block text-xs leading-snug text-[var(--text-tertiary)]">
                         {t(TYPE_VALUE_DESC[value])}
                       </span>
+                      {checked && (
+                        <button
+                          type="button"
+                          // The toggle sits inside a <label>: without this the
+                          // click would also flip the type checkbox.
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            toggleDefault(value);
+                          }}
+                          className={`mt-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium transition-colors ${
+                            isDefaultType(value)
+                              ? 'bg-[var(--accent-primary)] text-white'
+                              : 'bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]'
+                          }`}
+                        >
+                          {isDefaultType(value)
+                            ? t('providersModels.model.unsetDefault')
+                            : t('providersModels.model.setDefault')}
+                        </button>
+                      )}
                     </span>
                   </label>
                 );
               })}
             </div>
           </Section>
+
+          {showsParameterSpec && (
+            <Section
+              title={t('providersModels.drawer.parameterSpec')}
+              hint={t('providersModels.drawer.parameterSpecHint')}
+            >
+              <textarea
+                id="model-drawer-parameter-spec"
+                rows={4}
+                value={specText}
+                onChange={(e) => {
+                  specTouched.current = true;
+                  setSpecText(e.target.value);
+                  setSpecError(null);
+                }}
+                onBlur={() => setSpecError(parseSpec(specText).ok ? null : t('providersModels.drawer.parameterSpecInvalid'))}
+                aria-label={t('providersModels.drawer.parameterSpec')}
+                aria-invalid={!!specError}
+                placeholder={'{\n  "size": "1024x1024"\n}'}
+                className="w-full resize-y rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--bg-tertiary)] px-3 py-2 font-mono text-xs focus:border-[var(--accent-primary)] focus:bg-[var(--bg-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-primary)]/10"
+              />
+              {specError && (
+                <p className="text-xs text-[var(--danger-primary)]">{specError}</p>
+              )}
+            </Section>
+          )}
 
           <Section
             title={t('providersModels.drawer.context')}

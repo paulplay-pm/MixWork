@@ -1,7 +1,7 @@
 import { app, ipcMain, type IpcMainInvokeEvent } from 'electron';
 
 import { EnterpriseIpcChannel, EnterpriseModelIpcChannel } from '../../shared/enterprise/constants';
-import { enterpriseClient } from '../auth/enterpriseClient';
+import { EnterpriseApiError, enterpriseClient } from '../auth/enterpriseClient';
 import { enterpriseModelCache } from '../auth/enterpriseModelCache';
 import { enterpriseModelPrefs } from '../auth/enterpriseModelPrefs';
 import { enterpriseServerUrlStore } from '../auth/enterpriseServerUrlStore';
@@ -14,13 +14,28 @@ import { registerSsoHandlers } from './sso';
  * login so the OpenClaw config sync re-collects the freshly-populated
  * enterprise catalog and the gateway restarts with the right env keys.
  * Without this, the gateway started at boot with no JWT, so the cache
- * was empty, so collectSecretEnvVars() emitted no GENWORK_APIKEY_* keys,
+ * was empty, so collectSecretEnvVars() emitted no MIXCWORK_APIKEY_* keys,
  * so the placeholder substitution in openclaw.json failed at gateway
  * startup.
  */
 let onLoginSyncHook: (() => Promise<void>) | null = null;
 export function setEnterpriseLoginSyncHook(hook: () => Promise<void>): void {
   onLoginSyncHook = hook;
+}
+
+/**
+ * Hook set by main.ts: the Logout handler invokes this once the session is
+ * gone. Logging out has to drop the departed member's MCP gateway service
+ * token and rewrite the MCP config without the gateway connectors — the
+ * token is a long-lived credential minted for THAT member, so leaving it in
+ * place would let the next person at this machine (or the same person after
+ * a sign-out) act under the previous member's org identity.
+ *
+ * `null` clears the hook; main.ts registers it at module scope.
+ */
+let onLogoutHook: (() => void | Promise<void>) | null = null;
+export function setEnterpriseLogoutHook(hook: (() => void | Promise<void>) | null): void {
+  onLogoutHook = hook;
 }
 
 export interface BootstrapStatus {
@@ -176,7 +191,7 @@ export function registerEnterpriseMtHandlers(): void {
     async (
       _e: IpcMainInvokeEvent,
       args: { orgId: string; username: string; password: string }
-    ): Promise<{ ok: true } | { ok: false; error: string }> => {
+    ): Promise<{ ok: true } | { ok: false; error: string; code: string | null }> => {
       try {
         const r = await enterpriseClient.login(args.orgId, args.username, args.password);
         // Default JWT TTL is 1h; expose the timestamp so client can refresh proactively.
@@ -192,7 +207,7 @@ export function registerEnterpriseMtHandlers(): void {
           console.warn('[enterpriseMt] enterpriseModelCache.load after login failed:', cacheErr);
         }
         // The boot-time sync ran with no JWT, so collectSecretEnvVars()
-        // produced an empty GENWORK_APIKEY_* map. After login the cache is
+        // produced an empty MIXCWORK_APIKEY_* map. After login the cache is
         // populated; re-run the sync so the gateway restarts with the real
         // env keys and the placeholder substitution in openclaw.json
         // succeeds.
@@ -203,7 +218,11 @@ export function registerEnterpriseMtHandlers(): void {
         }
         return { ok: true };
       } catch (e) {
-        return { ok: false, error: (e as Error).message };
+        // `code` is the server's failure reason (e.g. 'user_not_found'), so
+        // the login page can show a message the user can act on instead of
+        // a raw HTTP status.
+        const code = e instanceof EnterpriseApiError ? e.code : null;
+        return { ok: false, error: (e as Error).message, code };
       }
     }
   );
@@ -213,6 +232,15 @@ export function registerEnterpriseMtHandlers(): void {
     // Phase C: drop any cached keys from the previous session. The next
     // successful login will trigger a fresh load.
     enterpriseModelCache.wipe();
+    // Post-logout cleanup (MCP gateway tokens + config re-sync). Non-fatal:
+    // the session is already gone, and a failed sync must not resurrect it.
+    if (onLogoutHook) {
+      try {
+        await onLogoutHook();
+      } catch (err) {
+        console.warn('[enterpriseMt] onLogoutHook failed:', err);
+      }
+    }
   });
 
   // Public endpoint — pre-login. Mirrors the Login/Logout exemption

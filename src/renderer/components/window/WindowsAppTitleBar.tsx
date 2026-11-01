@@ -79,13 +79,13 @@ const WindowsAppTitleBar: React.FC<WindowsAppTitleBarProps> = ({
       >
         <div className="flex min-w-0 items-center gap-2 overflow-hidden">
           <img
-            src="genwork-small.png"
+            src="mixcwork-small.png"
             alt=""
             draggable={false}
             className="h-4 w-4 max-w-none shrink-0"
           />
           <span className={`${isSidebarCollapsed ? 'hidden' : 'min-w-0 truncate'} text-sm font-medium text-foreground`}>
-            GenWork
+            MixCWork
           </span>
         </div>
         {(onToggleSidebar || onSearch || showFilterIcon || onNewChat || updateBadge) && (

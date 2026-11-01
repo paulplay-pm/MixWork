@@ -1,7 +1,9 @@
 import '../helpers/setupEnv';
-import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest';
+
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import {
+  __internal,
   ANTHROPIC_PROVIDERS,
   fetchAnthropicModels,
   fetchGeminiModels,
@@ -11,7 +13,6 @@ import {
   isOpenAiCompatible,
   OPENAI_COMPAT_PROVIDERS,
   probeModelsEndpoint,
-  __internal,
 } from '../../src/models/providerModelFetcher';
 
 const { buildModelsEndpoint } = __internal;

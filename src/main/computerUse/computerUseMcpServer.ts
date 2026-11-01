@@ -2,7 +2,7 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 
-import type { ResolvedMcpServer } from '../libs/openclawConfigSync';
+import { McpServerKind, type ResolvedMcpServer } from '../libs/openclawConfigSync';
 import { findSystemNodePath } from '../libs/resolveStdioCommand';
 import {
   ensureComputerUseLogDir,
@@ -21,17 +21,17 @@ export type ComputerUseMcpServerName =
   typeof ComputerUseMcpServerName[keyof typeof ComputerUseMcpServerName];
 
 export const ComputerUseMcpEnv = {
-  AskUserUrl: 'GENWORK_COMPUTER_USE_ASKUSER_URL',
-  BridgeSecret: 'GENWORK_MCP_BRIDGE_SECRET',
-  ClientModulePath: 'GENWORK_COMPUTER_USE_CLIENT_MODULE',
-  ExePath: 'GENWORK_COMPUTER_USE_EXE',
+  AskUserUrl: 'MIXCWORK_COMPUTER_USE_ASKUSER_URL',
+  BridgeSecret: 'MIXCWORK_MCP_BRIDGE_SECRET',
+  ClientModulePath: 'MIXCWORK_COMPUTER_USE_CLIENT_MODULE',
+  ExePath: 'MIXCWORK_COMPUTER_USE_EXE',
   HelperStateHome: 'LOBSTER_COMPUTER_USE_HOME',
   LogDir: 'LOBSTER_COMPUTER_USE_LOG_DIR',
   LogLevel: 'LOBSTER_COMPUTER_USE_LOG_LEVEL',
   LogRetentionDays: 'LOBSTER_COMPUTER_USE_LOG_RETENTION_DAYS',
-  RuntimePackageRoot: 'GENWORK_COMPUTER_USE_RUNTIME_PACKAGE_ROOT',
-  SdkRoot: 'GENWORK_COMPUTER_USE_MCP_SDK_ROOT',
-  ZodRoot: 'GENWORK_COMPUTER_USE_ZOD_ROOT',
+  RuntimePackageRoot: 'MIXCWORK_COMPUTER_USE_RUNTIME_PACKAGE_ROOT',
+  SdkRoot: 'MIXCWORK_COMPUTER_USE_MCP_SDK_ROOT',
+  ZodRoot: 'MIXCWORK_COMPUTER_USE_ZOD_ROOT',
 } as const;
 export type ComputerUseMcpEnv =
   typeof ComputerUseMcpEnv[keyof typeof ComputerUseMcpEnv];
@@ -149,6 +149,7 @@ export function resolveComputerUseMcpServer(
 
   return {
     name: ComputerUseMcpServerName.BuiltIn,
+    kind: McpServerKind.Builtin,
     transportType: 'stdio',
     command,
     args: [ensureComputerUseMcpServerScript()],
@@ -175,12 +176,12 @@ function moduleUrl(...parts) {
   return pathToFileURL(path.join(...parts)).href;
 }
 
-const sdkRoot = requireEnv('GENWORK_COMPUTER_USE_MCP_SDK_ROOT');
-const zodRoot = requireEnv('GENWORK_COMPUTER_USE_ZOD_ROOT');
-const clientModulePath = requireEnv('GENWORK_COMPUTER_USE_CLIENT_MODULE');
-const helperExePath = requireEnv('GENWORK_COMPUTER_USE_EXE');
-const askUserUrl = requireEnv('GENWORK_COMPUTER_USE_ASKUSER_URL');
-const bridgeSecret = requireEnv('GENWORK_MCP_BRIDGE_SECRET');
+const sdkRoot = requireEnv('MIXCWORK_COMPUTER_USE_MCP_SDK_ROOT');
+const zodRoot = requireEnv('MIXCWORK_COMPUTER_USE_ZOD_ROOT');
+const clientModulePath = requireEnv('MIXCWORK_COMPUTER_USE_CLIENT_MODULE');
+const helperExePath = requireEnv('MIXCWORK_COMPUTER_USE_EXE');
+const askUserUrl = requireEnv('MIXCWORK_COMPUTER_USE_ASKUSER_URL');
+const bridgeSecret = requireEnv('MIXCWORK_MCP_BRIDGE_SECRET');
 const helperStateHome = requireEnv('LOBSTER_COMPUTER_USE_HOME');
 
 const { McpServer } = await import(moduleUrl(sdkRoot, 'dist', 'esm', 'server', 'mcp.js'));
@@ -215,7 +216,7 @@ function createHelperTurnId() {
 }
 const requestMeta = {
   computerUseHome: helperStateHome,
-  session_id: 'genwork-computer-use',
+  session_id: 'mixcwork-computer-use',
   turn_id: createHelperTurnId(),
 };
 

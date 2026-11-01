@@ -9,7 +9,7 @@ describe('readSessionDiagnosticsData', () => {
   beforeEach(() => {
     db = new Database(':memory:');
     db.exec(`
-      CREATE TABLE genwork_sessions (
+      CREATE TABLE mixcwork_sessions (
         id TEXT PRIMARY KEY,
         title TEXT NOT NULL,
         openclaw_session_id TEXT,
@@ -33,7 +33,7 @@ describe('readSessionDiagnosticsData', () => {
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
       );
-      CREATE TABLE genwork_messages (
+      CREATE TABLE mixcwork_messages (
         id TEXT PRIMARY KEY,
         session_id TEXT NOT NULL,
         type TEXT NOT NULL,
@@ -42,7 +42,7 @@ describe('readSessionDiagnosticsData', () => {
         created_at INTEGER NOT NULL,
         sequence INTEGER
       );
-      CREATE TABLE genwork_session_capsules (
+      CREATE TABLE mixcwork_session_capsules (
         session_id TEXT PRIMARY KEY,
         version INTEGER NOT NULL,
         revision INTEGER NOT NULL,
@@ -65,7 +65,7 @@ describe('readSessionDiagnosticsData', () => {
     `);
 
     db.prepare(`
-      INSERT INTO genwork_sessions (
+      INSERT INTO mixcwork_sessions (
         id, title, openclaw_session_id, status, pinned, cwd, system_prompt,
         model_override, execution_mode, goal_json, active_skill_ids, agent_id,
         created_at, updated_at
@@ -87,17 +87,17 @@ describe('readSessionDiagnosticsData', () => {
       200,
     );
     db.prepare(`
-      INSERT INTO genwork_messages
+      INSERT INTO mixcwork_messages
         (id, session_id, type, content, metadata, created_at, sequence)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run('message-2', 'session-1', 'assistant', 'second', '{"raw":true}', 120, 2);
     db.prepare(`
-      INSERT INTO genwork_messages
+      INSERT INTO mixcwork_messages
         (id, session_id, type, content, metadata, created_at, sequence)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run('message-1', 'session-1', 'user', 'first', null, 110, 1);
     db.prepare(`
-      INSERT INTO genwork_session_capsules
+      INSERT INTO mixcwork_session_capsules
         (session_id, version, revision, capsule_json, updated_at, last_source, last_compacted_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run('session-1', 1, 2, '{"summary":"raw"}', 200, 'compaction', 190);

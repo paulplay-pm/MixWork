@@ -66,7 +66,7 @@ describe('buildBaselineSubagentCandidates', () => {
   });
 
   test('renders an unresolvable raw server id (no mirror row) by raw id', () => {
-    // `srv_z` has no local mirror row (e.g. restricted by allowedRoles): it
+    // `srv_z` has no local mirror row (e.g. outside the caller's scope): it
     // must still render as a baseline candidate by its raw server id instead
     // of being silently dropped (spec decision 3) — while `srv_x` (mirrored)
     // is NOT duplicated by its raw id.

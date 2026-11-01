@@ -1,4 +1,3 @@
-import { createHash } from 'crypto';
 import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
@@ -12,12 +11,11 @@ import {
   normalizeBrowserHostnamePolicyList,
   normalizeBrowserWebAccessConfig,
 } from '../../shared/browserWebAccess/constants';
-import { GENWORK_TEMP_DIR_NAME } from '../../shared/genwork/constants';
-import { CoworkErrorModelSource } from '../../shared/genwork/errorDetail';
-import { normalizeMcpServerUrlInput } from '../../shared/mcp/url';
+import { MIXCWORK_TEMP_DIR_NAME } from '../../shared/mixcwork/constants';
+import { CoworkErrorModelSource } from '../../shared/mixcwork/errorDetail';
 import {
   findAgentsManagedMarker,
-  GENWORK_AGENTS_MARKER,
+  MIXCWORK_AGENTS_MARKER,
   stripAgentsManagedMarkers,
 } from '../../shared/openclaw/agentsManagedMarker';
 import { OPENCLAW_PLUGIN_INDEX_MANAGED_KEYS } from '../../shared/openclawEngine/constants';
@@ -29,16 +27,16 @@ import {
   ProviderName,
 } from '../../shared/providers';
 import {
-  GENWORK_REQUEST_OPTIONS_VERSION,
-  type GenWorkRequestCapability,
-  supportsGenWorkRequestOptionsV1,
-} from '../../shared/providers/genworkRequestOptions';
+  MIXCWORK_REQUEST_OPTIONS_VERSION,
+  type MixCWorkRequestCapability,
+  supportsMixCWorkRequestOptionsV1,
+} from '../../shared/providers/mixcworkRequestOptions';
 import type { ModelThinkingConfig } from '../../shared/providers/modelThinking';
 import { enterpriseModelCache } from '../auth/enterpriseModelCache';
 import { sessionStorage } from '../auth/sessionStorage';
-import type { Agent, GenWorkConfig, GenWorkExecutionMode } from '../genworkStore';
 import type { DiscordInstanceConfig, IMSettings, TelegramInstanceConfig } from '../im/types';
-import type { DingTalkInstanceConfig, EmailMultiInstanceConfig, FeishuInstanceConfig, PopoInstanceConfig, QQInstanceConfig, WecomInstanceConfig, WeixinOpenClawConfig } from '../im/types';
+import type { DingTalkInstanceConfig, FeishuInstanceConfig, QQInstanceConfig, WecomInstanceConfig, WeixinOpenClawConfig } from '../im/types';
+import type { Agent, MixCWorkConfig, MixCWorkExecutionMode } from '../mixcworkStore';
 import { OpenClawSessionKeepAlive } from '../openclawSessionPolicy/constants';
 import { buildOpenClawSessionConfig } from '../openclawSessionPolicy/store';
 import { effectiveAgentModelRef } from './agentModelOverride';
@@ -50,9 +48,10 @@ import {
   resolveRawApiConfig,
 } from './claudeSettings';
 import { getEnterpriseServerUrl } from './endpoints';
+import { buildConnectedSourcesPrompt } from './mcpAgentPolicyPrompt';
 import {
   getCoworkOpenAICompatProxyToken,
-} from './genworkOpenAICompatProxy';
+} from './mixcworkOpenAICompatProxy';
 import {
   buildAgentEntry,
   buildManagedAgentEntries,
@@ -64,6 +63,7 @@ import { parseChannelSessionKey } from './openclawChannelSessionSync';
 import { OpenClawConfigImpact } from './openclawConfigImpact';
 import type { OpenClawEngineManager } from './openclawEngineManager';
 import { repairHeartbeatFile, stripProactiveHeartbeatSection } from './openclawHeartbeatRepair';
+import { buildOpenClawMcpServers, type ResolvedMcpServer } from './openclawMcpServers';
 import { getMainAgentWorkspacePath } from './openclawMemoryFile';
 
 const gwDiagTs = (): string => {
@@ -85,7 +85,7 @@ export type AskUserCallbackConfig = {
 };
 
 const mapExecutionModeToSandboxMode = (
-  mode: GenWorkExecutionMode,
+  mode: MixCWorkExecutionMode,
   isEnterprise: boolean,
 ): 'off' | 'non-main' | 'all' => {
   if (!isEnterprise) return 'off';
@@ -124,12 +124,12 @@ export function omitPluginIndexManagedKeys(plugins: unknown): Record<string, unk
  * Also used by the runtime adapter's client-side timeout watchdog.
  */
 export const OPENCLAW_AGENT_TIMEOUT_SECONDS = 3600;
-export const OPENCLAW_GENWORK_MODEL_TIMEOUT_SECONDS = 330;
+export const OPENCLAW_MIXCWORK_MODEL_TIMEOUT_SECONDS = 330;
 export const OPENCLAW_HEARTBEAT_EVERY_ENABLED = '1h';
 export const OPENCLAW_HEARTBEAT_EVERY_DISABLED = '0m';
 const DINGTALK_OPENCLAW_CHANNEL = 'dingtalk-connector';
 const OPENCLAW_MEMORY_CORE_PLUGIN_ID = 'memory-core';
-const OPENCLAW_MODEL_COMPAT_PLUGIN_ID = 'genwork-model-compat';
+const OPENCLAW_MODEL_COMPAT_PLUGIN_ID = 'mixcwork-model-compat';
 
 const asConfigRecord = (value: unknown): Record<string, unknown> | undefined => (
   value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -253,7 +253,7 @@ const normalizeModelName = (modelId: string): string => {
 };
 
 // Enterprise model identity is the catalog row's UUID (a v4 UUID). When a
-// genwork-server model is addressed by such a UUID, the OpenClaw `models[].id`
+// mixcwork-server model is addressed by such a UUID, the OpenClaw `models[].id`
 // and the `primaryModel` ref portion carry the UUID so two same-named rows
 // under different provider keys resolve to distinct identities; the enterprise
 // proxy rewrites the wire `model` back to the upstream name. A non-UUID modelId
@@ -262,7 +262,7 @@ const normalizeModelName = (modelId: string): string => {
 // use a `builtin:<orgId>:<slug>:<modelId>` id instead of a UUID; the enterprise
 // proxy already accepts that prefix (`isCatalogId` in `routes/proxy.ts`), and
 // the desktop must mirror that branch here so the OpenClaw gateway does not
-// reply `Unknown model: genwork-server/builtin:<...>:<...>`.
+// reply `Unknown model: mixcwork-server/builtin:<...>:<...>`.
 const CATALOG_UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const CATALOG_BUILTIN_PREFIX = 'builtin:';
@@ -318,7 +318,6 @@ const MANAGED_TOOL_LOOP_DETECTION = {
     pingPong: true,
   },
 } as const;
-const EMAIL_PLUGIN_ID = 'email';
 const MANAGED_SKILL_ENTRY_OVERRIDES: Record<string, { enabled: boolean }> = {
   // QQ plugin ships a legacy reminder skill that steers the model toward a
   // channel-specific cron wrapper/subagent flow. Hide that path so native IM
@@ -332,10 +331,10 @@ const MANAGED_SKILL_ENTRY_OVERRIDES: Record<string, { enabled: boolean }> = {
   'feishu-cron-reminder': {
     enabled: false,
   },
-  // GenWork configures MCP servers via openclaw.json mcp.servers field.
+  // MixCWork configures MCP servers via openclaw.json mcp.servers field.
   // The bundled mcporter skill tries to discover MCP servers via its own CLI,
   // finds none, and produces confusing "no MCP servers" output. Disable it so
-  // users are routed through GenWork's MCP layer instead.
+  // users are routed through MixCWork's MCP layer instead.
   'mcporter': {
     enabled: false,
   },
@@ -355,10 +354,10 @@ const MANAGED_WEB_SEARCH_POLICY_PROMPT = [
   '- Do not use `web_fetch` to fetch Google/Bing search result pages as a search substitute; use `browser` or an available search skill instead.',
   '- If you need search discovery, dynamic pages, or interactive browsing, use the built-in `browser` tool.',
   '- For login-required, JavaScript-heavy, or anti-automation pages, use `browser` instead of `web_fetch`.',
-  '- Only use the GenWork `web-search` skill when local command execution is available. Native channel sessions may deny `exec`, so prefer `browser` or `web_fetch` there.',
+  '- Only use the MixCWork `web-search` skill when local command execution is available. Native channel sessions may deny `exec`, so prefer `browser` or `web_fetch` there.',
   '- Exception: the `imap-smtp-email` skill must always use `exec` to run its scripts, even in native channel sessions. Do not skip it because of exec restrictions.',
   '',
-  'Do not claim you searched the web unless you actually used `browser`, `web_fetch`, or the GenWork `web-search` skill.',
+  'Do not claim you searched the web unless you actually used `browser`, `web_fetch`, or the MixCWork `web-search` skill.',
 ].join('\n');
 
 const BUNDLED_BROWSER_PLUGIN_ID = 'browser';
@@ -366,9 +365,9 @@ const BUNDLED_BROWSER_PLUGIN_ID = 'browser';
 const MANAGED_BROWSER_POLICY_PROMPT = [
   '## Browser Policy',
   '',
-  'GenWork does not support sandbox browser execution in this version.',
+  'MixCWork does not support sandbox browser execution in this version.',
   '- For every `browser` tool call, set `target="host"` explicitly.',
-  '- Do not use `target="sandbox"` or `target="node"` unless a future GenWork version explicitly enables it.',
+  '- Do not use `target="sandbox"` or `target="node"` unless a future MixCWork version explicitly enables it.',
   '- If a browser call fails because the sandbox browser is unavailable, retry the same action with `target="host"`.',
 ].join('\n');
 
@@ -399,9 +398,9 @@ const MANAGED_EXEC_SAFETY_PROMPT = [
  * embedding in AGENTS.md so the model knows where to create new skills.
  *
  * Example outputs:
- *   macOS:   ~/Library/Application Support/GenWork/SKILLs
- *   Windows: ~/AppData/Roaming/GenWork/SKILLs
- *   Linux:   ~/.config/GenWork/SKILLs
+ *   macOS:   ~/Library/Application Support/MixCWork/SKILLs
+ *   Windows: ~/AppData/Roaming/MixCWork/SKILLs
+ *   Linux:   ~/.config/MixCWork/SKILLs
  */
 const resolveSkillCreationPath = (): string => {
   const skillsDir = path.join(app.getPath('userData'), 'SKILLs');
@@ -416,7 +415,7 @@ const resolveSkillCreationPath = (): string => {
 const buildManagedSkillCreationPrompt = (skillsDirPath: string): string => [
   '## Skill Creation',
   '',
-  'When the user asks you to create a new skill, you MUST place it under the GenWork skills directory:',
+  'When the user asks you to create a new skill, you MUST place it under the MixCWork skills directory:',
   '',
   `  ${skillsDirPath}/<skill-name>/SKILL.md`,
   '',
@@ -435,9 +434,9 @@ const MANAGED_DELIVERABLE_LINKS_PROMPT = [
   '- Both `[name](/absolute/path)` and `[name](file:///absolute/path)` are accepted.',
   '- This also applies when files are produced indirectly, e.g. by a Python/Node script or a',
   '  shell command you ran. Always link the final output files.',
-  `- Keep intermediate files (helper scripts, scratch data, drafts) inside the \`${GENWORK_TEMP_DIR_NAME}/\``,
+  `- Keep intermediate files (helper scripts, scratch data, drafts) inside the \`${MIXCWORK_TEMP_DIR_NAME}/\``,
   '  directory under the session working directory, and do not link them in the final reply.',
-  `- The user can clean up \`${GENWORK_TEMP_DIR_NAME}/\` at any time;`,
+  `- The user can clean up \`${MIXCWORK_TEMP_DIR_NAME}/\` at any time;`,
   '  anything the user should keep must be saved outside of it.',
   '- Only link files that exist on disk after your work. Never link files you merely read.',
 ].join('\n');
@@ -445,7 +444,7 @@ const MANAGED_DELIVERABLE_LINKS_PROMPT = [
 const MANAGED_MATH_FORMAT_PROMPT = [
   '## Math Formula Formatting',
   '',
-  'The GenWork app chat renders TeX formulas with KaTeX.',
+  'The MixCWork app chat renders TeX formulas with KaTeX.',
   '',
   '- In app chat sessions, write every mathematical formula or expression in TeX:',
   '  `$...$` inline, and `$$` on its own lines around display blocks.',
@@ -494,8 +493,8 @@ const MANAGED_HEARTBEAT_POLICY_PROMPT = [
 const MANAGED_IDENTITY_POLICY_PROMPT = [
   '## Identity & Branding Policy',
   '',
-  'You are **GenWork** — a personal assistant. When you describe who you are — in `IDENTITY.md`, in a',
-  'self-introduction, or in answer to "who are you / 介绍下你自己" — refer to yourself only as a GenWork',
+  'You are **MixCWork** — a personal assistant. When you describe who you are — in `IDENTITY.md`, in a',
+  'self-introduction, or in answer to "who are you / 介绍下你自己" — refer to yourself only as a MixCWork',
   'assistant. Do NOT name or describe the underlying runtime, engine, or framework you run on (e.g. do not',
   'write or say "运行在 OpenClaw 里" / "runs on OpenClaw" or any similar internal-engine reference).',
   '',
@@ -723,7 +722,7 @@ type OpenClawProviderSelection = {
       // (`${ENTERPRISE_SERVER_URL}/proxy/<provider>`), so each model routes
       // to the upstream that actually serves it. The OpenClaw runtime honours
       // this per-model override (`model.baseUrl ?? providerBaseUrl`), letting
-      // all enterprise models share a single `genwork-server` provider while
+      // all enterprise models share a single `mixcwork-server` provider while
       // still hitting the correct upstream. Non-enterprise models omit it and
       // fall back to the provider-level `baseUrl`.
       baseUrl?: string;
@@ -774,7 +773,7 @@ export const buildProviderSelection = (options: {
   runtimeProfile?: unknown;
   thinkingConfig?: ModelThinkingConfig;
 }): OpenClawProviderSelection => {
-  // Desktop is now single-provider (genwork-server). All per-provider
+  // Desktop is now single-provider (mixcwork-server). All per-provider
   // branches are removed; capabilities come from catalogResolver.
   const cap = catalogResolver.resolveCapability(
     options.providerName ?? '',
@@ -800,15 +799,15 @@ export const buildProviderSelection = (options: {
   const providerModelName = resolveModelDisplayName(sessionModelId, options.modelName);
   // The OpenClaw `models[].id` is sent verbatim upstream and is what the
   // gateway's `providers.<id>.models[].id` ref routing matches. For an
-  // enterprise genwork-server model addressed by its catalog row UUID, that id
+  // enterprise mixcwork-server model addressed by its catalog row UUID, that id
   // IS the UUID, so two same-named rows bound to different provider keys
   // resolve to distinct, switchable identities; the enterprise proxy rewrites
   // the wire `model` back to the upstream name. `name` stays the display label.
-  // Legacy (non-UUID) genwork-server modelIds — the pre-UUID youdao path — and
-  // any non-genwork-server provider keep the display-name model id (their
+  // Legacy (non-UUID) mixcwork-server modelIds — the pre-UUID youdao path — and
+  // any non-mixcwork-server provider keep the display-name model id (their
   // upstream only recognises the name).
   const openClawModelId =
-    options.providerName === ProviderName.GenworkServer && isCatalogUuid(sessionModelId)
+    options.providerName === ProviderName.MixcworkServer && isCatalogUuid(sessionModelId)
       ? sessionModelId.trim()
       : providerModelName;
   const thinkingRuntimeConfig = buildOpenClawThinkingRuntimeConfig(options.thinkingConfig);
@@ -820,21 +819,21 @@ export const buildProviderSelection = (options: {
   const auth = AuthType.ApiKey;
 
   return {
-    providerId: OpenClawProviderId.GenworkServer,
+    providerId: OpenClawProviderId.MixcworkServer,
     legacyModelId: options.modelId,
     // `sessionModelId` keeps the desktop's own lookup identity (the catalog
     // UUID for enterprise models) for the run-gate and persistence; the
     // OpenClaw-side ref (`primaryModel`) and `models[].id` use
     // `openClawModelId` (UUID for enterprise, display name otherwise).
     sessionModelId: options.modelId,
-    primaryModel: `${OpenClawProviderId.GenworkServer}/${openClawModelId}`,
+    primaryModel: `${OpenClawProviderId.MixcworkServer}/${openClawModelId}`,
     providerConfig: {
       baseUrl,
       api,
       ...(apiKey ? { apiKey } : {}),
       auth,
-      ...(OpenClawProviderId.GenworkServer === OpenClawProviderId.GenworkServer
-        ? { timeoutSeconds: OPENCLAW_GENWORK_MODEL_TIMEOUT_SECONDS }
+      ...(OpenClawProviderId.MixcworkServer === OpenClawProviderId.MixcworkServer
+        ? { timeoutSeconds: OPENCLAW_MIXCWORK_MODEL_TIMEOUT_SECONDS }
         : {}),
       models: [
         {
@@ -872,8 +871,8 @@ export type OpenClawProviderModelSource = {
 
 /**
  * Classifies an OpenClaw provider id (as reported in gateway error metadata)
- * back to the GenWork Settings entry it was generated from, so runtime
- * errors can tell the user whether the failing model is the GenWork plan,
+ * back to the MixCWork Settings entry it was generated from, so runtime
+ * errors can tell the user whether the failing model is the MixCWork plan,
  * a vendor coding plan, or their own custom provider.
  */
 export function resolveModelSourceForOpenClawProvider(
@@ -882,10 +881,10 @@ export function resolveModelSourceForOpenClawProvider(
   const providerId = openclawProviderId?.trim();
   if (!providerId) return undefined;
 
-  if (providerId === OpenClawProviderId.GenworkServer) {
+  if (providerId === OpenClawProviderId.MixcworkServer) {
     return {
-      source: CoworkErrorModelSource.GenWorkPlan,
-      providerName: ProviderName.GenworkServer,
+      source: CoworkErrorModelSource.MixCWorkPlan,
+      providerName: ProviderName.MixcworkServer,
     };
   }
 
@@ -902,9 +901,9 @@ export function resolveModelSourceForOpenClawProvider(
       }
       continue;
     }
-    // Desktop is single-provider (genwork-server). Without the registry we
+    // Desktop is single-provider (mixcwork-server). Without the registry we
     // cannot map OpenClaw provider ids back to built-in providers; the only
-    // id emitted today is genwork-server itself, handled above.
+    // id emitted today is mixcwork-server itself, handled above.
     continue;
   }
 
@@ -1006,7 +1005,7 @@ export const finalizeModelCompatibilityOwners = (
   _providers: Record<string, OpenClawProviderSelection['providerConfig']>,
   _candidateProfiles: Record<string, string>,
 ): FinalizedModelCompatibilityOwners => {
-  // Desktop is single-provider (genwork-server); the runtime-profile
+  // Desktop is single-provider (mixcwork-server); the runtime-profile
   // compat path was only relevant to non-server providers and is now a no-op.
   return {
     modelProfiles: {},
@@ -1018,7 +1017,7 @@ export const sanitizeModelCustomParams = (
   customParams: Record<string, unknown>,
   _runtimeProfile: string | undefined,
 ): { customParams: Record<string, unknown>; removedKeys: string[] } => {
-  // Desktop is single-provider (genwork-server); the Kimi K3 reserved-key
+  // Desktop is single-provider (mixcwork-server); the Kimi K3 reserved-key
   // stripping path was only relevant to that profile and is now a pass-through.
   return { customParams: { ...customParams }, removedKeys: [] };
 };
@@ -1028,25 +1027,25 @@ const collectCompatibilityOwnerProfile = (
   _selection: OpenClawProviderSelection,
 ): void => {
   // no-op: compatibilityOwnerProfile was removed when the runtime profile
-  // codepath was collapsed to a single genwork-server provider.
+  // codepath was collapsed to a single mixcwork-server provider.
 };
 
 type OpenClawThinkingProfile = ModelThinkingConfig & {
-  requestOptionsVersion?: typeof GENWORK_REQUEST_OPTIONS_VERSION;
+  requestOptionsVersion?: typeof MIXCWORK_REQUEST_OPTIONS_VERSION;
 };
 
 const collectThinkingProfile = (
   profiles: Record<string, OpenClawThinkingProfile>,
   selection: OpenClawProviderSelection,
   thinkingConfig: ModelThinkingConfig | undefined,
-  requestCapabilities?: readonly GenWorkRequestCapability[],
+  requestCapabilities?: readonly MixCWorkRequestCapability[],
 ): void => {
   if (!thinkingConfig) return;
   profiles[selection.primaryModel] = {
     options: thinkingConfig.options.map(option => ({ ...option })),
     defaultLevel: thinkingConfig.defaultLevel,
-    ...(supportsGenWorkRequestOptionsV1(requestCapabilities)
-      ? { requestOptionsVersion: GENWORK_REQUEST_OPTIONS_VERSION }
+    ...(supportsMixCWorkRequestOptionsV1(requestCapabilities)
+      ? { requestOptionsVersion: MIXCWORK_REQUEST_OPTIONS_VERSION }
       : {}),
   };
 };
@@ -1054,7 +1053,7 @@ const collectThinkingProfile = (
 export const findInvalidKimiK3ServerTransports = (
   _serverModels: Array<{ modelId: string; apiFormat?: string; runtimeProfile?: unknown }>,
 ): Array<{ modelId: string; apiFormat: string }> => {
-  // Desktop is single-provider (genwork-server); Kimi K3 server transports
+  // Desktop is single-provider (mixcwork-server); Kimi K3 server transports
   // are no longer recognized as a special case.
   return [];
 };
@@ -1186,85 +1185,13 @@ const isBundledPluginAvailable = (pluginId: string): boolean => {
   return hasBundledOpenClawExtension(pluginId);
 };
 
-export interface ResolvedMcpServer {
-  name: string;
-  transportType: 'stdio' | 'sse' | 'http';
-  command?: string;
-  args?: string[];
-  env?: Record<string, string>;
-  url?: string;
-  headers?: Record<string, string>;
-}
-
-// Normalize header keys to lowercase before writing to openclaw.json.
-// The MCP SDK internally uses a `Headers` object which normalizes keys to lowercase,
-// then OpenClaw's `buildSseEventSourceFetch` merges them back with the original config headers.
-// If the config has e.g. "Authorization" (capitalized), the merge produces duplicate keys:
-//   { authorization: "Bearer ...", Authorization: "Bearer ..." }
-// Servers behind WAFs (e.g. Huawei Cloud) reject requests with duplicate auth headers (HTTP 500).
-// Storing keys as lowercase prevents this duplication since HTTP headers are case-insensitive.
-function lowercaseHeaderKeys(headers: Record<string, string>): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const [key, value] of Object.entries(headers)) {
-    result[key.toLowerCase()] = value;
-  }
-  return result;
-}
-
-/**
- * Generates a deterministic ASCII-safe key for MCP server names.
- * OpenClaw sanitizes non-ASCII characters in server names to hyphens,
- * which makes Chinese/CJK names unrecognizable. This function transparently
- * converts unsafe names to a stable `mcp-<hash>` form before passing to OpenClaw.
- * ASCII-only names (even with spaces/special chars) are left as-is for OpenClaw
- * to handle natively (e.g., "My Server" → "My-Server" by OpenClaw).
- */
-const MCP_NAME_NON_ASCII_RE = /[^\x00-\x7F]/;
-
-function safeServerKey(name: string): string {
-  if (!MCP_NAME_NON_ASCII_RE.test(name)) return name;
-  const hash = createHash('md5').update(name).digest('hex').slice(0, 8);
-  return `mcp-${hash}`;
-}
-
-function buildOpenClawMcpServers(
-  servers: ResolvedMcpServer[],
-): Record<string, Record<string, unknown>> {
-  const result: Record<string, Record<string, unknown>> = {};
-  for (const server of servers) {
-    const entry: Record<string, unknown> = {};
-    let normalizedRemoteUrl = '';
-    if (server.transportType !== 'stdio') {
-      const normalizedUrl = normalizeMcpServerUrlInput(server.url);
-      if (!normalizedUrl.ok) {
-        console.warn(`[OpenClawConfigSync] skipped MCP server "${server.name}" because its URL is invalid`);
-        continue;
-      }
-      normalizedRemoteUrl = normalizedUrl.url;
-    }
-
-    switch (server.transportType) {
-      case 'stdio':
-        if (server.command) entry.command = server.command;
-        if (server.args?.length) entry.args = server.args;
-        if (server.env && Object.keys(server.env).length > 0) entry.env = server.env;
-        break;
-      case 'sse':
-        entry.url = normalizedRemoteUrl;
-        if (server.headers && Object.keys(server.headers).length > 0)
-          entry.headers = lowercaseHeaderKeys(server.headers);
-        break;
-      case 'http':
-        entry.url = normalizedRemoteUrl;
-        if (server.headers && Object.keys(server.headers).length > 0)
-          entry.headers = lowercaseHeaderKeys(server.headers);
-        entry.transport = 'streamable-http';
-        break;
-    }
-    result[safeServerKey(server.name)] = entry;
-  }
-  return result;
-}
+// The `mcp.servers` block lives in its own module so the tool policy can be
+// tested without booting OpenClaw.
+export {
+  buildOpenClawMcpServers,
+  McpServerKind,
+  type ResolvedMcpServer,
+} from './openclawMcpServers';
 
 export type OpenClawConfigSyncResult = {
   ok: boolean;
@@ -1298,7 +1225,7 @@ const buildManagedBrowserProxyExtraArgs = (browserWebAccess: BrowserWebAccessCon
 
 type OpenClawConfigSyncDeps = {
   engineManager: OpenClawEngineManager;
-  getGenWorkConfig: () => GenWorkConfig;
+  getMixCWorkConfig: () => MixCWorkConfig;
   getBrowserWebAccessConfig?: () => Partial<BrowserWebAccessConfig> | null | undefined;
   isEnterprise: () => boolean;
   getOpenClawSessionPolicy?: () => { keepAlive: OpenClawSessionKeepAlive };
@@ -1308,8 +1235,6 @@ type OpenClawConfigSyncDeps = {
   getFeishuInstances?: () => FeishuInstanceConfig[];
   getQQInstances?: () => QQInstanceConfig[];
   getWecomInstances?: () => WecomInstanceConfig[];
-  getPopoInstances: () => PopoInstanceConfig[];
-  getEmailOpenClawConfig?: () => EmailMultiInstanceConfig;
   getWeixinConfig: () => WeixinOpenClawConfig | null;
   getIMSettings?: () => IMSettings | null;
   getResolvedMcpServers?: () => ResolvedMcpServer[];
@@ -1324,7 +1249,7 @@ type OpenClawConfigSyncDeps = {
 
 export class OpenClawConfigSync {
   private readonly engineManager: OpenClawEngineManager;
-  private readonly getGenWorkConfig: () => GenWorkConfig;
+  private readonly getMixCWorkConfig: () => MixCWorkConfig;
   private readonly getBrowserWebAccessConfig: () => Partial<BrowserWebAccessConfig> | null | undefined;
   private readonly isEnterprise: () => boolean;
   private readonly getOpenClawSessionPolicy?: () => { keepAlive: OpenClawSessionKeepAlive };
@@ -1334,8 +1259,6 @@ export class OpenClawConfigSync {
   private readonly getFeishuInstances: () => FeishuInstanceConfig[];
   private readonly getQQInstances: () => QQInstanceConfig[];
   private readonly getWecomInstances: () => WecomInstanceConfig[];
-  private readonly getPopoInstances: () => PopoInstanceConfig[];
-  private readonly getEmailOpenClawConfig?: () => EmailMultiInstanceConfig;
   private readonly getWeixinConfig: () => WeixinOpenClawConfig | null;
   private readonly getIMSettings?: () => IMSettings | null;
   private readonly getResolvedMcpServers?: () => ResolvedMcpServer[];
@@ -1357,7 +1280,7 @@ export class OpenClawConfigSync {
 
   constructor(deps: OpenClawConfigSyncDeps) {
     this.engineManager = deps.engineManager;
-    this.getGenWorkConfig = deps.getGenWorkConfig;
+    this.getMixCWorkConfig = deps.getMixCWorkConfig;
     this.getBrowserWebAccessConfig = deps.getBrowserWebAccessConfig ?? (() => null);
     this.isEnterprise = deps.isEnterprise;
     this.getOpenClawSessionPolicy = deps.getOpenClawSessionPolicy;
@@ -1367,8 +1290,6 @@ export class OpenClawConfigSync {
     this.getFeishuInstances = deps.getFeishuInstances ?? (() => []);
     this.getQQInstances = deps.getQQInstances ?? (() => []);
     this.getWecomInstances = deps.getWecomInstances ?? (() => []);
-    this.getPopoInstances = deps.getPopoInstances;
-    this.getEmailOpenClawConfig = deps.getEmailOpenClawConfig;
     this.getWeixinConfig = deps.getWeixinConfig;
     this.getIMSettings = deps.getIMSettings;
     this.getResolvedMcpServers = deps.getResolvedMcpServers;
@@ -1388,7 +1309,7 @@ export class OpenClawConfigSync {
    * read against a "last known good" fingerprint.  One of the checks is
    * `hasConfigMeta` — if the previous good config had `meta` but the current
    * one doesn't, an anomaly is logged and the file content is persisted as a
-   * `.clobbered.<timestamp>` snapshot.  Because GenWork writes openclaw.json
+   * `.clobbered.<timestamp>` snapshot.  Because MixCWork writes openclaw.json
    * directly (bypassing OpenClaw's own `writeConfigFile` which calls
    * `stampConfigVersion`), we need to stamp `meta` ourselves.
    */
@@ -1474,7 +1395,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
 
   sync(reason: string): OpenClawConfigSyncResult {
     const configPath = this.engineManager.getConfigPath();
-    const coworkConfig = this.getGenWorkConfig();
+    const coworkConfig = this.getMixCWorkConfig();
     const browserWebAccess = normalizeBrowserWebAccessConfig(this.getBrowserWebAccessConfig());
     const serverModels = getAllServerModelMetadata();
     const invalidKimiK3Transports = findInvalidKimiK3ServerTransports(serverModels);
@@ -1524,7 +1445,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       baseURL: '',
       modelId: '',
       apiType: 'openai',
-      providerName: 'genwork-server',
+      providerName: 'mixcwork-server',
     });
 
     if (apiResolution.config) {
@@ -1564,7 +1485,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
         apiResolution.providerMetadata?.requestCapabilities,
       );
       primaryModel = providerSelection.primaryModel;
-      if (providerSelection.providerId === OpenClawProviderId.GenworkServer) {
+      if (providerSelection.providerId === OpenClawProviderId.MixcworkServer) {
         addExplicitContextCacheDefault(perModelCustomDefaults, providerSelection, {
           modelId,
         });
@@ -1640,7 +1561,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       }
 
       // Enterprise (plan) models are materialised under a single
-      // `genwork-server` provider. The provider-level `baseUrl`/`apiKey`
+      // `mixcwork-server` provider. The provider-level `baseUrl`/`apiKey`
       // already come from `providerSelection` (resolved above via
       // tryEnterpriseCatalogFallback to the enterprise `/proxy/<provider>`
       // endpoint + the user's JWT). Here we enumerate every enterprise model
@@ -1649,7 +1570,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       // collapse onto the provider-level base and a Qwen model forwarded to
       // /proxy/deepseek 404s with model_not_found.
       const enterpriseUserJwt = sessionStorage.load()?.jwt ?? '';
-      const providerId = OpenClawProviderId.GenworkServer;
+      const providerId = OpenClawProviderId.MixcworkServer;
 
       if (serverModels.length > 0 || !allProvidersMap[providerId]) {
         const firstServerModelId = serverModels[0]?.modelId || modelId;
@@ -1658,7 +1579,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
           baseURL: providerSelection.providerConfig.baseUrl,
           modelId: firstServerModelId,
           apiType: normalizeServerApiType(serverModels[0]?.apiFormat),
-          providerName: ProviderName.GenworkServer,
+          providerName: ProviderName.MixcworkServer,
           supportsImage: serverModels[0]?.supportsImage,
           supportsVideo: serverModels[0]?.supportsVideo,
           supportsThinking: serverModels[0]?.supportsThinking,
@@ -1675,15 +1596,15 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
           serverModels[0]?.thinkingConfig,
           serverModels[0]?.requestCapabilities,
         );
-        const genworkProviderConfig =
+        const mixcworkProviderConfig =
           allProvidersMap[providerId] ?? {
             ...firstServerSel.providerConfig,
             models: [] as typeof firstServerSel.providerConfig.models,
           };
-        allProvidersMap[providerId] = genworkProviderConfig;
+        allProvidersMap[providerId] = mixcworkProviderConfig;
 
         if (serverModels.length === 0) {
-          upsertProviderModel(genworkProviderConfig, firstServerSel.providerConfig.models[0]);
+          upsertProviderModel(mixcworkProviderConfig, firstServerSel.providerConfig.models[0]);
         } else {
           // Resolve each enterprise model's own endpoint. The per-model
           // `baseUrl` is what OpenClaw honours over the provider-level base
@@ -1723,7 +1644,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
               baseURL: providerSelection.providerConfig.baseUrl,
               modelId: sm.modelId,
               apiType: serverApiType,
-              providerName: ProviderName.GenworkServer,
+              providerName: ProviderName.MixcworkServer,
               supportsImage: sm.supportsImage,
               supportsVideo: sm.supportsVideo,
               supportsThinking: sm.supportsThinking,
@@ -1750,7 +1671,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
               modelProxyUrl
                 ? { ...serverSel.providerConfig.models[0], baseUrl: modelProxyUrl }
                 : serverSel.providerConfig.models[0];
-            upsertProviderModel(genworkProviderConfig, modelForUpsert);
+            upsertProviderModel(mixcworkProviderConfig, modelForUpsert);
           }
         }
       }
@@ -1787,7 +1708,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       preinstalledPlugins.some((plugin) => pluginMatches(plugin, ...ids))
     );
     const hasAskUserPlugin = isBundledPluginAvailable('ask-user-question');
-    const hasMediaGenPlugin = isBundledPluginAvailable('genwork-media-generation');
+    const hasMediaGenPlugin = isBundledPluginAvailable('mixcwork-media-generation');
     // Runtime-bundled xai extension (dist/extensions/xai): provides the Grok
     // model compat hooks (e.g. only grok-4.3 accepts reasoningEffort) plus the
     // OAuth refresh hook for credentials in the auth-profiles store. Declare
@@ -1836,9 +1757,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
 
     const wecomInstances = this.getWecomInstances();
 
-    const popoInstances = this.getPopoInstances();
 
-    const emailConfig = this.getEmailOpenClawConfig?.();
 
     const weixinConfig = this.getWeixinConfig();
 
@@ -2013,9 +1932,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
                 if (pluginMatches(plugin, 'openclaw-qqbot', 'qqbot')) return qqbotPluginEnabled;
                 if (pluginMatches(plugin, 'discord')) return discordPluginEnabled;
                 if (pluginMatches(plugin, 'wecom-openclaw-plugin')) return wecomInstances.some(i => i.enabled && i.botId);
-                if (pluginMatches(plugin, 'moltbot-popo')) return popoInstances.some(i => i.enabled && i.appKey);
                 if (pluginMatches(plugin, 'openclaw-weixin')) return true; // Always keep enabled for QR login discovery
-                if (pluginMatches(plugin, 'clawemail-email', EMAIL_PLUGIN_ID)) return !!emailConfig?.instances.some(i => i.enabled && i.email);
                 return true; // other plugins stay enabled
               })();
               return [plugin.pluginId, { enabled: pluginEnabled }];
@@ -2025,7 +1942,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
             ? { feishu: { enabled: false } }
             : {}),
           ...(hasAskUserPlugin ? { 'ask-user-question': { enabled: true } } : {}),
-          ...(hasMediaGenPlugin ? { 'genwork-media-generation': { enabled: true } } : {}),
+          ...(hasMediaGenPlugin ? { 'mixcwork-media-generation': { enabled: true } } : {}),
           ...(hasModelCompatConfig
             ? {
                 [OPENCLAW_MODEL_COMPAT_PLUGIN_ID]: {
@@ -2050,7 +1967,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
               ...(p.config && Object.keys(p.config).length > 0 ? { config: p.config } : {}),
             }]),
           ),
-          // Disable acpx (ACP agent runtime) — GenWork does not use ACP and
+          // Disable acpx (ACP agent runtime) — MixCWork does not use ACP and
           // the embedded probe adds ~11s to gateway startup while it waits for
           // a process that always fails.  See openclaw/openclaw#62588.
           'acpx': { enabled: false },
@@ -2130,21 +2047,21 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
         enabled: true,
         config: {
           callbackUrl: askUserCallbackUrl,
-          secret: '${GENWORK_MCP_BRIDGE_SECRET}',
+          secret: '${MIXCWORK_MCP_BRIDGE_SECRET}',
         },
       };
     }
 
-    // Sync GenworkMediaGeneration plugin config — uses media callback endpoint
+    // Sync MixcworkMediaGeneration plugin config — uses media callback endpoint
     const mediaCallbackUrl = this.getMediaCallbackUrl?.();
     if (hasMediaGenPlugin && mediaCallbackUrl && managedConfig.plugins) {
       const plugins = managedConfig.plugins as Record<string, unknown>;
       const entries = plugins.entries as Record<string, Record<string, unknown>>;
-      entries['genwork-media-generation'] = {
+      entries['mixcwork-media-generation'] = {
         enabled: true,
         config: {
           callbackUrl: mediaCallbackUrl,
-          secret: '${GENWORK_MCP_BRIDGE_SECRET}',
+          secret: '${MIXCWORK_MCP_BRIDGE_SECRET}',
           requestTimeoutMs: 150000,
         },
       };
@@ -2189,8 +2106,8 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       const accounts: Record<string, unknown> = {};
       for (let idx = 0; idx < enabledTelegramInstances.length; idx++) {
         const inst = enabledTelegramInstances[idx];
-        const tokenVar = idx === 0 ? 'GENWORK_TG_BOT_TOKEN' : `GENWORK_TG_BOT_TOKEN_${idx}`;
-        const webhookSecretVar = idx === 0 ? 'GENWORK_TG_WEBHOOK_SECRET' : `GENWORK_TG_WEBHOOK_SECRET_${idx}`;
+        const tokenVar = idx === 0 ? 'MIXCWORK_TG_BOT_TOKEN' : `MIXCWORK_TG_BOT_TOKEN_${idx}`;
+        const webhookSecretVar = idx === 0 ? 'MIXCWORK_TG_WEBHOOK_SECRET' : `MIXCWORK_TG_WEBHOOK_SECRET_${idx}`;
         const account: Record<string, unknown> = {
           enabled: true,
           name: inst.instanceName,
@@ -2241,7 +2158,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       const accounts: Record<string, unknown> = {};
       for (let idx = 0; idx < enabledDiscordInstances.length; idx++) {
         const inst = enabledDiscordInstances[idx];
-        const tokenVar = idx === 0 ? 'GENWORK_DC_BOT_TOKEN' : `GENWORK_DC_BOT_TOKEN_${idx}`;
+        const tokenVar = idx === 0 ? 'MIXCWORK_DC_BOT_TOKEN' : `MIXCWORK_DC_BOT_TOKEN_${idx}`;
         const account: Record<string, unknown> = {
           enabled: true,
           name: inst.instanceName,
@@ -2336,7 +2253,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       for (let idx = 0; idx < enabledFeishuInstances.length; idx++) {
         const inst = enabledFeishuInstances[idx];
         const secretVar =
-          idx === 0 ? 'GENWORK_FEISHU_APP_SECRET' : `GENWORK_FEISHU_APP_SECRET_${idx}`;
+          idx === 0 ? 'MIXCWORK_FEISHU_APP_SECRET' : `MIXCWORK_FEISHU_APP_SECRET_${idx}`;
         accounts[inst.instanceId.slice(0, 8)] = buildFeishuAccountConfig(inst, secretVar);
       }
 
@@ -2356,7 +2273,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
         clientSecret: `\${${secretEnvVar}}`,
         // v3.5.x schema: dmPolicy/groupPolicy/allowFrom are valid; sessionTimeout/
         // separateSessionByConversation/groupSessionScope/sharedMemoryAcrossConversations/
-        // gatewayBaseUrl were GenWork-specific and are not in the plugin schema.
+        // gatewayBaseUrl were MixCWork-specific and are not in the plugin schema.
         dmPolicy: inst.dmPolicy || 'open',
         allowFrom: (() => {
           const ids = inst.allowFrom?.length ? [...inst.allowFrom] : [];
@@ -2371,7 +2288,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       for (let idx = 0; idx < enabledDingTalkInstances.length; idx++) {
         const inst = enabledDingTalkInstances[idx];
         const secretVar =
-          idx === 0 ? 'GENWORK_DINGTALK_CLIENT_SECRET' : `GENWORK_DINGTALK_CLIENT_SECRET_${idx}`;
+          idx === 0 ? 'MIXCWORK_DINGTALK_CLIENT_SECRET' : `MIXCWORK_DINGTALK_CLIENT_SECRET_${idx}`;
         accounts[inst.instanceId.slice(0, 8)] = buildDingTalkAccountConfig(inst, secretVar);
       }
 
@@ -2415,7 +2332,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       for (let idx = 0; idx < enabledQQInstances.length; idx++) {
         const inst = enabledQQInstances[idx];
         const secretVar =
-          idx === 0 ? 'GENWORK_QQ_CLIENT_SECRET' : `GENWORK_QQ_CLIENT_SECRET_${idx}`;
+          idx === 0 ? 'MIXCWORK_QQ_CLIENT_SECRET' : `MIXCWORK_QQ_CLIENT_SECRET_${idx}`;
         accounts[inst.instanceId.slice(0, 8)] = buildQQAccountConfig(inst, secretVar);
       }
 
@@ -2428,7 +2345,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       const accounts: Record<string, unknown> = {};
       for (let idx = 0; idx < enabledWecomInstances.length; idx++) {
         const inst = enabledWecomInstances[idx];
-        const secretVar = idx === 0 ? 'GENWORK_WECOM_SECRET' : `GENWORK_WECOM_SECRET_${idx}`;
+        const secretVar = idx === 0 ? 'MIXCWORK_WECOM_SECRET' : `MIXCWORK_WECOM_SECRET_${idx}`;
         accounts[inst.instanceId.slice(0, 8)] = {
           enabled: true,
           name: inst.instanceName,
@@ -2455,133 +2372,6 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       };
     }
 
-    // Sync POPO OpenClaw channel config (via moltbot-popo plugin) — multi-instance via accounts
-    const enabledPopoInstances = popoInstances.filter(i => i.enabled && i.appKey);
-    if (enabledPopoInstances.length > 0) {
-      const popoAccounts: Record<string, unknown> = {};
-      for (let idx = 0; idx < enabledPopoInstances.length; idx++) {
-        const inst = enabledPopoInstances[idx];
-        // Migration: old configs lack connectionMode. If token is set, the user
-        // was using webhook mode; otherwise default to the new websocket mode.
-        const effectiveConnectionMode =
-          inst.connectionMode || (inst.token ? 'webhook' : 'websocket');
-        const isWebSocket = effectiveConnectionMode === 'websocket';
-        const secretVar = idx === 0 ? 'GENWORK_POPO_APP_SECRET' : `GENWORK_POPO_APP_SECRET_${idx}`;
-        const account: Record<string, unknown> = {
-          enabled: true,
-          name: inst.instanceName,
-          connectionMode: effectiveConnectionMode,
-          appKey: inst.appKey,
-          appSecret: `\${${secretVar}}`,
-          aesKey: inst.aesKey,
-          dmPolicy: inst.dmPolicy || 'open',
-          allowFrom: (() => {
-            const ids = inst.allowFrom?.length ? [...inst.allowFrom] : [];
-            if (inst.dmPolicy === 'open' && !ids.includes('*')) ids.push('*');
-            return ids;
-          })(),
-          groupPolicy: inst.groupPolicy || 'open',
-          groupAllowFrom: (() => {
-            const ids = inst.groupAllowFrom?.length ? [...inst.groupAllowFrom] : [];
-            if (inst.groupPolicy === 'open' && !ids.includes('*')) ids.push('*');
-            return ids;
-          })(),
-        };
-        // Webhook-only fields
-        if (!isWebSocket) {
-          const tokenVar = idx === 0 ? 'GENWORK_POPO_TOKEN' : `GENWORK_POPO_TOKEN_${idx}`;
-          account.token = `\${${tokenVar}}`;
-          account.webhookPort = inst.webhookPort || 3100;
-          if (inst.webhookBaseUrl) {
-            account.webhookBaseUrl = inst.webhookBaseUrl;
-          }
-          if (inst.webhookPath && inst.webhookPath !== '/popo/callback') {
-            account.webhookPath = inst.webhookPath;
-          }
-        }
-        if (inst.textChunkLimit && inst.textChunkLimit !== 3000) {
-          account.textChunkLimit = inst.textChunkLimit;
-        }
-        if (inst.richTextChunkLimit && inst.richTextChunkLimit !== 5000) {
-          account.richTextChunkLimit = inst.richTextChunkLimit;
-        }
-        popoAccounts[inst.instanceId.slice(0, 8)] = account;
-      }
-      managedConfig.channels = {
-        ...((managedConfig.channels as Record<string, unknown>) || {}),
-        'moltbot-popo': { enabled: true, accounts: popoAccounts },
-      };
-    }
-
-    // Sync Email OpenClaw channel config (multi-instance)
-    if (emailConfig?.instances && emailConfig.instances.length > 0) {
-      const enabledInstances = emailConfig.instances.filter(i => i.enabled && i.email);
-
-      if (enabledInstances.length > 0) {
-        const accounts: Record<string, unknown> = {};
-
-        for (const inst of enabledInstances) {
-          const accountId = inst.instanceId;
-          // Transform instanceId: email-1 → 1, email-work → WORK, uuid → UUID (dashes replaced with underscores)
-          const envSuffix = accountId.replace(/^email-/, '').replace(/-/g, '_').toUpperCase();
-
-          const accountConfig: Record<string, unknown> = {
-            enabled: true,
-            name: inst.instanceName,
-            email: inst.email,
-            transport: inst.transport,
-          };
-
-          // IMAP/SMTP mode configuration
-          if (inst.transport === 'imap') {
-            accountConfig.password = `\${GENWORK_EMAIL_${envSuffix}_PASSWORD}`;
-            if (inst.imapHost) accountConfig.imapHost = inst.imapHost;
-            if (inst.imapPort) accountConfig.imapPort = inst.imapPort;
-            if (inst.smtpHost) accountConfig.smtpHost = inst.smtpHost;
-            if (inst.smtpPort) accountConfig.smtpPort = inst.smtpPort;
-          }
-
-          // WebSocket mode configuration
-          if (inst.transport === 'ws') {
-            accountConfig.apiKey = `\${GENWORK_EMAIL_${envSuffix}_APIKEY}`;
-          }
-
-          // Common configuration
-          if (inst.allowFrom?.length) {
-            accountConfig.allowFrom = inst.allowFrom;
-          }
-          if (inst.replyMode) {
-            accountConfig.replyMode = inst.replyMode;
-          }
-          if (inst.replyTo) {
-            accountConfig.replyTo = inst.replyTo;
-          }
-
-          // A2A configuration
-          if (
-            inst.a2aEnabled !== undefined ||
-            inst.a2aAgentDomains?.length ||
-            inst.a2aMaxPingPongTurns
-          ) {
-            accountConfig.a2a = {
-              enabled: inst.a2aEnabled ?? true,
-              ...(inst.a2aAgentDomains?.length ? { agentDomains: inst.a2aAgentDomains } : {}),
-              ...(inst.a2aMaxPingPongTurns ? { maxPingPongTurns: inst.a2aMaxPingPongTurns } : {}),
-            };
-          }
-
-          accounts[accountId] = accountConfig;
-        }
-
-        managedConfig.channels = {
-          ...((managedConfig.channels as Record<string, unknown>) || {}),
-          email: {
-            enabled: true,
-            accounts,
-          },
-        };
-      }
-    }
     // Sync Weixin OpenClaw channel config (via openclaw-weixin plugin)
     // Only write the channel entry when the plugin is actually installed,
     // otherwise the gateway rejects the config as invalid.
@@ -2739,22 +2529,22 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     // never changes env vars and avoids gateway process restarts.
     const allApiKeys = resolveAllProviderApiKeys();
     for (const [envSuffix, apiKey] of Object.entries(allApiKeys)) {
-      console.info(`[OpenClawConfigSync] set secret env var GENWORK_APIKEY_${envSuffix} for provider ${envSuffix}`);
-      env[`GENWORK_APIKEY_${envSuffix}`] = apiKey;
+      console.info(`[OpenClawConfigSync] set secret env var MIXCWORK_APIKEY_${envSuffix} for provider ${envSuffix}`);
+      env[`MIXCWORK_APIKEY_${envSuffix}`] = apiKey;
     }
-    // Legacy fallback: keep GENWORK_PROVIDER_API_KEY set to a stable value so stale
+    // Legacy fallback: keep MIXCWORK_PROVIDER_API_KEY set to a stable value so stale
     // openclaw.json files with the old placeholder don't crash the gateway.
     // Use the active provider's key if available, but ONLY for the first sync —
     // after that, openclaw.json uses provider-specific placeholders and this var
     // is never resolved. Use a fixed value to avoid secretEnvVarsChanged on switch.
-    env.GENWORK_PROVIDER_API_KEY = 'legacy-unused';
+    env.MIXCWORK_PROVIDER_API_KEY = 'legacy-unused';
 
-    env.GENWORK_PROXY_TOKEN = getCoworkOpenAICompatProxyToken() || 'unconfigured';
+    env.MIXCWORK_PROXY_TOKEN = getCoworkOpenAICompatProxyToken() || 'unconfigured';
 
     // MCP Bridge Secret — always set so stale openclaw.json with
-    // ${GENWORK_MCP_BRIDGE_SECRET} placeholder doesn't crash the gateway.
+    // ${MIXCWORK_MCP_BRIDGE_SECRET} placeholder doesn't crash the gateway.
     // Used by the ask-user-question plugin.
-    env.GENWORK_MCP_BRIDGE_SECRET = this.getMcpBridgeSecret?.() || 'unconfigured';
+    env.MIXCWORK_MCP_BRIDGE_SECRET = this.getMcpBridgeSecret?.() || 'unconfigured';
 
     // Telegram — per-instance secrets (must match sync() indexing: enabled instances only)
     const tgInstances = this.getTelegramInstances();
@@ -2762,11 +2552,11 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     for (let idx = 0; idx < enabledTelegram.length; idx++) {
       const inst = enabledTelegram[idx];
       if (idx === 0) {
-        env.GENWORK_TG_BOT_TOKEN = inst.botToken;
-        if (inst.webhookSecret) env.GENWORK_TG_WEBHOOK_SECRET = inst.webhookSecret;
+        env.MIXCWORK_TG_BOT_TOKEN = inst.botToken;
+        if (inst.webhookSecret) env.MIXCWORK_TG_WEBHOOK_SECRET = inst.webhookSecret;
       } else {
-        env[`GENWORK_TG_BOT_TOKEN_${idx}`] = inst.botToken;
-        if (inst.webhookSecret) env[`GENWORK_TG_WEBHOOK_SECRET_${idx}`] = inst.webhookSecret;
+        env[`MIXCWORK_TG_BOT_TOKEN_${idx}`] = inst.botToken;
+        if (inst.webhookSecret) env[`MIXCWORK_TG_WEBHOOK_SECRET_${idx}`] = inst.webhookSecret;
       }
     }
 
@@ -2775,9 +2565,9 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     const enabledDiscord = dcInstances.filter(i => i.enabled && i.botToken);
     for (let idx = 0; idx < enabledDiscord.length; idx++) {
       if (idx === 0) {
-        env.GENWORK_DC_BOT_TOKEN = enabledDiscord[idx].botToken;
+        env.MIXCWORK_DC_BOT_TOKEN = enabledDiscord[idx].botToken;
       } else {
-        env[`GENWORK_DC_BOT_TOKEN_${idx}`] = enabledDiscord[idx].botToken;
+        env[`MIXCWORK_DC_BOT_TOKEN_${idx}`] = enabledDiscord[idx].botToken;
       }
     }
 
@@ -2786,9 +2576,9 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     const enabledFeishu = feishuInstances.filter(i => i.enabled && i.appSecret);
     for (let idx = 0; idx < enabledFeishu.length; idx++) {
       if (idx === 0) {
-        env.GENWORK_FEISHU_APP_SECRET = enabledFeishu[idx].appSecret;
+        env.MIXCWORK_FEISHU_APP_SECRET = enabledFeishu[idx].appSecret;
       } else {
-        env[`GENWORK_FEISHU_APP_SECRET_${idx}`] = enabledFeishu[idx].appSecret;
+        env[`MIXCWORK_FEISHU_APP_SECRET_${idx}`] = enabledFeishu[idx].appSecret;
       }
     }
 
@@ -2797,15 +2587,15 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     const enabledDingTalk = dingTalkInstances.filter(i => i.enabled && i.clientSecret);
     for (let idx = 0; idx < enabledDingTalk.length; idx++) {
       if (idx === 0) {
-        env.GENWORK_DINGTALK_CLIENT_SECRET = enabledDingTalk[idx].clientSecret;
+        env.MIXCWORK_DINGTALK_CLIENT_SECRET = enabledDingTalk[idx].clientSecret;
       } else {
-        env[`GENWORK_DINGTALK_CLIENT_SECRET_${idx}`] = enabledDingTalk[idx].clientSecret;
+        env[`MIXCWORK_DINGTALK_CLIENT_SECRET_${idx}`] = enabledDingTalk[idx].clientSecret;
       }
     }
     // Gateway token is shared (not per-instance)
     const gatewayToken = this.engineManager.getGatewayToken();
     if (gatewayToken) {
-      env.GENWORK_DINGTALK_GW_TOKEN = gatewayToken;
+      env.MIXCWORK_DINGTALK_GW_TOKEN = gatewayToken;
     }
 
     // QQ — per-instance secrets (must match sync() indexing: enabled instances only)
@@ -2813,9 +2603,9 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     const enabledQQ = qqInstances.filter(i => i.enabled && i.appSecret);
     for (let idx = 0; idx < enabledQQ.length; idx++) {
       if (idx === 0) {
-        env.GENWORK_QQ_CLIENT_SECRET = enabledQQ[idx].appSecret;
+        env.MIXCWORK_QQ_CLIENT_SECRET = enabledQQ[idx].appSecret;
       } else {
-        env[`GENWORK_QQ_CLIENT_SECRET_${idx}`] = enabledQQ[idx].appSecret;
+        env[`MIXCWORK_QQ_CLIENT_SECRET_${idx}`] = enabledQQ[idx].appSecret;
       }
     }
 
@@ -2824,50 +2614,9 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     const enabledWecom = wecomInstances.filter(i => i.enabled && i.secret);
     for (let idx = 0; idx < enabledWecom.length; idx++) {
       if (idx === 0) {
-        env.GENWORK_WECOM_SECRET = enabledWecom[idx].secret;
+        env.MIXCWORK_WECOM_SECRET = enabledWecom[idx].secret;
       } else {
-        env[`GENWORK_WECOM_SECRET_${idx}`] = enabledWecom[idx].secret;
-      }
-    }
-
-    // POPO — per-instance secrets (must match sync() indexing: enabled instances only)
-    const enabledPopo = this.getPopoInstances().filter(i => i.enabled && i.appSecret);
-    for (let idx = 0; idx < enabledPopo.length; idx++) {
-      if (idx === 0) {
-        env.GENWORK_POPO_APP_SECRET = enabledPopo[idx].appSecret;
-        if (enabledPopo[idx].token) {
-          env.GENWORK_POPO_TOKEN = enabledPopo[idx].token;
-        } else {
-          // Provide non-empty fallback so stale openclaw.json files that still
-          // contain ${GENWORK_POPO_TOKEN} from a previous webhook config
-          // don't crash the gateway with MissingEnvVarError.
-          env.GENWORK_POPO_TOKEN = 'unconfigured';
-        }
-      } else {
-        env[`GENWORK_POPO_APP_SECRET_${idx}`] = enabledPopo[idx].appSecret;
-        if (enabledPopo[idx].token) {
-          env[`GENWORK_POPO_TOKEN_${idx}`] = enabledPopo[idx].token;
-        } else {
-          env[`GENWORK_POPO_TOKEN_${idx}`] = 'unconfigured';
-        }
-      }
-    }
-
-    // Email credentials
-    const emailConfig = this.getEmailOpenClawConfig?.();
-    if (emailConfig?.instances) {
-      for (const inst of emailConfig.instances) {
-        if (!inst.enabled || !inst.email) continue;
-
-        const envSuffix = inst.instanceId.replace(/^email-/, '').replace(/-/g, '_').toUpperCase();
-
-        if (inst.transport === 'imap' && inst.password) {
-          env[`GENWORK_EMAIL_${envSuffix}_PASSWORD`] = inst.password;
-        }
-
-        if (inst.transport === 'ws' && inst.apiKey) {
-          env[`GENWORK_EMAIL_${envSuffix}_APIKEY`] = inst.apiKey;
-        }
+        env[`MIXCWORK_WECOM_SECRET_${idx}`] = enabledWecom[idx].secret;
       }
     }
 
@@ -2882,7 +2631,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
   }
 
   /**
-   * Ensures exec-approvals.json under the GenWork-managed openclaw home has
+   * Ensures exec-approvals.json under the MixCWork-managed openclaw home has
    * security=full + ask=off so the gateway never triggers approval-pending
    * for any command. The path must match the OPENCLAW_HOME env var passed to
    * the gateway process so both sides read/write the same file.
@@ -2936,7 +2685,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     availableProviders: Record<string, OpenClawProviderSelection['providerConfig']>,
   ): boolean {
     const shouldMigrateManagedModelRefs = !(
-      selection.providerId === 'genwork' && selection.sessionModelId === selection.legacyModelId
+      selection.providerId === 'mixcwork' && selection.sessionModelId === selection.legacyModelId
     );
     const fallbackTarget = parsePrimaryModelRef(selection.primaryModel) ?? {
       providerId: selection.providerId,
@@ -2957,6 +2706,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
         thinkingLevel: '',
         workingDirectory: '',
         icon: '',
+        iconColor: -1,
         skillIds: [],
         subagentAllowAgentIds: [],
         serverSkillIds: [],
@@ -3030,7 +2780,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
           }
         }
 
-        if (!/^agent:[^:]+:genwork:/.test(sessionKey)) {
+        if (!/^agent:[^:]+:mixcwork:/.test(sessionKey)) {
           continue;
         }
 
@@ -3093,13 +2843,13 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
   }
 
   /**
-   * Resolve the GenWork SKILLs installation directory for OpenClaw's
+   * Resolve the MixCWork SKILLs installation directory for OpenClaw's
    * `skills.load.extraDirs` configuration.
    *
    * Cross-platform paths (via Electron app.getPath('userData')):
-   *   macOS:   ~/Library/Application Support/GenWork/SKILLs
-   *   Windows: %APPDATA%/GenWork/SKILLs
-   *   Linux:   ~/.config/GenWork/SKILLs
+   *   macOS:   ~/Library/Application Support/MixCWork/SKILLs
+   *   Windows: %APPDATA%/MixCWork/SKILLs
+   *   Linux:   ~/.config/MixCWork/SKILLs
    */
   private resolveSkillsExtraDirs(): string[] {
     const userDataSkillsDir = path.join(app.getPath('userData'), 'SKILLs');
@@ -3122,8 +2872,8 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
   }
 
   /**
-   * Build per-skill `enabled` overrides from the GenWork SkillManager state,
-   * so that skills disabled in the GenWork UI are also hidden from OpenClaw.
+   * Build per-skill `enabled` overrides from the MixCWork SkillManager state,
+   * so that skills disabled in the MixCWork UI are also hidden from OpenClaw.
    *
    * Entries must be keyed by the skill's frontmatter `name`, not the
    * directory-derived `id`: OpenClaw resolves these overrides through
@@ -3173,9 +2923,9 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
    * Sync AGENTS.md to the OpenClaw workspace directory.
    * Embeds the skills routing prompt and system prompt so that OpenClaw's
    * native channel connectors (DingTalk, Feishu, etc.) can discover and
-   * invoke GenWork skills.
+   * invoke MixCWork skills.
    */
-  private syncAgentsMd(workspaceDir: string, coworkConfig: GenWorkConfig): string | undefined {
+  private syncAgentsMd(workspaceDir: string, coworkConfig: MixCWorkConfig): string | undefined {
     try {
       ensureDir(workspaceDir);
       const agentsMdPath = path.join(workspaceDir, 'AGENTS.md');
@@ -3201,6 +2951,16 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       sections.push(MANAGED_HEARTBEAT_POLICY_PROMPT);
       sections.push(MANAGED_IDENTITY_POLICY_PROMPT);
       sections.push(buildManagedSkillCreationPrompt(resolveSkillCreationPath()));
+
+      // The connectors the user has enabled, with the prefix of their tool
+      // names. Standing context rather than a per-turn prompt: the enabled set
+      // is global, so the chapter is the same on every turn and is rewritten
+      // by every config sync — which keeps it in step with the connectors
+      // that are actually loaded.
+      const connectedSources = buildConnectedSourcesPrompt(this.getResolvedMcpServers?.() ?? []);
+      if (connectedSources) {
+        sections.push(connectedSources);
+      }
 
       // Keep scheduled-task policy after skills so native channel sessions
       // treat it as the final app-managed override for reminder handling.
@@ -3243,7 +3003,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
         return;
       }
 
-      const managedContent = `${GENWORK_AGENTS_MARKER}\n\n${sections.join('\n\n')}`;
+      const managedContent = `${MIXCWORK_AGENTS_MARKER}\n\n${sections.join('\n\n')}`;
       const nextContent = preservedUserContent
         ? `${preservedUserContent}\n\n${managedContent}\n`
         : `${managedContent}\n`;
@@ -3341,7 +3101,6 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       wecom: { channel: 'wecom', getInstances: () => this.getWecomInstances() },
       telegram: { channel: 'telegram', getInstances: () => this.getTelegramInstances() },
       discord: { channel: 'discord', getInstances: () => this.getDiscordInstances() },
-      popo: { channel: 'moltbot-popo', getInstances: () => this.getPopoInstances() },
     };
 
     for (const [platform, { channel, getInstances }] of Object.entries(multiInstanceChannels)) {
@@ -3412,7 +3171,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
    * The main agent's workspace is synced by `syncAgentsMd`. Non-main agents
    * get their own workspace directories under the openclaw state directory.
    */
-  private syncPerAgentWorkspaces(mainWorkspaceDir: string, coworkConfig: GenWorkConfig): void {
+  private syncPerAgentWorkspaces(mainWorkspaceDir: string, coworkConfig: MixCWorkConfig): void {
     const agents = this.getAgents?.() ?? [];
     // Use the openclaw state directory as base, matching OpenClaw's own fallback
     // logic: {STATE_DIR}/workspace-{agentId}/
@@ -3524,7 +3283,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
     // Build the config to write: start from the base minimal config, then
     // selectively preserve non-provider sections from the existing file.
     // Critically, we do NOT preserve existing.models — it may contain
-    // ${GENWORK_APIKEY_X} placeholders for providers that are no longer
+    // ${MIXCWORK_APIKEY_X} placeholders for providers that are no longer
     // configured, causing the gateway to fail to start because those env
     // vars are no longer injected.
     let mergedConfig: Record<string, unknown> = { ...baseMinimalConfig };
@@ -3532,7 +3291,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
       try {
         const existing = JSON.parse(currentContent);
         // Preserve IM channel plugin entries — these reference their own env
-        // vars (${GENWORK_TG_BOT_TOKEN} etc.) that are still injected when
+        // vars (${MIXCWORK_TG_BOT_TOKEN} etc.) that are still injected when
         // the corresponding IM channels remain enabled. Plugin-index-managed
         // keys (`installs`) are filtered out — see omitPluginIndexManagedKeys.
         if (existing.plugins) {
@@ -3543,7 +3302,7 @@ loopDetection: MANAGED_TOOL_LOOP_DETECTION,
           mergedConfig.gateway = existing.gateway;
         }
         // existing.models is intentionally NOT preserved — it references
-        // ${GENWORK_APIKEY_*} env vars that may no longer be set.
+        // ${MIXCWORK_APIKEY_*} env vars that may no longer be set.
       } catch {
         // Malformed JSON — overwrite with base minimal config.
       }

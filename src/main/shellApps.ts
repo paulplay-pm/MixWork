@@ -141,7 +141,7 @@ async function fetchBrowserApps(input: ShellGetBrowserAppsInput, cacheKey: strin
 
 const MAX_APPS_IN_LIST = 5;
 const HTML_EXTENSIONS = new Set(['.html', '.htm']);
-const BROWSER_APPS_PROBE_FILE = path.join(os.tmpdir(), 'genwork-browser-probe.html');
+const BROWSER_APPS_PROBE_FILE = path.join(os.tmpdir(), 'mixcwork-browser-probe.html');
 const HTML_PROBE_MAX_DEPTH = 4;
 const HTML_PROBE_MAX_ENTRIES = 1200;
 const HTML_PROBE_EXCLUDED_DIRECTORIES = new Set([
@@ -330,7 +330,7 @@ async function ensureBrowserProbeFile(): Promise<void> {
   try {
     await fs.promises.writeFile(
       BROWSER_APPS_PROBE_FILE,
-      '<!doctype html><meta charset="utf-8"><title>GenWork browser probe</title>',
+      '<!doctype html><meta charset="utf-8"><title>MixcWork browser probe</title>',
       'utf8',
     );
   } catch {
@@ -829,7 +829,7 @@ async function extractIcon(appInfo: AppInfo): Promise<string | null> {
 }
 
 async function icnsToPng(icnsPath: string): Promise<string | null> {
-  const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'genwork-app-icon-'));
+  const tmpDir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixcwork-app-icon-'));
   const pngPath = path.join(tmpDir, 'icon.png');
   try {
     await execFileAsync(

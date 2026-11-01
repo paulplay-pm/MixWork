@@ -5,7 +5,7 @@ import {
 } from '../../shared/providers';
 import { getServerModelMetadata } from './claudeSettings';
 
-const GENWORK_SERVER_MODEL_PREFIX = `${OpenClawProviderId.GenworkServer}/`;
+const MIXCWORK_SERVER_MODEL_PREFIX = `${OpenClawProviderId.MixcworkServer}/`;
 
 export const resolveOpenClawThinkingLevelForModel = (
   modelRef: string,
@@ -15,12 +15,12 @@ export const resolveOpenClawThinkingLevelForModel = (
   const normalizedProductLevel = parseModelThinkingLevel(productLevel);
   if (
     !normalizedProductLevel
-    || !normalizedModelRef.startsWith(GENWORK_SERVER_MODEL_PREFIX)
+    || !normalizedModelRef.startsWith(MIXCWORK_SERVER_MODEL_PREFIX)
   ) {
     return productLevel;
   }
 
-  const modelId = normalizedModelRef.slice(GENWORK_SERVER_MODEL_PREFIX.length);
+  const modelId = normalizedModelRef.slice(MIXCWORK_SERVER_MODEL_PREFIX.length);
   const thinkingConfig = getServerModelMetadata(modelId)?.thinkingConfig;
   if (!thinkingConfig) return productLevel;
 

@@ -1610,7 +1610,7 @@ Log each check ✅/❌ with the HTTP status.
 - [ ] **Step 2: Run the acceptance script against the throwaway DB**
 
 Run: `cd enterprise_server && DATABASE_URL='postgres://...throwaway' npx tsx _acceptance-model-provider.mjs`
-Expected: all checks pass. (Use a throwaway DB; never the dev `gwork` DB.)
+Expected: all checks pass. (Use a throwaway DB; never the dev `mixcwork` DB.)
 
 - [ ] **Step 3: Write the durable acceptance doc**
 

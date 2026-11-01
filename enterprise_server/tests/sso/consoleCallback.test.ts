@@ -11,14 +11,14 @@ describe('renderConsoleCallbackHtml', () => {
   test('embeds the JWT in localStorage and redirects', () => {
     const html = renderConsoleCallbackHtml({ token: 'ey.xxx.yyy', redirectTo: '/' });
     expect(html).toContain('<!doctype html>');
-    expect(html).toContain("localStorage.setItem('genwork.enterprise.auth.token', 'ey.xxx.yyy')");
+    expect(html).toContain("localStorage.setItem('mixcwork.enterprise.auth.token', 'ey.xxx.yyy')");
     expect(html).toContain("location.assign('/')");
   });
 
   test('escapes single quotes in token (defensive)', () => {
     const html = renderConsoleCallbackHtml({ token: "ab'cd", redirectTo: '/' });
-    expect(html).not.toMatch(/setItem\('genwork[^']*', 'ab'cd'\)/);
-    expect(html).toMatch(/setItem\('genwork[^']*', 'ab\\'cd'\)/);
+    expect(html).not.toMatch(/setItem\('mixcwork[^']*', 'ab'cd'\)/);
+    expect(html).toMatch(/setItem\('mixcwork[^']*', 'ab\\'cd'\)/);
   });
 
   test('HTML-escapes errorMessage so it cannot inject a tag (reflected XSS)', () => {
@@ -36,7 +36,7 @@ describe('renderWebBindCallbackHtml', () => {
   test('writes the new JWT to localStorage, sets ssoBindJustSucceeded, and redirects to /account/sso-bindings', () => {
     const html = renderWebBindCallbackHtml({ token: 'ey.xxx.yyy', redirectTo: '/account/sso-bindings' });
     expect(html).toContain('<!doctype html>');
-    expect(html).toContain("localStorage.setItem('genwork.enterprise.auth.token', 'ey.xxx.yyy')");
+    expect(html).toContain("localStorage.setItem('mixcwork.enterprise.auth.token', 'ey.xxx.yyy')");
     expect(html).toContain("sessionStorage.setItem('ssoBindJustSucceeded', '1')");
     expect(html).toContain("location.assign('/account/sso-bindings')");
     // Must NOT redirect to the dashboard — that would drop the user on '/'
@@ -46,8 +46,8 @@ describe('renderWebBindCallbackHtml', () => {
 
   test('escapes single quotes in token (defensive)', () => {
     const html = renderWebBindCallbackHtml({ token: "ab'cd", redirectTo: '/account/sso-bindings' });
-    expect(html).not.toMatch(/setItem\('genwork[^']*', 'ab'cd'\)/);
-    expect(html).toMatch(/setItem\('genwork[^']*', 'ab\\'cd'\)/);
+    expect(html).not.toMatch(/setItem\('mixcwork[^']*', 'ab'cd'\)/);
+    expect(html).toMatch(/setItem\('mixcwork[^']*', 'ab\\'cd'\)/);
   });
 });
 

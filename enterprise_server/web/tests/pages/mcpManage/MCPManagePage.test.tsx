@@ -62,7 +62,10 @@ function seedFetch(): void {
       }), { status: 200 });
     }
     if (url.includes('/admin/mcp-connectors/settings')) {
-      return new Response(JSON.stringify({ membersCanSubmit: true }), { status: 200 });
+      return new Response(
+        JSON.stringify({ membersCanSubmit: true, oauthRedirectUri: 'http://127.0.0.1:53232/callback' }),
+        { status: 200 },
+      );
     }
     if (url.includes('/admin/mcp-connectors')) {
       return new Response(JSON.stringify([conn]), { status: 200 });
@@ -123,7 +126,10 @@ function seedFetchDraft(): void {
       }), { status: 200 });
     }
     if (url.includes('/admin/mcp-connectors/settings')) {
-      return new Response(JSON.stringify({ membersCanSubmit: true }), { status: 200 });
+      return new Response(
+        JSON.stringify({ membersCanSubmit: true, oauthRedirectUri: 'http://127.0.0.1:53232/callback' }),
+        { status: 200 },
+      );
     }
     if (url.includes('/admin/mcp-connectors')) {
       return new Response(JSON.stringify([connDraft]), { status: 200 });

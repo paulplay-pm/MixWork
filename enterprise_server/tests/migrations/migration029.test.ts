@@ -17,9 +17,10 @@ describe('migrations 029+030 (seed + remap)', () => {
     expect(names).toEqual(['auditor','dept_admin','dev','member','org_admin','super_admin']);
     const superAdmin = r.rows.find((x) => x.name === 'super_admin')!;
     expect(superAdmin.data_scope).toBe('org_wide');
-    // 029 seeds 41 points (pre-sso catalog); 037 grants 3 sso points and
-    // 040 grants 5 kit points to super_admin -> 49.
-    expect(superAdmin.permissions).toHaveLength(49);
+    // 029 seeds 41 points (pre-sso catalog); 037 grants 3 sso points,
+    // 040 grants 5 kit points and 052 grants 2 usage points to
+    // super_admin -> 51.
+    expect(superAdmin.permissions).toHaveLength(51);
     const deptAdmin = r.rows.find((x) => x.name === 'dept_admin')!;
     expect(deptAdmin.data_scope).toBe('dept_and_below');
     expect(deptAdmin.permissions).toContain('dept:adjust_member');

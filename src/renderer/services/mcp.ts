@@ -4,6 +4,7 @@ import {
   McpEnterpriseMarketServer,
   McpServerConfig,
   McpServerFormData,
+  McpToolListOutcome,
 } from '../types/mcp';
 
 const ENTERPRISE_MARKETPLACE_CACHE_KEY = 'mcpEnterpriseMarketCache.v1';
@@ -234,6 +235,29 @@ class McpService {
       };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : 'unknown' };
+    }
+  }
+
+  /**
+   * Read the server's advertised tool list. The main process speaks MCP to the
+   * endpoint itself (initialize + tools/list) with the saved credential, so
+   * this works whether or not the runtime has loaded the server.
+   */
+  async listTools(id: string): Promise<McpToolListOutcome> {
+    try {
+      const r = await window.electron.mcp.listTools({ id });
+      if (!r.success || !r.result) {
+        return { ok: false, status: 'connect-error', tools: [], latencyMs: 0, error: r.error ?? 'list tools failed' };
+      }
+      return r.result;
+    } catch (e) {
+      return {
+        ok: false,
+        status: 'connect-error',
+        tools: [],
+        latencyMs: 0,
+        error: e instanceof Error ? e.message : 'unknown',
+      };
     }
   }
 

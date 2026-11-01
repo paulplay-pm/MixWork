@@ -19,7 +19,7 @@ describe('setup/invitationService', () => {
 
   test('create 生成 code 且 6h 过期', async () => {
     const inv = await invitationService.create('o1');
-    expect(inv.code).toMatch(/^GENWORK-SETUP-[A-Z0-9_-]{8}-[A-Z0-9_-]{8}-[A-Z0-9_-]{8}$/);
+    expect(inv.code).toMatch(/^MIXCWORK-SETUP-[A-Z0-9_-]{8}-[A-Z0-9_-]{8}-[A-Z0-9_-]{8}$/);
     expect(inv.expiresAt.getTime() - Date.now()).toBeGreaterThan(5 * 60 * 60 * 1000);
   });
 

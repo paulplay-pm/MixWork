@@ -37,7 +37,7 @@ async function seedInstaller(orgId: string): Promise<void> {
   const { id } = await appRelease.add(orgId, {
     version: '9.9.9',
     change_log: {},
-    installers: { windowsX64: { id: FILE_ID, fileName: 'genwork.exe', fileSize: CONTENT.length, sha256: 'x' } },
+    installers: { windowsX64: { id: FILE_ID, fileName: 'mixcwork.exe', fileSize: CONTENT.length, sha256: 'x' } },
   });
   await appRelease.setLatest(id);
   // Write the on-disk file the download route will serve.
@@ -65,7 +65,7 @@ describe('routes/releaseDownloads', () => {
     expect(r.status).toBe(200);
     expect(r.headers.get('accept-ranges')).toBe('bytes');
     expect(r.headers.get('content-length')).toBe(String(CONTENT.length));
-    expect(r.headers.get('content-disposition')).toContain('genwork.exe');
+    expect(r.headers.get('content-disposition')).toContain('mixcwork.exe');
     expect(Buffer.from(await r.arrayBuffer()).toString()).toBe(CONTENT.toString());
   });
 

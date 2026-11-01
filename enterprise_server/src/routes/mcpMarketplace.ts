@@ -1,8 +1,13 @@
 import { Hono } from 'hono';
 
 import { requireAuth } from '../auth/middleware';
-import { descendantsOf, scopeApi } from '../auth/scopeResolver';
+import { scopeApi } from '../auth/scopeResolver';
 import { pool } from '../db/pool';
+import {
+  type ConnectorCaller,
+  connectorVisibleToCaller,
+  loadConnectorDeptPath,
+} from '../mcp/connectorVisibility';
 import {
   COLUMNS,
   type ConnectorRow,
@@ -18,30 +23,20 @@ mcpMarketplaceRoutes.get('/api/mcp-marketplace', async (c) => {
   const orgId = claims.orgId;
   const isSuperAdmin = (claims.roles ?? []).includes(Role.SuperAdmin);
 
-  // The caller's own (leaf) department memberships.
-  const callerDepts = isSuperAdmin ? [] : await scopeApi.deptIdsFor(orgId, claims.sub);
-  const callerSet = new Set(callerDepts);
-
-  // All dept paths in the org, once, to expand a connector's granted depts
-  // to their subtree.
-  const deptRows = await pool.query<{ id: string; path: string }>(
-    `SELECT id, path FROM departments WHERE org_id = $1`, [orgId]);
-  const deptPath = new Map(deptRows.rows.map((r) => [r.id, r.path]));
+  // The caller's own (leaf) department memberships + the org's dept paths.
+  // Both go through `connectorVisibility` so the gateway applies the identical
+  // rule (it uses the same cached path map).
+  const caller: ConnectorCaller = {
+    userId: claims.sub,
+    isSuperAdmin,
+    deptIds: isSuperAdmin ? [] : await scopeApi.deptIdsFor(orgId, claims.sub),
+  };
+  const deptPath = await loadConnectorDeptPath(orgId);
 
   const r = await pool.query<ConnectorRow>(
     `SELECT ${COLUMNS} FROM mcp_connectors WHERE org_id = $1 AND enabled = TRUE`, [orgId]);
 
-  const visible = r.rows.filter((row) => {
-    if (isSuperAdmin) return true;
-    if (row.scope?.allCompany) return true;
-    if ((row.scope?.userIds ?? []).includes(claims.sub)) return true;
-    // A connector granted to a parent dept is visible to any user in that
-    // dept's subtree: expand the GRANTED depts to their descendants and check
-    // whether the caller's own depts intersect that subtree.
-    const grantedSubtree = descendantsOf(row.scope?.deptIds ?? [], deptPath);
-    for (const d of callerSet) if (grantedSubtree.has(d)) return true;
-    return false;
-  });
+  const visible = r.rows.filter((row) => connectorVisibleToCaller(row, caller, deptPath));
 
   const catIds = Array.from(new Set(visible.map((v) => v.category_id).filter(Boolean))) as string[];
   const cats = catIds.length === 0

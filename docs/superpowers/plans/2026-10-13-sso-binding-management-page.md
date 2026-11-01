@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在 GenWork 桌面端的用户头像菜单增加"绑定 SSO 账号"入口,打开一个新的桌面内嵌管理页(1:1 还原原型图 `Image #17`),展示本组织所有可用的 SSO 连接 + 当前用户的绑定状态 + 已绑定账号与时间,支持绑定/解绑。
+**Goal:** 在 MixCWork 桌面端的用户头像菜单增加"绑定 SSO 账号"入口,打开一个新的桌面内嵌管理页(1:1 还原原型图 `Image #17`),展示本组织所有可用的 SSO 连接 + 当前用户的绑定状态 + 已绑定账号与时间,支持绑定/解绑。
 
 **Architecture:** 三层改动:服务端加 `GET /me/sso-binding/connections` 端点;桌面主进程扩展 IPC + 复用 `openOauthFlow` 跑 bind 的 OAuth;桌面渲染器加新页面 / 路由 / Redux slice / 菜单项。`genericSsoLogin.ts` 880 行大文件**不**碰;bind 流程的 OAuth 探针复用既有的 `createSsoLoginProbe`,新文件 `startSsoMemberBind.ts` 装 bind 专用的 entry 函数。
 
@@ -916,7 +916,7 @@ Expected: clean
 ```ts
 ssoBindings: {
   title: 'SSO 账号绑定',
-  subtitle: '绑定企业身份源后,你可以使用对应的单点登录方式免密进入 GenWork。可以同时绑定多个身份源,互不影响。',
+  subtitle: '绑定企业身份源后,你可以使用对应的单点登录方式免密进入 MixCWork。可以同时绑定多个身份源,互不影响。',
   statusBadge: '已绑定 {bound} / {total}',
   searchPlaceholder: '搜索 SSO 类型或名称',
   tabAll: '全部 {n}',
@@ -951,7 +951,7 @@ sso: {  // 已有,确认里面已经有 profile.bindMenuItem
 ```ts
 ssoBindings: {
   title: 'SSO account binding',
-  subtitle: 'After binding an enterprise identity source, you can use the corresponding SSO sign-in to access GenWork without password. You can bind multiple sources simultaneously.',
+  subtitle: 'After binding an enterprise identity source, you can use the corresponding SSO sign-in to access MixCWork without password. You can bind multiple sources simultaneously.',
   statusBadge: 'Bound {bound} / {total}',
   searchPlaceholder: 'Search SSO type or name',
   tabAll: 'All {n}',

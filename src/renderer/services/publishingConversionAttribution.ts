@@ -15,7 +15,7 @@ export const PublishingSubscriptionObservationConfidence = {
 } as const;
 
 const PUBLISHING_CONVERSION_ATTRIBUTION_STORAGE_KEY =
-  'genwork_publishing_conversion_attribution_v1';
+  'mixcwork_publishing_conversion_attribution_v1';
 const PUBLISHING_CONVERSION_ATTRIBUTION_WINDOW_MS = 7 * 24 * 60 * 60 * 1_000;
 
 export interface PublishingConversionAttributionInput {

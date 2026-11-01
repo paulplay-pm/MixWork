@@ -42,10 +42,10 @@ describe('EnterpriseAgentPrefsStore', () => {
   });
 
   test('getModel/setModel round-trip and coexist with working_directory', () => {
-    store.setModel('ent-1', 'genwork/opus-4');
-    expect(store.getModel('ent-1')).toBe('genwork/opus-4');
+    store.setModel('ent-1', 'mixcwork/opus-4');
+    expect(store.getModel('ent-1')).toBe('mixcwork/opus-4');
     store.upsert('ent-1', '/some/dir');
     expect(store.get('ent-1')).toBe('/some/dir');
-    expect(store.getModel('ent-1')).toBe('genwork/opus-4'); // preserved across upsert
+    expect(store.getModel('ent-1')).toBe('mixcwork/opus-4'); // preserved across upsert
   });
 });

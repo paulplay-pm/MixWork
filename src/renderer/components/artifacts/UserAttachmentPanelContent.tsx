@@ -5,7 +5,7 @@ import {
   BrowserAnnotationScreenshotStatus,
   type CoworkBrowserAnnotationMessageBatch,
   getBrowserAnnotationElementChanges,
-} from '@shared/genwork/browserAnnotations';
+} from '@shared/mixcwork/browserAnnotations';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { i18nService } from '../../services/i18n';
@@ -16,7 +16,7 @@ import {
   getBrowserAnnotationMarkerPercent,
   getBrowserAnnotationRegionPercent,
   useBrowserAnnotationAssetDataUrl,
-} from '../genwork/BrowserAnnotationMessageAttachments';
+} from '../mixcwork/BrowserAnnotationMessageAttachments';
 
 export interface UserAttachmentPreviewPayload {
   batches: CoworkBrowserAnnotationMessageBatch[];

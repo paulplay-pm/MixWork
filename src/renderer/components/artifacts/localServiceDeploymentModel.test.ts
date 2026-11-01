@@ -446,10 +446,10 @@ describe('canCopyLocalServiceDeploymentLink', () => {
 
 describe('getLocalServiceDeploymentProjectName', () => {
   test.each([
-    ['/Users/admin/projects/genwork-app', 'genwork-app'],
-    ['/Users/admin/projects/genwork-app///', 'genwork-app'],
-    ['C:\\Users\\admin\\projects\\genwork-app', 'genwork-app'],
-    ['C:\\Users\\admin\\projects\\genwork-app\\', 'genwork-app'],
+    ['/Users/admin/projects/mixcwork-app', 'mixcwork-app'],
+    ['/Users/admin/projects/mixcwork-app///', 'mixcwork-app'],
+    ['C:\\Users\\admin\\projects\\mixcwork-app', 'mixcwork-app'],
+    ['C:\\Users\\admin\\projects\\mixcwork-app\\', 'mixcwork-app'],
     ['relative\\nested/project', 'project'],
     ['standalone-project', 'standalone-project'],
   ])('gets the project name from %s', (directory, expected) => {

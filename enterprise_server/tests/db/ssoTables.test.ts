@@ -1,6 +1,8 @@
-import { describe, expect, test } from 'vitest';
 import '../helpers/setupEnv';
-import { testPool, runMigrations, resetSchema } from '../../src/db/testDb';
+
+import { describe, expect, test } from 'vitest';
+
+import { resetSchema,runMigrations, testPool } from '../../src/db/testDb';
 
 describe('migration 036 — SSO tables', () => {
   test('applies cleanly and creates all three tables', async () => {

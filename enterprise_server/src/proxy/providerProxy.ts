@@ -7,7 +7,8 @@ import { AuditAction, ProviderProxyQuotaReason, ProviderProxyResultCode } from '
 import { providerKeyVault } from '../vault/providerKeyVault';
 import { applyModelParams } from './applyModelParams';
 import { idempotency } from './idempotency';
-import { callOpenAI, type UpstreamRequest } from './upstream';
+import type { UpstreamUsage } from './streamUsage';
+import { callOpenAI, type UpstreamRequest, type UpstreamResponse } from './upstream';
 
 export interface ProviderClaims {
   sub: string;
@@ -125,10 +126,14 @@ export const providerProxy = {
         top_p: model.top_p,
         max_output_tokens: model.max_output_tokens,
       }),
+      // Keys the per-endpoint memory of whether this endpoint accepts
+      // stream_options.include_usage, so a provider that rejects the field
+      // costs one failed round-trip rather than one per streaming request.
+      providerKeyId: model.provider_key_id,
     };
 
     const start = Date.now();
-    let upstream;
+    let upstream: UpstreamResponse;
     try {
       upstream = await callOpenAI(req);
     } catch {
@@ -145,18 +150,40 @@ export const providerProxy = {
       return new Response(JSON.stringify({ error: 'upstream_failed' }), { status: 502 });
     }
 
-    if (upstream.usage) {
+    // Every proxied call is accounted for, whatever its shape. This used to
+    // sit behind `if (upstream.usage)`, and a streaming call has no usage at
+    // that point by construction — so the traffic the OpenClaw gateway
+    // actually generates (stream: true) wrote no row and no audit event at
+    // all. A call we still cannot measure is now written with
+    // usage_missing=true, which the analytics pages surface as
+    // unaccounted_calls, rather than vanishing from the totals. A successful
+    // call with no readable usage is the only thing that qualifies.
+    const record = async (usage: UpstreamUsage | null): Promise<void> => {
+      const tokenIn = usage?.tokenIn ?? 0;
+      const tokenOut = usage?.tokenOut ?? 0;
+      // "We could not measure this" is not the same claim as "this consumed
+      // nothing". A 4xx/5xx error envelope carries no usage, but its zero is
+      // definitive — the request failed, so nothing is billed against it.
+      // Flagging those as unmeasured would inflate `unaccounted_calls`, and
+      // that number exists precisely so an admin can trust the token totals.
+      const usageMissing = usage === null && upstream.status < 400;
+      const durationMs = Date.now() - start;
       await tokenUsage.write({
         orgId: claims.orgId,
         userId: claims.sub,
         modelId: input.model_id,
         provider,
-        tokenIn: upstream.usage.tokenIn,
-        tokenOut: upstream.usage.tokenOut,
+        tokenIn,
+        tokenOut,
+        usageMissing,
         resultCode: upstream.status,
-        durationMs: Date.now() - start,
+        durationMs,
       });
       if (model.quota_per_user_per_day !== null) {
+        // Unconditional now. For a call with no usage this simply does not
+        // count toward the window, so the warning may lag the real spend by
+        // one call — which is the correct trade against warning on a number
+        // we never measured.
         const windowDate = await timezone.quotaWindowDate(claims.sub, new Date());
         const total = await tokenUsage.usageInWindow(claims.sub, input.model_id, windowDate);
         const ratio = total / model.quota_per_user_per_day;
@@ -179,14 +206,16 @@ export const providerProxy = {
         targetId: input.model_id,
         payload: {
           provider,
-          token_in: upstream.usage.tokenIn,
-          token_out: upstream.usage.tokenOut,
-          duration_ms: Date.now() - start,
+          token_in: tokenIn,
+          token_out: tokenOut,
+          duration_ms: durationMs,
+          ...(usageMissing ? { usage_missing: true } : {}),
         },
       });
-    }
+    };
 
     if (idemKey) idempotency.record(idemKey, upstream.status);
+
     // Streamed upstream responses (e.g. the OpenClaw gateway sends `stream:
     // true`) carry their payload in `upstream.stream`; `upstream.bodyText` is
     // empty by construction for those. Returning bodyText would hand the
@@ -194,11 +223,23 @@ export const providerProxy = {
     // completion and reports "empty response". Forward the stream verbatim
     // with the SSE content type so the client receives the real events.
     if (upstream.stream) {
+      // A streaming call's usage only exists once the client has drained the
+      // body, so the write cannot happen before the response is returned. It
+      // runs off the response path instead, and a failure there is logged
+      // rather than propagated: the completion has already been delivered to
+      // the client, so turning a lost accounting row into an error response
+      // would trade a visible gap for a failed call.
+      void upstream.settled
+        .then(record)
+        .catch((err) => {
+          console.warn('[Proxy] streaming usage accounting failed', err);
+        });
       return new Response(upstream.stream, {
         status: upstream.status,
         headers: { 'content-type': 'text/event-stream' },
       });
     }
+    await record(upstream.usage);
     return new Response(upstream.bodyText, {
       status: upstream.status,
       headers: { 'content-type': 'application/json' },

@@ -65,11 +65,19 @@ export function KitManagePage(): JSX.Element {
   const displayName = (k: KitAdmin): string => (k.name_zh || k.name_en || k.id).toLowerCase();
   const matchesSearch = (k: KitAdmin): boolean => !q || displayName(k).includes(q);
   const filtered = kits.filter((k) => (current === 'all' || k.category === current) && matchesSearch(k));
+  // The predicate is rebuilt inside the memo: closing over `matchesSearch`
+  // would make the dependency invisible to the linter (and to the next
+  // reader), and `q` is exactly what the memo depends on.
   const counts = useMemo(() => {
     const c: Record<string, number> = {};
-    for (const k of kits) if (matchesSearch(k)) c[k.category ?? ''] = (c[k.category ?? ''] ?? 0) + 1;
+    const query = search.trim().toLowerCase();
+    for (const k of kits) {
+      const name = (k.name_zh || k.name_en || k.id).toLowerCase();
+      if (query && !name.includes(query)) continue;
+      c[k.category ?? ''] = (c[k.category ?? ''] ?? 0) + 1;
+    }
     return c;
-  }, [kits, q]);
+  }, [kits, search]);
 
   const invalidate = (): void => {
     void qc.invalidateQueries({ queryKey: ['kitmgmt', 'kits'] });
@@ -118,6 +126,11 @@ export function KitManagePage(): JSX.Element {
         category_id: input.category_id,
         scope: input.scope,
       })
+      // The icon was picked before the kit existed; it can only be attached
+      // now that there is a slug.
+      .then((created) => (input.newIcon
+        ? kitCatalogApi.uploadIcon(created.slug, input.newIcon)
+        : undefined))
       .then(() => {
         toast.success(t('kitmgmt.toast.created'));
         closeCreate();
@@ -141,6 +154,7 @@ export function KitManagePage(): JSX.Element {
         category_id: input.category_id,
         scope: input.scope,
       })
+      .then(() => (input.newIcon ? kitCatalogApi.uploadIcon(id, input.newIcon) : undefined))
       .then(() => (input.newZip ? kitCatalogApi.uploadZip(id, input.newZip) : undefined))
       .then(() => {
         toast.success(t('kitmgmt.toast.updated'));

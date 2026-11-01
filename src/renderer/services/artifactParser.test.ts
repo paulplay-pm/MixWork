@@ -569,7 +569,7 @@ describe('parseLocalServiceUrlsFromText', () => {
     const content = [
       '启动方式',
       '```bash',
-      'cd /Users/admin/genwork/project/fanren/fanren-vote',
+      'cd /Users/admin/mixcwork/project/fanren/fanren-vote',
       'npm run dev',
       '```',
       '预览地址：http://localhost:3000',
@@ -578,70 +578,70 @@ describe('parseLocalServiceUrlsFromText', () => {
       content,
       'msg1',
       'sess1',
-      { projectDirectory: '/Users/admin/genwork/project/fanren' },
+      { projectDirectory: '/Users/admin/mixcwork/project/fanren' },
     );
 
     expect(artifacts[0].localService?.projectDirectory).toBe(
-      '/Users/admin/genwork/project/fanren/fanren-vote',
+      '/Users/admin/mixcwork/project/fanren/fanren-vote',
     );
   });
 
   test('prefers labeled project directory over session cwd', () => {
     const content = [
-      '项目目录： `/Users/admin/genwork/project/fanren/fanren-vote/`',
+      '项目目录： `/Users/admin/mixcwork/project/fanren/fanren-vote/`',
       '预览地址：http://localhost:3000',
     ].join('\n');
     const artifacts = parseLocalServiceUrlsFromText(
       content,
       'msg1',
       'sess1',
-      { projectDirectory: '/Users/admin/genwork/project/fanren' },
+      { projectDirectory: '/Users/admin/mixcwork/project/fanren' },
     );
 
     expect(artifacts[0].localService?.projectDirectory).toBe(
-      '/Users/admin/genwork/project/fanren/fanren-vote/',
+      '/Users/admin/mixcwork/project/fanren/fanren-vote/',
     );
   });
 
   test('extracts labeled project directory from markdown file link', () => {
     const content = [
       '✅ 服务已启动，运行在 http://localhost:3000',
-      '• 项目路径： [`/Users/admin/genwork/project/fanren/fanren-vote/`](file:///Users/admin/genwork/project/fanren/fanren-vote/)',
+      '• 项目路径： [`/Users/admin/mixcwork/project/fanren/fanren-vote/`](file:///Users/admin/mixcwork/project/fanren/fanren-vote/)',
       '• 状态： 正常运行，HTTP 200',
     ].join('\n');
     const artifacts = parseLocalServiceUrlsFromText(
       content,
       'msg1',
       'sess1',
-      { projectDirectory: '/Users/admin/genwork/project/fanren' },
+      { projectDirectory: '/Users/admin/mixcwork/project/fanren' },
     );
 
     expect(artifacts[0].localService?.projectDirectory).toBe(
-      '/Users/admin/genwork/project/fanren/fanren-vote/',
+      '/Users/admin/mixcwork/project/fanren/fanren-vote/',
     );
   });
 
   test('extracts project directory from project located markdown file link', () => {
     const content = [
-      '网站已全部完成！ 项目位于 [chinese-navy-site](file:///Users/admin/genwork/project/chinese-navy-site)，本地服务运行在 `http://localhost:8765`。',
+      '网站已全部完成！ 项目位于 [chinese-navy-site](file:///Users/admin/mixcwork/project/chinese-navy-site)，本地服务运行在 `http://localhost:8765`。',
       '',
       '**文件结构：**',
-      '- [index.html](file:///Users/admin/genwork/project/chinese-navy-site/index.html) — 页面结构',
+      '- [index.html](file:///Users/admin/mixcwork/project/chinese-navy-site/index.html) — 页面结构',
     ].join('\n');
     const artifacts = parseLocalServiceUrlsFromText(
       content,
       'msg1',
       'sess1',
-      { projectDirectory: '/Users/admin/genwork/project' },
+      { projectDirectory: '/Users/admin/mixcwork/project' },
     );
 
     expect(artifacts[0].localService?.projectDirectory).toBe(
-      '/Users/admin/genwork/project/chinese-navy-site',
+      '/Users/admin/mixcwork/project/chinese-navy-site',
     );
     expect(artifacts[0].localService?.projectCandidates).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          directory: '/Users/admin/genwork/project/chinese-navy-site',
+          directory: '/Users/admin/mixcwork/project/chinese-navy-site',
           source: ShareDeploymentCandidateSource.TextLabeledPath,
         }),
       ]),
@@ -651,19 +651,19 @@ describe('parseLocalServiceUrlsFromText', () => {
   test('derives project directory from common parent of file links', () => {
     const content = [
       '本地服务运行在 http://localhost:8765',
-      '- [index.html](file:///Users/admin/genwork/project/chinese-navy-site/index.html)',
-      '- [style.css](file:///Users/admin/genwork/project/chinese-navy-site/styles/style.css)',
-      '- [app.js](file:///Users/admin/genwork/project/chinese-navy-site/scripts/app.js)',
+      '- [index.html](file:///Users/admin/mixcwork/project/chinese-navy-site/index.html)',
+      '- [style.css](file:///Users/admin/mixcwork/project/chinese-navy-site/styles/style.css)',
+      '- [app.js](file:///Users/admin/mixcwork/project/chinese-navy-site/scripts/app.js)',
     ].join('\n');
     const artifacts = parseLocalServiceUrlsFromText(content, 'msg1', 'sess1');
 
     expect(artifacts[0].localService?.projectDirectory).toBe(
-      '/Users/admin/genwork/project/chinese-navy-site',
+      '/Users/admin/mixcwork/project/chinese-navy-site',
     );
     expect(artifacts[0].localService?.projectCandidates).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          directory: '/Users/admin/genwork/project/chinese-navy-site',
+          directory: '/Users/admin/mixcwork/project/chinese-navy-site',
           source: ShareDeploymentCandidateSource.TextCommonParent,
         }),
       ]),
@@ -679,7 +679,7 @@ describe('parseLocalServiceUrlsFromText', () => {
       content,
       'msg1',
       'sess1',
-      { projectDirectory: '/Users/admin/genwork/project/fanren' },
+      { projectDirectory: '/Users/admin/mixcwork/project/fanren' },
     );
 
     expect(artifacts[0].localService?.projectDirectory).toBeUndefined();
@@ -708,10 +708,10 @@ describe('parseMediaTokensFromText', () => {
   });
 
   test('parses macOS path with spaces (Application Support)', () => {
-    const content = 'MEDIA: /Users/test/Library/Application Support/com.genwork/images/output.png';
+    const content = 'MEDIA: /Users/test/Library/Application Support/com.mixcwork/images/output.png';
     const artifacts = parseMediaTokensFromText(content, 'msg1', 'sess1');
     expect(artifacts).toHaveLength(1);
-    expect(artifacts[0].filePath).toBe('/Users/test/Library/Application Support/com.genwork/images/output.png');
+    expect(artifacts[0].filePath).toBe('/Users/test/Library/Application Support/com.mixcwork/images/output.png');
     expect(artifacts[0].type).toBe('image');
   });
 
@@ -953,13 +953,13 @@ describe('shouldParseFilePathsFromToolResult', () => {
     expect(shouldParseFilePathsFromToolResult('image_generate')).toBe(true);
   });
 
-  test('returns true for genwork_image_generate tool', () => {
-    expect(shouldParseFilePathsFromToolResult('genwork_image_generate')).toBe(true);
+  test('returns true for mixcwork_image_generate tool', () => {
+    expect(shouldParseFilePathsFromToolResult('mixcwork_image_generate')).toBe(true);
   });
 
   test('is case-insensitive', () => {
     expect(shouldParseFilePathsFromToolResult('Image_Generate')).toBe(true);
-    expect(shouldParseFilePathsFromToolResult('GENWORK_IMAGE_GENERATE')).toBe(true);
+    expect(shouldParseFilePathsFromToolResult('MIXCWORK_IMAGE_GENERATE')).toBe(true);
   });
 
   test('returns false for Bash tool (find/ls output should not become artifacts)', () => {

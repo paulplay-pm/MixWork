@@ -47,7 +47,7 @@ const larkToolContracts = [
 ];
 
 const setupEntryContent = `"use strict";
-// Lightweight setup entry for deferred loading (patched by GenWork).
+// Lightweight setup entry for deferred loading (patched by MixCWork).
 // Only static channel metadata - no heavy dependencies.
 // The full plugin (index.js) loads after the HTTP server starts listening.
 const DEFAULT_ACCOUNT_ID = 'default';
@@ -222,14 +222,14 @@ function patchFilenameEncoding(larkPluginDir, log) {
   }
 
   const replacement = `fileName = decodeURIComponent(match[1].trim());
-                // Patched by GenWork: fix Latin-1 garbled UTF-8 filenames from Feishu API
+                // Patched by MixCWork: fix Latin-1 garbled UTF-8 filenames from Feishu API
                 fileName = ${patchMarker}(fileName);`;
   mediaSrc = mediaSrc.slice(0, idx) + replacement + mediaSrc.slice(idx + target.length);
 
   const fnMarker = 'async function downloadMessageResourceFeishu(';
   const fnIdx = mediaSrc.indexOf(fnMarker);
   if (fnIdx !== -1) {
-    const helperFn = `// Patched by GenWork: detect and fix Latin-1 garbled UTF-8 filenames.
+    const helperFn = `// Patched by MixCWork: detect and fix Latin-1 garbled UTF-8 filenames.
 // When Node.js parses HTTP headers as Latin-1, UTF-8 multibyte Chinese
 // characters get split into individual high bytes (e.g. U+6700 encoded
 // as 0xE6 0x9C 0x80 in UTF-8 becomes Latin-1 bytes).

@@ -47,7 +47,7 @@ describe('pages/VersionsPage', () => {
           version: '1.2.0',
           published_at: '2026-08-27T00:00:00Z',
           change_log: { zh: { title: 'zh', content: ['a'] } },
-          installers: { macArm: { id: 'file-1', fileName: 'GenWork.dmg', fileSize: 100, sha256: 's' } },
+          installers: { macArm: { id: 'file-1', fileName: 'MixcWork.dmg', fileSize: 100, sha256: 's' } },
           enabled: true,
           is_latest: true,
         },
@@ -61,7 +61,7 @@ describe('pages/VersionsPage', () => {
   });
 
   test('add button opens drawer; submit POSTs to /admin/releases', async () => {
-    const installerFile = new File([new Uint8Array(32)], 'GenWork.dmg', {
+    const installerFile = new File([new Uint8Array(32)], 'MixcWork.dmg', {
       type: 'application/x-apple-diskimage',
     });
     fetchMock.mockResolvedValueOnce(new Response('[]', { status: 200 })); // initial list
@@ -73,7 +73,7 @@ describe('pages/VersionsPage', () => {
     ); // installer chunk PUT
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({ id: 'file-1', fileName: 'GenWork.dmg', fileSize: 32, sha256: 's' }),
+        JSON.stringify({ id: 'file-1', fileName: 'MixcWork.dmg', fileSize: 32, sha256: 's' }),
         { status: 200 }
       )
     ); // installer upload complete
@@ -96,7 +96,7 @@ describe('pages/VersionsPage', () => {
       configurable: true,
     });
     fireEvent.change(macInput);
-    await screen.findByText(/Uploaded: GenWork|已上传/i);
+    await screen.findByText(/Uploaded: MixcWork|已上传/i);
     const saveBtn = screen.getByRole('button', { name: /Save|保存/i });
     fireEvent.click(saveBtn);
     await waitFor(() => {
@@ -119,7 +119,7 @@ describe('pages/VersionsPage', () => {
   });
 
   test('F3: file input value resets so picking the same File twice fires onPick twice', async () => {
-    const installerFile = new File([new Uint8Array(32)], 'GenWork.dmg', {
+    const installerFile = new File([new Uint8Array(32)], 'MixcWork.dmg', {
       type: 'application/x-apple-diskimage',
     });
     fetchMock.mockResolvedValueOnce(new Response('[]', { status: 200 })); // initial list
@@ -131,7 +131,7 @@ describe('pages/VersionsPage', () => {
     ); // installer chunk PUT
     fetchMock.mockResolvedValue(
       new Response(
-        JSON.stringify({ id: 'file-1', fileName: 'GenWork.dmg', fileSize: 32, sha256: 's' }),
+        JSON.stringify({ id: 'file-1', fileName: 'MixcWork.dmg', fileSize: 32, sha256: 's' }),
         { status: 200 }
       )
     ); // installer upload complete
@@ -165,7 +165,7 @@ describe('pages/VersionsPage', () => {
   });
 
   test('F1: done state shows filename + humanized fileSize', async () => {
-    const installerFile = new File([new Uint8Array(100)], 'GenWork.dmg', {
+    const installerFile = new File([new Uint8Array(100)], 'MixcWork.dmg', {
       type: 'application/x-apple-diskimage',
     });
     fetchMock.mockResolvedValueOnce(new Response('[]', { status: 200 })); // initial list
@@ -177,7 +177,7 @@ describe('pages/VersionsPage', () => {
     ); // installer chunk PUT
     fetchMock.mockResolvedValueOnce(
       new Response(
-        JSON.stringify({ id: 'file-1', fileName: 'GenWork.dmg', fileSize: 100, sha256: 's' }),
+        JSON.stringify({ id: 'file-1', fileName: 'MixcWork.dmg', fileSize: 100, sha256: 's' }),
         { status: 200 }
       )
     ); // installer upload complete
@@ -190,7 +190,7 @@ describe('pages/VersionsPage', () => {
     fireEvent.change(macInput);
     // The done-state row should show both the filename AND a humanized size.
     await waitFor(() => {
-      expect(screen.getByText(/Uploaded: GenWork\.dmg \(100 B\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/Uploaded: MixcWork\.dmg \(100 B\)/i)).toBeInTheDocument();
     });
   });
 });

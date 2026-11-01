@@ -1,7 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
+import { isBundledBrandIcon, monogramFor } from '../../data/brandIcons';
 import { MANAGEMENT_META_TEXT, MANAGEMENT_TITLE_TEXT } from '../common/managementTypography';
 import ConnectorIcon from '../icons/ConnectorIcon';
+
+/** The monogram's text size, keyed by the tile's size. */
+const MONOGRAM_TEXT_CLASS: Record<'sm' | 'md' | 'lg', string> = {
+  sm: 'text-[9px]',
+  md: 'text-[12px]',
+  lg: 'text-[15px]',
+};
 
 /**
  * Description with line-clamp-2 that reveals the full text in a popover above
@@ -51,6 +59,12 @@ interface McpIconTileProps {
   icon?: string;
   className?: string;
   iconClassName?: string;
+  /** The connector's id — the seed for the generated monogram. */
+  seed?: string;
+  /** The connector's name — the initials on the generated monogram. */
+  label?: string;
+  /** The tile's size, which sets the monogram's text size. */
+  size?: 'sm' | 'md' | 'lg';
   /**
    * Optional Tailwind class for a small status dot anchored to the bottom-right
    * corner of the icon tile. Null/undefined renders no dot.
@@ -68,6 +82,9 @@ export const McpIconTile: React.FC<McpIconTileProps> = ({
   className = 'h-10 w-10 rounded-[10px]',
   iconClassName = 'h-5 w-5',
   badgeClassName,
+  seed,
+  label,
+  size = 'lg',
 }) => {
   const [imageFailed, setImageFailed] = useState(false);
   const normalizedIcon = icon?.trim();
@@ -75,19 +92,39 @@ export const McpIconTile: React.FC<McpIconTileProps> = ({
   const tileNode = normalizedIcon && !imageFailed ? (
     <img
       alt=""
-      className={`${className} shrink-0 bg-surface-raised object-cover`}
+      className={`${className} shrink-0 object-contain ${
+        // A vendor's mark is drawn for a light background, so the bundled
+        // ones sit on white; the app's own surface is fine for the rest.
+        isBundledBrandIcon(normalizedIcon) ? 'bg-white' : 'bg-surface-raised'
+      }`}
       draggable={false}
       src={normalizedIcon}
       onError={() => setImageFailed(true)}
     />
-  ) : (
-    <span
-      aria-hidden="true"
-      className={`${className} inline-flex shrink-0 items-center justify-center bg-primary-muted text-primary`}
-    >
-      <ConnectorIcon className={iconClassName} />
-    </span>
-  );
+  ) : (() => {
+    // No artwork: a generated monogram says more than the same generic glyph
+    // on every row.
+    const monogram = seed ? monogramFor(seed, label) : null;
+    if (monogram) {
+      return (
+        <span
+          aria-hidden="true"
+          className={`${className} inline-flex shrink-0 items-center justify-center font-semibold leading-none text-white ${MONOGRAM_TEXT_CLASS[size]}`}
+          style={{ backgroundColor: `hsl(${monogram.hue} 58% 44%)` }}
+        >
+          {monogram.text}
+        </span>
+      );
+    }
+    return (
+      <span
+        aria-hidden="true"
+        className={`${className} inline-flex shrink-0 items-center justify-center bg-primary-muted text-primary`}
+      >
+        <ConnectorIcon className={iconClassName} />
+      </span>
+    );
+  })();
 
   if (!badgeClassName) {
     return tileNode;
@@ -108,6 +145,10 @@ interface McpCardProps {
   title: string;
   description: string;
   icon?: string;
+  /** The connector's id — the seed for the generated monogram. */
+  seed?: string;
+  /** The connector's name — the initials on the generated monogram. */
+  label?: string;
   /** Tailwind class for an optional status dot on the icon tile. */
   iconBadge?: string | null;
   /** Capsule / overflow menu rendered next to the title. */
@@ -128,6 +169,8 @@ const McpCard: React.FC<McpCardProps> = ({
   title,
   description,
   icon,
+  seed,
+  label,
   iconBadge,
   actions,
   meta,
@@ -149,7 +192,7 @@ const McpCard: React.FC<McpCardProps> = ({
     }`}
   >
     <div className="mb-3 flex items-center gap-2.5">
-      <McpIconTile icon={icon} badgeClassName={iconBadge} />
+      <McpIconTile icon={icon} badgeClassName={iconBadge} seed={seed} label={label} />
       <div className={`min-w-0 flex-1 truncate ${MANAGEMENT_TITLE_TEXT} font-semibold leading-snug text-foreground`}>
         {title}
       </div>

@@ -19,9 +19,25 @@ export type ModelType = (typeof ModelType)[keyof typeof ModelType];
 export const ModelTypes = {
   Chat: 'chat', Vision: 'vision', Reasoning: 'reasoning', ImageGen: 'image-gen',
   Embedding: 'embedding', Rerank: 'rerank', Asr: 'asr', Tts: 'tts',
+  // Video GENERATION is its own model type, not a `supports_video` flag on a
+  // chat model: the media backend routes on `types`, and a chat model that can
+  // also accept video input is a different thing from a model that produces a
+  // video file. Conflating them makes both untargetable.
+  VideoGen: 'video-gen',
 } as const;
 export type ModelTypeValue = (typeof ModelTypes)[keyof typeof ModelTypes];
 export const MODEL_TYPE_VALUES: ModelTypeValue[] = Object.values(ModelTypes);
+
+/** Model types a SESSION can use. A model appears in the chat pickers (the
+ * desktop's catalog, the enterprise sync) only if it carries at least one of
+ * them.
+ *
+ * The media and ASR types are deliberately absent: those models are addressed
+ * through their own capability channel (the media backend resolves the model
+ * by type), not through the chat picker. `embedding` / `rerank` are absent
+ * too — the desktop's embedding uses its own `cowork_config.embeddingProvider`
+ * settings and does not consume the enterprise catalog. */
+export const SESSION_MODEL_TYPES: ModelTypeValue[] = ['chat', 'vision', 'reasoning'];
 
 /** Capability metadata for a single model. Optional on create; the desktop
  * reads them off `GET /admin/catalog` to render capability badges / pickers. */
@@ -49,6 +65,10 @@ export interface ModelView extends ModelCapabilities {
   quota_per_user_per_day: number | null;
   enabled: boolean;
   disabled_by_admin: boolean;
+  /** Free-form capability parameters (e.g. `{ size: '1024x1024' }`). The
+   * desktop prints them to the LLM as the model's supported parameters, so
+   * they travel with the row rather than in a side table. */
+  parameter_spec: Record<string, unknown>;
 }
 
 /**
@@ -74,6 +94,7 @@ const MODEL_LIST_COLS = `c.id, c.provider, c.model, c.display_name, c.type, c.ty
   c.supports_image, c.supports_video, c.supports_thinking,
   c.context_window, c.max_tokens,
   c.temperature, c.top_p, c.max_output_tokens,
+  c.parameter_spec,
   COALESCE(p.disabled, false) AS disabled_by_admin`;
 
 /** Admin list columns = user-facing columns + the provider key the row belongs
@@ -91,6 +112,8 @@ export const modelCatalog = {
     types?: ModelTypeValue[];
     quotaPerDay?: number | null;
     capabilities?: Partial<ModelCapabilities>;
+    /** Free-form capability parameters; stored as JSONB in `parameter_spec`. */
+    parameterSpec?: Record<string, unknown>;
   }): Promise<{ id: string }> {
     const dup = await pool.query(
       `SELECT 1 FROM model_catalog WHERE org_id = $1 AND provider_key_id = $2 AND model = $3`,
@@ -112,9 +135,10 @@ export const modelCatalog = {
          quota_per_user_per_day,
          supports_image, supports_video, supports_thinking,
          context_window, max_tokens,
-         temperature, top_p, max_output_tokens
+         temperature, top_p, max_output_tokens,
+         parameter_spec
        )
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb)`,
       [
         id,
         input.orgId,
@@ -133,6 +157,7 @@ export const modelCatalog = {
         cap.temperature ?? null,
         cap.top_p ?? null,
         cap.max_output_tokens ?? null,
+        JSON.stringify(input.parameterSpec ?? {}),
       ]
     );
     return { id };
@@ -144,6 +169,8 @@ export const modelCatalog = {
     types?: ModelTypeValue[];
     enabled?: boolean;
     capabilities?: Partial<ModelCapabilities>;
+    /** Free-form capability parameters; only written when present. */
+    parameterSpec?: Record<string, unknown>;
   }): Promise<boolean> {
     const sets: string[] = [];
     const params: unknown[] = [];
@@ -173,6 +200,10 @@ export const modelCatalog = {
       if (c.top_p !== undefined)                 { sets.push(`top_p = $${i++}`);                 params.push(c.top_p); }
       if (c.max_output_tokens !== undefined)     { sets.push(`max_output_tokens = $${i++}`);     params.push(c.max_output_tokens); }
     }
+    if (fields.parameterSpec !== undefined) {
+      sets.push(`parameter_spec = $${i++}::jsonb`);
+      params.push(JSON.stringify(fields.parameterSpec));
+    }
     if (sets.length === 0) return true;
     params.push(id, orgId);
     const r = await pool.query(
@@ -194,13 +225,18 @@ export const modelCatalog = {
     // User-facing picker: only models that are enabled AND not policy-disabled
     // by an admin. A policy-disabled model is blocked at the proxy, so it must
     // not be advertised as available here.
+    //
+    // `c.types && $2::text[]` keeps the media/ASR models out of the chat
+    // pickers: a model appears only if it carries a SESSION type. An empty
+    // `types` array does not match, so an untyped model is not a session model.
     const r = await pool.query<ModelView>(
       `SELECT ${MODEL_LIST_COLS}
        FROM model_catalog c
        LEFT JOIN model_policies p ON p.org_id = c.org_id AND p.model_id = c.id
        WHERE c.org_id = $1 AND c.enabled = true AND COALESCE(p.disabled, false) = false
+         AND c.types && $2::text[]
        ORDER BY c.model`,
-      [orgId]
+      [orgId, SESSION_MODEL_TYPES]
     );
     return r.rows;
   },
@@ -248,13 +284,17 @@ export const modelCatalog = {
     temperature: number | null;
     top_p: number | null;
     max_output_tokens: number | null;
+    /** The multi-type labels the row carries. */
+    types: ModelTypeValue[];
+    parameter_spec: Record<string, unknown>;
   } | null> {
     const r = await pool.query(
       `SELECT id, org_id, provider_key_id, provider, model, display_name,
               quota_per_user_per_day, enabled,
               supports_image, supports_video, supports_thinking,
               context_window, max_tokens,
-              temperature, top_p, max_output_tokens
+              temperature, top_p, max_output_tokens,
+              types, parameter_spec
        FROM model_catalog WHERE id=$1`,
       [id]
     );

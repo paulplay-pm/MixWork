@@ -31,24 +31,24 @@ describe('OpenClaw extension manifests', () => {
     expect(readContractTools('ask-user-question')).toEqual(['AskUserQuestion']);
   });
 
-  test('declares Genwork media generation and skin agent tool contracts', () => {
-    expect(readContractTools('genwork-media-generation')).toEqual([
-      'genwork_image_generate',
-      'genwork_video_generate',
-      'genwork_skin_manage',
+  test('declares Mixcwork media generation and skin agent tool contracts', () => {
+    expect(readContractTools('mixcwork-media-generation')).toEqual([
+      'mixcwork_image_generate',
+      'mixcwork_video_generate',
+      'mixcwork_skin_manage',
     ]);
   });
 
   test('declares TypeScript entries for local extensions that are precompiled for packaging', () => {
     expect(readPackageOpenClawExtensions('mcp-bridge')).toEqual(['./index.ts']);
     expect(readPackageOpenClawExtensions('ask-user-question')).toEqual(['./index.ts']);
-    expect(readPackageOpenClawExtensions('genwork-media-generation')).toEqual(['./index.ts']);
-    expect(readPackageOpenClawExtensions('genwork-model-compat')).toEqual(['./index.ts']);
+    expect(readPackageOpenClawExtensions('mixcwork-media-generation')).toEqual(['./index.ts']);
+    expect(readPackageOpenClawExtensions('mixcwork-model-compat')).toEqual(['./index.ts']);
   });
 
-  test('declares a strict allowlisted model-profile config for Genwork compatibility', () => {
-    const manifest = readManifest('genwork-model-compat');
-    expect(manifest.providers).toEqual(['genwork-model-compat']);
+  test('declares a strict allowlisted model-profile config for Mixcwork compatibility', () => {
+    const manifest = readManifest('mixcwork-model-compat');
+    expect(manifest.providers).toEqual(['mixcwork-model-compat']);
     expect(manifest.activation).toBeUndefined();
     expect(manifest.configSchema).toEqual({
       type: 'object',

@@ -7,7 +7,8 @@
 // saveCredential / probeAuthorization IPC handlers (see
 // `src/main/mcp/mcpAuthProbe.ts`).
 
-import { McpAuthMethod } from '../../../shared/mcp/constants';
+import { McpAuthMethod, QICHACHA_REGISTRY_ID } from '../../../shared/mcp/constants';
+import type { McpOAuthEndpoint } from '../../types/mcp';
 
 export interface SaveCredentialPayloadBearer {
   kind: 'bearer';
@@ -23,12 +24,9 @@ export interface SaveCredentialPayloadApiKey {
 export interface SaveCredentialPayloadOAuth {
   kind: 'oauth';
   providerId: string;
-  oauthConfig?: {
-    authorizeUrl: string;
-    tokenUrl: string;
-    clientId: string;
-    scopes?: string[];
-  };
+  /** The connector's OAuth client profile, including the redirect URI the
+   *  enterprise server issued (the desktop binds its port). */
+  oauthConfig?: McpOAuthEndpoint;
 }
 
 /**
@@ -51,15 +49,14 @@ export interface McpAuthFormFields {
   bearer?: string;
   headerName?: string;
   value?: string;
-  /** Registry id of the connector being authorized (informational; ignored). */
+  /** `qichacha` marks the built-in bundle, the one connector with a bespoke
+   *  login page; every other value runs the generic flow. */
   registryId?: string;
+  /** The local record's id — the last-resort stable key for the generic flow
+   *  when the connector has neither a catalog serverKey nor a registry id. */
+  serverId?: string;
   serverKey?: string;
-  oauthConfig?: {
-    authorizeUrl: string;
-    tokenUrl: string;
-    clientId: string;
-    scopes?: string[];
-  };
+  oauthConfig?: McpOAuthEndpoint;
 }
 
 /**
@@ -86,18 +83,53 @@ export function buildSaveCredentialPayload(
     return { kind: 'apiKey', headerName, value };
   }
   if (authMethod === McpAuthMethod.OAuth) {
-    const cfg = formFields.oauthConfig;
-    const hasEndpoints = Boolean(cfg?.authorizeUrl?.trim()) && Boolean(cfg?.tokenUrl?.trim());
-    // Enterprise connector (identified by its serverKey): must have admin
-    // endpoints; never silently drive qichacha.
-    if (formFields.serverKey) {
-      if (!hasEndpoints) return null; // guardrail — see spec §5.4
-      return { kind: 'oauth', providerId: `generic:${formFields.serverKey}`, oauthConfig: cfg };
+    // Only the built-in qichacha bundle drives a bespoke login page. Every
+    // other OAuth connector — an enterprise one identified by its serverKey,
+    // or a hand-added local server with neither — runs the MCP-native flow:
+    // the main process discovers the provider's endpoints from the server's
+    // own URL (RFC 8414/9728) and registers a public client (RFC 7591). A
+    // connector with NO client profile is therefore valid, not a reason to
+    // refuse the click, and must never be sent to the qichacha page.
+    if (formFields.registryId === QICHACHA_REGISTRY_ID) {
+      return { kind: 'oauth', providerId: QICHACHA_REGISTRY_ID };
     }
-    // Built-in Qichacha bundle (no serverKey): keep the qichacha path.
-    return { kind: 'oauth', providerId: 'qichacha' };
+    const key =
+      formFields.serverKey?.trim() ||
+      formFields.serverId?.trim() ||
+      formFields.registryId?.trim();
+    if (!key) return null;
+    const cfg = formFields.oauthConfig;
+    return {
+      kind: 'oauth',
+      providerId: `generic:${key}`,
+      ...(cfg ? { oauthConfig: cfg } : {}),
+    };
   }
   return null;
+}
+
+/**
+ * Does this connector run the MCP-native OAuth flow, rather than the built-in
+ * qichacha login page?
+ */
+export function usesGenericOAuth(server: { registryId?: string | null }): boolean {
+  return server.registryId !== QICHACHA_REGISTRY_ID;
+}
+
+/**
+ * Does this OAuth connector rely on the main process's discovery/registration
+ * (RFC 8414/9728 + 7591) to complete its client profile?
+ *
+ * True whenever the profile is incomplete — which is the normal shape for an
+ * MCP-native provider, and for a local server with no profile at all. The
+ * modal uses it to explain what the next click does.
+ */
+export function oauthUsesDiscovery(
+  cfg: McpOAuthEndpoint | undefined,
+  usesGenericFlow: boolean,
+): boolean {
+  if (!usesGenericFlow) return false;
+  return !cfg?.authorizeUrl?.trim() || !cfg?.tokenUrl?.trim() || !cfg?.clientId?.trim();
 }
 
 /**
@@ -181,6 +213,37 @@ export function mapProbeResultToUiState(
     return { kind: 'missing-credential', message: error };
   }
   return { kind: 'connect-error', message: error };
+}
+
+/**
+ * Which i18n key labels a probe outcome.
+ *
+ * `missing-save` is its own label on purpose: it means the flow never produced
+ * a credential at all (discovery failed, the IdP refused the token exchange),
+ * not that a field the user could fill is empty. Reusing "missing credential"
+ * for it told the user the wrong thing — a 纷享销客 token-exchange rejection
+ * ("token已下发，请勿重复下发！") was reported as a missing field.
+ */
+export function probeLabelKey(state: McpAuthUiState): string {
+  switch (state.kind) {
+    case 'success':
+      return 'mcpAuthSuccess';
+    case 'unauthorized':
+      return 'mcpAuthFailedUnauthorized';
+    case 'missing-credential':
+      return 'mcpAuthFailedMissing';
+    case 'missing-save':
+      return 'mcpAuthFailedSave';
+    default:
+      return 'mcpAuthFailedConnect';
+  }
+}
+
+/** Should the pill also print the underlying message? Always for failures: the
+ *  main process's reason (an IdP error, an HTTP status) is the only thing that
+ *  makes a failed authorization diagnosable. */
+export function showsProbeDetail(state: McpAuthUiState): boolean {
+  return state.kind !== 'success';
 }
 
 /**

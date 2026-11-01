@@ -5,7 +5,7 @@ import path from 'path';
 import { afterEach, expect, test, vi } from 'vitest';
 
 import { AgentAvatarSvg, DefaultAgentAvatarIcon, DefaultAgentProfile, encodeAgentAvatarIcon } from '../shared/agent';
-import { OpenClawCronRunMetadataKey } from '../shared/genwork/openclawCronSessionKey';
+import { OpenClawCronRunMetadataKey } from '../shared/mixcwork/openclawCronSessionKey';
 
 vi.mock('electron', () => ({
   app: {
@@ -15,7 +15,7 @@ vi.mock('electron', () => ({
 }));
 
 import { DB_FILENAME } from './appConstants';
-import { GenWorkStore } from './genworkStore';
+import { MixCWorkStore } from './mixcworkStore';
 import { SqliteStore } from './sqliteStore';
 
 let tempDirs: string[] = [];
@@ -28,7 +28,7 @@ afterEach(() => {
 });
 
 const createTempUserDataPath = (): string => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-sqlite-store-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-sqlite-store-'));
   tempDirs.push(dir);
   return dir;
 };
@@ -50,7 +50,7 @@ const createLegacyDatabase = (userDataPath: string): void => {
       updated_at INTEGER NOT NULL
     );
 
-    CREATE TABLE genwork_config (
+    CREATE TABLE mixcwork_config (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL,
       updated_at INTEGER NOT NULL
@@ -76,7 +76,7 @@ const createLegacyDatabase = (userDataPath: string): void => {
 
   db.prepare('INSERT INTO cowork_config (key, value, updated_at) VALUES (?, ?, ?)')
     .run('workingDirectory', '/repo/legacy', now);
-  db.prepare('INSERT INTO genwork_config (key, value, updated_at) VALUES (?, ?, ?)')
+  db.prepare('INSERT INTO mixcwork_config (key, value, updated_at) VALUES (?, ?, ?)')
     .run('workingDirectory', '/repo/legacy', now);
   db.prepare(
     `INSERT INTO agents (
@@ -165,7 +165,7 @@ test('installs required thinking columns independently from best-effort legacy m
 
   const reopenedStore = await SqliteStore.create(userDataPath);
   const reopenedColumns = reopenedStore.getDatabase()
-    .pragma('table_info(genwork_sessions)') as Array<{ name: string }>;
+    .pragma('table_info(mixcwork_sessions)') as Array<{ name: string }>;
   expect(reopenedColumns.some(col => col.name === 'thinking_level')).toBe(true);
   reopenedStore.close();
 });
@@ -176,10 +176,10 @@ test('creates continuity capsule table during startup migration', async () => {
 
   const store = await SqliteStore.create(userDataPath);
   const table = store.getDatabase()
-    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'genwork_session_capsules'")
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'mixcwork_session_capsules'")
     .get() as { name: string } | undefined;
 
-  expect(table?.name).toBe('genwork_session_capsules');
+  expect(table?.name).toBe('mixcwork_session_capsules');
 
   store.close();
 });
@@ -216,11 +216,11 @@ test('upgrades legacy message ordering and creates an index-backed pagination pa
       ('message-later', 'legacy-session', 'assistant', 'later', NULL, 20),
       ('message-earlier', 'legacy-session', 'user', 'earlier', NULL, 10);
   `);
-  // Production now reads/writes genwork_messages directly; insert into the
+  // Production now reads/writes mixcwork_messages directly; insert into the
   // current schema so the migration-under-test (sequence column + index)
   // has rows to operate on.
   legacyDb.exec(`
-    CREATE TABLE IF NOT EXISTS genwork_sessions (
+    CREATE TABLE IF NOT EXISTS mixcwork_sessions (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'idle',
@@ -229,10 +229,10 @@ test('upgrades legacy message ordering and creates an index-backed pagination pa
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
-    INSERT INTO genwork_sessions (
+    INSERT INTO mixcwork_sessions (
       id, title, status, cwd, system_prompt, created_at, updated_at
     ) VALUES ('legacy-session', 'Legacy', 'idle', '/repo/legacy', '', 1, 1);
-    CREATE TABLE IF NOT EXISTS genwork_messages (
+    CREATE TABLE IF NOT EXISTS mixcwork_messages (
       id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
       type TEXT NOT NULL,
@@ -240,7 +240,7 @@ test('upgrades legacy message ordering and creates an index-backed pagination pa
       metadata TEXT,
       created_at INTEGER NOT NULL
     );
-    INSERT INTO genwork_messages (
+    INSERT INTO mixcwork_messages (
       id, session_id, type, content, metadata, created_at
     ) VALUES
       ('message-later', 'legacy-session', 'assistant', 'later', NULL, 20),
@@ -252,14 +252,14 @@ test('upgrades legacy message ordering and creates an index-backed pagination pa
   const db = store.getDatabase();
   const orderedMessages = db.prepare(`
     SELECT id, sequence
-    FROM genwork_messages
+    FROM mixcwork_messages
     WHERE session_id = ?
     ORDER BY COALESCE(sequence, created_at), created_at, ROWID
   `).all('legacy-session') as Array<{ id: string; sequence: number }>;
   const queryPlan = db.prepare(`
     EXPLAIN QUERY PLAN
     SELECT id
-    FROM genwork_messages
+    FROM mixcwork_messages
     WHERE session_id = ?
       AND COALESCE(sequence, created_at) >= ?
       AND (
@@ -275,7 +275,7 @@ test('upgrades legacy message ordering and creates an index-backed pagination pa
     { id: 'message-earlier', sequence: 1 },
     { id: 'message-later', sequence: 2 },
   ]);
-  expect(queryPlan.some(row => row.detail.includes('idx_genwork_messages_session_order'))).toBe(true);
+  expect(queryPlan.some(row => row.detail.includes('idx_mixcwork_messages_session_order'))).toBe(true);
   expect(queryPlan.some(row => row.detail.includes('<expr>>?'))).toBe(true);
   expect(queryPlan.some(row => row.detail.includes('USE TEMP B-TREE FOR ORDER BY'))).toBe(false);
 
@@ -394,10 +394,10 @@ test('adds cowork fork columns during migration', async () => {
       id, title, status, pinned, cwd, created_at, updated_at
     ) VALUES ('legacy-session', 'Legacy Session', 'idle', 0, '/repo/legacy', ?, ?)`,
   ).run(now, now);
-  // Production now creates genwork_sessions directly; insert a session there so
+  // Production now creates mixcwork_sessions directly; insert a session there so
   // the fork-column migration has a row to assert against.
   legacyDb.exec(`
-    CREATE TABLE IF NOT EXISTS genwork_sessions (
+    CREATE TABLE IF NOT EXISTS mixcwork_sessions (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'idle',
@@ -406,7 +406,7 @@ test('adds cowork fork columns during migration', async () => {
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
-    INSERT INTO genwork_sessions (
+    INSERT INTO mixcwork_sessions (
       id, title, status, cwd, created_at, updated_at
     ) VALUES ('main', 'Main', 'idle', '/repo/legacy', 1, 1);
   `);
@@ -414,13 +414,13 @@ test('adds cowork fork columns during migration', async () => {
 
   const store = await SqliteStore.create(userDataPath);
   const columns = store.getDatabase()
-    .pragma('table_info(genwork_sessions)') as Array<{ name: string }>;
+    .pragma('table_info(mixcwork_sessions)') as Array<{ name: string }>;
   const columnNames = columns.map((column) => column.name);
   const row = store.getDatabase()
     .prepare(
       `SELECT parent_session_id, forked_from_message_id, forked_at, fork_mode,
               fork_workspace_path, fork_git_branch, fork_git_base_ref
-       FROM genwork_sessions
+       FROM mixcwork_sessions
        WHERE id = ?`,
     )
     .get('main') as {
@@ -489,11 +489,11 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
       created_at INTEGER NOT NULL
     );
   `);
-  // Production now reads/writes genwork_sessions and genwork_messages directly;
+  // Production now reads/writes mixcwork_sessions and mixcwork_messages directly;
   // insert into the current schema so the cron metadata backfill has rows to
   // operate on. Keep the legacy cowork_* fixtures above for migration coverage.
   legacyDb.exec(`
-    CREATE TABLE IF NOT EXISTS genwork_sessions (
+    CREATE TABLE IF NOT EXISTS mixcwork_sessions (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       status TEXT NOT NULL DEFAULT 'idle',
@@ -506,7 +506,7 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
-    CREATE TABLE IF NOT EXISTS genwork_messages (
+    CREATE TABLE IF NOT EXISTS mixcwork_messages (
       id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
       type TEXT NOT NULL,
@@ -542,12 +542,12 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
     now + 1,
   );
   legacyDb.prepare(
-    `INSERT INTO genwork_sessions (
+    `INSERT INTO mixcwork_sessions (
       id, title, status, pinned, cwd, created_at, updated_at
     ) VALUES (?, ?, 'completed', 0, '/repo/legacy', ?, ?)`,
   ).run('legacy-cron-session', 'Renamed scheduled session', now, now);
   legacyDb.prepare(
-    `INSERT INTO genwork_sessions (
+    `INSERT INTO mixcwork_sessions (
       id, title, status, pinned, cwd, created_at, updated_at
     ) VALUES (?, ?, 'completed', 0, '/repo/legacy', ?, ?)`,
   ).run(
@@ -557,7 +557,7 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
     now + 3,
   );
   legacyDb.prepare(
-    `INSERT INTO genwork_sessions (
+    `INSERT INTO mixcwork_sessions (
       id, title, status, pinned, cwd, parent_session_id, created_at, updated_at
     ) VALUES (?, ?, 'completed', 0, '/repo/legacy', ?, ?, ?)`,
   ).run(
@@ -614,7 +614,7 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
     now + 1,
   );
   legacyDb.prepare(
-    `INSERT INTO genwork_messages (
+    `INSERT INTO mixcwork_messages (
       id, session_id, type, content, metadata, created_at
     ) VALUES (?, ?, 'assistant', 'done', ?, ?)`,
   ).run(
@@ -626,7 +626,7 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
     now,
   );
   legacyDb.prepare(
-    `INSERT INTO genwork_messages (
+    `INSERT INTO mixcwork_messages (
       id, session_id, type, content, metadata, created_at
     ) VALUES (?, ?, 'assistant', 'newer done', ?, ?)`,
   ).run(
@@ -638,7 +638,7 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
     now + 3,
   );
   legacyDb.prepare(
-    `INSERT INTO genwork_messages (
+    `INSERT INTO mixcwork_messages (
       id, session_id, type, content, metadata, created_at
     ) VALUES (?, ?, 'assistant', 'malformed metadata', ?, ?)`,
   ).run(
@@ -648,7 +648,7 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
     now + 2,
   );
   legacyDb.prepare(
-    `INSERT INTO genwork_messages (
+    `INSERT INTO mixcwork_messages (
       id, session_id, type, content, metadata, created_at
     ) VALUES (?, ?, 'assistant', 'forked done', ?, ?)`,
   ).run(
@@ -663,9 +663,9 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
 
   const store = await SqliteStore.create(userDataPath);
   const columns = store.getDatabase()
-    .pragma('table_info(genwork_sessions)') as Array<{ name: string }>;
+    .pragma('table_info(mixcwork_sessions)') as Array<{ name: string }>;
   const rows = store.getDatabase()
-    .prepare('SELECT id, scheduled_task_id FROM genwork_sessions ORDER BY id')
+    .prepare('SELECT id, scheduled_task_id FROM mixcwork_sessions ORDER BY id')
     .all() as Array<{ id: string; scheduled_task_id: string | null }>;
 
   expect(columns.map(column => column.name)).toContain('scheduled_task_id');
@@ -674,7 +674,7 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
     { id: 'legacy-cron-session', scheduled_task_id: 'job-daily-summary' },
     { id: 'legacy-cron-session-newer', scheduled_task_id: 'job-daily-summary' },
   ]);
-  expect(new GenWorkStore(store.getDatabase()).getSessionIdByScheduledTaskId(
+  expect(new MixCWorkStore(store.getDatabase()).getSessionIdByScheduledTaskId(
     'job-daily-summary',
     'main',
   )).toBe('legacy-cron-session-newer');
@@ -683,10 +683,10 @@ test('adds scheduled task ids and backfills existing cron sessions from message 
 
   const reopenedStore = await SqliteStore.create(userDataPath);
   const reopenedRows = reopenedStore.getDatabase()
-    .prepare('SELECT id, scheduled_task_id FROM genwork_sessions ORDER BY id')
+    .prepare('SELECT id, scheduled_task_id FROM mixcwork_sessions ORDER BY id')
     .all() as Array<{ id: string; scheduled_task_id: string | null }>;
   expect(reopenedRows).toEqual(rows);
-  expect(new GenWorkStore(reopenedStore.getDatabase()).getSessionIdByScheduledTaskId(
+  expect(new MixCWorkStore(reopenedStore.getDatabase()).getSessionIdByScheduledTaskId(
     'job-daily-summary',
     'main',
   )).toBe('legacy-cron-session-newer');

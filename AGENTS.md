@@ -10,7 +10,7 @@ appears stale.
 
 ## Instruction Scope
 
-This root `AGENTS.md` is repository-level guidance for GenWork. Codex may also
+This root `AGENTS.md` is repository-level guidance for MixCWork. Codex may also
 load more specific `AGENTS.md` or `AGENTS.override.md` files from subdirectories
 when the current working directory is inside those subtrees. More specific
 instructions override broader ones.
@@ -21,16 +21,16 @@ historical context and verify against the current source.
 
 ## Project Snapshot
 
-GenWork is an Electron + React desktop application. Its core user-facing
+MixCWork is an Electron + React desktop application. Its core user-facing
 product is a desktop agent experience that can work with local projects,
 files, browser previews, IM channels, skills, MCP servers, scheduled tasks,
 and rich artifacts.
 
-### GenWork vs OpenClaw
+### MixCWork vs OpenClaw
 
-`Cowork` is GenWork's product/session layer. The name is historical: it
+`Cowork` is MixCWork's product/session layer. The name is historical: it
 started as a Claude Code-like in-house coding assistant, but in the current
-codebase it means the GenWork layer that owns sessions, messages,
+codebase it means the MixCWork layer that owns sessions, messages,
 permissions, UI state, local persistence, context usage, artifacts, and IPC
 contracts.
 
@@ -175,15 +175,15 @@ Main integration points:
 
 ### Patch Policy
 
-When changing OpenClaw-related behavior, first look for a GenWork-side
+When changing OpenClaw-related behavior, first look for a MixCWork-side
 integration point: adapter code, config sync, plugin configuration, runtime
 packaging, UI handling, or local data-layer handling. Prefer changing
-GenWork when the behavior is product-specific or can be expressed cleanly at
+MixCWork when the behavior is product-specific or can be expressed cleanly at
 the integration boundary.
 
 Use version-scoped OpenClaw patches only when the required behavior is inside
-OpenClaw and there is no clean GenWork-side hook. Do not avoid a patch by
-adding brittle or contorted GenWork workarounds.
+OpenClaw and there is no clean MixCWork-side hook. Do not avoid a patch by
+adding brittle or contorted MixCWork workarounds.
 
 Patches live under `scripts/patches/<openclaw.version>/` and are applied by
 `npm run openclaw:patch`. Do not leave manual edits in the sibling OpenClaw
@@ -242,7 +242,7 @@ Key modules:
 - `src/main/libs/openclawEngineManager.ts`: manages the bundled OpenClaw
   gateway process, state directory, config path, ports, tokens, gateway logs,
   restart/repair behavior, and runtime readiness.
-- `src/main/libs/openclawConfigSync.ts`: renders GenWork state into
+- `src/main/libs/openclawConfigSync.ts`: renders MixCWork state into
   OpenClaw config: providers/models, agents, IM bindings, plugins, MCP servers,
   skills extra dirs, sandbox mode, and managed workspace `AGENTS.md` sections.
 - `src/main/libs/agentEngine/openclawRuntimeAdapter.ts`: translates between
@@ -313,7 +313,7 @@ Useful shared areas:
 
 ### Bundled Skills And Local Extensions
 
-- `SKILLs/`: built-in GenWork skills. The shipped catalog is declared in
+- `SKILLs/`: built-in MixCWork skills. The shipped catalog is declared in
   `SKILLs/skills.config.json` and includes ~28 entries (web search, Word,
   spreadsheet, PowerPoint, PDF, Remotion video, browser automation, image/
   video generation, stock research, content writing, email, weather,
@@ -326,7 +326,7 @@ Useful shared areas:
 
 ## Data Model
 
-SQLite lives in Electron `app.getPath('userData')` as `genwork.sqlite`.
+SQLite lives in Electron `app.getPath('userData')` as `mixcwork.sqlite`.
 
 Important tables:
 - `kv`: app-wide JSON values, including auth/config flags.
@@ -360,10 +360,10 @@ Migrations are mostly ad-hoc `PRAGMA table_info()` checks in
 OpenClaw runtime state is under Electron `userData/openclaw`.
 
 Important paths:
-- `%APPDATA%/GenWork/openclaw/state/openclaw.json` on Windows: generated
+- `%APPDATA%/MixCWork/openclaw/state/openclaw.json` on Windows: generated
   OpenClaw config.
-- `%APPDATA%/GenWork/openclaw/state/workspace-main`: main agent workspace.
-- `%APPDATA%/GenWork/openclaw/state/workspace-{agentId}`: non-main agent
+- `%APPDATA%/MixCWork/openclaw/state/workspace-main`: main agent workspace.
+- `%APPDATA%/MixCWork/openclaw/state/workspace-{agentId}`: non-main agent
   workspaces.
 
 The main workspace path is resolved by `getMainAgentWorkspacePath()`.
@@ -371,7 +371,7 @@ Non-main agent workspaces follow OpenClaw's state-dir fallback and are synced by
 `openclawConfigSync.ts`.
 
 Workspace files include:
-- `AGENTS.md`: OpenClaw workspace instructions with a GenWork-managed section.
+- `AGENTS.md`: OpenClaw workspace instructions with a MixCWork-managed section.
 - `MEMORY.md`: durable memory facts.
 - `memory/YYYY-MM-DD.md`: daily notes.
 - `USER.md`: user profile/context.
@@ -387,15 +387,15 @@ Main process logging uses `electron-log` via `src/main/logger.ts`, which
 intercepts `console.*`.
 
 Main logs:
-- Windows: `%APPDATA%/GenWork/logs/main-YYYY-MM-DD.log`
-- macOS: `~/Library/Logs/GenWork/main-YYYY-MM-DD.log`
-- Linux: `~/.config/GenWork/logs/main-YYYY-MM-DD.log`
+- Windows: `%APPDATA%/MixCWork/logs/main-YYYY-MM-DD.log`
+- macOS: `~/Library/Logs/MixCWork/main-YYYY-MM-DD.log`
+- Linux: `~/.config/MixCWork/logs/main-YYYY-MM-DD.log`
 
 Main log retention is 7 days. Max file size is 80 MB; overflow rotates to
 `.old.log`.
 
 OpenClaw gateway capture logs:
-- Windows: `%APPDATA%/GenWork/openclaw/logs/gateway-YYYY-MM-DD.log`
+- Windows: `%APPDATA%/MixCWork/openclaw/logs/gateway-YYYY-MM-DD.log`
 - Retention is 3 days.
 
 OpenClaw's own daily logs may also exist in a temp directory. On Windows,
@@ -526,7 +526,7 @@ IM:
 - IM config is stored in SQLite and synced into OpenClaw config where the
   channel is OpenClaw-backed.
 - Multi-instance platforms include DingTalk, Feishu/Lark, QQ, Telegram,
-  Discord, WeCom, NIM, POPO, and email.
+  Discord, WeCom, and NIM.
 - Weixin and NetEase Bee have single-instance style config.
 - IM session mappings preserve conversation/session/agent relationships.
 

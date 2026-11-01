@@ -9,7 +9,7 @@ let tmp: string;
 beforeEach(() => {
   vi.resetModules();
   vi.spyOn(process, 'getuid').mockReturnValue(0);
-  tmp = mkdtempSync(join(tmpdir(), 'genwork-status-'));
+  tmp = mkdtempSync(join(tmpdir(), 'mixcwork-status-'));
   process.env.COMPOSE_FILE = join(tmp, 'compose.yml');
   process.env.CURRENT_VERSION_FILE = join(tmp, 'current-version');
   writeFileSync(process.env.CURRENT_VERSION_FILE, 'v2026.11.1');

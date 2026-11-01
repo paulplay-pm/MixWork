@@ -49,6 +49,10 @@ const VIEW_FIELDS: readonly string[] = [
   'is_builtin',
   'protocol',
   'coding_plan',
+  // Provider settings (the media model list, the ASR model / daily cap).
+  // Settings, not credentials — the key lives in its own encrypted column
+  // and only ever leaves as `api_key_masked`.
+  'config',
   'status',
   'latency_ms',
   'last_test_at',

@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import { ProviderName } from '@shared/providers/constants';
-import type { GenWorkRequestCapability } from '@shared/providers/genworkRequestOptions';
+import type { MixCWorkRequestCapability } from '@shared/providers/mixcworkRequestOptions';
 import type { ModelThinkingConfig } from '@shared/providers/modelThinking';
 
 import { defaultConfig } from '../../config';
@@ -23,7 +23,7 @@ export interface Model {
   supportsVideo?: boolean;
   supportsThinking?: boolean;
   thinkingConfig?: ModelThinkingConfig;
-  requestCapabilities?: GenWorkRequestCapability[];
+  requestCapabilities?: MixCWorkRequestCapability[];
   supportsToolCalling?: boolean;
   agenticReady?: boolean;
   contextWindow?: number;
@@ -38,7 +38,7 @@ export interface Model {
 }
 
 function isServerModelIdentity(model: Pick<Model, 'providerKey' | 'isServerModel'>): boolean {
-  return model.isServerModel === true || model.providerKey === ProviderName.GenworkServer;
+  return model.isServerModel === true || model.providerKey === ProviderName.MixcworkServer;
 }
 
 export function getModelIdentityKey(model: Pick<Model, 'id' | 'providerKey' | 'isServerModel'>): string {

@@ -125,9 +125,9 @@ export function EnterpriseSetupModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-7 space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">{t('enterpriseSetup.title')}</h2>
-        <p className="text-sm text-gray-600">{t('enterpriseSetup.description')}</p>
+      <div className="bg-surface border border-border rounded-xl shadow-2xl max-w-md w-full p-7 space-y-4">
+        <h2 className="text-xl font-semibold text-foreground">{t('enterpriseSetup.title')}</h2>
+        <p className="text-sm text-secondary">{t('enterpriseSetup.description')}</p>
         <input
           type="url"
           placeholder={t('enterpriseSetup.urlPlaceholder')}
@@ -138,14 +138,14 @@ export function EnterpriseSetupModal({
             setErr(null);
           }}
           disabled={busy}
-          className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:border-blue-500"
+          className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground placeholder-secondary text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
         />
         {verifyStatus === 'success' && !err && (
-          <p className="text-sm text-green-600">{t('enterpriseSetup.testSuccess')}</p>
+          <p className="text-sm text-green-600 dark:text-green-400">{t('enterpriseSetup.testSuccess')}</p>
         )}
-        {err && <p className="text-sm text-red-600">{err}</p>}
+        {err && <p className="text-sm text-red-600 dark:text-red-400">{err}</p>}
         {isEdit && (
-          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+          <p className="text-xs leading-5 text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2 dark:text-amber-200 dark:bg-amber-950/30 dark:border-amber-900/60">
             {t('enterpriseSetup.restartRequired')}
           </p>
         )}
@@ -156,7 +156,7 @@ export function EnterpriseSetupModal({
                 type="button"
                 onClick={() => onCancel?.()}
                 disabled={busy}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
+                className="px-4 py-2 text-sm font-medium text-secondary hover:bg-surface-raised rounded-lg transition-colors disabled:opacity-50"
               >
                 {t('enterpriseSetup.cancel')}
               </button>
@@ -164,7 +164,7 @@ export function EnterpriseSetupModal({
                 type="button"
                 onClick={() => { void handleTestConnection(); }}
                 disabled={busy}
-                className="px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 hover:bg-gray-100 rounded disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-foreground border border-border hover:bg-surface-raised rounded-lg transition-colors disabled:opacity-50"
               >
                 {t('enterpriseSetup.testConnection')}
               </button>
@@ -172,7 +172,7 @@ export function EnterpriseSetupModal({
                 type="button"
                 onClick={() => { void handleSaveUrl(); }}
                 disabled={busy}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary-hover rounded-lg transition-colors disabled:opacity-50"
               >
                 {busy ? busyLabel : saveLabel}
               </button>
@@ -183,7 +183,7 @@ export function EnterpriseSetupModal({
                 type="button"
                 onClick={onQuit}
                 disabled={busy}
-                className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded"
+                className="px-4 py-2 text-sm font-medium text-secondary hover:bg-surface-raised rounded-lg transition-colors disabled:opacity-50"
               >
                 {t('enterpriseSetup.quit')}
               </button>
@@ -191,7 +191,7 @@ export function EnterpriseSetupModal({
                 type="button"
                 onClick={() => { void handleSaveUrl(); }}
                 disabled={busy}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-primary-foreground bg-primary hover:bg-primary-hover rounded-lg transition-colors disabled:opacity-50"
               >
                 {busy ? t('enterpriseSetup.verifying') : t('enterpriseSetup.save')}
               </button>

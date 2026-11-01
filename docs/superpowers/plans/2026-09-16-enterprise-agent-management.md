@@ -21,7 +21,7 @@
 - **Test commands:** server → `cd enterprise_server && npx vitest run --no-file-parallelism`; SPA → `cd enterprise_server/web && npx vitest run`; desktop → `npx vitest run` from repo root, scoped to touched files.
 - **SPA is a hand-maintained mirror** of the server `PermissionCode` catalog (`web/src/shared/permissions.ts`); it never imports from server `src/`.
 - **Failure preservation.** If `enterpriseClient.listEnterpriseAgents()` throws, the sync engine is NOT invoked and local `source='enterprise'` rows are preserved verbatim. This is the "网络抖动不杀人" rule that makes D1 strict mirror safe.
-- **Legacy Debt principle.** `src/main/genworkStore.ts` and `src/renderer/components/agent/AgentSettingsPanel.tsx` are both legacy-large. Any task that pushes them noticeably larger must extract first (`agentEnterpriseSync.ts` lives in `src/main/libs/`; the enterprise IPC handler lives in a new `handlers.enterprise.ts`; SPA mirroring lives in `pages/agentManage/`).
+- **Legacy Debt principle.** `src/main/mixcworkStore.ts` and `src/renderer/components/agent/AgentSettingsPanel.tsx` are both legacy-large. Any task that pushes them noticeably larger must extract first (`agentEnterpriseSync.ts` lives in `src/main/libs/`; the enterprise IPC handler lives in a new `handlers.enterprise.ts`; SPA mirroring lives in `pages/agentManage/`).
 - **No auto-commits.** The user explicitly authorizes each commit; the 9-commit split in the spec is the commit plan, but commits happen only after the user has reviewed the diff for that commit.
 
 ---
@@ -1653,17 +1653,17 @@ check before delete. Sidebar entry '智能体管理' gated on agent_admin."
 
 **Files:**
 - Modify: `src/main/sqliteStore.ts:657-685` (agents migration block)
-- Modify: `src/main/genworkStore.ts:400,402-422,3170-3235,3418-3470`
+- Modify: `src/main/mixcworkStore.ts:400,402-422,3170-3235,3418-3470`
 - Modify: `src/renderer/types/agent.ts:3-22`
 - Modify: `src/renderer/types/electron.d.ts:644-660`
-- Test: append to `src/main/gworkStore.test.ts` (uses `:memory:` + the existing `setupDb()` DDL)
+- Test: append to `src/main/mixcworkStore.test.ts` (uses `:memory:` + the existing `setupDb()` DDL)
 
 **Interfaces:**
 - Produces: agents table has `enterprise_agent_id TEXT` column (idempotent `PRAGMA table_info` + ALTER); `AgentSource = 'custom' | 'preset' | 'enterprise'`; `Agent.enterpriseAgentId?: string`; `AgentSummary.enterpriseAgentId?: string`; `mapAgentRow` carries the column through to `enterpriseAgentId` (null → undefined); `window.electron.agents.list/get` return types include `enterpriseAgentId?: string`; preload contract unchanged (`source?: string` already accepts the new value).
 
 - [ ] **Step 1: Append the failing store test**
 
-Append to `src/main/gworkStore.test.ts` (the file's existing `setupDb()` creates the agents table; add a new test that calls `store.createAgent` with `source: 'enterprise'`, retrieves via `getAgent`, and asserts `enterpriseAgentId` round-trips. The test DDL must be extended to include the new column since `setupDb()` builds a minimal schema):
+Append to `src/main/mixcworkStore.test.ts` (the file's existing `setupDb()` creates the agents table; add a new test that calls `store.createAgent` with `source: 'enterprise'`, retrieves via `getAgent`, and asserts `enterpriseAgentId` round-trips. The test DDL must be extended to include the new column since `setupDb()` builds a minimal schema):
 
 ```ts
 test('createAgent stores enterprise_agent_id when source is enterprise', () => {
@@ -1681,7 +1681,7 @@ test('createAgent stores enterprise_agent_id when source is enterprise', () => {
 
 - [ ] **Step 2: Run the test to verify it fails**
 
-Run: `npx vitest run src/main/gworkStore.test.ts`
+Run: `npx vitest run src/main/mixcworkStore.test.ts`
 Expected: FAIL — `enterpriseAgentId` not on `CreateAgentRequest` / `Agent`.
 
 - [ ] **Step 3: Extend the SQLite schema migration**
@@ -1697,7 +1697,7 @@ In `src/main/sqliteStore.ts`, after the `if (!agentColNames.includes('subagent_a
 
 - [ ] **Step 4: Extend `AgentSource` + `Agent` + `CreateAgentRequest`**
 
-In `src/main/genworkStore.ts`:
+In `src/main/mixcworkStore.ts`:
 
 - Change line 400: `export type AgentSource = 'custom' | 'preset';` → `export type AgentSource = 'custom' | 'preset' | 'enterprise';`
 - In the `Agent` interface (lines 402-422) add after `source: AgentSource;`:
@@ -1732,13 +1732,13 @@ In `src/renderer/types/electron.d.ts:644-660`:
 
 - [ ] **Step 6: Run the test + typecheck + lint**
 
-Run: `npx vitest run src/main/gworkStore.test.ts && npx tsc --noEmit && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/main/sqliteStore.ts src/main/genworkStore.ts src/renderer/types/agent.ts src/renderer/types/electron.d.ts`
+Run: `npx vitest run src/main/mixcworkStore.test.ts && npx tsc --noEmit && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/main/sqliteStore.ts src/main/mixcworkStore.ts src/renderer/types/agent.ts src/renderer/types/electron.d.ts`
 Expected: PASS + clean.
 
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/main/sqliteStore.ts src/main/genworkStore.ts src/renderer/types/agent.ts src/renderer/types/electron.d.ts src/main/gworkStore.test.ts
+git add src/main/sqliteStore.ts src/main/mixcworkStore.ts src/renderer/types/agent.ts src/renderer/types/electron.d.ts src/main/mixcworkStore.test.ts
 git commit -m "feat(desktop): add enterprise_agent_id column and AgentSource='enterprise'
 
 SQLite gets an idempotent ALTER for agents.enterprise_agent_id; Agent
@@ -1988,7 +1988,7 @@ import { registerAgentEnterpriseHandlers } from './handlers.enterprise';
 
 function deps(): Parameters<typeof registerAgentEnterpriseHandlers>[0] {
   return {
-    getGenWorkStore: () => ({}) as never,
+    getMixCWorkStore: () => ({}) as never,
     getEnterpriseAgentPrefsStore: () => ({ remove: vi.fn() }) as never,
     getSkillManager: () => ({ getCatalogLocalId: (id: string) => id }) as never,
     getAvailableModelsRef: () => '',
@@ -2047,12 +2047,12 @@ import { loginGate } from '../../auth/loginGate';
 import { enterpriseClient } from '../../auth/enterpriseClient';
 import { agentEnterpriseSync } from '../../libs/agentEnterpriseSync';
 import type { EnterpriseAgentPrefsStore } from '../../libs/enterpriseAgentPrefsStore';
-import type { GenWorkStore } from '../../genworkStore';
+import type { MixCWorkStore } from '../../mixcworkStore';
 import type { SkillManager } from '../../skills/skillManager';
 import { AgentIpcChannel } from '../../../shared/agent/constants';
 
 export interface AgentEnterpriseHandlerDeps {
-  getGenWorkStore: () => GenWorkStore;
+  getMixCWorkStore: () => MixCWorkStore;
   getEnterpriseAgentPrefsStore: () => EnterpriseAgentPrefsStore;
   getSkillManager: () => SkillManager;
   /** Returns the desktop default model ref (providerId/modelId), used when the
@@ -2078,7 +2078,7 @@ export function registerAgentEnterpriseHandlers(deps: AgentEnterpriseHandlerDeps
     try {
       const { report } = await agentEnterpriseSync.syncFromServer({
         serverView,
-        genworkStore: deps.getGenWorkStore(),
+        mixcworkStore: deps.getMixCWorkStore(),
         prefsStore: deps.getEnterpriseAgentPrefsStore(),
         skillManager: deps.getSkillManager(),
         defaultModelRef: deps.getAvailableModelsRef(),
@@ -2216,7 +2216,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
         { agentId: 'b', name: 'B', description: '', identity: '', systemPrompt: '', model: '', thinkingLevel: '', icon: '', skillIds: [], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true },
         { agentId: 'c', name: 'C', description: '', identity: '', systemPrompt: '', model: '', thinkingLevel: '', icon: '', skillIds: [], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true },
       ],
-      genworkStore: store as never,
+      mixcworkStore: store as never,
       prefsStore: prefs as never,
       skillManager: skills as never,
       defaultModelRef: 'provider1/default-model',
@@ -2236,7 +2236,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
       serverView: [
         { agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', model: '', thinkingLevel: '', icon: '', skillIds: [], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true },
       ],
-      genworkStore: store as never,
+      mixcworkStore: store as never,
       prefsStore: prefs as never,
       skillManager: { getCatalogLocalId: (id: string) => id } as never,
       defaultModelRef: '',
@@ -2253,7 +2253,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
         model: 'unknownProvider/missing', thinkingLevel: '', icon: '',
         skillIds: [], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true,
       }],
-      genworkStore: store as never,
+      mixcworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: { getCatalogLocalId: (id: string) => id } as never,
       defaultModelRef: 'p1/default',
@@ -2272,7 +2272,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
         model: '', thinkingLevel: '', icon: '',
         skillIds: ['installed', 'unknown'], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true,
       }],
-      genworkStore: store as never,
+      mixcworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: { getCatalogLocalId: (id: string) => (id === 'installed' ? 'installed-local' : undefined) } as never,
       defaultModelRef: '',
@@ -2287,7 +2287,7 @@ describe('agentEnterpriseSync.syncFromServer', () => {
     const store = fakeStore([customRow]);
     await agentEnterpriseSync.syncFromServer({
       serverView: [],
-      genworkStore: store as never,
+      mixcworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: { getCatalogLocalId: (id: string) => id } as never,
       defaultModelRef: '',
@@ -2308,7 +2308,7 @@ Expected: FAIL — module not found.
 Create `src/main/libs/agentEnterpriseSync.ts`:
 
 ```ts
-import type { GenWorkStore, CreateAgentRequest, Agent } from '../genworkStore';
+import type { MixCWorkStore, CreateAgentRequest, Agent } from '../mixcworkStore';
 import type { EnterpriseAgentPrefsStore } from './enterpriseAgentPrefsStore';
 import type { SkillManager } from '../skills/skillManager';
 import { parsePrimaryModelRef } from './openclawAgentModels';
@@ -2337,7 +2337,7 @@ export interface SyncReport {
 
 interface SyncOptions {
   serverView: ServerAgentView[];
-  genworkStore: GenWorkStore;
+  mixcworkStore: MixCWorkStore;
   prefsStore: EnterpriseAgentPrefsStore;
   skillManager: SkillManager;
   defaultModelRef: string;
@@ -2358,13 +2358,13 @@ export const agentEnterpriseSync = {
     const isModelAvailable = opts.isModelAvailable ?? defaultIsModelAvailable;
 
     const serverIds = new Set(opts.serverView.map(a => a.agentId));
-    const existingLocal = opts.genworkStore.listAgents().filter(a => a.source === 'enterprise');
+    const existingLocal = opts.mixcworkStore.listAgents().filter(a => a.source === 'enterprise');
 
     // REMOVE phase
     for (const local of existingLocal) {
       const key = local.enterpriseAgentId;
       if (!key || !serverIds.has(key)) {
-        opts.genworkStore.deleteAgent(local.id);
+        opts.mixcworkStore.deleteAgent(local.id);
         if (key) opts.prefsStore.remove(key);
         report.removed++;
       }
@@ -2398,10 +2398,10 @@ export const agentEnterpriseSync = {
 
       const existing = existingLocal.find(a => a.enterpriseAgentId === sv.agentId);
       if (existing) {
-        opts.genworkStore.updateAgent(existing.id, payload);
+        opts.mixcworkStore.updateAgent(existing.id, payload);
       } else {
         const req: CreateAgentRequest = { ...payload };
-        opts.genworkStore.createAgent(req);
+        opts.mixcworkStore.createAgent(req);
       }
       report.upserted++;
     }
@@ -2513,7 +2513,7 @@ In `src/main/main.ts`:
           const serverView = await enterpriseClient.listEnterpriseAgents();
           const { report } = await agentEnterpriseSync.syncFromServer({
             serverView,
-            genworkStore,
+            mixcworkStore,
             prefsStore: enterpriseAgentPrefsStore,
             skillManager: getSkillManager(),
             defaultModelRef: resolveDefaultAgentModelRef(),
@@ -2528,13 +2528,13 @@ In `src/main/main.ts`:
 
 - Add imports near the existing enterpriseClient / agentEnterpriseSyncThrottle lines (around the `import { agentEnterpriseSyncThrottle } from './libs/agentEnterpriseSyncThrottle';` you'd add at the top with the other `libs/` imports — confirm exact line in your tree with `rg -n "from './libs/" src/main/main.ts | head`).
 
-- After the `registerAgentHandlers({...})` block at line 8479, add the registration of the enterprise handlers. The handlers need accessors for `genworkStore` and `enterpriseAgentPrefsStore`; create the prefs store alongside `genworkStore` (~line 1966). Adapt:
+- After the `registerAgentHandlers({...})` block at line 8479, add the registration of the enterprise handlers. The handlers need accessors for `mixcworkStore` and `enterpriseAgentPrefsStore`; create the prefs store alongside `mixcworkStore` (~line 1966). Adapt:
 
 ```ts
   const enterpriseAgentPrefsStore = new EnterpriseAgentPrefsStore(getStore().getDatabase());
 
   registerAgentEnterpriseHandlers({
-    getGenWorkStore: () => genworkStore,
+    getMixCWorkStore: () => mixcworkStore,
     getEnterpriseAgentPrefsStore: () => enterpriseAgentPrefsStore,
     getSkillManager: () => getSkillManager(),
     getAvailableModelsRef: () => resolveDefaultAgentModelRef(),
@@ -2736,7 +2736,7 @@ In `src/main/ipcHandlers/agents/handlers.enterprise.ts`, append two handlers:
 ```ts
   ipcMain.handle(AgentIpcChannel.GetEnterpriseAgentWorkingDirectory, async (_e, agentId: string) => {
     loginGate.requireEnterprise();
-    const local = deps.getGenWorkStore().listAgents().find(a => a.source === 'enterprise' && a.enterpriseAgentId === agentId);
+    const local = deps.getMixCWorkStore().listAgents().find(a => a.source === 'enterprise' && a.enterpriseAgentId === agentId);
     if (!local) return { success: false, error: 'unknown_agent' };
     return { success: true, workingDirectory: deps.getEnterpriseAgentPrefsStore().get(agentId) };
   });
@@ -2968,7 +2968,7 @@ In `src/main/ipcHandlers/enterpriseMt.ts:198-203`, extend `onLoginSyncHook` to c
         const serverView = await enterpriseClient.listEnterpriseAgents();
         const { report } = await agentEnterpriseSync.syncFromServer({
           serverView,
-          genworkStore: getGenWorkStore(),
+          mixcworkStore: getMixCWorkStore(),
           prefsStore: enterpriseAgentPrefsStore,
           skillManager: getSkillManager(),
           defaultModelRef: resolveDefaultAgentModelRef(),
@@ -3012,9 +3012,9 @@ cd enterprise_server && npx vitest run --no-file-parallelism
 cd enterprise_server/web && npx vitest run
 
 # Desktop (scoped — do not run the full Electron suite)
-cd /Users/paulwang/work/GenWork
+cd /Users/paulwang/work/MixCWork
 npx vitest run \
-  src/main/gworkStore.test.ts \
+  src/main/mixcworkStore.test.ts \
   src/main/libs/enterpriseAgentPrefsStore.test.ts \
   src/main/libs/agentEnterpriseSync.test.ts \
   src/main/libs/agentEnterpriseSyncThrottle.test.ts \
@@ -3063,7 +3063,7 @@ Then a manual smoke (per spec §Testing / Manual):
 - `effectiveModel` / `effectiveSkillIds` — only used inside `syncFromServer`; consumed by the report, not exported.
 - `ServerAgentView` (Task 10) and `AgentMarketplaceView` (Task 2, server) are separate on purpose: the server wire shape uses `agentId` (camel); the desktop sync engine accepts its own `ServerAgentView` shape with `agentId` to mirror the IPC boundary. The `enterpriseClient.listEnterpriseAgents` returns a third shape with `agentId` — Task 9's handler adapts this into the engine input. Confirmed consistent.
 - `isReadOnly` — derived in the reducer from `source`; carried on `AgentSummary`, `AgentSidebarAgentSummary`, `AgentSidebarAgentNode`. No constructor anywhere accepts it from the server (the IPC wire is `source: string`, not `isReadOnly: boolean`).
-- `enterpriseAgentPrefsStore` — single instance, constructed in `main.ts` near `genworkStore`, passed to both the IPC handler (Task 9) and the sync engine (Task 10).
+- `enterpriseAgentPrefsStore` — single instance, constructed in `main.ts` near `mixcworkStore`, passed to both the IPC handler (Task 9) and the sync engine (Task 10).
 - `PermissionCode.AgentsManage` — same string `'agents.manage'` on both server (Task 1) and SPA (Task 4).
 - `agentMarketplaceApi` (SPA) and `enterpriseClient.listEnterpriseAgents` (desktop) — both return `{ agentId }`-camel, matching the SPA's existing `AgentMarketplaceItem` interface and the desktop's `ServerAgentView`.
 

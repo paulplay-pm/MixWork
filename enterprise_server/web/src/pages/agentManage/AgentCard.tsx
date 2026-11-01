@@ -1,11 +1,10 @@
 import { Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 
-import type { AgentMarketplaceItem } from '../../api/agentMarketplace';
+import type { AgentMarketplaceItem, AgentScope } from '../../api/agentMarketplace';
 import type { ProviderKeyView } from '../../api/providers';
 import { Switch } from '../../components/Switch';
-import { autoIcon } from '../../lib/autoIcon';
-import { GLYPH_ICON, isUrlIcon, tileClass } from './agentTile';
+import AgentIconTile from './AgentIconTile';
 import { modelLabel } from './modelLabel';
 import { fill, t } from './types';
 
@@ -26,6 +25,18 @@ interface AgentCardProps {
   removing: boolean;
 }
 
+/** Pretty-print the visibility scope from the structured `scope` field. */
+function scopeText(scope: AgentScope): string {
+  const s = scope ?? { allCompany: false, deptIds: [], userIds: [] };
+  if (s.allCompany) return t('agentmgmt.scope.allCompany');
+  const n = s.deptIds.length;
+  const m = s.userIds.length;
+  if (n === 0 && m === 0) return t('agentmgmt.scope.emptySummary');
+  if (n === 0) return fill(t('agentmgmt.scope.users'), { m });
+  if (m === 0) return fill(t('agentmgmt.scope.depts'), { n });
+  return fill(t('agentmgmt.scope.deptsAndUsers'), { n, m });
+}
+
 function Chip({ children, accent }: { children: string; accent?: boolean }): JSX.Element {
   return (
     <span
@@ -40,7 +51,6 @@ function Chip({ children, accent }: { children: string; accent?: boolean }): JSX
 
 export function AgentCard({ agent, providers, onToggle, onOpen, onDelete, showDisable, onConfirmDisable, onCancelDisable, flash, removing }: AgentCardProps): JSX.Element {
   const disabled = !agent.enabled;
-  const Glyph = GLYPH_ICON[agent.icon];
   const model = modelLabel(agent.model, providers);
   return (
     <div
@@ -50,13 +60,7 @@ export function AgentCard({ agent, providers, onToggle, onOpen, onDelete, showDi
     >
       {/* header: icon tile + name + enable switch */}
       <div className="flex items-start gap-3">
-        <div className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl text-[20px] ${tileClass(agent.iconColor)}`}>
-          {isUrlIcon(agent.icon)
-            ? <img src={agent.icon} alt="" className="h-11 w-11 object-cover" />
-            : Glyph
-              ? <Glyph className="h-5 w-5" />
-              : <span>{autoIcon(agent.name)}</span>}
-        </div>
+        <AgentIconTile icon={agent.icon} iconColor={agent.iconColor} fallbackText={agent.name} />
         <div className="min-w-0 flex-1 pt-0.5">
           <div className="truncate text-[15px] font-semibold text-[var(--text-primary)]">{agent.name}</div>
         </div>
@@ -104,7 +108,7 @@ export function AgentCard({ agent, providers, onToggle, onOpen, onDelete, showDi
          the row height is consistent across cards (one line, 20px). */}
       <div className="mt-3 flex min-h-5 flex-wrap items-center gap-1.5">
         {model ? <Chip>{model}</Chip> : null}
-        <Chip>{fill(t('agentmgmt.rolesCount'), { n: agent.allowedRoles.length })}</Chip>
+        <Chip>{scopeText(agent.scope)}</Chip>
         <Chip>{fill(t('agentmgmt.skillsCount'), { n: agent.skillIds.length })}</Chip>
         {agent.subagentAllowAgentIds.length > 0
           ? <Chip>{fill(t('agentmgmt.subagentsCount'), { n: agent.subagentAllowAgentIds.length })}</Chip>

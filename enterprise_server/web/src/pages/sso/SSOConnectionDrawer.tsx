@@ -29,6 +29,8 @@ interface SsoFormState {
   name: string;
   providerType: ProviderType;
   clientId: string;
+  /** WeCom (企业微信) only: 应用 AgentId, sent alongside `appid`. */
+  agentid: string;
   clientSecret: string;
   authorizeUrl: string;
   tokenUrl: string;
@@ -64,6 +66,7 @@ function initState(mode: 'create' | 'edit', connection: SsoConnection | undefine
       name: connection.name,
       providerType: connection.provider_type,
       clientId: connection.client_id ?? '',
+      agentid: connection.agentid ?? '',
       clientSecret: '',
       authorizeUrl: connection.authorize_url ?? '',
       tokenUrl: connection.token_url ?? '',
@@ -83,6 +86,7 @@ function initState(mode: 'create' | 'edit', connection: SsoConnection | undefine
     name: '',
     providerType: 'generic-oidc',
     clientId: '',
+    agentid: '',
     clientSecret: '',
     authorizeUrl: preset.authorizeUrl,
     tokenUrl: preset.tokenUrl,
@@ -246,6 +250,7 @@ export function SSOConnectionDrawer(p: Props): JSX.Element {
         tokenUrl: s.tokenUrl.trim(),
         userinfoUrl: s.userinfoUrl.trim(),
         clientId: s.clientId.trim(),
+        agentid: s.agentid.trim(),
         // Blank = none (create) / keep the stored secret (patch).
         clientSecret: s.clientSecret.trim(),
         scopes: s.scopes.trim(),
@@ -346,6 +351,20 @@ export function SSOConnectionDrawer(p: Props): JSX.Element {
               onChange={(e) => onChange({ clientId: e.target.value })}
             />
           </label>
+          {/* WeCom-only: the 应用 AgentId. Rendered alongside the
+              clientId (CorpID) input because WeCom's authorize URL
+              needs both; every other provider ignores it. */}
+          {state.providerType === 'wecom' && (
+            <label className={labelCls}>
+              {t('sso.agentid.label')}
+              <input
+                className={`${inputCls} font-mono`}
+                aria-label={t('sso.agentid.label')}
+                value={state.agentid}
+                onChange={(e) => onChange({ agentid: e.target.value })}
+              />
+            </label>
+          )}
           <label className={labelCls}>
             {t('sso.clientSecret.label')}
             <input

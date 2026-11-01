@@ -34,6 +34,7 @@ import { Hono } from 'hono';
 import { signToken } from '../../src/auth/jwt';
 import { resetSchema, runMigrations, testPool } from '../../src/db/testDb';
 import { probeConnector } from '../../src/mcp/handshake';
+import { mcpOAuthRedirectUri } from '../../src/models/connectorOauthRedirect';
 import { mcpConnectorsRoutes } from '../../src/routes/mcpConnectors';
 
 const PLAINTEXT_KEY = 'sk-live-1234';
@@ -247,11 +248,11 @@ describe('mcp connector admin routes', () => {
     expect(none.status).toBe(201);
   });
 
-  test('user-oauth public-client form (authorizeUrl+tokenUrl+clientId, no secret) passes the guard; confidential form (no endpoints) still needs clientSecret', async () => {
+  test('user-oauth needs nothing up front — discovery and dynamic registration replaced the required fields', async () => {
     await seedOrgs();
     const tok = await superAdminTok('o1');
 
-    // Public client + PKCE: no secret, but complete endpoints → accepted.
+    // The org pins the whole public client: still accepted.
     const pub = await createConnector(tok, baseBody({
       serverKey: 'fxsk-oauth',
       authMode: 'user-oauth',
@@ -263,7 +264,7 @@ describe('mcp connector admin routes', () => {
     }));
     expect(pub.status).toBe(201);
 
-    // user-oauth with endpoints but no clientId → still needs clientId.
+    // Endpoints but no client id: the desktop registers one (RFC 7591).
     const noCid = await createConnector(tok, baseBody({
       serverKey: 'fxsk-no-cid',
       authMode: 'user-oauth',
@@ -272,17 +273,17 @@ describe('mcp connector admin routes', () => {
         tokenUrl: 'https://idp.example.com/oauth/token',
       },
     }));
-    expect(noCid.status).toBe(400);
-    expect(await noCid.json()).toEqual({ error: 'missing_auth_field', field: 'clientId' });
+    expect(noCid.status).toBe(201);
 
-    // user-oauth WITHOUT endpoints → confidential-client path → needs clientSecret.
-    const noEndpoints = await createConnector(tok, baseBody({
-      serverKey: 'fxsk-no-endpoints',
+    // Nothing at all: the desktop discovers the provider (RFC 8414/9728) and
+    // registers itself. This is the connector shape an MCP-native provider
+    // like fxiaoke's produces — the admin only knows the MCP URL.
+    const bare = await createConnector(tok, baseBody({
+      serverKey: 'fxsk-bare',
       authMode: 'user-oauth',
-      authConfig: { clientId: 'cid' },
+      authConfig: {},
     }));
-    expect(noEndpoints.status).toBe(400);
-    expect(await noEndpoints.json()).toEqual({ error: 'missing_auth_field', field: 'clientSecret' });
+    expect(bare.status).toBe(201);
   });
 
   test('sso public-client form (ssoClientId + sso endpoints, no secret) passes the guard; missing endpoints → ssoTokenUrl', async () => {
@@ -534,7 +535,11 @@ describe('mcp connector admin routes', () => {
 
     const before = await app.request(url, { headers: { authorization: `Bearer ${tok}` } });
     expect(before.status).toBe(200);
-    expect(await before.json()).toEqual({ membersCanSubmit: true });
+    expect(await before.json()).toEqual({
+      membersCanSubmit: true,
+      // The console shows this URI for the admin to register at the IdP.
+      oauthRedirectUri: mcpOAuthRedirectUri(),
+    });
 
     const patch = await app.request(url, { method: 'PATCH', headers: hdrs, body: JSON.stringify({ membersCanSubmit: false }) });
     expect(patch.status).toBe(200);
@@ -542,7 +547,10 @@ describe('mcp connector admin routes', () => {
 
     const after = await app.request(url, { headers: { authorization: `Bearer ${tok}` } });
     expect(after.status).toBe(200);
-    expect(await after.json()).toEqual({ membersCanSubmit: false });
+    expect(await after.json()).toEqual({
+      membersCanSubmit: false,
+      oauthRedirectUri: mcpOAuthRedirectUri(),
+    });
 
     const audit = await testPool.query<{ payload: unknown }>(
       `SELECT payload FROM audit_events WHERE action = 'mcp_connector_setting_update' AND org_id = 'o1'`,
@@ -586,7 +594,7 @@ describe('mcp connector admin routes', () => {
       [
         JSON.stringify([
           { name: 'survivor', desc: 'Old desc', enabled: true, syncedAt: '2026-01-01T00:00:00.000Z' },
-          { name: 'gone', desc: 'Gone tool', enabled: false },
+          { name: 'gone', desc: 'Gone tool', enabled: false, syncedAt: '2026-01-01T00:00:00.000Z' },
         ]),
         created.id,
       ],
@@ -639,6 +647,45 @@ describe('mcp connector admin routes', () => {
     expect(row.last_test_at).toBeTruthy();
   });
 
+  test('a hand-declared tool is not marked removed by a probe that never listed it', async () => {
+    await seedOrgs();
+    const tok = await superAdminTok('o1');
+    const created = (await (await createConnector(tok, baseBody())).json()) as { id: string };
+
+    // `query` was declared by hand (no `syncedAt`); `survivor` came from an
+    // earlier probe (it carries the stamp).
+    await testPool.query(
+      `UPDATE mcp_connectors SET tools = $1 WHERE id = $2`,
+      [
+        JSON.stringify([
+          { name: 'query', enabled: true },
+          { name: 'survivor', enabled: true, syncedAt: '2026-01-01T00:00:00.000Z' },
+        ]),
+        created.id,
+      ],
+    );
+
+    vi.mocked(probeConnector).mockResolvedValue({
+      ok: true,
+      status: 'connected',
+      tools: [{ name: 'other', desc: 'Other tool', enabled: true }],
+      latencyMs: 11,
+    });
+
+    const res = await postConnector(tok, `/admin/mcp-connectors/${created.id}/test`);
+    expect(res.status).toBe(200);
+
+    const row = await getRawRow(created.id);
+    const tools = row.tools as Array<{ name: string; enabled?: boolean; removed?: boolean }>;
+    const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
+    // The server never listed `query`, so it cannot be "no longer listed" —
+    // marking it removed would silently drop the admin's declaration.
+    expect(byName.query.removed).toBeUndefined();
+    expect(byName.query.enabled).toBe(true);
+    // A tool the server DID list earlier and no longer lists is still gone.
+    expect(byName.survivor.removed).toBe(true);
+  });
+
   test('POST /:id/test failure is a resolved result (tools untouched, last_test_status=failed)', async () => {
     await seedOrgs();
     const tok = await superAdminTok('o1');
@@ -663,6 +710,83 @@ describe('mcp connector admin routes', () => {
     expect(row.last_test_status).toBe('failed');
     expect(row.last_latency_ms).toBe(7);
     expect(row.tools).toEqual([{ name: 'keep', enabled: true }]); // untouched
+  });
+
+  test('a connector whose credential belongs to the member reports needs-user-auth, not a failure', async () => {
+    await seedOrgs();
+    const tok = await superAdminTok('o1');
+    const created = (await (await createConnector(tok, baseBody({
+      serverKey: 'userkey-mcp',
+      authMode: 'user-key',
+      authConfig: { apiKeyHeaderName: 'X-Api-Key' },
+    }))).json()) as { id: string };
+
+    vi.mocked(probeConnector).mockResolvedValue({
+      ok: false,
+      status: 'failed',
+      error: 'unauthorized',
+      latencyMs: 9,
+    });
+
+    const res = await postConnector(tok, `/admin/mcp-connectors/${created.id}/test`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, unknown>;
+    // The endpoint answered — that is all the server could have learned. A
+    // 401 here is the expected answer for a member credential, not a defect
+    // the admin can fix on this side.
+    expect(body.status).toBe('needs-user-auth');
+    expect(body.error).toBe('unauthorized');
+    expect(body.needsUserAuth).toBe(true);
+
+    // The probe went out with no credential: the server has none to give.
+    const args = vi.mocked(probeConnector).mock.calls.at(-1)![0];
+    expect(args.headers).toEqual({});
+
+    const row = await getRawRow(created.id);
+    expect(row.last_test_status).toBe('needs_user_auth');
+  });
+
+  test('a connector the org can authenticate treats 401 as a plain failure', async () => {
+    await seedOrgs();
+    const tok = await superAdminTok('o1');
+    // `none` needs no credential, so a 401 means the endpoint wants one the
+    // org's mode does not provide — a real misconfiguration.
+    const created = (await (await createConnector(tok, baseBody({
+      serverKey: 'open-mcp',
+      authMode: 'none',
+      authConfig: {},
+    }))).json()) as { id: string };
+
+    vi.mocked(probeConnector).mockResolvedValue({
+      ok: false,
+      status: 'failed',
+      error: 'unauthorized',
+      latencyMs: 4,
+    });
+
+    const res = await postConnector(tok, `/admin/mcp-connectors/${created.id}/test`);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.status).toBe('failed');
+    expect(body.needsUserAuth).toBe(false);
+    const row = await getRawRow(created.id);
+    expect(row.last_test_status).toBe('failed');
+  });
+
+  test('a connector created with a declared tool list keeps it', async () => {
+    await seedOrgs();
+    const tok = await superAdminTok('o1');
+    const created = (await (await createConnector(tok, baseBody({
+      serverKey: 'declared-mcp',
+      authMode: 'user-key',
+      authConfig: { apiKeyHeaderName: 'X-Api-Key' },
+      tools: [{ name: 'query', enabled: true }, { name: 'delete', enabled: false }],
+    }))).json()) as { id: string };
+
+    const row = await getRawRow(created.id);
+    expect(row.tools).toEqual([
+      { name: 'query', enabled: true },
+      { name: 'delete', enabled: false },
+    ]);
   });
 
   test('POST /:id/save-draft stages the working copy (encrypted authConfig) without touching the live fields', async () => {
@@ -877,6 +1001,27 @@ describe('mcp connector admin routes', () => {
     expect(rows.rows.find((r) => r.version === '3.0.0')?.current).toBe(false);
   });
 
+  test('publishing an explicit null timeout clears the stored timeout', async () => {
+    await seedOrgs();
+    const tok = await superAdminTok('o1');
+    const created = (await (await createConnector(tok, baseBody({
+      authConfig: { apiKey: PLAINTEXT_KEY, timeoutSeconds: 90 },
+    }))).json()) as { id: string };
+
+    // The admin emptied the timeout field. "No timeout" has to clear the
+    // stored number, not keep it: the desktop would otherwise keep calling
+    // the connector with a timeout nobody asked for any more.
+    const pub = await postConnector(tok, `/admin/mcp-connectors/${created.id}/publish`, workingCopy({
+      authConfig: { timeoutSeconds: null },
+    }));
+    expect(pub.status).toBe(200);
+
+    const row = await getRawRow(created.id);
+    expect(row.auth_config).not.toHaveProperty('timeoutSeconds');
+    // A non-secret change must not disturb the stored secret.
+    expect(typeof row.auth_config['__enc__apiKey']).toBe('string');
+  });
+
   test('draft/publish/rollback/test are cross-org guarded (a foreign id 404s; nothing written)', async () => {
     await seedOrgs();
     const o1Tok = await superAdminTok('o1');
@@ -894,5 +1039,38 @@ describe('mcp connector admin routes', () => {
     // The o1 row is untouched (no draft written by the foreign attempts).
     const row = await getRawRow(created.id);
     expect(row.draft).toBeNull();
+  });
+});
+
+describe('shared-key credential header name', () => {
+  beforeEach(async () => {
+    await resetSchema();
+    await runMigrations();
+  });
+
+  test('the probe sends the org key under the configured header, raw (no Bearer prefix)', async () => {
+    await seedOrgs();
+    const tok = await superAdminTok('o1');
+    const created = (await (
+      await createConnector(
+        tok,
+        baseBody({ authConfig: { apiKey: PLAINTEXT_KEY, apiKeyHeaderName: 'X-API-Key' } }),
+      )
+    ).json()) as { id: string };
+
+    vi.mocked(probeConnector).mockResolvedValue({ ok: true, status: 'connected', tools: [], latencyMs: 1 });
+    const res = await postConnector(tok, `/admin/mcp-connectors/${created.id}/test`);
+    expect(res.status).toBe(200);
+    expect(vi.mocked(probeConnector).mock.calls.at(-1)![0].headers).toEqual({
+      'X-API-Key': PLAINTEXT_KEY,
+    });
+  });
+
+  test('shared-key cannot be published over sse', async () => {
+    await seedOrgs();
+    const tok = await superAdminTok('o1');
+    const res = await createConnector(tok, baseBody({ transport: 'sse' }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: 'sse_oauth_not_supported' });
   });
 });

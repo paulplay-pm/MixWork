@@ -1,6 +1,6 @@
-# GenWork Enterprise Server
+# MixCWork Enterprise Server
 
-Multi-tenant backend API + admin console for GenWork's enterprise deployment.
+Multi-tenant backend API + admin console for MixCWork's enterprise deployment.
 Hosts the JWT-authed REST API for desktop clients (login, model proxy, audit,
 usage, policy enforcement) and serves the admin SPA at `/`.
 
@@ -9,7 +9,7 @@ usage, policy enforcement) and serves the admin SPA at `/`.
 - Node.js `>=24.13` (matches `@types/node`); `tsx` ships with the project.
 - PostgreSQL — local install, Docker container, or any reachable Postgres 14+.
   `pglite` is **only** for tests; production must use a real DB.
-- First-run secrets: `JWT_SECRET` (≥32 chars) and `GENWORK_VAULT_MASTER_KEY`
+- First-run secrets: `JWT_SECRET` (≥32 chars) and `MIXCWORK_VAULT_MASTER_KEY`
   (32-byte base64 string) for encrypting provider keys at rest.
 
 ## Install
@@ -25,10 +25,10 @@ The first run goes entirely through the SPA — no CLI is required.
 
 ```bash
 # 1. Bring up Postgres (Docker quickstart; or any reachable Postgres 14+)
-docker run -d --name genwork-pg \
-  -e POSTGRES_USER=genwork \
-  -e POSTGRES_PASSWORD=genwork \
-  -e POSTGRES_DB=genwork \
+docker run -d --name mixcwork-pg \
+  -e POSTGRES_USER=mixcwork \
+  -e POSTGRES_PASSWORD=mixcwork \
+  -e POSTGRES_DB=mixcwork \
   -p 5433:5432 \
   postgres:16
 # On macOS, Docker Desktop's backend binds 5432 on the host, so we map to
@@ -39,7 +39,7 @@ cp .env.example .env
 
 # 3. Generate the two required secrets and paste them into .env
 echo "JWT_SECRET=$(openssl rand -hex 32)"                >> .env
-echo "GENWORK_VAULT_MASTER_KEY=$(openssl rand -base64 32)" >> .env
+echo "MIXCWORK_VAULT_MASTER_KEY=$(openssl rand -base64 32)" >> .env
 
 # 4. Start the server (loads .env automatically, runs migrations)
 npm run dev
@@ -78,12 +78,12 @@ SPA dev). Sign-in uses the **organization name** (not the id):
 - **Password**: `Admin#2026`
 
 Secrets are read once at startup. Rotating `JWT_SECRET` invalidates all
-existing sessions; rotating `GENWORK_VAULT_MASTER_KEY` makes all stored
+existing sessions; rotating `MIXCWORK_VAULT_MASTER_KEY` makes all stored
 provider keys unreadable (would require re-adding every provider key).
 
 ## Vault master key
 
-The vault crypto layer reads `GENWORK_VAULT_MASTER_KEY` from the
+The vault crypto layer reads `MIXCWORK_VAULT_MASTER_KEY` from the
 environment. It must be a 32-byte base64 string. Generate one with
 `openssl rand -base64 32` and paste it into `.env`. The server refuses
 to start if it is missing.
@@ -113,7 +113,7 @@ the `npm run web:test` shortcut.
   `extra_roles`. Any role string works — `requireCapability(role)` checks
   `roles ⊇ {role}` OR `roles ⊇ {super_admin}`.
 - Provider keys are stored encrypted in `provider_keys.api_key_encrypted`
-  (AES-256-GCM, key derived from `GENWORK_VAULT_MASTER_KEY`). The
+  (AES-256-GCM, key derived from `MIXCWORK_VAULT_MASTER_KEY`). The
   `GET /admin/provider-keys` endpoint returns metadata only — never the
   plaintext.
 

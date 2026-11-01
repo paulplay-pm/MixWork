@@ -5,11 +5,6 @@ import type {
   AsrRealtimeSessionResult,
 } from '../../shared/asr/constants';
 import type {
-  AuthLifecycleEvent,
-  AuthSessionChangedEvent,
-  AuthSessionStatus,
-} from '../../shared/auth/constants';
-import type {
   BrowserDiagnosticResult,
   BrowserRuntimeProfile,
 } from '../../shared/browserWebAccess/constants';
@@ -18,36 +13,6 @@ import type {
   DataMigrationLastRestoreResponse,
   DataMigrationRestoreScheduleResult,
 } from '../../shared/dataMigration/constants';
-import type { EnterpriseQuotaRequestType } from '../../shared/enterpriseAccount/constants';
-import type {
-  EnterpriseAccountContext,
-  EnterpriseAccountContextResult,
-  EnterpriseAccountIdentitiesResult,
-  EnterpriseQuotaRequestResult,
-} from '../../shared/enterpriseAccount/types';
-import type {
-  BrowserAnnotationRect,
-  BrowserAnnotationScreenshotRef,
-  CoworkBrowserAnnotationMessageBatch,
-} from '../../shared/genwork/browserAnnotations';
-import type {
-  CoworkBtwAbortRequest,
-  CoworkBtwAbortResponse,
-  CoworkBtwEntry,
-  CoworkBtwSubmitRequest,
-  CoworkBtwSubmitResponse,
-} from '../../shared/genwork/btw';
-import type {
-  CoworkContextUsageFailureReason,
-  CoworkContextUsageSource,
-  CoworkSessionsChangedPayload,
-} from '../../shared/genwork/constants';
-import type { CoworkGoal } from '../../shared/genwork/goal';
-import type { CoworkMessageRailIndexItem } from '../../shared/genwork/rail';
-import type {
-  CoworkSearchMessage,
-  CoworkSearchMessageCursor,
-} from '../../shared/genwork/search';
 import type {
   HtmlShareStatus,
 } from '../../shared/htmlShare/constants';
@@ -78,7 +43,34 @@ import type {
   ListLocalWebServicesOptions,
   LocalWebService,
 } from '../../shared/localWebServices/constants';
-import type { ConnectorSubmitRequest } from '../../shared/mcp/constants';
+import type {
+  ConnectorAuthMode,
+  ConnectorSubmitRequest,
+  McpToolFilter,
+} from '../../shared/mcp/constants';
+import type {
+  BrowserAnnotationRect,
+  BrowserAnnotationScreenshotRef,
+  CoworkBrowserAnnotationMessageBatch,
+} from '../../shared/mixcwork/browserAnnotations';
+import type {
+  CoworkBtwAbortRequest,
+  CoworkBtwAbortResponse,
+  CoworkBtwEntry,
+  CoworkBtwSubmitRequest,
+  CoworkBtwSubmitResponse,
+} from '../../shared/mixcwork/btw';
+import type {
+  CoworkContextUsageFailureReason,
+  CoworkContextUsageSource,
+  CoworkSessionsChangedPayload,
+} from '../../shared/mixcwork/constants';
+import type { CoworkGoal } from '../../shared/mixcwork/goal';
+import type { CoworkMessageRailIndexItem } from '../../shared/mixcwork/rail';
+import type {
+  CoworkSearchMessage,
+  CoworkSearchMessageCursor,
+} from '../../shared/mixcwork/search';
 import type {
   OpenClawEngineErrorCode,
   OpenClawEnginePhase as SharedOpenClawEnginePhase,
@@ -130,8 +122,7 @@ import type {
   SkinGetActiveResponse,
   SkinListResponse,
 } from '../../shared/skin/types';
-import type { UserProfile, UserQuota } from '../store/slices/authSlice';
-import type { CoworkTempDirPreview } from './genwork';
+import type { CoworkTempDirPreview } from './mixcwork';
 interface ApiResponse {
   ok: boolean;
   status: number;
@@ -312,7 +303,7 @@ interface CoworkPermissionRequest {
   toolUseId?: string | null;
 }
 
-interface GenWorkApiConfig {
+interface MixCWorkApiConfig {
   apiKey: string;
   baseURL: string;
   model: string;
@@ -460,8 +451,20 @@ interface McpServerConfigIPC {
   serverKey?: string;
   /** Non-secret user-oauth endpoint config (absent unless user-oauth).
    * Mirrors McpOAuthEndpoint in renderer/types/mcp.ts — keep in sync. */
-  oauthConfig?: { authorizeUrl: string; tokenUrl: string; clientId: string; scopes?: string[] };
+  oauthConfig?: {
+    authorizeUrl?: string;
+    tokenUrl?: string;
+    clientId?: string;
+    scopes?: string[];
+    redirectUri?: string;
+  };
   apiKeyHeaderName?: string;
+  /** The enterprise connector's declared auth mode (absent for local servers). */
+  enterpriseAuthMode?: ConnectorAuthMode;
+  /** The org's per-tool policy, written to OpenClaw's `mcp.servers.*.toolFilter`. */
+  toolFilter?: McpToolFilter;
+  /** The org's per-call timeout in seconds (absent → the runtime's default). */
+  timeoutSeconds?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -513,7 +516,7 @@ interface IElectronAPI {
       enabled: boolean;
     }) => Promise<{ success: boolean; skills?: Skill[]; error?: string }>;
     delete: (id: string) => Promise<{ success: boolean; skills?: Skill[]; error?: string }>;
-    download: (source: string) => Promise<{
+    download: (source: string, catalogVersion?: string) => Promise<{
       success: boolean;
       skills?: Skill[];
       error?: string;
@@ -523,6 +526,7 @@ interface IElectronAPI {
     upgrade: (
       skillId: string,
       downloadUrl: string,
+      catalogVersion?: string,
     ) => Promise<{
       success: boolean;
       skills?: Skill[];
@@ -626,9 +630,21 @@ interface IElectronAPI {
           enabled: boolean;
           toolCount: number;
           /** Present only for `user-oauth` with complete endpoints (non-secret). */
-          oauth?: { authorizeUrl: string; tokenUrl: string; clientId: string; scopes?: string[] };
+          oauth?: {
+            authorizeUrl?: string;
+            tokenUrl?: string;
+            clientId?: string;
+            scopes?: string[];
+            redirectUri?: string;
+          };
           /** Present only for `user-key` with a header name set (non-secret). */
           apiKeyHeaderName?: string;
+          /** The org's per-tool policy in OpenClaw's tool-filter shape; absent
+           *  when the connector allows every tool. */
+          toolFilter?: { include?: string[]; exclude?: string[] };
+          /** The admin's per-call timeout in seconds; absent means the
+           *  runtime's own default. */
+          timeoutSeconds?: number;
         }>;
       };
       error?: string;
@@ -660,6 +676,18 @@ interface IElectronAPI {
       success: boolean;
       servers?: McpServerConfigIPC[];
       result?: unknown;
+      error?: string;
+    }>;
+    /** Read the server's advertised tool list (initialize + tools/list). */
+    listTools: (options: { id: string }) => Promise<{
+      success: boolean;
+      result?: {
+        ok: boolean;
+        status: 'ok' | 'unauthorized' | 'connect-error' | 'missing-credential';
+        tools: Array<{ name: string; description?: string }>;
+        latencyMs: number;
+        error?: string;
+      };
       error?: string;
     }>;
   };
@@ -760,11 +788,11 @@ interface IElectronAPI {
     onStreamError: (requestId: string, callback: (error: string) => void) => () => void;
     onStreamAbort: (requestId: string, callback: () => void) => () => void;
   };
-  getApiConfig: () => Promise<GenWorkApiConfig | null>;
+  getApiConfig: () => Promise<MixCWorkApiConfig | null>;
   checkApiConfig: (options?: {
     probeModel?: boolean;
-  }) => Promise<{ hasConfig: boolean; config: GenWorkApiConfig | null; error?: string }>;
-  saveApiConfig: (config: GenWorkApiConfig) => Promise<{ success: boolean; error?: string }>;
+  }) => Promise<{ hasConfig: boolean; config: MixCWorkApiConfig | null; error?: string }>;
+  saveApiConfig: (config: MixCWorkApiConfig) => Promise<{ success: boolean; error?: string }>;
   generateSessionTitle: (userInput: string | null) => Promise<string>;
   getRecentCwds: (limit?: number) => Promise<string[]>;
   dsh: {
@@ -1570,7 +1598,6 @@ interface IElectronAPI {
       configOverride?: Partial<IMGatewayConfig>,
     ) => Promise<{ success: boolean; result?: IMConnectivityTestResult; error?: string }>;
     getStatus: () => Promise<{ success: boolean; status?: IMGatewayStatus; error?: string }>;
-    getLocalIp: () => Promise<string>;
     getOpenClawConfigSchema: () => Promise<{
       success: boolean;
       result?: {
@@ -1592,37 +1619,6 @@ interface IElectronAPI {
       accountId?: string;
       alreadyConnected?: boolean;
     }>;
-
-    // POPO QR login
-    popoQrLoginStart: () => Promise<{
-      success: boolean;
-      qrUrl?: string;
-      taskToken?: string;
-      timeoutMs?: number;
-      message?: string;
-    }>;
-    popoQrLoginPoll: (taskToken: string) => Promise<{
-      success: boolean;
-      appKey?: string;
-      appSecret?: string;
-      aesKey?: string;
-      message: string;
-    }>;
-
-    // POPO Multi-Instance
-    addPopoInstance: (
-      name: string,
-    ) => Promise<{
-      success: boolean;
-      instance?: import('./im').PopoInstanceConfig;
-      error?: string;
-    }>;
-    deletePopoInstance: (instanceId: string) => Promise<{ success: boolean; error?: string }>;
-    setPopoInstanceConfig: (
-      instanceId: string,
-      config: Record<string, unknown>,
-      options?: { syncGateway?: boolean; restartGatewayIfRunning?: boolean; markRestartOnSave?: boolean },
-    ) => Promise<{ success: boolean; error?: string }>;
 
     listPairingRequests: (platform: string) => Promise<{
       success: boolean;
@@ -1667,15 +1663,6 @@ interface IElectronAPI {
     ) => Promise<{ success: boolean; instance?: DingTalkInstanceConfig; error?: string }>;
     deleteDingTalkInstance: (instanceId: string) => Promise<{ success: boolean; error?: string }>;
     setDingTalkInstanceConfig: (
-      instanceId: string,
-      config: any,
-      options?: { syncGateway?: boolean; restartGatewayIfRunning?: boolean; markRestartOnSave?: boolean },
-    ) => Promise<{ success: boolean; error?: string }>;
-    addEmailInstance: (
-      name: string,
-    ) => Promise<{ success: boolean; instance?: EmailInstanceConfig; error?: string }>;
-    deleteEmailInstance: (instanceId: string) => Promise<{ success: boolean; error?: string }>;
-    setEmailInstanceConfig: (
       instanceId: string,
       config: any,
       options?: { syncGateway?: boolean; restartGatewayIfRunning?: boolean; markRestartOnSave?: boolean },
@@ -1811,29 +1798,6 @@ interface IElectronAPI {
       error?: string;
     }>;
   };
-  auth: {
-    getUser: () => Promise<{
-      success: boolean;
-      user?: UserProfile;
-      quota?: UserQuota;
-      enterpriseContext?: EnterpriseAccountContext | null;
-      status?: AuthSessionStatus;
-      hasCredentials?: boolean;
-      cachedUser?: UserProfile | null;
-      error?: string;
-    }>;
-    getQuota: () => Promise<{
-      success: boolean;
-      quota?: UserQuota;
-      enterpriseContext?: EnterpriseAccountContext | null;
-      error?: string;
-    }>;
-    getAccessToken: () => Promise<string | null>;
-    logout: () => Promise<void>;
-    onQuotaChanged: (callback: () => void) => () => void;
-    onSessionChanged: (callback: (event: AuthSessionChangedEvent) => void) => () => void;
-    onLifecycleEvent: (callback: (event: AuthLifecycleEvent) => void) => () => void;
-  };
   media: {
     getModels: (type: 'image' | 'video') => Promise<{ success: boolean; models?: Array<{ modelId: string; displayName: string; provider: string; mediaType: string; generationTimeout: number; pricing: Record<string, unknown> }>; error?: string }>;
     getTaskStatus: (taskId: number, type: 'image' | 'video') => Promise<{ success: boolean; task?: Record<string, unknown>; error?: string }>;
@@ -1850,21 +1814,12 @@ interface IElectronAPI {
       error?: string;
     }>;
   };
-  enterpriseAccount: {
-    getContext: () => Promise<EnterpriseAccountContextResult>;
-    getIdentities: () => Promise<EnterpriseAccountIdentitiesResult>;
-    requestQuotaIncrease: (
-      enterpriseId: number,
-      requestType: EnterpriseQuotaRequestType,
-    ) => Promise<EnterpriseQuotaRequestResult>;
-    onContextInvalidated: (callback: () => void) => () => void;
-  };
   enterpriseMt: {
     login: (args: {
       orgId: string;
       username: string;
       password: string;
-    }) => Promise<{ ok: true } | { ok: false; error: string }>;
+    }) => Promise<{ ok: true } | { ok: false; error: string; code: string | null }>;
     logout: () => Promise<void>;
     listOrgs: () => Promise<{ orgs: { id: string; name: string }[] }>;
     getMe: () => Promise<unknown>;
@@ -2011,47 +1966,6 @@ interface IElectronAPI {
 }
 
 // IM Gateway types
-interface EmailInstanceConfig {
-  instanceId: string;
-  instanceName: string;
-  enabled: boolean;
-  transport: 'imap' | 'ws';
-  email: string;
-  password?: string;
-  apiKey?: string;
-  agentId: string;
-  imapHost?: string;
-  imapPort?: number;
-  smtpHost?: string;
-  smtpPort?: number;
-  allowFrom?: string[];
-  replyMode?: 'immediate' | 'accumulated' | 'complete';
-  replyTo?: 'sender' | 'all';
-  a2aEnabled?: boolean;
-  a2aAgentDomains?: string[];
-  a2aMaxPingPongTurns?: number;
-}
-
-interface EmailMultiInstanceConfig {
-  instances: EmailInstanceConfig[];
-}
-
-interface EmailInstanceStatus {
-  instanceId: string;
-  instanceName: string;
-  connected: boolean;
-  startedAt: number | null;
-  lastError: string | null;
-  email: string | null;
-  transport: 'imap' | 'ws' | null;
-  lastInboundAt: number | null;
-  lastOutboundAt: number | null;
-}
-
-interface EmailMultiInstanceStatus {
-  instances: EmailInstanceStatus[];
-}
-
 interface IMGatewayConfig {
   dingtalk: DingTalkMultiInstanceConfig;
   feishu: FeishuMultiInstanceConfig;
@@ -2059,9 +1973,7 @@ interface IMGatewayConfig {
   qq: QQMultiInstanceConfig;
   discord: DiscordMultiInstanceConfig;
   wecom: WecomMultiInstanceConfig;
-  popo: PopoMultiInstanceConfig;
   weixin: WeixinOpenClawConfig;
-  email: EmailMultiInstanceConfig;
   settings: IMSettings;
 }
 
@@ -2279,43 +2191,6 @@ interface WecomMultiInstanceStatus {
   instances: WecomInstanceStatus[];
 }
 
-interface PopoOpenClawConfig {
-  enabled: boolean;
-  connectionMode: 'websocket' | 'webhook';
-  appKey: string;
-  appSecret: string;
-  token: string;
-  aesKey: string;
-  webhookBaseUrl: string;
-  webhookPath: string;
-  webhookPort: number;
-  dmPolicy: 'open' | 'pairing' | 'allowlist' | 'disabled';
-  allowFrom: string[];
-  groupPolicy: 'open' | 'allowlist' | 'disabled';
-  groupAllowFrom: string[];
-  textChunkLimit: number;
-  richTextChunkLimit: number;
-  debug: boolean;
-}
-
-interface PopoInstanceConfig extends PopoOpenClawConfig {
-  instanceId: string;
-  instanceName: string;
-}
-
-interface PopoInstanceStatus extends PopoGatewayStatus {
-  instanceId: string;
-  instanceName: string;
-}
-
-interface PopoMultiInstanceConfig {
-  instances: PopoInstanceConfig[];
-}
-
-interface PopoMultiInstanceStatus {
-  instances: PopoInstanceStatus[];
-}
-
 interface WeixinOpenClawConfig {
   enabled: boolean;
   accountId: string;
@@ -2338,9 +2213,7 @@ interface IMGatewayStatus {
   telegram: TelegramMultiInstanceStatus;
   discord: DiscordMultiInstanceStatus;
   wecom: WecomMultiInstanceStatus;
-  popo: PopoMultiInstanceStatus;
   weixin: WeixinGatewayStatus;
-  email: EmailMultiInstanceStatus;
 }
 
 type IMConnectivityVerdict = 'pass' | 'warn' | 'fail';
@@ -2442,14 +2315,6 @@ interface WecomGatewayStatus {
   startedAt: number | null;
   lastError: string | null;
   botId: string | null;
-  lastInboundAt: number | null;
-  lastOutboundAt: number | null;
-}
-
-interface PopoGatewayStatus {
-  connected: boolean;
-  startedAt: number | null;
-  lastError: string | null;
   lastInboundAt: number | null;
   lastOutboundAt: number | null;
 }

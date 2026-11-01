@@ -194,6 +194,31 @@ describe('routes/admin/catalog', () => {
     expect(row.supportsThinking).toBe(false);
   });
 
+  test('媒体模型不会出现在桌面的 catalog 里', async () => {
+    const k = await providerKeyVault.add({
+      orgId: 'o1',
+      provider: 'minimax',
+      plaintextKey: 'sk-test',
+      createdBy: 'root',
+    });
+    await modelCatalog.add({
+      orgId: 'o1', providerKeyId: k.id, provider: 'minimax', model: 'image-01',
+      types: ['image-gen'],
+    });
+    await modelCatalog.add({
+      orgId: 'o1', providerKeyId: k.id, provider: 'minimax', model: 'llama-3',
+      types: ['chat'],
+    });
+    const a = buildApp();
+    const tok = await userToken('o1', 'u1');
+    const res = await a.request('/admin/catalog', {
+      headers: { authorization: `Bearer ${tok}` },
+    });
+    const body = (await res.json()) as { models: Array<{ model: string }> };
+    expect(body.models.map((m) => m.model)).not.toContain('image-01');
+    expect(body.models.map((m) => m.model)).toContain('llama-3');
+  });
+
   test('跨 org 隔离: 不能读到其它 org 的 provider/model', async () => {
     await testPool.query(`INSERT INTO orgs(id, name) VALUES ('o2', 'Other')`);
     await providerKeyVault.add({

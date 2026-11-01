@@ -1,75 +1,75 @@
 /**
  * Token Contract — defines all semantic variables a theme must provide.
  *
- * Naming: --genwork-{category}-{name}
+ * Naming: --mixcwork-{category}-{name}
  * Convention: shadcn/ui background/foreground pairing + Radix 12-step gray scale
  *
  * Every theme (ThemeDefinition.tokens) must supply a value for each key.
  */
 export const TOKEN_CONTRACT = {
   // ── Brand ──
-  'primary':            '--genwork-primary',
-  'primary-foreground': '--genwork-primary-foreground',
-  'primary-hover':      '--genwork-primary-hover',
-  'primary-muted':      '--genwork-primary-muted',
+  'primary':            '--mixcwork-primary',
+  'primary-foreground': '--mixcwork-primary-foreground',
+  'primary-hover':      '--mixcwork-primary-hover',
+  'primary-muted':      '--mixcwork-primary-muted',
 
   // ── Accent ──
-  'accent':             '--genwork-accent',
-  'accent-foreground':  '--genwork-accent-foreground',
+  'accent':             '--mixcwork-accent',
+  'accent-foreground':  '--mixcwork-accent-foreground',
 
   // ── Surface / Background ──
-  'background':         '--genwork-background',
-  'foreground':         '--genwork-foreground',
-  'surface':            '--genwork-surface',
-  'surface-foreground': '--genwork-surface-foreground',
-  'surface-raised':     '--genwork-surface-raised',
-  'surface-overlay':    '--genwork-surface-overlay',
+  'background':         '--mixcwork-background',
+  'foreground':         '--mixcwork-foreground',
+  'surface':            '--mixcwork-surface',
+  'surface-foreground': '--mixcwork-surface-foreground',
+  'surface-raised':     '--mixcwork-surface-raised',
+  'surface-overlay':    '--mixcwork-surface-overlay',
 
   // ── Chat bubbles ──
-  'chat-user':              '--genwork-chat-user',
-  'chat-user-foreground':   '--genwork-chat-user-foreground',
-  'chat-bot':               '--genwork-chat-bot',
-  'chat-bot-foreground':    '--genwork-chat-bot-foreground',
+  'chat-user':              '--mixcwork-chat-user',
+  'chat-user-foreground':   '--mixcwork-chat-user-foreground',
+  'chat-bot':               '--mixcwork-chat-bot',
+  'chat-bot-foreground':    '--mixcwork-chat-bot-foreground',
 
   // ── Text hierarchy ──
-  'text-primary':       '--genwork-text-primary',
-  'text-secondary':     '--genwork-text-secondary',
-  'text-muted':         '--genwork-text-muted',
+  'text-primary':       '--mixcwork-text-primary',
+  'text-secondary':     '--mixcwork-text-secondary',
+  'text-muted':         '--mixcwork-text-muted',
 
   // ── Borders ──
-  'border':             '--genwork-border',
-  'border-subtle':      '--genwork-border-subtle',
-  'input-border':       '--genwork-input-border',
+  'border':             '--mixcwork-border',
+  'border-subtle':      '--mixcwork-border-subtle',
+  'input-border':       '--mixcwork-input-border',
 
   // ── Scrollbar ──
-  'scroll-thumb':       '--genwork-scroll-thumb',
-  'scroll-thumb-hover': '--genwork-scroll-thumb-hover',
+  'scroll-thumb':       '--mixcwork-scroll-thumb',
+  'scroll-thumb-hover': '--mixcwork-scroll-thumb-hover',
 
   // ── Decorative gradients ──
-  'gradient-1':         '--genwork-gradient-1',
-  'gradient-2':         '--genwork-gradient-2',
+  'gradient-1':         '--mixcwork-gradient-1',
+  'gradient-2':         '--mixcwork-gradient-2',
 
   // ── Status ──
-  'destructive':            '--genwork-destructive',
-  'destructive-foreground': '--genwork-destructive-foreground',
-  'success':                '--genwork-success',
-  'warning':                '--genwork-warning',
+  'destructive':            '--mixcwork-destructive',
+  'destructive-foreground': '--mixcwork-destructive-foreground',
+  'success':                '--mixcwork-success',
+  'warning':                '--mixcwork-warning',
 
   // ── Gray scale 11 steps (gray-1=lightest → gray-11=darkest, all themes) ──
-  'gray-1':  '--genwork-gray-1',
-  'gray-2':  '--genwork-gray-2',
-  'gray-3':  '--genwork-gray-3',
-  'gray-4':  '--genwork-gray-4',
-  'gray-5':  '--genwork-gray-5',
-  'gray-6':  '--genwork-gray-6',
-  'gray-7':  '--genwork-gray-7',
-  'gray-8':  '--genwork-gray-8',
-  'gray-9':  '--genwork-gray-9',
-  'gray-10': '--genwork-gray-10',
-  'gray-11': '--genwork-gray-11',
+  'gray-1':  '--mixcwork-gray-1',
+  'gray-2':  '--mixcwork-gray-2',
+  'gray-3':  '--mixcwork-gray-3',
+  'gray-4':  '--mixcwork-gray-4',
+  'gray-5':  '--mixcwork-gray-5',
+  'gray-6':  '--mixcwork-gray-6',
+  'gray-7':  '--mixcwork-gray-7',
+  'gray-8':  '--mixcwork-gray-8',
+  'gray-9':  '--mixcwork-gray-9',
+  'gray-10': '--mixcwork-gray-10',
+  'gray-11': '--mixcwork-gray-11',
 
   // ── Radius ──
-  'radius':  '--genwork-radius',
+  'radius':  '--mixcwork-radius',
 } as const;
 
 export type TokenName = keyof typeof TOKEN_CONTRACT;

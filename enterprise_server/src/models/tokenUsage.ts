@@ -14,6 +14,11 @@ export interface TokenUsageRow {
   duration_ms: number | null;
   result_code: number;
   quota_window_date: string;
+  /** The call is counted, but its upstream response carried no parsable
+   *  `usage` — so the token columns are a definitive zero, not a measurement.
+   *  Analytics surfaces these as `unaccounted_calls` instead of letting the
+   *  total silently understate. */
+  usage_missing: boolean;
   ts: Date;
 }
 
@@ -28,12 +33,17 @@ export const tokenUsage = {
     resultCode: number;
     durationMs?: number;
     costUsd?: number;
+    /** Set when no usage could be read from the upstream response. The row is
+     *  still written: a call that cannot be measured must be visible, not
+     *  absent. Defaults to false for callers that know their zero (e.g. a
+     *  request the proxy never forwarded because of quota). */
+    usageMissing?: boolean;
   }): Promise<void> {
     const windowDate = await timezone.quotaWindowDate(input.userId, new Date());
     const total = input.tokenIn + input.tokenOut;
     await pool.query(
-      `INSERT INTO token_usage(org_id, user_id, model_id, provider, token_in, token_out, total_tokens, cost_usd, duration_ms, result_code, quota_window_date)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+      `INSERT INTO token_usage(org_id, user_id, model_id, provider, token_in, token_out, total_tokens, cost_usd, duration_ms, result_code, quota_window_date, usage_missing)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
       [
         input.orgId,
         input.userId,
@@ -46,6 +56,7 @@ export const tokenUsage = {
         input.durationMs ?? null,
         input.resultCode,
         windowDate,
+        input.usageMissing ?? false,
       ]
     );
   },

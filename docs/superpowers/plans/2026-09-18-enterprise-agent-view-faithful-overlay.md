@@ -39,7 +39,7 @@ already exposes `aboutYou` per agent.
 ## File Structure
 
 - `src/main/sqliteStore.ts` — `agents.about_you` column (CREATE TABLE + migration); `enterprise_agent_prefs.model_ref` column (CREATE TABLE + migration).
-- `src/main/genworkStore.ts` — `Agent.aboutYou`, `CreateAgentRequest`/`UpdateAgentRequest` optional `aboutYou`, `mapAgentRow` parse, `createAgent`/`updateAgent` write (guarded for enterprise like `systemPrompt`).
+- `src/main/mixcworkStore.ts` — `Agent.aboutYou`, `CreateAgentRequest`/`UpdateAgentRequest` optional `aboutYou`, `mapAgentRow` parse, `createAgent`/`updateAgent` write (guarded for enterprise like `systemPrompt`).
 - `src/main/auth/enterpriseClient.ts` — `listEnterpriseAgents` maps `aboutYou`.
 - `src/main/libs/agentEnterpriseSync.ts` — `ServerAgentView.aboutYou`; UPSERT payload carries it; **skill baseline mapping drops the `?? sid` fallback** (fix id-space invariant).
 - `src/main/libs/enterpriseAgentPrefsStore.ts` — add `model_ref` to `get`/`upsert`; add `getModel`/`setModel`.
@@ -55,14 +55,14 @@ already exposes `aboutYou` per agent.
 - `src/renderer/components/agent/AgentSettingsPanel.tsx` — 关于你 tab shows `aboutYou`; enterprise footer shows model selector; enterprise load resolves model precedence; enterprise `handleSave` persists the model override; skills + collaboration tabs render baseline by name / checked.
 - `src/renderer/components/agent/EnterpriseWorkingDirectoryField.tsx` — swap text input for the `FolderSelectorPopover` picker.
 - `src/renderer/components/agent/AgentSkillSelector.tsx` — accept an optional `baselineSkills` list (server-id → name) to render locked baseline rows for uninstalled skills.
-- Tests: `src/main/gworkStore.test.ts`, `src/main/libs/agentEnterpriseSync.test.ts`, `src/main/libs/enterpriseAgentPrefsStore.test.ts`, `src/main/ipcHandlers/agents/handlers.enterprise.test.ts` (create), `src/main/libs/agentModelOverride.test.ts` (new), `src/renderer/components/agent/AgentSettingsPanel.test.ts`.
+- Tests: `src/main/mixcworkStore.test.ts`, `src/main/libs/agentEnterpriseSync.test.ts`, `src/main/libs/enterpriseAgentPrefsStore.test.ts`, `src/main/ipcHandlers/agents/handlers.enterprise.test.ts` (create), `src/main/libs/agentModelOverride.test.ts` (new), `src/renderer/components/agent/AgentSettingsPanel.test.ts`.
 
 ---
 
 ### Task 1: `about_you` column + store read/write
 
 **Files:**
-- Modify: `src/main/sqliteStore.ts:237-261` (CREATE TABLE) and `:684-699` (migration block); `src/main/genworkStore.ts` (`Agent` 402-431, `CreateAgentRequest` 433-451, `UpdateAgentRequest` 453-470, `mapAgentRow` 3465-3519, `createAgent` 3271-3299, `updateAgent` 3335-3406); `src/main/gworkStore.test.ts` (harness `agents` table ~116-141, new test).
+- Modify: `src/main/sqliteStore.ts:237-261` (CREATE TABLE) and `:684-699` (migration block); `src/main/mixcworkStore.ts` (`Agent` 402-431, `CreateAgentRequest` 433-451, `UpdateAgentRequest` 453-470, `mapAgentRow` 3465-3519, `createAgent` 3271-3299, `updateAgent` 3335-3406); `src/main/mixcworkStore.test.ts` (harness `agents` table ~116-141, new test).
 
 **Interfaces:**
 - Produces: `Agent.aboutYou: string`; `CreateAgentRequest.aboutYou?`, `UpdateAgentRequest.aboutAbout?`→`aboutYou?`; `mapAgentRow` returns `aboutYou` (default `''`); `updateAgent` treats `aboutYou` as a guarded server-owned scalar for enterprise rows (like `systemPrompt`), but the `bypassEnterpriseGuard` sync write persists it.
@@ -86,7 +86,7 @@ In the migration `try` block (after the `server_im_channels` guard at line 696-6
 
 - [ ] **Step 2: Add `aboutYou` to the types**
 
-In `src/main/genworkStore.ts`, add to `Agent` (after line 406 `systemPrompt: string;`):
+In `src/main/mixcworkStore.ts`, add to `Agent` (after line 406 `systemPrompt: string;`):
 
 ```ts
   aboutYou: string;
@@ -127,7 +127,7 @@ In `mapAgentRow`, add `about_you?: string | null;` to the row param type (near t
 
 - [ ] **Step 5: Update the store test harness + write the failing test**
 
-In `src/main/gworkStore.test.ts`, in the harness `CREATE TABLE agents` (line 116), add `about_you TEXT NOT NULL DEFAULT '',` after the `identity` line. Then add a test (near the existing enterprise tests ~1406):
+In `src/main/mixcworkStore.test.ts`, in the harness `CREATE TABLE agents` (line 116), add `about_you TEXT NOT NULL DEFAULT '',` after the `identity` line. Then add a test (near the existing enterprise tests ~1406):
 
 ```ts
   test('aboutYou round-trips and is guarded for enterprise rows but applies on sync write', () => {
@@ -144,16 +144,16 @@ In `src/main/gworkStore.test.ts`, in the harness `CREATE TABLE agents` (line 116
 
 - [ ] **Step 6: Run to verify**
 
-Run: `npx vitest run src/main/gworkStore.test.ts --no-file-parallelism`
+Run: `npx vitest run src/main/mixcworkStore.test.ts --no-file-parallelism`
 Expected: PASS (new test + existing). If better-sqlite3 throws `NODE_MODULE_VERSION`, run `npm rebuild better-sqlite3` first.
 
 - [ ] **Step 7: Lint + type check + commit**
 
-Run: `npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/main/sqliteStore.ts src/main/genworkStore.ts src/main/gworkStore.test.ts`
+Run: `npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/main/sqliteStore.ts src/main/mixcworkStore.ts src/main/mixcworkStore.test.ts`
 Run: `npm run compile:electron`
 
 ```bash
-git add src/main/sqliteStore.ts src/main/genworkStore.ts src/main/gworkStore.test.ts
+git add src/main/sqliteStore.ts src/main/mixcworkStore.ts src/main/mixcworkStore.test.ts
 git commit -m "feat(desktop): add about_you to agent row with enterprise guard"
 ```
 
@@ -177,7 +177,7 @@ In `src/main/libs/agentEnterpriseSync.test.ts`, add (extend the existing `server
     const store = fakeStore([]);
     await agentEnterpriseSync.syncFromServer({
       serverView: [{ agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', model: '', thinkingLevel: 'medium', icon: '', skillIds: [], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true, imChannels: [], aboutYou: 'hello there' }],
-      genworkStore: store as never,
+      mixcworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       skillManager: { getCatalogLocalId: () => null } as never,
       defaultModelRef: '',
@@ -234,7 +234,7 @@ In `src/main/libs/agentEnterpriseSync.test.ts`, add:
     const store = fakeStore([]);
     await agentEnterpriseSync.syncFromServer({
       serverView: [{ agentId: 'a', name: 'A', description: '', identity: '', systemPrompt: '', model: '', thinkingLevel: 'medium', icon: '', skillIds: ['installed-1', 'not-installed-x'], subagentAllowAgentIds: [], allowedRoles: ['org_admin'], enabled: true, imChannels: [], aboutYou: '' }],
-      genworkStore: store as never,
+      mixcworkStore: store as never,
       prefsStore: { remove: vi.fn() } as never,
       // Only 'installed-1' resolves to a local id. Note: getCatalogLocalId's REAL
       // return type is `string | undefined` (skillManager.getCatalogLocalId), so
@@ -354,11 +354,11 @@ In `src/main/libs/enterpriseAgentPrefsStore.test.ts`, add (mirror the existing h
 
 ```ts
   test('getModel/setModel round-trip and coexist with working_directory', () => {
-    store.setModel('ent-1', 'genwork/opus-4');
-    expect(store.getModel('ent-1')).toBe('genwork/opus-4');
+    store.setModel('ent-1', 'mixcwork/opus-4');
+    expect(store.getModel('ent-1')).toBe('mixcwork/opus-4');
     store.upsert('ent-1', '/some/dir');
     expect(store.get('ent-1')).toBe('/some/dir');
-    expect(store.getModel('ent-1')).toBe('genwork/opus-4'); // preserved across upsert
+    expect(store.getModel('ent-1')).toBe('mixcwork/opus-4'); // preserved across upsert
   });
 ```
 
@@ -383,7 +383,7 @@ In `src/main/ipcHandlers/agents/handlers.enterprise.ts`, after the `SetEnterpris
 ```ts
   ipcMain.handle(AgentIpcChannel.GetEnterpriseAgentModel, async (_e, agentId: string) => {
     loginGate.requireEnterprise();
-    const local = deps.getGenWorkStore().listAgents().find(a => a.source === 'enterprise' && a.enterpriseAgentId === agentId);
+    const local = deps.getMixCWorkStore().listAgents().find(a => a.source === 'enterprise' && a.enterpriseAgentId === agentId);
     if (!local) return { success: false, error: 'unknown_agent' };
     return { success: true, modelRef: deps.getEnterpriseAgentPrefsStore().getModel(agentId) };
   });
@@ -419,7 +419,7 @@ In `src/renderer/types/electron.d.ts`, extend the `agents` bridge (after `setEnt
 
 - [ ] **Step 8: Write the handler test**
 
-Create `src/main/ipcHandlers/agents/handlers.enterprise.test.ts`. Follow the pattern in `gworkStore.test.ts` for an in-memory DB + a fake prefs store, and capture the registered handlers via `vi.spyOn(ipcMain, 'handle')`. Assert `SetEnterpriseAgentModel` writes to the prefs store and `GetEnterpriseAgentModel` reads it back for a known enterprise agent:
+Create `src/main/ipcHandlers/agents/handlers.enterprise.test.ts`. Follow the pattern in `mixcworkStore.test.ts` for an in-memory DB + a fake prefs store, and capture the registered handlers via `vi.spyOn(ipcMain, 'handle')`. Assert `SetEnterpriseAgentModel` writes to the prefs store and `GetEnterpriseAgentModel` reads it back for a known enterprise agent:
 
 ```ts
 import { describe, expect, test, vi } from 'vitest';
@@ -427,7 +427,7 @@ import { ipcMain } from 'electron';
 import { AgentIpcChannel } from '../../../shared/agent/constants';
 import { registerAgentEnterpriseHandlers } from './handlers.enterprise';
 
-// Build a minimal env: fake genworkStore (one enterprise agent 'agent_a1'),
+// Build a minimal env: fake mixcworkStore (one enterprise agent 'agent_a1'),
 // a real EnterpriseAgentPrefsStore on a temp DB (or a fake), fake skillManager,
 // getAvailableModelsRef -> ''. Mock loginGate.requireEnterprise to return a
 // session. Register handlers, capture ipcMain.handle registrations into a map,
@@ -468,12 +468,12 @@ Create `src/main/libs/agentModelOverride.test.ts`:
 
 ```ts
 import { describe, expect, test } from 'vitest';
-import type { Agent } from '../genworkStore';
+import type { Agent } from '../mixcworkStore';
 import { effectiveAgentModelRef } from './agentModelOverride';
 
 const base: Agent = {
   id: 'a1', name: 'A', description: '', systemPrompt: '', identity: '', aboutYou: '',
-  model: 'genwork/server-model', thinkingLevel: 'medium', workingDirectory: '', icon: '',
+  model: 'mixcwork/server-model', thinkingLevel: 'medium', workingDirectory: '', icon: '',
   skillIds: [], subagentAllowAgentIds: [], serverSkillIds: [], serverSubagentAllowAgentIds: [],
   serverImChannels: [], enabled: true, pinned: false, pinOrder: null, sortOrder: null,
   isDefault: false, source: 'enterprise', presetId: '', enterpriseAgentId: 'srv-1',
@@ -482,14 +482,14 @@ const base: Agent = {
 
 describe('effectiveAgentModelRef', () => {
   test('enterprise: parseable override wins', () => {
-    expect(effectiveAgentModelRef(base, () => 'genwork/other')).toBe('genwork/other');
+    expect(effectiveAgentModelRef(base, () => 'mixcwork/other')).toBe('mixcwork/other');
   });
   test('enterprise: unparseable/empty override falls back to the row model', () => {
-    expect(effectiveAgentModelRef(base, () => 'not-a-ref')).toBe('genwork/server-model');
-    expect(effectiveAgentModelRef(base, () => '')).toBe('genwork/server-model');
+    expect(effectiveAgentModelRef(base, () => 'not-a-ref')).toBe('mixcwork/server-model');
+    expect(effectiveAgentModelRef(base, () => '')).toBe('mixcwork/server-model');
   });
   test('non-enterprise: always the row model', () => {
-    expect(effectiveAgentModelRef({ ...base, source: 'custom', enterpriseAgentId: undefined }, () => 'genwork/other')).toBe('genwork/server-model');
+    expect(effectiveAgentModelRef({ ...base, source: 'custom', enterpriseAgentId: undefined }, () => 'mixcwork/other')).toBe('mixcwork/server-model');
   });
 });
 ```
@@ -504,7 +504,7 @@ Expected: FAIL — module missing.
 Create `src/main/libs/agentModelOverride.ts`:
 
 ```ts
-import type { Agent } from '../genworkStore';
+import type { Agent } from '../mixcworkStore';
 import { parsePrimaryModelRef } from './openclawAgentModels';
 
 /** The model ref an agent actually runs with: a parseable local override for

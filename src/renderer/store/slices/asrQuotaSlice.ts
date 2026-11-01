@@ -1,7 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
 import { AsrApiCode, type AsrRealtimeSessionData } from '../../../shared/asr/constants';
-import { setLoggedOut } from './authSlice';
 
 export const AsrQuotaStatus = {
   Unknown: 'unknown',
@@ -95,9 +94,6 @@ const asrQuotaSlice = createSlice({
       state.lastUpdatedAt = updatedAt;
       state.lastErrorCode = errorCode;
     },
-  },
-  extraReducers: (builder) => {
-    builder.addCase(setLoggedOut, resetState);
   },
 });
 

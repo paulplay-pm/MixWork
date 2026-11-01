@@ -1,5 +1,5 @@
-import { OpenClawCronRunMetadataKey } from '../../../shared/genwork/openclawCronSessionKey';
-import type { GenWorkMessage } from '../../genworkStore';
+import { OpenClawCronRunMetadataKey } from '../../../shared/mixcwork/openclawCronSessionKey';
+import type { MixCWorkMessage } from '../../mixcworkStore';
 import {
   extractGatewayHistoryEntries,
   shouldSuppressHeartbeatText,
@@ -82,7 +82,7 @@ export const buildCronRunHistoryEntries = (
 };
 
 export const buildCronRunLocalHistoryEntries = (
-  messages: GenWorkMessage[],
+  messages: MixCWorkMessage[],
 ): CronRunLocalHistoryEntry[] => {
   return messages
     .filter((message) => message.type === 'user' || message.type === 'assistant')
@@ -97,7 +97,7 @@ export const buildCronRunLocalHistoryEntries = (
 };
 
 export const hasCronRunHistoryForSession = (
-  messages: GenWorkMessage[],
+  messages: MixCWorkMessage[],
   sessionKey: string,
 ): boolean => {
   return messages.some((message) => getCronRunHistorySessionKey(message.metadata) === sessionKey);

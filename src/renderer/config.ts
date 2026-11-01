@@ -258,8 +258,8 @@ export const CONFIG_KEYS = {
 };
 
 /**
- * Provider keys are now single-provider (genwork-server). This helper exists
+ * Provider keys are now single-provider (mixcwork-server). This helper exists
  * for legacy call sites that compare on a per-provider basis; new code should
- * key off ProviderName.GenworkServer directly.
+ * key off ProviderName.MixcworkServer directly.
  */
 export const getProviderDisplayName = (providerKey: string): string => providerKey;

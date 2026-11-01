@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 function createTempWorkspace(): { rootDir: string; sourceDir: string } {
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-skins-'));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-skins-'));
   tempDirs.push(tempDir);
   const rootDir = path.join(tempDir, 'managed');
   const sourceDir = path.join(tempDir, 'sources');

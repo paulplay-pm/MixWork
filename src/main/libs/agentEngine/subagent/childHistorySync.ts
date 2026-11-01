@@ -1,4 +1,4 @@
-import type { GenWorkMessage } from '../../../genworkStore';
+import type { MixCWorkMessage } from '../../../mixcworkStore';
 import { shouldSuppressHeartbeatText } from '../../openclawHistory';
 import { parseSubagentGatewayHistoryMessages } from './historyParser';
 
@@ -10,13 +10,13 @@ export type SubagentChildHistorySyncPlan = {
 };
 
 export type SubagentChildHistoryEntry = {
-  type: GenWorkMessage['type'];
+  type: MixCWorkMessage['type'];
   content: string;
   metadata?: Record<string, unknown>;
   timestamp?: number;
 };
 
-const normalizeMetadata = (metadata: GenWorkMessage['metadata']): Record<string, unknown> | undefined => (
+const normalizeMetadata = (metadata: MixCWorkMessage['metadata']): Record<string, unknown> | undefined => (
   metadata ? { ...metadata } : undefined
 );
 
@@ -45,7 +45,7 @@ const isSameHistoryMessage = (
   && stableJson(left.metadata ?? null) === stableJson(right.metadata ?? null)
 );
 
-const buildLocalEntries = (localMessages: GenWorkMessage[]): {
+const buildLocalEntries = (localMessages: MixCWorkMessage[]): {
   entries: SubagentChildHistoryEntry[];
   normalizedLocalUserContent: boolean;
 } => {
@@ -71,7 +71,7 @@ const buildLocalEntries = (localMessages: GenWorkMessage[]): {
   return { entries, normalizedLocalUserContent };
 };
 
-const toStoredEntry = (message: GenWorkMessage): SubagentChildHistoryEntry | null => {
+const toStoredEntry = (message: MixCWorkMessage): SubagentChildHistoryEntry | null => {
   if (message.type !== 'tool_use' && !message.content.trim()) {
     return null;
   }
@@ -138,7 +138,7 @@ export const normalizeSubagentVisibleUserText = (text: string): string => {
 };
 
 export const buildSubagentChildHistorySyncPlan = (
-  localMessages: GenWorkMessage[],
+  localMessages: MixCWorkMessage[],
   historyMessages: unknown[],
 ): SubagentChildHistorySyncPlan => {
   const { entries: localEntries, normalizedLocalUserContent } = buildLocalEntries(localMessages);

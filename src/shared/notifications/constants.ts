@@ -1,4 +1,4 @@
-import { ASK_USER_QUESTION_TOOL_NAME } from '../genwork/constants';
+import { ASK_USER_QUESTION_TOOL_NAME } from '../mixcwork/constants';
 
 /** When task-completion notifications are shown. */
 export const TaskCompletionNotificationMode = {

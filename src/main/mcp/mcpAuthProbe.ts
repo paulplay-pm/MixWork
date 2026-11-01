@@ -17,7 +17,7 @@ const HTTP_TIMEOUT_MS = 10_000;
 const STDIO_TIMEOUT_MS = 8_000;
 
 /** Generic client identity; MCP servers log this. */
-const CLIENT_INFO = { name: 'genwork-auth-probe', version: '1.0.0' } as const;
+const CLIENT_INFO = { name: 'mixcwork-auth-probe', version: '1.0.0' } as const;
 
 const INITIALIZE_BODY = JSON.stringify({
   jsonrpc: '2.0',
@@ -83,8 +83,10 @@ export async function probeAuthorization(
   return result;
 }
 
-/** Returns a user-safe error string naming the missing field, or null. */
-function checkMissingCredential(record: McpServerRecord): string | null {
+/** Returns a user-safe error string naming the missing field, or null.
+ *  Exported so the tool-catalog reader applies the same rule: an OAuth
+ *  connector with no Authorization header cannot list anything. */
+export function checkMissingCredential(record: McpServerRecord): string | null {
   const method = record.authMethod;
   if (method === 'none') return null;
   if (method === 'oauth') {

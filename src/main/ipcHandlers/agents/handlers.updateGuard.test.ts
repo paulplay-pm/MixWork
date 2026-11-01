@@ -3,7 +3,7 @@
  * skills/subagents) and the resolved local baseline enrichment on the CRUD
  * `agents:update` / `agents:list` handlers.
  *
- * Uses a real `GenWorkStore` (in-memory SQLite) plus a real `AgentManager`,
+ * Uses a real `MixCWorkStore` (in-memory SQLite) plus a real `AgentManager`,
  * with a fake `SkillManager.getCatalogLocalId` that resolves server catalog
  * ids to `local_<id>`. The handler's real `deriveProvenance` path is
  * exercised — only the skill manager is faked.
@@ -25,18 +25,18 @@ import BetterSqlite3 from 'better-sqlite3';
 
 import { AgentIpcChannel } from '../../../shared/agent/constants';
 import { AgentManager } from '../../agentManager';
-import { GenWorkStore } from '../../genworkStore';
+import { MixCWorkStore } from '../../mixcworkStore';
 import { registerAgentHandlers } from './handlers';
 
 let db: BetterSqlite3.Database;
-let store: GenWorkStore;
+let store: MixCWorkStore;
 
 /** Initialise a fresh in-memory database with the minimum schema. */
 function setupDb(): void {
   db = new BetterSqlite3(':memory:');
 
   db.exec(`
-    CREATE TABLE IF NOT EXISTS genwork_sessions (
+    CREATE TABLE IF NOT EXISTS mixcwork_sessions (
       id TEXT PRIMARY KEY,
       title TEXT NOT NULL,
       openclaw_session_id TEXT,
@@ -65,7 +65,7 @@ function setupDb(): void {
   `);
 
   db.exec(`
-    CREATE TABLE IF NOT EXISTS genwork_messages (
+    CREATE TABLE IF NOT EXISTS mixcwork_messages (
       id TEXT PRIMARY KEY,
       session_id TEXT NOT NULL,
       type TEXT NOT NULL,
@@ -73,7 +73,7 @@ function setupDb(): void {
       metadata TEXT,
       created_at INTEGER NOT NULL,
       sequence INTEGER,
-      FOREIGN KEY (session_id) REFERENCES genwork_sessions(id) ON DELETE CASCADE
+      FOREIGN KEY (session_id) REFERENCES mixcwork_sessions(id) ON DELETE CASCADE
     );
   `);
 
@@ -97,6 +97,7 @@ function setupDb(): void {
       thinking_level TEXT NOT NULL DEFAULT '',
       working_directory TEXT NOT NULL DEFAULT '',
       icon TEXT NOT NULL DEFAULT '',
+      icon_color INTEGER NOT NULL DEFAULT -1,
       skill_ids TEXT NOT NULL DEFAULT '[]',
       subagent_allow_agent_ids TEXT NOT NULL DEFAULT '[]',
       server_skill_ids TEXT NOT NULL DEFAULT '[]',
@@ -141,7 +142,7 @@ function setupDb(): void {
     );
   `);
 
-  store = new GenWorkStore(db);
+  store = new MixCWorkStore(db);
 }
 
 const fakeSkillManager = {
@@ -163,8 +164,8 @@ function register(): void {
   handlers.clear();
   registerAgentHandlers({
     getAgentManager: () => new AgentManager(store),
-    getGenWorkStore: () => store,
-    getGenWorkEngineRouter: () => ({}) as never,
+    getMixCWorkStore: () => store,
+    getMixCWorkEngineRouter: () => ({}) as never,
     getIMGatewayManager: () => null,
     refreshImSessionWorkingDirectoriesForAgent: () => 0,
     resolveAgentWorkspacePath: (agentId: string) => `/ws/${agentId}`,

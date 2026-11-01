@@ -11,7 +11,7 @@
 // Stock Node allows that; Electron builds V8 with the sandbox enabled, where a
 // backing store must live inside the sandbox cage, so koffi's attempt to raise
 // an error there ends in `FATAL ERROR: Error::New napi_get_last_error_info` and
-// the process aborts (exit 134). Every GenWork dsh child runs as
+// the process aborts (exit 134). Every MixCWork dsh child runs as
 // ELECTRON_RUN_AS_NODE, so the dialog worker died the moment a user actually
 // picked a folder — the driver then reported the empty-handed child as
 // "win32 folder dialog worker exited before reporting a result". Cancelling

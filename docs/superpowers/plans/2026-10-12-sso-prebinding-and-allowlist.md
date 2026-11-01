@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 在 GenWork 企业版 SSO 登录流上加"严格模式"开关,**由 user 自行绑定** IdP 身份(而非 admin 后台预绑定),让管理员能控制"未自助绑定的飞书/Okta/钉钉账号必须先账号密码认证再放行"。
+**Goal:** 在 MixCWork 企业版 SSO 登录流上加"严格模式"开关,**由 user 自行绑定** IdP 身份(而非 admin 后台预绑定),让管理员能控制"未自助绑定的飞书/Okta/钉钉账号必须先账号密码认证再放行"。
 
 **Architecture:** 一份新 migration 给 `users` 加 `(sso_connection_id, sso_external_id)` 列 + 唯一索引,`sso_connections` 加 `require_prebinding` 开关,`sso_login_states` 加 `phase` 列;`finishSsoCallback` 在 `resolveUser` 之前插严格模式门(命中 / fast-path 出 token,未命中 / 入内存 store + 进二段路径);`jit.ts` 自身**完全不变**;新增 `ssoLoginContextStore` (in-memory `Map<state, SsoLoginContext>`) 跟踪二段状态;新增 4 个路由(`/auth/sso/bind` 公共 + `/me/sso-binding/*` user-self + `/admin/.../sso-binding` admin GET/DELETE);前端新增 `/bind-sso` 页面 + 头像菜单"绑定 SSO 账号"入口 + 用户管理 SSO 绑定列(只读 + 解绑按钮) + SSO 连接详情严格模式 checkbox。
 
@@ -250,7 +250,7 @@ describe('migration 043 — sso prebinding', () => {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/sso/migration043.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/sso/migration043.test.ts
 ```
 Expected: PASS, 4 tests, 0 failures.
 
@@ -258,7 +258,7 @@ Expected: PASS, 4 tests, 0 failures.
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/sso/jit.test.ts tests/sso/finishCallback.test.ts tests/sso/state.test.ts tests/sso/oauth.test.ts tests/sso/consoleCallback.test.ts tests/sso/providerPresets.test.ts tests/sso/logos.test.ts tests/sso/desktopRedirectPort.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/sso/jit.test.ts tests/sso/finishCallback.test.ts tests/sso/state.test.ts tests/sso/oauth.test.ts tests/sso/consoleCallback.test.ts tests/sso/providerPresets.test.ts tests/sso/logos.test.ts tests/sso/desktopRedirectPort.test.ts
 ```
 Expected: 全部 PASS(新加列都是 nullable / 有 default,无破坏)。
 
@@ -384,7 +384,7 @@ describe('sso/ssoLoginContext', () => {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/sso/ssoLoginContext.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/sso/ssoLoginContext.test.ts
 ```
 Expected: FAIL with "Cannot find module ../../src/sso/ssoLoginContext".
 
@@ -448,14 +448,14 @@ export const ssoLoginContextStore = {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/sso/ssoLoginContext.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/sso/ssoLoginContext.test.ts
 ```
 Expected: PASS, 4 tests.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && git add enterprise_server/src/sso/ssoLoginContext.ts enterprise_server/tests/sso/ssoLoginContext.test.ts
+cd /Users/paulwang/work/MixCWork && git add enterprise_server/src/sso/ssoLoginContext.ts enterprise_server/tests/sso/ssoLoginContext.test.ts
 git commit -m "feat(sso): add in-memory ssoLoginContextStore for two-stage binding"
 ```
 
@@ -581,7 +581,7 @@ describe('finishCallback — strict-mode gate', () => {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/sso/finishCallback.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/sso/finishCallback.test.ts
 ```
 Expected: 既有用例 PASS,新 4 个 strict-mode 用例 FAIL(`require_prebinding` 字段未识别 / `pendingBind` 变体未识别 / store 未写)。
 
@@ -663,7 +663,7 @@ D. 在 line 102(`let userId: string;` 之前)插严格模式门:
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/sso/finishCallback.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/sso/finishCallback.test.ts
 ```
 Expected: PASS(既有用例 + 4 个新 strict-mode 用例)。
 
@@ -671,7 +671,7 @@ Expected: PASS(既有用例 + 4 个新 strict-mode 用例)。
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/sso/jit.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/sso/jit.test.ts
 ```
 Expected: PASS(11 个既有用例全过,验证 `resolveUser` 没被改)。
 
@@ -679,14 +679,14 @@ Expected: PASS(11 个既有用例全过,验证 `resolveUser` 没被改)。
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/sso/finishCallback.ts src/sso/types.ts tests/sso/finishCallback.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/sso/finishCallback.ts src/sso/types.ts tests/sso/finishCallback.test.ts
 ```
 Expected: 0 error / 0 warning.
 
 - [ ] **Step 8: Commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && git add enterprise_server/src/sso/types.ts enterprise_server/src/sso/finishCallback.ts enterprise_server/tests/sso/finishCallback.test.ts
+cd /Users/paulwang/work/MixCWork && git add enterprise_server/src/sso/types.ts enterprise_server/src/sso/finishCallback.ts enterprise_server/tests/sso/finishCallback.test.ts
 git commit -m "feat(sso): add strict-mode gate in finishCallback (users.sso_* fast path + pending_bind park)"
 ```
 
@@ -756,7 +756,7 @@ describe('routes/sso — callback finalize after /auth/sso/bind', () => {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/routes/sso.public.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/routes/sso.public.test.ts
 ```
 Expected: 2 个新用例 FAIL(store 未读 / require_prebinding 字段未传)。
 
@@ -813,7 +813,7 @@ ssoRoutes.get('/auth/sso/callback', async (c) => {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/routes/sso.public.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/routes/sso.public.test.ts
 ```
 Expected: PASS(既有 + 2 个新)。
 
@@ -821,7 +821,7 @@ Expected: PASS(既有 + 2 个新)。
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/routes/ tests/sso/
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/routes/ tests/sso/
 ```
 Expected: 全部 PASS(逐文件跑;若个别文件 EBADF 再次跑一次)。
 
@@ -829,14 +829,14 @@ Expected: 全部 PASS(逐文件跑;若个别文件 EBADF 再次跑一次)。
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/routes/sso.ts tests/routes/sso.public.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/routes/sso.ts tests/routes/sso.public.test.ts
 ```
 Expected: 0 / 0。
 
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && git add enterprise_server/src/routes/sso.ts enterprise_server/tests/routes/sso.public.test.ts
+cd /Users/paulwang/work/MixCWork && git add enterprise_server/src/routes/sso.ts enterprise_server/tests/routes/sso.public.test.ts
 git commit -m "feat(sso): route /auth/sso/callback finalizes from ssoLoginContextStore on second hit"
 ```
 
@@ -1035,7 +1035,7 @@ describe('routes/auth/ssoBind', () => {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/auth/ssoBind.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/auth/ssoBind.test.ts
 ```
 Expected: 全部 FAIL(模块找不到)。
 
@@ -1178,11 +1178,11 @@ function renderBindSsoHtml(args: {
   return `<!doctype html>
 <html><head><meta charset="utf-8"><title>Bind SSO account</title></head>
 <body style="font-family:sans-serif;max-width:420px;margin:64px auto">
-<p>Your <strong>${esc(args.connectionName ?? 'SSO')}</strong> account is not yet bound to GenWork.</p>
-<p>Please sign in with your GenWork account and password to bind them.</p>
+<p>Your <strong>${esc(args.connectionName ?? 'SSO')}</strong> account is not yet bound to MixCWork.</p>
+<p>Please sign in with your MixCWork account and password to bind them.</p>
 <form method="POST" action="/auth/sso/bind" onsubmit="event.preventDefault(); fetch(this.action,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({state:this.state.value,username:this.username.value,password:this.password.value})}).then(async r=>{const j=await r.json(); if(j.returnTo){location.assign(j.returnTo);} else {document.getElementById('err').textContent=j.error;}});">
 <input type="hidden" name="state" value="${esc(args.state)}" />
-<p><label>GenWork account: <input name="username" required /></label></p>
+<p><label>MixCWork account: <input name="username" required /></label></p>
 <p><label>Password: <input name="password" type="password" required /></label></p>
 <p><button type="submit">Bind and sign in</button></p>
 <p id="err" style="color:#b00020"></p>
@@ -1195,7 +1195,7 @@ function renderBindSsoHtml(args: {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/auth/ssoBind.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/auth/ssoBind.test.ts
 ```
 Expected: PASS, 9 tests。
 
@@ -1211,14 +1211,14 @@ import { ssoBindRoutes } from './routes/auth/ssoBind';
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/routes/auth/ssoBind.ts src/server.ts tests/auth/ssoBind.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/routes/auth/ssoBind.ts src/server.ts tests/auth/ssoBind.test.ts
 ```
 Expected: 0 / 0。
 
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && git add enterprise_server/src/routes/auth/ssoBind.ts enterprise_server/src/server.ts enterprise_server/tests/auth/ssoBind.test.ts
+cd /Users/paulwang/work/MixCWork && git add enterprise_server/src/routes/auth/ssoBind.ts enterprise_server/src/server.ts enterprise_server/tests/auth/ssoBind.test.ts
 git commit -m "feat(sso): public /bind-sso page + POST /auth/sso/bind (two-stage user self-binding)"
 ```
 
@@ -1392,7 +1392,7 @@ describe('routes/me/ssoBinding', () => {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/me/ssoBinding.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/me/ssoBinding.test.ts
 ```
 Expected: 全部 FAIL(模块找不到)。
 
@@ -1489,7 +1489,7 @@ meSsoBindingRoutes.delete('/me/sso-binding', async (c) => {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/me/ssoBinding.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/me/ssoBinding.test.ts
 ```
 Expected: PASS, 8 tests。
 
@@ -1508,14 +1508,14 @@ app.route('/', meSsoBindingRoutes);
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/routes/me/ssoBinding.ts src/server.ts tests/me/ssoBinding.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/routes/me/ssoBinding.ts src/server.ts tests/me/ssoBinding.test.ts
 ```
 Expected: 0 / 0。
 
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && git add enterprise_server/src/routes/me/ssoBinding.ts enterprise_server/src/server.ts enterprise_server/tests/me/ssoBinding.test.ts
+cd /Users/paulwang/work/MixCWork && git add enterprise_server/src/routes/me/ssoBinding.ts enterprise_server/src/server.ts enterprise_server/tests/me/ssoBinding.test.ts
 git commit -m "feat(sso): user self-binding API (/me/sso-binding/start + DELETE)"
 ```
 
@@ -1673,7 +1673,7 @@ describe('routes/admin/ssoBindings', () => {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/admin/ssoBindings.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/admin/ssoBindings.test.ts
 ```
 Expected: 全部 FAIL(模块找不到)。
 
@@ -1770,7 +1770,7 @@ adminSsoBindingRoutes.delete('/admin/users/:id/sso-binding', requirePermission(P
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/admin/ssoBindings.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/admin/ssoBindings.test.ts
 ```
 Expected: PASS, 8 tests。
 
@@ -1789,14 +1789,14 @@ app.route('/', adminSsoBindingRoutes);
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/routes/admin/ssoBindings.ts src/server.ts tests/admin/ssoBindings.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 src/routes/admin/ssoBindings.ts src/server.ts tests/admin/ssoBindings.test.ts
 ```
 Expected: 0 / 0。
 
 - [ ] **Step 7: Commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && git add enterprise_server/src/routes/admin/ssoBindings.ts enterprise_server/src/server.ts enterprise_server/tests/admin/ssoBindings.test.ts
+cd /Users/paulwang/work/MixCWork && git add enterprise_server/src/routes/admin/ssoBindings.ts enterprise_server/src/server.ts enterprise_server/tests/admin/ssoBindings.test.ts
 git commit -m "feat(sso): admin read+unbind endpoints for user-driven sso binding"
 ```
 
@@ -1826,8 +1826,8 @@ git commit -m "feat(sso): admin read+unbind endpoints for user-driven sso bindin
 ```ts
 // zh 块追加
 'sso.bind.title': '绑定 SSO 账号',
-'sso.bind.subtitle': '你的 {provider} 账号尚未绑定 GenWork。请用账号密码登录以完成绑定。',
-'sso.bind.username.label': 'GenWork 账号',
+'sso.bind.subtitle': '你的 {provider} 账号尚未绑定 MixCWork。请用账号密码登录以完成绑定。',
+'sso.bind.username.label': 'MixCWork 账号',
 'sso.bind.password.label': '密码',
 'sso.bind.submit': '绑定并登录',
 'sso.binding.unbound': '未绑定',
@@ -1840,13 +1840,13 @@ git commit -m "feat(sso): admin read+unbind endpoints for user-driven sso bindin
 
 // en 块追加
 'sso.bind.title': 'Bind SSO account',
-'sso.bind.subtitle': 'Your {provider} account is not bound to GenWork yet. Sign in with your account password to bind.',
-'sso.bind.username.label': 'GenWork account',
+'sso.bind.subtitle': 'Your {provider} account is not bound to MixCWork yet. Sign in with your account password to bind.',
+'sso.bind.username.label': 'MixCWork account',
 'sso.bind.password.label': 'Password',
 'sso.bind.submit': 'Bind and sign in',
 'sso.binding.unbound': 'Unbound',
 'sso.binding.unbind': 'Unbind',
-'sso.binding.unbind.confirm': 'After unbinding, this user will need to re-authenticate with their GenWork account and password to use this SSO connection. Continue?',
+'sso.binding.unbind.confirm': 'After unbinding, this user will need to re-authenticate with their MixCWork account and password to use this SSO connection. Continue?',
 'sso.profile.bindMenuItem': 'Bind SSO account',
 'sso.connection.requirePrebinding': 'Only allow prebound users',
 'sso.connection.requirePrebinding.help': 'When enabled, Feishu/Okta/DingTalk accounts that have not been self-bound cannot log in (they are routed to a password verification page). Already-bound users are unaffected.',
@@ -1967,8 +1967,8 @@ const ssoStart = async (connectionId: string) => {
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx tsc --noEmit -p web/tsconfig.json 2>/dev/null || npx tsc --noEmit  # 看 web 的 tsconfig 决定
-cd /Users/paulwang/work/GenWork/enterprise_server && npm run build
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx tsc --noEmit -p web/tsconfig.json 2>/dev/null || npx tsc --noEmit  # 看 web 的 tsconfig 决定
+cd /Users/paulwang/work/MixCWork/enterprise_server && npm run build
 ```
 Expected: 编译通过(0 error)。
 
@@ -1976,14 +1976,14 @@ Expected: 编译通过(0 error)。
 
 Run:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 web/src/pages/auth/BindSsoPage.tsx web/src/components/ProfileMenu.tsx web/src/pages/UsersPage.tsx web/src/pages/sso/SSOConnectionDrawer.tsx web/src/pages/sso/types.ts web/src/api/sso.ts web/src/i18n.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0 web/src/pages/auth/BindSsoPage.tsx web/src/components/ProfileMenu.tsx web/src/pages/UsersPage.tsx web/src/pages/sso/SSOConnectionDrawer.tsx web/src/pages/sso/types.ts web/src/api/sso.ts web/src/i18n.ts
 ```
 Expected: 0 / 0。
 
 - [ ] **Step 10: Commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && git add enterprise_server/web/src/i18n.ts enterprise_server/web/src/api/sso.ts enterprise_server/web/src/pages/sso/types.ts enterprise_server/web/src/pages/sso/SSOConnectionDrawer.tsx enterprise_server/web/src/pages/auth/BindSsoPage.tsx enterprise_server/web/src/components/ProfileMenu.tsx enterprise_server/web/src/pages/UsersPage.tsx enterprise_server/web/src/router.tsx
+cd /Users/paulwang/work/MixCWork && git add enterprise_server/web/src/i18n.ts enterprise_server/web/src/api/sso.ts enterprise_server/web/src/pages/sso/types.ts enterprise_server/web/src/pages/sso/SSOConnectionDrawer.tsx enterprise_server/web/src/pages/auth/BindSsoPage.tsx enterprise_server/web/src/components/ProfileMenu.tsx enterprise_server/web/src/pages/UsersPage.tsx enterprise_server/web/src/router.tsx
 git commit -m "feat(sso-web): /bind-sso page, profile menu 'Bind SSO', admin read+unbind column, requirePrebinding toggle"
 ```
 
@@ -1997,14 +1997,14 @@ git commit -m "feat(sso-web): /bind-sso page, profile menu 'Bind SSO', admin rea
 
 逐文件跑(EBADF 风险):
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/sso/migration043.test.ts tests/sso/jit.test.ts tests/sso/finishCallback.test.ts tests/sso/state.test.ts tests/sso/oauth.test.ts tests/sso/consoleCallback.test.ts tests/sso/providerPresets.test.ts tests/sso/logos.test.ts tests/sso/desktopRedirectPort.test.ts tests/sso/ssoLoginContext.test.ts tests/auth/ssoBind.test.ts tests/me/ssoBinding.test.ts tests/admin/ssoBindings.test.ts tests/routes/sso.public.test.ts
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/sso/migration043.test.ts tests/sso/jit.test.ts tests/sso/finishCallback.test.ts tests/sso/state.test.ts tests/sso/oauth.test.ts tests/sso/consoleCallback.test.ts tests/sso/providerPresets.test.ts tests/sso/logos.test.ts tests/sso/desktopRedirectPort.test.ts tests/sso/ssoLoginContext.test.ts tests/auth/ssoBind.test.ts tests/me/ssoBinding.test.ts tests/admin/ssoBindings.test.ts tests/routes/sso.public.test.ts
 ```
 Expected: 全部 PASS。
 
 - [ ] **Step 2: 跑全量 admin + routes 测试(按需,确认无破坏)**
 
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx vitest run tests/routes/ tests/admin/ 2>/dev/null || true
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx vitest run tests/routes/ tests/admin/ 2>/dev/null || true
 ```
 Expected: 全部 PASS;若个别预先存在的 enterprise-agent 失败,见既有 baseline
 (见仓库根 `AGENTS.md` 与预存记忆 `pre-existing-failing-enterprise-agent-tests.md`),
@@ -2013,14 +2013,14 @@ Expected: 全部 PASS;若个别预先存在的 enterprise-agent 失败,见既有
 - [ ] **Step 3: 跑 Lint 变更文件集**
 
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0   src/sso/ src/routes/sso.ts src/routes/auth/ src/routes/me/ src/routes/admin/ssoBindings.ts src/server.ts src/db/migrations/043_sso_prebinding.sql tests/sso/ tests/auth/ssoBind.test.ts tests/me/ssoBinding.test.ts tests/admin/ssoBindings.test.ts tests/routes/sso.public.test.ts   web/src/i18n.ts web/src/api/sso.ts web/src/pages/sso/ web/src/pages/auth/BindSsoPage.tsx web/src/components/ProfileMenu.tsx web/src/pages/UsersPage.tsx web/src/router.tsx
+cd /Users/paulwang/work/MixCWork/enterprise_server && npx eslint --ext ts,tsx --report-unused-disable-directives --max-warnings 0   src/sso/ src/routes/sso.ts src/routes/auth/ src/routes/me/ src/routes/admin/ssoBindings.ts src/server.ts src/db/migrations/043_sso_prebinding.sql tests/sso/ tests/auth/ssoBind.test.ts tests/me/ssoBinding.test.ts tests/admin/ssoBindings.test.ts tests/routes/sso.public.test.ts   web/src/i18n.ts web/src/api/sso.ts web/src/pages/sso/ web/src/pages/auth/BindSsoPage.tsx web/src/components/ProfileMenu.tsx web/src/pages/UsersPage.tsx web/src/router.tsx
 ```
 Expected: 0 / 0。
 
 - [ ] **Step 4: 跑 web `npm run build`**
 
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server && npm run build
+cd /Users/paulwang/work/MixCWork/enterprise_server && npm run build
 ```
 Expected: 0 error。
 

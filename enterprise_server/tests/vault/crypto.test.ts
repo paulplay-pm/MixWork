@@ -1,6 +1,8 @@
 import '../helpers/setupEnv';
+
 import { describe, expect, test } from 'vitest';
-import { encrypt, decrypt } from '../../src/vault/crypto';
+
+import { decrypt,encrypt } from '../../src/vault/crypto';
 
 // Stable 32-byte key for tests. Real key comes from env at runtime.
 // setupEnv already set the master key.

@@ -79,21 +79,21 @@ const createOpenAICompatAppConfig = () => ({
 });
 
 const createSessionStore = () => ({
-  'agent:main:genwork:current-session': {
+  'agent:main:mixcwork:current-session': {
     sessionId: 'session-current',
-    modelProvider: 'genwork',
+    modelProvider: 'mixcwork',
     model: 'kimi-k2.5',
     systemPromptReport: {
-      provider: 'genwork',
+      provider: 'mixcwork',
       model: 'kimi-k2.5',
     },
   },
-  'agent:main:genwork:old-claude-session': {
+  'agent:main:mixcwork:old-claude-session': {
     sessionId: 'session-old-claude',
-    modelProvider: 'genwork',
+    modelProvider: 'mixcwork',
     model: 'claude-sonnet-4-5-20250929',
     systemPromptReport: {
-      provider: 'genwork',
+      provider: 'mixcwork',
       model: 'claude-sonnet-4-5-20250929',
     },
   },
@@ -139,8 +139,6 @@ const createSync = (tmpDir, appConfig, options = {}) => {
     getFeishuInstances: () => options.feishuInstances ?? [],
     getQQInstances: () => options.qqInstances ?? [],
     getWecomConfig: () => null,
-    getPopoConfig: () => options.popoConfig ?? null,
-    getPopoInstances: () => options.popoInstances ?? [],
     getNimConfig: () => options.nimConfig ?? null,
     getNeteaseBeeChanConfig: () => null,
     getWeixinConfig: () => null,
@@ -184,11 +182,11 @@ test('sync writes native moonshot provider config and migrates matching managed 
   assert.equal(config.browser.enabled, true);
 
   const sessionStore = JSON.parse(fs.readFileSync(path.join(sessionsDir, 'sessions.json'), 'utf8'));
-  assert.equal(sessionStore['agent:main:genwork:current-session'].modelProvider, 'moonshot');
-  assert.equal(sessionStore['agent:main:genwork:current-session'].model, 'kimi-k2.5');
-  assert.equal(sessionStore['agent:main:genwork:current-session'].systemPromptReport.provider, 'moonshot');
-  assert.equal(sessionStore['agent:main:genwork:old-claude-session'].modelProvider, 'genwork');
-  assert.equal(sessionStore['agent:main:genwork:old-claude-session'].model, 'claude-sonnet-4-5-20250929');
+  assert.equal(sessionStore['agent:main:mixcwork:current-session'].modelProvider, 'moonshot');
+  assert.equal(sessionStore['agent:main:mixcwork:current-session'].model, 'kimi-k2.5');
+  assert.equal(sessionStore['agent:main:mixcwork:current-session'].systemPromptReport.provider, 'moonshot');
+  assert.equal(sessionStore['agent:main:mixcwork:old-claude-session'].modelProvider, 'mixcwork');
+  assert.equal(sessionStore['agent:main:mixcwork:old-claude-session'].model, 'claude-sonnet-4-5-20250929');
   assert.equal(sessionStore['agent:main:wecom:direct:wangning'].execSecurity, 'deny');
   assert.equal(sessionStore['agent:main:feishu:dm:ou_123'].execSecurity, 'deny');
   assert.equal('skillsSnapshot' in sessionStore['agent:main:wecom:direct:wangning'], false);
@@ -220,10 +218,10 @@ test('sync maps moonshot coding plan sessions to kimi-coding model refs', (t) =>
   assert.deepEqual(config.commands.ownerAllowFrom, ['gateway-client', '*']);
 
   const sessionStore = JSON.parse(fs.readFileSync(path.join(sessionsDir, 'sessions.json'), 'utf8'));
-  assert.equal(sessionStore['agent:main:genwork:current-session'].modelProvider, 'kimi-coding');
-  assert.equal(sessionStore['agent:main:genwork:current-session'].model, 'k2p5');
-  assert.equal(sessionStore['agent:main:genwork:current-session'].systemPromptReport.provider, 'kimi-coding');
-  assert.equal(sessionStore['agent:main:genwork:current-session'].systemPromptReport.model, 'k2p5');
+  assert.equal(sessionStore['agent:main:mixcwork:current-session'].modelProvider, 'kimi-coding');
+  assert.equal(sessionStore['agent:main:mixcwork:current-session'].model, 'k2p5');
+  assert.equal(sessionStore['agent:main:mixcwork:current-session'].systemPromptReport.provider, 'kimi-coding');
+  assert.equal(sessionStore['agent:main:mixcwork:current-session'].systemPromptReport.model, 'k2p5');
   assert.equal(sessionStore['agent:main:wecom:direct:wangning'].execSecurity, 'deny');
   assert.equal(sessionStore['agent:main:feishu:dm:ou_123'].execSecurity, 'deny');
   assert.equal('skillsSnapshot' in sessionStore['agent:main:wecom:direct:wangning'], false);
@@ -250,8 +248,8 @@ test('sync denies exec for native channel sessions even without provider migrati
   assert.equal(result.changed, true);
 
   const sessionStore = JSON.parse(fs.readFileSync(path.join(sessionsDir, 'sessions.json'), 'utf8'));
-  assert.equal(sessionStore['agent:main:genwork:current-session'].modelProvider, 'genwork');
-  assert.equal(sessionStore['agent:main:genwork:current-session'].model, 'kimi-k2.5');
+  assert.equal(sessionStore['agent:main:mixcwork:current-session'].modelProvider, 'mixcwork');
+  assert.equal(sessionStore['agent:main:mixcwork:current-session'].model, 'kimi-k2.5');
   assert.equal(sessionStore['agent:main:wecom:direct:wangning'].execSecurity, 'deny');
   assert.equal(sessionStore['agent:main:feishu:dm:ou_123'].execSecurity, 'deny');
   assert.equal('skillsSnapshot' in sessionStore['agent:main:wecom:direct:wangning'], false);
@@ -298,7 +296,7 @@ test('sync writes scheduled-task policy into managed AGENTS.md for native channe
   assert.match(agentsMd, /Always answer in Chinese\./);
 });
 
-test('sync preserves existing AGENTS.md content above the Genwork managed marker', (t) => {
+test('sync preserves existing AGENTS.md content above the Mixcwork managed marker', (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'openclaw-config-sync-agents-preserve-'));
   t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
   setElectronPaths(tmpDir);
@@ -320,11 +318,11 @@ test('sync preserves existing AGENTS.md content above the Genwork managed marker
 
   const agentsMd = fs.readFileSync(path.join(workspaceDir, 'AGENTS.md'), 'utf8');
   assert.match(agentsMd, /^# Custom Workspace Notes\n\nKeep this line\./);
-  assert.match(agentsMd, /<!-- Genwork managed: do not edit below this line -->/);
+  assert.match(agentsMd, /<!-- Mixcwork managed: do not edit below this line -->/);
   assert.doesNotMatch(agentsMd, /^# AGENTS\.md - Your Workspace/m);
 });
 
-test('sync backfills the default OpenClaw AGENTS template when an old workspace only has Genwork managed content', (t) => {
+test('sync backfills the default OpenClaw AGENTS template when an old workspace only has Mixcwork managed content', (t) => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'openclaw-config-sync-agents-backfill-'));
   t.after(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
   setElectronPaths(tmpDir);
@@ -334,7 +332,7 @@ test('sync backfills the default OpenClaw AGENTS template when an old workspace 
   fs.writeFileSync(
     path.join(workspaceDir, 'AGENTS.md'),
     [
-      '<!-- Genwork managed: do not edit below this line -->',
+      '<!-- Mixcwork managed: do not edit below this line -->',
       '',
       '## System Prompt',
       '',
@@ -354,7 +352,7 @@ test('sync backfills the default OpenClaw AGENTS template when an old workspace 
   const agentsMd = fs.readFileSync(path.join(workspaceDir, 'AGENTS.md'), 'utf8');
   assert.match(agentsMd, /^# AGENTS\.md - Your Workspace/m);
   assert.match(agentsMd, /## Every Session/);
-  assert.match(agentsMd, /<!-- Genwork managed: do not edit below this line -->/);
+  assert.match(agentsMd, /<!-- Mixcwork managed: do not edit below this line -->/);
   assert.match(agentsMd, /## Scheduled Tasks/);
   assert.doesNotMatch(agentsMd, /Old managed-only content\./);
 });
@@ -591,8 +589,8 @@ test('sync writes non-empty placeholder apiKey for providers that do not require
   assert.equal(result.changed, true);
 
   const config = JSON.parse(fs.readFileSync(path.join(tmpDir, 'state', 'openclaw.json'), 'utf8'));
-  const providerConfig = config.models.providers.genwork;
-  assert.ok(providerConfig, 'genwork provider should exist in config');
+  const providerConfig = config.models.providers.mixcwork;
+  assert.ok(providerConfig, 'mixcwork provider should exist in config');
   assert.ok(providerConfig.apiKey, 'apiKey must be a non-empty string');
-  assert.equal(providerConfig.apiKey, 'sk-genwork-local');
+  assert.equal(providerConfig.apiKey, 'sk-mixcwork-local');
 });

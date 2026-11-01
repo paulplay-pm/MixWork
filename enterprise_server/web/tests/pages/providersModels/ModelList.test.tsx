@@ -90,4 +90,25 @@ describe('pages/providersModels/ModelList', () => {
     expect(screen.queryByRole('button', { name: /Add model/i })).toBeNull();
     expect(screen.queryByRole('button', { name: /Refresh/i })).toBeNull();
   });
+
+  test('disables the refresh button when canRefresh is false', () => {
+    // A non-chat provider has no model-list endpoint to fetch from, so the
+    // button would always come back empty. It stays visible (greyed out) so
+    // the admin knows the section has models, they just cannot be fetched.
+    renderList({ canRefresh: false });
+    const btn = screen.getByRole('button', { name: /Fetch models/i });
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute('title', expect.stringContaining('manually'));
+    expect(screen.getByRole('button', { name: /Add model/i })).toBeInTheDocument();
+  });
+
+  test('the default model carries the badge on its type chip', () => {
+    renderList({ defaultTypesByModel: { m1: ['vision'] } });
+    // `getByText` matches the chip span itself (a nested badge does not join
+    // its parent's own text), so the matched element IS the chip.
+    const visionChip = screen.getByText('Vision');
+    expect(visionChip.textContent).toContain('Default');
+    const chatChip = screen.getByText('Chat');
+    expect(chatChip.textContent).not.toContain('Default');
+  });
 });

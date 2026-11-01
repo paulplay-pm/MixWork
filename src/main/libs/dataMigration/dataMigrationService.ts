@@ -14,15 +14,15 @@ import { SQLITE_BACKUP_DIR_NAME } from '../sqliteBackup/constants';
 import type { DataMigrationVersion } from './constants';
 import {
   adoptLegacySqliteFile,
-  GENWORK_REBRAND_MIGRATION_VERSION,
-  runGenworkRebrandMigration,
-} from './migrations/genworkRebrandMigration';
+  MIXCWORK_REBRAND_MIGRATION_VERSION,
+  runMixcworkRebrandMigration,
+} from './migrations/mixcworkRebrandMigration';
 
 const CURRENT_ARCHIVE_ROOT = APP_NAME;
-const MANIFEST_FILE_NAME = '.genwork-migration.json';
-const PENDING_RESTORE_FILE_NAME = '.genwork-data-migration-restore-pending.json';
-const LAST_RESTORE_RESULT_FILE_NAME = '.genwork-data-migration-restore-result.json';
-const ARCHIVE_FORMAT = 'genwork-data-migration';
+const MANIFEST_FILE_NAME = '.mixcwork-migration.json';
+const PENDING_RESTORE_FILE_NAME = '.mixcwork-data-migration-restore-pending.json';
+const LAST_RESTORE_RESULT_FILE_NAME = '.mixcwork-data-migration-restore-result.json';
+const ARCHIVE_FORMAT = 'mixcwork-data-migration';
 const ARCHIVE_FORMAT_VERSION = 2;
 const SQLITE_BACKUP_TOP_LEVEL_DIR_NAME = SQLITE_BACKUP_DIR_NAME.split('/')[0] || 'backups';
 const SQLITE_RESTORE_FILE_NAMES = [
@@ -59,8 +59,6 @@ const SQLITE_MIGRATION_TABLES = [
 ] as const;
 
 const SQLITE_MIGRATION_KV_KEYS = [
-  'auth_tokens',
-  'auth_user',
   'app_config',
   'skills_state',
   'openclaw_session_policy',
@@ -188,23 +186,23 @@ const ALLOWED_ENTRY_TYPES = new Set([
  * operations in try/catch and log via `console.log` with the `[Migration]`
  * prefix.
  */
-export const GENWORK_DATA_MIGRATIONS: ReadonlyArray<DataMigrationVersion & {
+export const MIXCWORK_DATA_MIGRATIONS: ReadonlyArray<DataMigrationVersion & {
   apply: (db: Database.Database, userDataDir: string) => void;
 }> = [
   {
-    ...GENWORK_REBRAND_MIGRATION_VERSION,
+    ...MIXCWORK_REBRAND_MIGRATION_VERSION,
     apply: (db, userDataDir) => {
       try {
         const adopted = adoptLegacySqliteFile(userDataDir);
-        const result = runGenworkRebrandMigration(db, userDataDir);
+        const result = runMixcworkRebrandMigration(db, userDataDir);
         console.log(
-          `[Migration] genwork-rebrand-2026-09-04: adoptedDbFile=${adopted} `
+          `[Migration] mixcwork-rebrand-2026-09-04: adoptedDbFile=${adopted} `
             + `tables=${result.renamedTables.length} `
             + `columns=${result.renamedColumns.length} `
             + `kvKeys=${result.renamedKvKeys.length}`,
         );
       } catch (error) {
-        console.log('[Migration] genwork-rebrand-2026-09-04 failed:', error);
+        console.log('[Migration] mixcwork-rebrand-2026-09-04 failed:', error);
       }
     },
   },
@@ -309,10 +307,10 @@ export const formatDataMigrationTimestamp = (date = new Date()): string => (
 );
 
 export const buildDataMigrationBackupFileName = (date = new Date()): string =>
-  `genwork-backup-${formatDataMigrationTimestamp(date)}.tar.gz`;
+  `mixcwork-backup-${formatDataMigrationTimestamp(date)}.tar.gz`;
 
 export const buildDataMigrationRollbackFileName = (date = new Date()): string =>
-  `genwork-rollback-${formatDataMigrationTimestamp(date)}.tar.gz`;
+  `mixcwork-rollback-${formatDataMigrationTimestamp(date)}.tar.gz`;
 
 export const ensureTarGzFileName = (filePath: string): string => {
   const trimmed = filePath.trim();
@@ -1175,7 +1173,7 @@ export const createMigrationArchiveSync = (
   const userDataPath = resolvePath(input.userDataPath);
   const outputPath = resolvePath(input.outputPath);
   const archiveKind = input.archiveKind ?? 'backup';
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-data-migration-'));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-data-migration-'));
   const stageParent = path.join(tempRoot, 'stage');
   const stageUserDataRoot = path.join(stageParent, CURRENT_ARCHIVE_ROOT);
 
@@ -1309,7 +1307,7 @@ const inspectArchiveEntry = (
 };
 
 const validateArchiveContentSync = (archivePath: string, root: string): void => {
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-data-migration-inspect-'));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-data-migration-inspect-'));
   try {
     tar.extract({
       sync: true,
@@ -1369,7 +1367,7 @@ export const inspectMigrationArchiveSync = (
   });
 
   if (!state.root || state.entryCount <= 0) {
-    throw new Error('Backup archive is empty or missing Genwork user data.');
+    throw new Error('Backup archive is empty or missing Mixcwork user data.');
   }
   if (requireSqliteDatabase && !state.hasSqliteDatabase) {
     throw new Error(`Backup archive is missing ${DB_FILENAME}.`);
@@ -1410,7 +1408,7 @@ const extractMigrationArchiveToTempSync = (
     validateSqliteDatabase: false,
     validateManifest: false,
   });
-  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-data-migration-restore-'));
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-data-migration-restore-'));
 
   try {
     tar.extract({
@@ -1437,7 +1435,7 @@ const extractMigrationArchiveToTempSync = (
 
     const sourceRoot = path.join(tempRoot, ...info.root.split('/'));
     if (!fs.existsSync(sourceRoot) || !fs.statSync(sourceRoot).isDirectory()) {
-      throw new Error('Backup archive did not extract a valid Genwork user data directory.');
+      throw new Error('Backup archive did not extract a valid Mixcwork user data directory.');
     }
     if (options.validateArchiveContent ?? true) {
       validateExtractedArchiveContentSync(sourceRoot);

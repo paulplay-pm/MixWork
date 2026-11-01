@@ -18,8 +18,8 @@ const HomeSkinEmblem: React.FC<HomeSkinEmblemProps> = ({ className }) => {
 
   return (
     <img
-      src={shouldUseSkinAsset ? assetUrl ?? 'genwork.png' : 'genwork.png'}
-      alt="GenWork"
+      src={shouldUseSkinAsset ? assetUrl ?? 'mixcwork-small.png' : 'mixcwork-small.png'}
+      alt="MixcWork"
       draggable={false}
       onError={() => {
         if (assetUrl) setFailedUrl(assetUrl);

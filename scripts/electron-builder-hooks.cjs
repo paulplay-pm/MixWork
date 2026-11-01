@@ -176,7 +176,7 @@ function precompileLocalExtensions(runtimeRoot, buildHint) {
 }
 
 function ensureBundledLocalExtensions(runtimeRoot, buildHint) {
-  const requiredLocalExtensions = ['mcp-bridge', 'ask-user-question', 'genwork-media-generation'];
+  const requiredLocalExtensions = ['mcp-bridge', 'ask-user-question', 'mixcwork-media-generation'];
   const missingCompiledExtensions = requiredLocalExtensions.filter(
     (extensionId) => !hasCompiledLocalExtension(runtimeRoot, extensionId),
   );

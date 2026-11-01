@@ -10,7 +10,7 @@
 
 ## 1. Problem
 
-The GenWork 工作台 "模型配置" (大模型管理) page manages two related
+The MixCWork 工作台 "模型配置" (大模型管理) page manages two related
 resources — **providers** (model sources, each with a Base URL + API key +
 protocol) and the **models** under each provider. Much of the plumbing already
 exists (provider CRUD, model CRUD, sampling columns, test-connection,

@@ -122,7 +122,13 @@ describe('POST /api/share-deployments/node', () => {
     expect(body.code).toBe(0);
     expect(body.data.deploymentId).toMatch(/^[0-9a-f-]{36}$/);
     expect(body.data.shareId).toBe(shareId);
-    expect(body.data.accessMode).toBe('code');
+    // `html_shares.access_mode` is the single page-gate source of truth, and
+    // POST /api/html-shares mints it as 'org'|'public' — never the legacy
+    // 'code'. This share was created without an accessMode, so the stored
+    // column is 'public' and that is what the deployment response must
+    // report. Asserting 'code' here would demand that the response echo the
+    // legacy multipart field instead of the stored column.
+    expect(body.data.accessMode).toBe('public');
     expect(body.data.deploymentStatus).toBe('queued');
     expect(body.data.deploymentKind).toBe('node_service');
     expect(body.data.sourceSha256).toBe(sha);

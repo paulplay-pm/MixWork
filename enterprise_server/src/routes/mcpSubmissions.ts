@@ -111,6 +111,13 @@ mcpSubmissionsRoutes.post('/admin/mcp-connectors/submissions', requireAuth, asyn
   if (sseOauthCombination(cfg.transport, cfg.authMode)) {
     return c.json({ error: 'sse_oauth_not_supported' }, 400);
   }
+  // Org-credential modes are admin-only. A member picks the `url` here, and an
+  // admin who approves a shared-key connector then hands the org key to
+  // whatever address the member typed — so the mode itself is refused rather
+  // than relying on the reviewer to notice the URL.
+  if (cfg.authMode === 'shared-key' || cfg.authMode === 'client-creds') {
+    return c.json({ error: 'org_credential_mode_not_submittable' }, 400);
+  }
   const missing = missingAuthField(cfg.authMode, cfg.authConfig);
   if (missing) return c.json({ error: 'missing_auth_field', field: missing }, 400);
 

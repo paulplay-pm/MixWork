@@ -17,23 +17,24 @@ import {
 } from '../shared/library/constants';
 import type { LibrarySessionRef } from '../shared/library/types';
 import { SIDEBAR_TASK_FILTER_ENABLED } from './components/agentSidebar/SidebarTaskFilterButton';
-import { GenWorkView } from './components/genwork';
+import KitsView from './components/kits/KitsView';
+import LibraryView from './components/library/LibraryView';
+import McpAuthHost from './components/mcp/McpAuthHost';
+import { MixCWorkView } from './components/mixcwork';
 import {
   CoworkShortcutDirection,
   type CoworkTaskSearchRequestEventDetail,
   CoworkTaskSearchRequestSource,
   CoworkUiEvent,
-} from './components/genwork/constants';
+} from './components/mixcwork/constants';
 import {
   ConversationSearchShortcutTarget,
   resolveConversationSearchShortcutTarget,
-} from './components/genwork/conversationSearchShortcut';
-import CoworkPermissionModal from './components/genwork/CoworkPermissionModal';
-import CoworkQuestionWizard from './components/genwork/CoworkQuestionWizard';
-import EngineFailureOverlay from './components/genwork/EngineFailureOverlay';
-import EngineStartupOverlay from './components/genwork/EngineStartupOverlay';
-import KitsView from './components/kits/KitsView';
-import LibraryView from './components/library/LibraryView';
+} from './components/mixcwork/conversationSearchShortcut';
+import CoworkPermissionModal from './components/mixcwork/CoworkPermissionModal';
+import CoworkQuestionWizard from './components/mixcwork/CoworkQuestionWizard';
+import EngineFailureOverlay from './components/mixcwork/EngineFailureOverlay';
+import EngineStartupOverlay from './components/mixcwork/EngineStartupOverlay';
 import { ScheduledTasksView } from './components/scheduledTasks';
 import Settings, { type SettingsOpenOptions } from './components/Settings';
 import Sidebar from './components/Sidebar';
@@ -58,14 +59,13 @@ import { LoginPage } from './login/LoginPage';
 import { SkinProvider } from './providers/SkinProvider';
 import type { ApiConfig } from './services/api';
 import { apiService } from './services/api';
-import { authService } from './services/auth';
 import { configService } from './services/config';
-import { genworkService } from './services/genwork';
 import { i18nService } from './services/i18n';
 import {
   beginLatestAsyncRequest,
   isLatestAsyncRequest,
 } from './services/latestAsyncRequest';
+import { mixcworkService } from './services/mixcwork';
 import { scheduledTaskService } from './services/scheduledTask';
 import { isTextEditingSafeShortcut, matchesShortcut } from './services/shortcuts';
 import { themeService } from './services/theme';
@@ -78,6 +78,7 @@ import {
   selectPendingPermissions,
 } from './store/selectors/coworkSelectors';
 import { openArtifactPreviewTab } from './store/slices/artifactSlice';
+import { setActiveKitIds } from './store/slices/kitSlice';
 import {
   clearDraftAttachments,
   clearDraftSelectedTextSnippets,
@@ -85,12 +86,11 @@ import {
   setDraftKitIds,
   setDraftPrompt,
   setDraftSkillIds,
-} from './store/slices/genworkSlice';
-import { setActiveKitIds } from './store/slices/kitSlice';
+} from './store/slices/mixcworkSlice';
 import { setAvailableModels, setDefaultSelectedModel } from './store/slices/modelSlice';
 import { clearSelection } from './store/slices/quickActionSlice';
 import { setActiveSkillIds } from './store/slices/skillSlice';
-import { GenWorkCollaborationMode, type GenWorkPermissionResult } from './types/genwork';
+import { MixCWorkCollaborationMode, type MixCWorkPermissionResult } from './types/mixcwork';
 
 const AGENT_TASK_SLOT_SHORTCUT_ACTIONS = [
   ShortcutAction.OpenAgentTask1,
@@ -216,7 +216,6 @@ const App: React.FC = () => {
   const currentSessionId = useSelector(selectCurrentSessionId);
   const pendingPermission = useSelector(selectFirstCurrentSessionPendingPermission);
   const pendingPermissions = useSelector(selectPendingPermissions);
-  const authUser = useSelector((state: RootState) => state.auth.user);
   const isWindows = window.electron.platform === 'win32';
   const [minimizedPermissionIds, setMinimizedPermissionIds] = useState<string[]>([]);
   const isPendingPermissionMinimized = pendingPermission
@@ -436,15 +435,6 @@ const App: React.FC = () => {
         });
         mark(i18nReady ? 'i18nService.initialize done' : 'i18nService.initialize degraded — using persisted language hint');
 
-        // Single attempt: authService.init() re-entry tears down listeners, so a
-        // concurrent retry could stack them; its in-flight run self-completes
-        // once IPC recovers.
-        mark('authService.init begin');
-        const authReady = await runStep('authService.init', () => authService.init(), {
-          attempts: 1,
-          firstTimeoutMs: INIT_STEP_RETRY_TIMEOUT_MS,
-        });
-        mark(authReady ? 'authService.init done' : 'authService.init pending (auth restore completes in background)');
         coreStartupServicesInitializedRef.current = true;
       }
 
@@ -710,7 +700,7 @@ const App: React.FC = () => {
 
   const handleOpenLibrarySession = useCallback((session: LibrarySessionRef) => {
     setMainView('cowork');
-    void genworkService.loadSession(session.sessionId).then(loaded => {
+    void mixcworkService.loadSession(session.sessionId).then(loaded => {
       if (!loaded || !session.sessionArtifactId) return;
       dispatch(openArtifactPreviewTab({
         sessionId: session.sessionId,
@@ -737,12 +727,12 @@ const App: React.FC = () => {
 
   const openHomeWithKit = useCallback((kitId: string, text?: string) => {
     dispatch(setActiveKitIds([kitId]));
-    genworkService.clearSession({ restoreAgentSkills: true });
+    mixcworkService.clearSession({ restoreAgentSkills: true });
     dispatch(clearSelection());
     if (text !== undefined) {
       dispatch(setDraftCollaborationMode({
         draftKey: '__home__',
-        mode: GenWorkCollaborationMode.Default,
+        mode: MixCWorkCollaborationMode.Default,
       }));
       // Set the draft prompt before switching view, so that when CoworkPromptInput
       // mounts/updates with draftKey='__home__', it picks up the text.
@@ -768,7 +758,7 @@ const App: React.FC = () => {
 
   const handleSkillUse = useCallback((skillId: string) => {
     dispatch(setActiveSkillIds([skillId]));
-    genworkService.clearSession({ restoreAgentSkills: true });
+    mixcworkService.clearSession({ restoreAgentSkills: true });
     dispatch(clearSelection());
     dispatch(setDraftSkillIds({ draftKey: '__home__', skillIds: [skillId] }));
     setMainView('cowork');
@@ -813,11 +803,11 @@ const App: React.FC = () => {
   const handleNewChat = useCallback(() => {
     // Only clear when already on home (no session) — preserve __home__ draft when returning from a session
     const shouldClearInput = mainView === 'cowork' && !currentSessionId;
-    genworkService.clearSession({ restoreAgentSkills: true });
+    mixcworkService.clearSession({ restoreAgentSkills: true });
     dispatch(clearSelection());
     dispatch(setDraftCollaborationMode({
       draftKey: '__home__',
-      mode: GenWorkCollaborationMode.Default,
+      mode: MixCWorkCollaborationMode.Default,
     }));
     setMainView('cowork');
     window.setTimeout(() => {
@@ -829,11 +819,11 @@ const App: React.FC = () => {
 
   const handleCreateSkillByChat = useCallback(() => {
     dispatch(setDraftPrompt({ sessionId: '__home__', draft: i18nService.t('skillCreatorPrompt') }));
-    genworkService.clearSession();
+    mixcworkService.clearSession();
     dispatch(clearSelection());
     dispatch(setDraftCollaborationMode({
       draftKey: '__home__',
-      mode: GenWorkCollaborationMode.Default,
+      mode: MixCWorkCollaborationMode.Default,
     }));
     setMainView('cowork');
   }, [dispatch]);
@@ -955,7 +945,7 @@ const App: React.FC = () => {
 
   const runUpdateCheck = useCallback(async () => {
     try {
-      const result = await window.electron.appUpdate.checkNow({ userId: authUser?.yid });
+      const result = await window.electron.appUpdate.checkNow();
       setAppUpdateState(result.state);
       if (!result.success) {
         console.error('[App] app update check failed:', result.error);
@@ -963,7 +953,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error('Failed to check app update:', error);
     }
-  }, [authUser]);
+  }, []);
 
   const updateInfo = appUpdateState.info;
 
@@ -1081,9 +1071,9 @@ const App: React.FC = () => {
     await handleConfirmUpdate();
   }, [handleConfirmUpdate]);
 
-  const handlePermissionResponse = useCallback(async (result: GenWorkPermissionResult) => {
+  const handlePermissionResponse = useCallback(async (result: MixCWorkPermissionResult) => {
     if (!pendingPermission) return;
-    await genworkService.respondToPermission(pendingPermission.requestId, result);
+    await mixcworkService.respondToPermission(pendingPermission.requestId, result);
   }, [pendingPermission]);
 
   const handleMinimizePermission = useCallback(() => {
@@ -1240,7 +1230,7 @@ const App: React.FC = () => {
         if (mainView === 'cowork') {
           window.dispatchEvent(new CustomEvent(CoworkUiEvent.ShortcutStopSession));
         } else if (currentSessionId) {
-          void genworkService.stopSession(currentSessionId);
+          void mixcworkService.stopSession(currentSessionId);
         }
         return;
       }
@@ -1411,11 +1401,11 @@ const App: React.FC = () => {
         // Logging must not block navigation.
       }
 
-      genworkService.clearSession({ restoreAgentSkills: true });
+      mixcworkService.clearSession({ restoreAgentSkills: true });
       dispatch(clearSelection());
       dispatch(setDraftCollaborationMode({
         draftKey: '__home__',
-        mode: GenWorkCollaborationMode.Default,
+        mode: MixCWorkCollaborationMode.Default,
       }));
       dispatch(setDraftPrompt({ sessionId: '__home__', draft: text }));
       dispatch(clearDraftAttachments('__home__'));
@@ -1464,7 +1454,7 @@ const App: React.FC = () => {
     const unsubscribe = window.electron.cowork.onOpenSessionFromNotification?.(({ sessionId }) => {
       setShowSettings(false);
       setMainView('cowork');
-      void genworkService.loadSession(sessionId);
+      void mixcworkService.loadSession(sessionId);
     });
     void window.electron.cowork.notifyOpenSessionFromNotificationReady?.();
     return unsubscribe;
@@ -1829,7 +1819,7 @@ const App: React.FC = () => {
               />
             ) : mainView === 'library' ? (
               <LibraryView
-                isAuthenticated={Boolean(authUser)}
+                isAuthenticated={false}
                 isSidebarCollapsed={isSidebarCollapsed}
                 onToggleSidebar={handleToggleSidebar}
                 onOpenSession={handleOpenLibrarySession}
@@ -1846,10 +1836,11 @@ const App: React.FC = () => {
                 }}
               />
             ) : (
-              <GenWorkView
+              <MixCWorkView
                 onRequestAppSettings={handleShowSettings}
                 onShowSkills={handleShowSkills}
                 onShowKits={handleShowKits}
+                onShowConnectors={handleShowMcp}
                 isSidebarCollapsed={isSidebarCollapsed}
                 onToggleSidebar={handleToggleSidebar}
                 onNewChat={handleNewChat}
@@ -1875,6 +1866,11 @@ const App: React.FC = () => {
         onRequestAppSettings={handleShowSettings}
         suspended={showSettings || showUpdateModal || isPermissionModalOpen}
       />
+
+      {/* The MCP auth modal is opened from the management page and from the
+          chat input's connector picker, so it is hosted once here rather
+          than inside either surface. */}
+      <McpAuthHost />
 
       {/* 设置窗口显示在所有主内容之上，但不影响主界面的交互 */}
       {showSettings && (

@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **Working dir for all server paths:** `/Users/paulwang/work/GenWork/enterprise_server`. Frontend under `enterprise_server/web`.
+- **Working dir for all server paths:** `/Users/paulwang/work/MixCWork/enterprise_server`. Frontend under `enterprise_server/web`.
 - **Run migrations** by adding numbered SQL files to `src/db/migrations/` (runner `src/db/migrate.ts` picks them up; latest existing is `027`). All migrations must be idempotent (`IF NOT EXISTS` / `ON CONFLICT ... DO NOTHING` / guarded `UPDATE`).
 - **DB in tests:** every test imports `'../helpers/setupEnv'` and mocks the pool:
   ```ts

@@ -1,13 +1,15 @@
 import type { JSX } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation,useNavigate } from 'react-router-dom';
 
 import { authApi } from '../api/auth';
 import { ApiError } from '../api/client';
 import { ssoApi } from '../api/sso';
 import type { OrgSummary } from '../api/types';
+import { useAuthStore } from '../auth/store';
 import { useAuth } from '../auth/useAuth';
 import { t } from '../i18n';
+import { LoginErrorCode } from '../shared/loginErrorCodes';
 import type { SsoPublicProvider } from './sso/types';
 
 interface LocationState {
@@ -48,13 +50,32 @@ export function ssoErrorMessage(search: string): string | null {
 
 function explainLoginError(e: unknown): string {
   if (e instanceof ApiError) {
-    // Rate limit (429) takes priority over the status-based branches.
-    if (e.body?.error === 'rate_limited') return t('auth.login.error.rateLimited');
-    if (e.status === 401) {
-      // Server replies `{"error":"invalid"}` for "unknown org", "user not
-      // found", and "wrong password" — don't leak which one.
-      return t('auth.login.error.invalid');
+    // The server names the failure cause in the body's `error` field, so the
+    // message can point at the actual cause instead of a bare 401. The
+    // credential codes are deliberately collapsed into one generic message
+    // (see below). Codes we don't know fall through to the status-based
+    // branches.
+    switch (e.body?.error) {
+      case LoginErrorCode.OrgNotFound:
+        return t('auth.login.error.orgNotFound');
+      // An unknown username and a wrong password get the SAME message — the
+      // server still tells us which one it was, but the user is not told, so
+      // the form cannot be used to enumerate accounts.
+      case LoginErrorCode.UserNotFound:
+      case LoginErrorCode.InvalidPassword:
+        return t('auth.login.error.credentials');
+      case LoginErrorCode.UserDisabled:
+        return t('auth.login.error.userDisabled');
+      case LoginErrorCode.RateLimited:
+        return t('auth.login.error.rateLimited');
+      case LoginErrorCode.OrgRequired:
+        return t('auth.login.error.orgRequired');
+      case LoginErrorCode.Invalid:
+        return t('auth.login.error.invalid');
+      default:
+        break;
     }
+    if (e.status === 401) return t('auth.login.error.invalid');
     if (e.status >= 500) return t('auth.login.error.server');
     return t('auth.login.error.http').replace('{status}', String(e.status));
   }
@@ -89,6 +110,11 @@ export function LoginPage(): JSX.Element {
   const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState<string | null>(() => ssoErrorMessage(loc.search));
   const [busy, setBusy] = useState(false);
+  // A session that lapsed and could not be renewed signs the admin out
+  // without them asking. Say so, so the empty form is not read as a bug.
+  const logoutReason = useAuthStore((st) => st.logoutReason);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const passwordRef = useRef<HTMLInputElement>(null);
   const { login } = useAuth();
   const nav = useNavigate();
 
@@ -109,6 +135,13 @@ export function LoginPage(): JSX.Element {
         setOrgs([]);
       });
   }, []);
+
+  useEffect(() => {
+    if (logoutReason !== 'session-expired') return;
+    setSessionExpired(true);
+    // Show it once: a later manual sign-out must not repeat the notice.
+    useAuthStore.setState({ logoutReason: null });
+  }, [logoutReason]);
 
   // SSO connections for the chosen org, in server sort_order. The login
   // page is public (no token), so this uses the org-name-keyed public
@@ -153,10 +186,38 @@ export function LoginPage(): JSX.Element {
     }
   };
 
-  // Enter in any input submits. Most natural target is the password field
-  // (the last input before the submit button) but supporting all three
-  // keeps muscle memory consistent.
-  const onInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+  /**
+   * Move the credential flow into the password field.
+   *
+   * Chromium's password manager decides by itself which fields make up a
+   * login pair, and fills the field it pairs as soon as that field gains
+   * focus — writing straight into the DOM, where React never sees it. When it
+   * gets the pairing wrong (this page has no <form>), the username lands in
+   * the password box: the admin then types their password on top of a value
+   * they never put there. The box only ever holds what was typed into it, so
+   * anything matching the username is handed back empty.
+   */
+  const focusPassword = (): void => {
+    const el = passwordRef.current;
+    if (!el) return;
+    el.focus();
+    if (el.value && el.value === username) {
+      el.value = '';
+      setPassword('');
+    }
+  };
+
+  // Enter walks the form instead of submitting from every field: the
+  // username field advances to the password field, and the password field
+  // submits — so a half-typed username can't fire a login request the user
+  // never meant to make.
+  const onUsernameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
+    if (e.key === 'Enter' && !busy) {
+      e.preventDefault();
+      focusPassword();
+    }
+  };
+  const onPasswordKeyDown = (e: React.KeyboardEvent<HTMLInputElement>): void => {
     if (e.key === 'Enter' && !busy) {
       e.preventDefault();
       void submit();
@@ -176,12 +237,12 @@ export function LoginPage(): JSX.Element {
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-3 mb-6">
           <img
-            src="/brand/genwork-small.png"
-            alt="GenWork"
+            src="/brand/mixcwork-small.png"
+            alt="MixcWork"
             draggable={false}
             className="w-12 h-12 rounded-[var(--radius-lg)] object-contain"
           />
-          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">GenWork</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">MixcWork</h1>
         </div>
         <div className="w-full p-8 bg-[var(--bg-secondary)] rounded-[var(--radius-lg)] shadow border border-[var(--border-subtle)]">
           <h2 className="text-base font-semibold mb-4 text-[var(--text-primary)]">{t('auth.login.title')}</h2>
@@ -202,19 +263,25 @@ export function LoginPage(): JSX.Element {
           )}
           <input
             className="border border-[var(--border-default)] w-full p-2 mb-2 rounded-[var(--radius-md)] bg-[var(--bg-secondary)] text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
+            name="username"
+            autoComplete="username"
+            spellCheck={false}
+            autoCapitalize="none"
             placeholder={t('auth.login.username')}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            onKeyDown={onInputKeyDown}
+            onKeyDown={onUsernameKeyDown}
           />
           <div className="relative mb-4">
             <input
+              ref={passwordRef}
               className="border border-[var(--border-default)] w-full p-2 pr-10 rounded-[var(--radius-md)] bg-[var(--bg-secondary)] text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
               type={showPassword ? 'text' : 'password'}
+              name="password"
               placeholder={t('auth.login.password')}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={onInputKeyDown}
+              onKeyDown={onPasswordKeyDown}
               autoComplete="current-password"
             />
             <button
@@ -234,6 +301,11 @@ export function LoginPage(): JSX.Element {
           >
             {t('auth.login.submit')}
           </button>
+          {sessionExpired && (
+            <p className="text-[var(--warning-primary)] mt-2 text-sm">
+              {t('auth.session.expiredHint')}
+            </p>
+          )}
           {err && <p className="text-[var(--danger-primary)] mt-2 text-sm">{err}</p>}
 
           {providers.length > 0 && (

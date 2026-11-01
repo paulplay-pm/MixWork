@@ -10,28 +10,22 @@ import { store } from '../store';
 import {
   addDingTalkInstance,
   addDiscordInstance,
-  addEmailInstance,
   addFeishuInstance,
-  addPopoInstance,
   addQQInstance,
   addTelegramInstance,
   addWecomInstance,
   removeDingTalkInstance,
   removeDiscordInstance,
-  removeEmailInstance,
   removeFeishuInstance,
-  removePopoInstance,
   removeQQInstance,
   removeTelegramInstance,
   removeWecomInstance,
   setConfig,
   setDingTalkInstanceConfig,
   setDiscordInstanceConfig,
-  setEmailInstanceConfig,
   setError,
   setFeishuInstanceConfig,
   setLoading,
-  setPopoInstanceConfig,
   setQQInstanceConfig,
   setStatus,
   setTelegramInstanceConfig,
@@ -42,7 +36,6 @@ import type {
   DingTalkOpenClawConfig,
   DiscordInstanceConfig,
   DiscordOpenClawConfig,
-  EmailInstanceConfig,
   FeishuInstanceConfig,
   FeishuOpenClawConfig,
   IMConfigResult,
@@ -52,8 +45,6 @@ import type {
   IMGatewayResult,
   IMGatewayStatus,
   IMStatusResult,
-  PopoInstanceConfig,
-  PopoOpenClawConfig,
   QQInstanceConfig,
   QQOpenClawConfig,
   TelegramInstanceConfig,
@@ -618,92 +609,6 @@ class IMService {
     }
   }
 
-  // ==================== Email Multi-Instance Operations ====================
-
-  async addEmailInstance(name: string): Promise<EmailInstanceConfig | null> {
-    try {
-      const result = await window.electron.im.addEmailInstance(name);
-      if (result.success && result.instance) {
-        store.dispatch(addEmailInstance(result.instance));
-        return result.instance;
-      }
-      console.error('[IM Service] Failed to add email instance:', result.error);
-      return null;
-    } catch (error) {
-      console.error('[IM Service] Failed to add email instance:', error);
-      return null;
-    }
-  }
-
-  async deleteEmailInstance(instanceId: string): Promise<boolean> {
-    try {
-      const result = await window.electron.im.deleteEmailInstance(instanceId);
-      if (result.success) {
-        store.dispatch(removeEmailInstance(instanceId));
-        return true;
-      }
-      console.error('[IM Service] Failed to delete email instance:', result.error);
-      return false;
-    } catch (error) {
-      console.error('[IM Service] Failed to delete email instance:', error);
-      return false;
-    }
-  }
-
-  async persistEmailInstanceConfig(instanceId: string, config: Partial<EmailInstanceConfig>): Promise<boolean> {
-    try {
-      const result: IMGatewayResult = await window.electron.im.setEmailInstanceConfig(
-        instanceId,
-        config,
-        { syncGateway: false },
-      );
-      if (result.success) {
-        store.dispatch(setEmailInstanceConfig({ instanceId, config }));
-        return true;
-      }
-      console.error('[IM Service] Failed to persist email instance config:', result.error);
-      return false;
-    } catch (error) {
-      console.error('[IM Service] Failed to persist email instance config:', error);
-      return false;
-    }
-  }
-
-  async updateEmailInstanceConfig(
-    instanceId: string,
-    config: Partial<EmailInstanceConfig>,
-    options: IMConfigUpdateOptions = {},
-  ): Promise<boolean> {
-    try {
-      store.dispatch(setLoading(true));
-      const syncGateway = options.syncGateway ?? false;
-      const result: IMGatewayResult = await window.electron.im.setEmailInstanceConfig(
-        instanceId,
-        config,
-        {
-          syncGateway,
-          restartGatewayIfRunning: options.restartGatewayIfRunning ?? syncGateway,
-          markRestartOnSave: options.markRestartOnSave,
-        },
-      );
-      if (result.success) {
-        await this.loadConfig();
-        if (syncGateway || options.reloadStatus) {
-          await this.loadStatus();
-        }
-        return true;
-      }
-      store.dispatch(setError(result.error || 'Failed to update email instance config'));
-      return false;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update email instance config';
-      store.dispatch(setError(message));
-      return false;
-    } finally {
-      store.dispatch(setLoading(false));
-    }
-  }
-
   // ==================== WeCom Multi-Instance Operations ====================
 
   async addWecomInstance(name: string): Promise<WecomInstanceConfig | null> {
@@ -938,83 +843,6 @@ class IMService {
     }
   }
 
-  // ==================== POPO Multi-Instance ====================
-
-  async addPopoInstance(name: string): Promise<PopoInstanceConfig | null> {
-    try {
-      const result = await window.electron.im.addPopoInstance(name);
-      if (result.success && result.instance) {
-        store.dispatch(addPopoInstance(result.instance));
-        return result.instance;
-      }
-      console.error('[IM Service] Failed to add POPO instance:', result.error);
-      return null;
-    } catch (error) {
-      console.error('[IM Service] Failed to add POPO instance:', error);
-      return null;
-    }
-  }
-
-  async deletePopoInstance(instanceId: string): Promise<boolean> {
-    try {
-      const result = await window.electron.im.deletePopoInstance(instanceId);
-      if (result.success) {
-        store.dispatch(removePopoInstance(instanceId));
-        return true;
-      }
-      console.error('[IM Service] Failed to delete POPO instance:', result.error);
-      return false;
-    } catch (error) {
-      console.error('[IM Service] Failed to delete POPO instance:', error);
-      return false;
-    }
-  }
-
-  async persistPopoInstanceConfig(instanceId: string, config: Partial<PopoOpenClawConfig>): Promise<boolean> {
-    try {
-      const result = await window.electron.im.setPopoInstanceConfig(instanceId, config, { syncGateway: false });
-      if (result.success) {
-        store.dispatch(setPopoInstanceConfig({ instanceId, config }));
-        return true;
-      }
-      console.error('[IM Service] Failed to persist POPO instance config:', result.error);
-      return false;
-    } catch (error) {
-      console.error('[IM Service] Failed to persist POPO instance config:', error);
-      return false;
-    }
-  }
-
-  async updatePopoInstanceConfig(
-    instanceId: string,
-    config: Partial<PopoOpenClawConfig>,
-    options: IMConfigUpdateOptions = {},
-  ): Promise<boolean> {
-    try {
-      store.dispatch(setLoading(true));
-      const syncGateway = options.syncGateway ?? false;
-      const result = await window.electron.im.setPopoInstanceConfig(instanceId, config, {
-        syncGateway,
-        restartGatewayIfRunning: options.restartGatewayIfRunning ?? syncGateway,
-        markRestartOnSave: options.markRestartOnSave,
-      });
-      if (result.success) {
-        await this.loadConfig();
-        if (syncGateway || options.reloadStatus) {
-          await this.loadStatus();
-        }
-        return true;
-      }
-      store.dispatch(setError(result.error || 'Failed to update POPO instance config'));
-      return false;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update POPO instance config';
-      store.dispatch(setError(message));
-      return false;
-    } finally {
-      store.dispatch(setLoading(false));
-    }
-  }
 }
 
 export const imService = new IMService();

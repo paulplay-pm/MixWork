@@ -9,7 +9,7 @@ index 40caea7ced..cc51c352e6 100644
 -    const promptSegments =
 -      (runResult.meta?.promptSegments as TracePromptSegmentView[] | undefined) ??
 -      derivePromptSegments(rawUserText);
-+    // GenWork patch: skip derivePromptSegments fallback. The fallback is only
++    // MixCWork patch: skip derivePromptSegments fallback. The fallback is only
 +    // used for trace/diagnostics prompt segmentation and must not block reply
 +    // delivery when raw user text contains media attachment markers.
 +    const promptSegments = runResult.meta?.promptSegments as TracePromptSegmentView[] | undefined;

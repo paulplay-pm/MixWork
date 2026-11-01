@@ -2,7 +2,7 @@
  * Fine-grained permission catalog for the admin SPA — a hand-kept mirror of
  * `enterprise_server/src/shared/permissionPoints.ts` (see
  * web/src/data/providerCatalog.ts for the established mirror convention — the
- * SPA does not import from the server's src/). 41 points across 10 modules.
+ * SPA does not import from the server's src/). 51 points across 13 modules.
  * If a point or module is added/removed server-side, update this file.
  * Server-only exports (e.g. BUILTIN_ROLE_POINTS) are intentionally not
  * mirrored here. The legacy 10-code coarse catalog was removed in the
@@ -22,6 +22,7 @@ export const PermissionPoint = {
   ProviderView: 'provider:view', ProviderEdit: 'provider:edit', ProviderRotate: 'provider:rotate',
   SkillView: 'skill:view', SkillCreate: 'skill:create', SkillEdit: 'skill:edit', SkillToggle: 'skill:toggle',
   AuditView: 'audit:view', AuditExport: 'audit:export',
+  UsageView: 'usage:view', UsageExport: 'usage:export',
   VersionView: 'version:view', VersionCreate: 'version:create', VersionEdit: 'version:edit',
   VersionPublish: 'version:publish', VersionRollback: 'version:rollback',
   McpView: 'mcp:view', McpCreate: 'mcp:create', McpEdit: 'mcp:edit', McpDelete: 'mcp:delete',
@@ -54,10 +55,12 @@ const model = [PermissionPoint.ModelView, PermissionPoint.ModelCreate, Permissio
 const provider = [PermissionPoint.ProviderView, PermissionPoint.ProviderEdit, PermissionPoint.ProviderRotate];
 const skill = [PermissionPoint.SkillView, PermissionPoint.SkillCreate, PermissionPoint.SkillEdit, PermissionPoint.SkillToggle];
 const audit = [PermissionPoint.AuditView, PermissionPoint.AuditExport];
+const usage = [PermissionPoint.UsageView, PermissionPoint.UsageExport];
 const version = [PermissionPoint.VersionView, PermissionPoint.VersionCreate, PermissionPoint.VersionEdit, PermissionPoint.VersionPublish, PermissionPoint.VersionRollback];
 const mcp = [PermissionPoint.McpView, PermissionPoint.McpCreate, PermissionPoint.McpEdit, PermissionPoint.McpDelete];
 const agent = [PermissionPoint.AgentView, PermissionPoint.AgentCreate, PermissionPoint.AgentEdit, PermissionPoint.AgentDelete, PermissionPoint.AgentPublish];
 const kit = [PermissionPoint.KitView, PermissionPoint.KitCreate, PermissionPoint.KitEdit, PermissionPoint.KitToggle, PermissionPoint.KitDelete];
+const sso = [PermissionPoint.SsoView, PermissionPoint.SsoCreate, PermissionPoint.SsoEdit];
 
 export const PERMISSION_MODULES: ReadonlyArray<{ key: string; name: string; desc: string; points: PermissionPoint[] }> = [
   { key: 'user', name: '用户管理', desc: '创建、编辑、禁用、归档用户与组织归属', points: user },
@@ -67,10 +70,12 @@ export const PERMISSION_MODULES: ReadonlyArray<{ key: string; name: string; desc
   { key: 'provider', name: '供应商密钥管理', desc: '管理供应商 API 密钥（在「模型配置」中）', points: provider },
   { key: 'skill', name: '技能管理', desc: '管理技能：启用/禁用及作用域设置', points: skill },
   { key: 'audit', name: '查看审计日志', desc: '查看组织审计日志', points: audit },
+  { key: 'usage', name: '用量查看', desc: '查看组织用量明细并导出', points: usage },
   { key: 'version', name: '版本管理', desc: '管理应用版本发布：新增、编辑、设为最新', points: version },
   { key: 'mcp', name: 'MCP 管理', desc: '管理 MCP 服务器市场', points: mcp },
   { key: 'agent', name: '智能体管理', desc: '管理企业智能体模板：新增、编辑、删除及可用角色', points: agent },
   { key: 'kit', name: '套件管理', desc: '管理企业专家套件：新增、编辑、删除及启用/禁用与授权范围', points: kit },
+  { key: 'sso', name: 'SSO / 身份提供商', desc: '管理企业 SSO / 身份提供商：创建、编辑、启用/禁用', points: sso },
 ];
 
 /** i18n key for a fine-grained point's human label. */
@@ -81,3 +86,25 @@ export const moduleLabelKey = (k: string): string => `roles.module.${k}`;
 
 /** i18n key for a data-scope's human label. */
 export const dataScopeLabelKey = (s: DataScope): string => `roles.scope.${s}`;
+
+/**
+ * True when a `requires` value names a fine permission point rather than a
+ * coarse role code. Points are always `module:verb`; no builtin role code
+ * contains a colon.
+ *
+ * Both `AuthGuard` and `Sidebar` gate on the same `requires` strings, so this
+ * rule lives here rather than being written twice — two copies would be free to
+ * drift, and the failure mode (a page gated by the wrong axis) is silent.
+ */
+export function isPermissionPoint(value: string): boolean {
+  return value.includes(':');
+}
+
+/** Resolve one `requires` value against the two gates. */
+export function passesAccess(
+  requires: string,
+  hasCapability: (role: string) => boolean,
+  hasPermission: (point: string) => boolean
+): boolean {
+  return isPermissionPoint(requires) ? hasPermission(requires) : hasCapability(requires);
+}

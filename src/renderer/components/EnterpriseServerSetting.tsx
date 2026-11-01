@@ -67,14 +67,14 @@ export function EnterpriseServerSetting(): JSX.Element {
 
   return (
     <>
-      <div className="w-full flex items-center justify-between gap-4 px-4 py-3 border border-gray-200 rounded-lg">
-        <div className="min-w-0">
-          <div className="text-sm font-medium text-gray-900">
+      <div className="flex items-center justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <h4 className="text-sm font-medium text-foreground">
             {t('enterpriseSettings.entryTitle')}
-          </div>
-          <div className="text-xs text-gray-500 truncate mt-0.5" title={currentUrl}>
+          </h4>
+          <p className="mt-1 text-sm text-secondary truncate" title={currentUrl}>
             {subtitle}
-          </div>
+          </p>
         </div>
         <button
           type="button"

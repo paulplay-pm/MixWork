@@ -281,7 +281,7 @@ ssoRoutes.get('/auth/sso/desktop/callback', async (c) => {
 // ---- Admin CRUD (SsoView / SsoCreate / SsoEdit) ----
 
 // Full connection column list (same set as src/sso/finishCallback.ts).
-const COLS = `id, org_id, name, provider_type, protocol, authorize_url, token_url, userinfo_url, client_id, client_secret_encrypted, client_secret_masked, scopes, identity_id_field, login_name_field, email_field, email_domain_whitelist, require_prebinding, logo_url, enabled, sort_order, created_by, created_at, updated_at`;
+const COLS = `id, org_id, name, provider_type, protocol, authorize_url, token_url, userinfo_url, client_id, client_secret_encrypted, client_secret_masked, scopes, identity_id_field, login_name_field, email_field, email_domain_whitelist, require_prebinding, agentid, logo_url, enabled, sort_order, created_by, created_at, updated_at`;
 
 const baseSchema = z.object({
   orgId: z.string(),
@@ -293,6 +293,10 @@ const baseSchema = z.object({
   userinfoUrl: z.string().optional().default(''),
   clientId: z.string().optional().default(''),
   clientSecret: z.string().optional().default(''),  // blank = keep
+  // WeCom (企业微信) only: the 应用 AgentId. WeCom's authorize URL needs
+  // BOTH the CorpID (client_id) and the agentid; every other provider
+  // ignores this column.
+  agentid: z.string().optional().default(''),
   scopes: z.string().optional().default(''),
   identityIdField: z.string().min(1).default('sub'),
   loginNameField: z.string().optional().default(''),
@@ -333,13 +337,14 @@ ssoRoutes.post('/admin/sso-connections', requirePermission(PP.SsoCreate), async 
   const secretEnc = parsed.data.clientSecret ? encryptClientSecret(parsed.data.clientSecret) : null;
   const secretMask = parsed.data.clientSecret ? maskClientSecret(parsed.data.clientSecret) : null;
   await pool.query(
-    `INSERT INTO sso_connections(id, org_id, name, provider_type, protocol, authorize_url, token_url, userinfo_url, client_id, client_secret_encrypted, client_secret_masked, scopes, identity_id_field, login_name_field, email_field, email_domain_whitelist, require_prebinding, enabled, sort_order, created_by)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17,$18,$19,$20)`,
+    `INSERT INTO sso_connections(id, org_id, name, provider_type, protocol, authorize_url, token_url, userinfo_url, client_id, client_secret_encrypted, client_secret_masked, scopes, identity_id_field, login_name_field, email_field, email_domain_whitelist, require_prebinding, agentid, enabled, sort_order, created_by)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,$17,$18,$19,$20,$21)`,
     [id, claims.orgId, parsed.data.name, parsed.data.providerType, parsed.data.protocol,
      parsed.data.authorizeUrl || null, parsed.data.tokenUrl || null, parsed.data.userinfoUrl || null,
      parsed.data.clientId || null, secretEnc, secretMask, parsed.data.scopes || null,
      parsed.data.identityIdField, parsed.data.loginNameField || null, parsed.data.emailField,
-     JSON.stringify(parsed.data.emailDomainWhitelist), parsed.data.requirePrebinding, parsed.data.enabled, parsed.data.sortOrder, claims.sub]
+     JSON.stringify(parsed.data.emailDomainWhitelist), parsed.data.requirePrebinding,
+     parsed.data.agentid || null, parsed.data.enabled, parsed.data.sortOrder, claims.sub]
   );
   await auditStore.write({ orgId: claims.orgId, userId: claims.sub, action: 'sso_connection_create', targetType: 'sso_connection', targetId: id, payload: { name: parsed.data.name } });
   return c.json({ id }, 201);
@@ -381,6 +386,7 @@ ssoRoutes.patch('/admin/sso-connections/:id', requirePermission(PP.SsoEdit), asy
     enabled: row.enabled as boolean,
     sortOrder: row.sort_order as number,
     requirePrebinding: row.require_prebinding as boolean,
+    agentid: (row.agentid as string | null) ?? '',
   };
   const merged: PatchData = { ...prev, ...parsed.data };
   const secretEnc = parsed.data.clientSecret ? encryptClientSecret(parsed.data.clientSecret) : (row.client_secret_encrypted as string | null) ?? null;
@@ -394,14 +400,14 @@ ssoRoutes.patch('/admin/sso-connections/:id', requirePermission(PP.SsoEdit), asy
        client_id = $7, client_secret_encrypted = $8, client_secret_masked = $9,
        scopes = $10, identity_id_field = $11, login_name_field = $12,
        email_field = $13, email_domain_whitelist = $14::jsonb,
-       require_prebinding = $15, enabled = $16, sort_order = $17, updated_at = now()
-     WHERE id = $18 AND org_id = $19`,
+       require_prebinding = $15, agentid = $16, enabled = $17, sort_order = $18, updated_at = now()
+     WHERE id = $19 AND org_id = $20`,
     [merged.name, merged.providerType, merged.protocol,
      merged.authorizeUrl || null, merged.tokenUrl || null, merged.userinfoUrl || null,
      merged.clientId || null, secretEnc, secretMask,
      merged.scopes || null, merged.identityIdField, merged.loginNameField || null,
      merged.emailField, JSON.stringify(merged.emailDomainWhitelist),
-     merged.requirePrebinding, merged.enabled, merged.sortOrder, c.req.param('id'), claims.orgId]
+     merged.requirePrebinding, merged.agentid || null, merged.enabled, merged.sortOrder, c.req.param('id'), claims.orgId]
   );
   await auditStore.write({ orgId: claims.orgId, userId: claims.sub, action: 'sso_connection_update', targetType: 'sso_connection', targetId: c.req.param('id'), payload: { changedKeys: Object.keys(parsed.data) } });
   return c.json({ ok: true });

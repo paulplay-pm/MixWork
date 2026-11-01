@@ -41,6 +41,15 @@ export const kitCatalogApi = {
   uploadZip: (slug: string, file: File) =>
     apiClient.postRaw<{ status: string }>(`/api/admin/kits/${slug}/zip`, file, { 'content-type': 'application/zip' }),
   deleteKit: (slug: string) => apiClient.delete<void>(`/api/admin/kits/${slug}`),
+  /** Upload the kit's icon (PNG / JPEG / WEBP / SVG, ≤ 1 MB). Outside the
+   *  create/patch body: an icon is presentation, and a file has to be
+   *  attached to a kit that already exists. */
+  uploadIcon: (slug: string, file: File): Promise<{ icon: string }> => {
+    const form = new FormData();
+    form.append('icon', file, file.name);
+    return apiClient.postRaw<{ icon: string }>(`/api/admin/kits/${slug}/icon`, form);
+  },
+  clearIcon: (slug: string) => apiClient.delete<{ ok: boolean }>(`/api/admin/kits/${slug}/icon`),
   listCategories: () => apiClient.get<KitCategory[]>('/api/admin/kits/categories'),
   createCategory: (input: { name_zh: string; name_en: string; display_order?: number }) =>
     apiClient.post<{ category_id: string }>('/api/admin/kits/categories', input),

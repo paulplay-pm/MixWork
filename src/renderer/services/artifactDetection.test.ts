@@ -1,19 +1,19 @@
 import { describe, expect, test } from 'vitest';
 
 import { ShareDeploymentCandidateSource } from '../../shared/shareDeployment/constants';
-import type { GenWorkMessage } from '../types/genwork';
+import type { MixCWorkMessage } from '../types/mixcwork';
 import { collectSessionArtifacts } from './artifactDetection';
 
 const CWD = '/Users/admin/project012';
 
-const assistantMessage = (id: string, content: string): GenWorkMessage => ({
+const assistantMessage = (id: string, content: string): MixCWorkMessage => ({
   id,
   type: 'assistant',
   content,
   timestamp: Date.now(),
-} as GenWorkMessage);
+} as MixCWorkMessage);
 
-const editToolUse = (id: string, filePath: string, toolName = 'Edit'): GenWorkMessage => ({
+const editToolUse = (id: string, filePath: string, toolName = 'Edit'): MixCWorkMessage => ({
   id,
   type: 'tool_use',
   content: '',
@@ -23,15 +23,15 @@ const editToolUse = (id: string, filePath: string, toolName = 'Edit'): GenWorkMe
     toolUseId: `tu-${id}`,
     toolInput: { file_path: filePath, old_string: 'a', new_string: 'b' },
   },
-} as GenWorkMessage);
+} as MixCWorkMessage);
 
-const toolResult = (toolUseMsg: GenWorkMessage, isError = false): GenWorkMessage => ({
+const toolResult = (toolUseMsg: MixCWorkMessage, isError = false): MixCWorkMessage => ({
   id: `result-${toolUseMsg.id}`,
   type: 'tool_result',
   content: isError ? 'failed' : 'OK',
   timestamp: Date.now(),
   metadata: { toolUseId: toolUseMsg.metadata?.toolUseId, ...(isError ? { isError: true } : {}) },
-} as GenWorkMessage);
+} as MixCWorkMessage);
 
 describe('collectSessionArtifacts', () => {
   test('edit-only turn without any link in the reply still yields an artifact', () => {
@@ -132,7 +132,7 @@ describe('collectSessionArtifacts', () => {
         },
       },
       assistantMessage('a1', '服务已启动：http://localhost:5173'),
-    ] as GenWorkMessage[];
+    ] as MixCWorkMessage[];
 
     const detected = collectSessionArtifacts(messages, 'sess1', CWD);
     const localService = detected.find(artifact => artifact.type === 'local-service');

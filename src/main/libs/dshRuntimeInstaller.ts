@@ -25,7 +25,7 @@ import { DshInstallStage } from '../../shared/dshEngine/constants';
 import { validateDshRuntimeLayout } from './dshRuntime';
 import { safelyReplaceTextFileSync } from './safeFileReplace';
 
-const INSTALL_SENTINEL = '.genwork-install-ok.json';
+const INSTALL_SENTINEL = '.mixcwork-install-ok.json';
 const MAX_REDIRECTS = 5;
 const DOWNLOAD_TIMEOUT_MS = 10 * 60_000;
 
@@ -219,7 +219,7 @@ export function resolveInstalledDshRuntime(
 // Keep the active pinned runtime plus a bounded number of prior valid installs.
 // Ordering uses the install timestamp, never the version string: lexicographic
 // sorting puts rc.9 after rc.10 and can also select a runtime from a newer app
-// after the user downgrades GenWork.
+// after the user downgrades MixCWork.
 export async function pruneInstalledDshRuntimes(
   baseDir: string,
   currentVersion: string,

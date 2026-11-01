@@ -79,9 +79,22 @@ describe('EnterpriseSetupModal', () => {
 
   test('edit mode renders the initial URL into the input', () => {
     const html = renderToStaticMarkup(
-      <EnterpriseSetupModal {...baseProps} initialUrl="https://prod.genwork.com" mode="edit" />,
+      <EnterpriseSetupModal {...baseProps} initialUrl="https://prod.mixcwork.com" mode="edit" />,
     );
-    expect(html).toContain('value="https://prod.genwork.com"');
+    expect(html).toContain('value="https://prod.mixcwork.com"');
+  });
+
+  test('modal uses theme tokens so it adapts to light and dark', () => {
+    const html = renderToStaticMarkup(<EnterpriseSetupModal {...baseProps} />);
+    // Panel surface, heading and body copy must be theme-driven.
+    expect(html).toContain('bg-surface border border-border');
+    expect(html).toContain('text-foreground');
+    expect(html).toContain('text-secondary');
+    // No hardcoded light-mode palette left in the modal.
+    expect(html).not.toContain('bg-white');
+    expect(html).not.toContain('text-gray-900');
+    expect(html).not.toContain('text-gray-600');
+    expect(html).not.toContain('border-gray-300');
   });
 
   test('edit mode calls onSave without forcing onVerify when user clicks Save', async () => {

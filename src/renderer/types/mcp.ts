@@ -1,7 +1,13 @@
 // MCP Server type definitions
-import type { McpAuthMethod, McpAuthStatus } from '../../shared/mcp/constants';
+import type {
+  ConnectorAuthMode,
+  ConnectorConsumption,
+  McpAuthMethod,
+  McpAuthStatus,
+  McpToolFilter,
+} from '../../shared/mcp/constants';
 
-export type { McpAuthMethod, McpAuthStatus };
+export type { ConnectorAuthMode, ConnectorConsumption, McpAuthMethod, McpAuthStatus, McpToolFilter };
 
 export type McpTransportType = 'stdio' | 'sse' | 'http';
 
@@ -16,10 +22,15 @@ export type McpRegistryEntryKind = typeof McpRegistryEntryKind[keyof typeof McpR
  * (connectorView.ts) and the desktop store's McpOAuthEndpoint — keep in
  * sync. No `clientSecret`: the store never holds org secrets. */
 export interface McpOAuthEndpoint {
-  authorizeUrl: string;
-  tokenUrl: string;
-  clientId: string;
+  authorizeUrl?: string;
+  tokenUrl?: string;
+  clientId?: string;
   scopes?: string[];
+  /** The loopback redirect URI the enterprise server wants registered at the
+   *  upstream IdP. The desktop binds its port and sends it as `redirect_uri`.
+   *  Absent when the server did not describe one — the desktop then uses its
+   *  own default loopback port. */
+  redirectUri?: string;
 }
 
 export interface McpServerConfig {
@@ -40,9 +51,22 @@ export interface McpServerConfig {
   authMethod: McpAuthMethod;
   authStatus: McpAuthStatus;
   serverKey?: string;
+  /** Brand logo URL from the catalog. The UI falls back to a generic glyph
+   *  when it is absent or cannot be loaded. */
+  icon?: string;
   oauthConfig?: McpOAuthEndpoint;
   /** user-key: header name the connector's API key is injected under (absent → desktop defaults to X-Api-Key). */
   apiKeyHeaderName?: string;
+  /** The enterprise connector's declared auth mode, kept on the local record so
+   *  an org-managed connector is still recognised after the marketplace page is
+   *  gone from memory. Absent on local/registry installs. */
+  enterpriseAuthMode?: ConnectorAuthMode;
+  /** The org's per-tool selection, written through to OpenClaw's
+   *  `mcp.servers.*.toolFilter`. Absent when the connector allows every tool. */
+  toolFilter?: McpToolFilter;
+  /** The org's per-call timeout in seconds, written through to OpenClaw's
+   *  `mcp.servers.*.timeout`. Absent means OpenClaw's own default. */
+  timeoutSeconds?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -81,8 +105,24 @@ export interface McpServerFormData {
   registryId?: string;
   authMethod?: McpAuthMethod;
   serverKey?: string;
+  icon?: string;
   oauthConfig?: McpOAuthEndpoint;
   apiKeyHeaderName?: string;
+  /** Set only when installing/updating from the enterprise marketplace: the
+   *  connector's declared auth mode, kept on the record so an org-managed
+   *  connector is recognised later. */
+  enterpriseAuthMode?: ConnectorAuthMode;
+  /** The org's tool selection. Omitted when the connector allows every tool —
+   *  on an enterprise update that absence is what clears a stale restriction. */
+  toolFilter?: McpToolFilter;
+  /** The org's per-call timeout in seconds. Omitted when the connector uses
+   *  the runtime default — on an enterprise update that absence is what
+   *  clears a stale timeout. */
+  timeoutSeconds?: number;
+  /** How the desktop reaches this connector, from the catalog entry. A
+   *  `gateway` install exchanges its service token before the record is
+   *  written. */
+  consumption?: ConnectorConsumption;
 }
 
 // Built-in MCP registry entry (pure frontend definition)
@@ -160,6 +200,8 @@ export interface McpEnterpriseMarketServer {
   transport: 'http' | 'sse';
   authMode: 'none' | 'shared-key' | 'user-key' | 'user-oauth' | 'client-creds' | 'sso';
   authStatus: 'configured' | 'pending';
+  /** Brand logo URL; absent when the org set none. */
+  icon?: string | null;
   scopeSummary: string;
   hasDraft: boolean;
   enabled: boolean;
@@ -168,10 +210,41 @@ export interface McpEnterpriseMarketServer {
   oauth?: McpOAuthEndpoint;
   /** Present only for `user-key` with a header name set (non-secret). */
   apiKeyHeaderName?: string;
+  /** The org's per-tool toggles translated into OpenClaw's tool filter.
+   *  Absent when every tool is allowed. */
+  toolFilter?: McpToolFilter;
+  /** The admin's per-call timeout in seconds. Absent means the runtime's
+   *  own default. */
+  timeoutSeconds?: number;
+  /** How the desktop reaches this connector. Absent on servers that predate
+   *  the gateway; treat that as `direct`. */
+  consumption?: ConnectorConsumption;
+  /** True when the org key is stored server-side and ready for the gateway.
+   *  A `shared-key` connector with this false cannot be used at all. */
+  orgCredentialReady?: boolean;
 }
 
 export interface McpEnterpriseMarketCategory {
   id: string;
   name_zh: string;
   name_en: string;
+}
+
+/** One tool as the server advertises it (MCP `tools/list`). */
+export interface McpToolSummary {
+  name: string;
+  description?: string;
+}
+
+/** What the main process learned when it asked the server for its tools.
+ *  Mirrors `McpToolListResult` in `src/main/mcp/mcpToolCatalog.ts`. */
+export interface McpToolListOutcome {
+  ok: boolean;
+  status: 'ok' | 'unauthorized' | 'connect-error' | 'missing-credential';
+  tools: McpToolSummary[];
+  latencyMs: number;
+  error?: string;
+  /** The enterprise gateway's own error string, when it sent one this build
+   *  recognises — the dialog turns it into an actionable sentence. */
+  errorCode?: string;
 }

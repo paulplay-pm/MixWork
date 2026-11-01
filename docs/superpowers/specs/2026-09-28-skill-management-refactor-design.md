@@ -1,4 +1,4 @@
-# 技能管理重构 — 部门+成员授权 / 审核流 / 桌面消费（GenWork 工作台）实现设计
+# 技能管理重构 — 部门+成员授权 / 审核流 / 桌面消费（MixCWork 工作台）实现设计
 
 > **For agentic workers:** This is the DESIGN SPEC (the authority). The implementation plan argues from it.
 > 范围：企业服务端 + 管理端 SPA + 桌面端，一次交付（全部功能）。

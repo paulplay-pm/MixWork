@@ -86,7 +86,7 @@ Legend — `[A]` Part A delete proxy · `[B]` DSH enterprise-direct ·
   `npm test -- openclawRuntimeAdapter`.
 - Add/adjust the **provider-enumeration unit test** (the highest-risk guard):
   after the restructure, assert every enterprise catalog model is present in the
-  `genwork-server` provider, each with its per-model `/proxy/<provider>` base
+  `mixcwork-server` provider, each with its per-model `/proxy/<provider>` base
   and a real JWT apiKey (not `'proxy-managed'`).
 - **Do not commit the test as a separate change; fold into Step 2's commit if
   it belongs there, or a follow-up `test(cowork)` commit.**
@@ -97,7 +97,7 @@ Legend — `[A]` Part A delete proxy · `[B]` DSH enterprise-direct ·
     `Array<{ provider, baseURL, displayName, models[] }>`.
   - Rework `renderPlanRoutes` (`215-271`) to emit **one route per provider
     group** (keep the per-group openai/anthropic two-protocol split). Route ids
-    via `sanitizeDshRouteId` (e.g. `genwork-plan-<provider>` + anthropic
+    via `sanitizeDshRouteId` (e.g. `mixcwork-plan-<provider>` + anthropic
     suffix). `apiKeyEnv` via `deriveDshApiKeyEnvRef`.
   - Skip reason on null input: `enterprise-unavailable`.
 - `src/main/ipcHandlers/dsh/handlers.ts` + `main.ts:7480-7500`
@@ -139,8 +139,8 @@ Legend — `[A]` Part A delete proxy · `[B]` DSH enterprise-direct ·
 
 ## Step 8 [C] — reactive single-flight recovery
 - `src/main/libs/agentEngine/openclawRuntimeAdapter.ts`
-  (`resolveOpenClawRuntimeError`): when `isGenWorkLoginExpiredMetadata`
-  (`1668`) is true and provider is `GenworkServer`:
+  (`resolveOpenClawRuntimeError`): when `isMixCWorkLoginExpiredMetadata`
+  (`1668`) is true and provider is `MixcworkServer`:
   - If stored JWT still verifies → trigger a refresh (single-flight guarded) and
     surface the "refreshed — please retry" message.
   - If expired → fall through to existing `loginGate.lock()` / login-expired.
@@ -156,10 +156,10 @@ Legend — `[A]` Part A delete proxy · `[B]` DSH enterprise-direct ·
   query).
 - New shared constant (no bare string literals) for the `not_member` /
   `daily_quota_exhausted` signals, importable by the desktop (e.g. under
-  `src/shared/enterpriseAccount/` on the GenWork side mirroring the server's
+  `src/shared/enterpriseAccount/` on the MixCWork side mirroring the server's
   `shared/enterpriseServerConstants.ts`).
 - **Commit (enterprise_server):** `feat(auth): surface quota reason and member revocation`
-- **Commit (GenWork shared):** `feat(enterprise): add shared structured error constants`
+- **Commit (MixCWork shared):** `feat(enterprise): add shared structured error constants`
 
 ## Step 10 [D] — desktop: consume the structured signals
 - `src/main/libs/enterpriseQuotaSignal.ts` (from Step 3): feed it from the

@@ -2,7 +2,7 @@
  * Structured signals the enterprise LLM proxy writes into its JSON error
  * bodies, as seen on the desktop side.
  *
- * The desktop routes plan (genwork-server) models straight at
+ * The desktop routes plan (mixcwork-server) models straight at
  * `<enterprise>/proxy/<provider>`. OpenClaw preserves the upstream error body
  * it receives into the adapter's error metadata (`rawErrorPreview` /
  * `providerErrorMessagePreview` / `httpCode`), so the desktop reads these

@@ -166,7 +166,7 @@ export class DshEngineManager {
   }
 
   // Claimed just before the child spawns and released when it stops, so a
-  // second GenWork instance can see that the shared session store is taken.
+  // second MixCWork instance can see that the shared session store is taken.
   setSharedHomeLock(lock: { claim: (port: number) => void; release: () => void } | null): void {
     this.sharedHomeLock = lock;
     this.setState({ sessionStoreShared: lock !== null });
@@ -184,7 +184,7 @@ export class DshEngineManager {
     return resolveDshWorkingDirectory([this.workingDirectorySource?.(), app.getPath('home')], isExistingDirectory, fallback);
   }
 
-  // The kit integration registers a source that renders GenWork providers
+  // The kit integration registers a source that renders MixCWork providers
   // into dsh settings (see dshConfigSync). It runs on every start so the child
   // always boots against current provider config, with keys passed via env.
   setManagedSettingsSource(source: (() => DshManagedSettings | null) | null): void {

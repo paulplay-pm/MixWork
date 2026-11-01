@@ -6,14 +6,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 
 import { agentService } from '../../services/agent';
-import { genworkService } from '../../services/genwork';
 import { i18nService } from '../../services/i18n';
 import { imService } from '../../services/im';
+import { mixcworkService } from '../../services/mixcwork';
 import { resolveThinkingLevelForModel } from '../../services/modelThinkingLevelMemory';
 import { RootState } from '../../store';
 import type { Model } from '../../store/slices/modelSlice';
 import type { Agent } from '../../types/agent';
-import type { DingTalkInstanceConfig, DiscordInstanceConfig, FeishuInstanceConfig, IMGatewayConfig, PopoInstanceConfig, QQInstanceConfig, TelegramInstanceConfig, WecomInstanceConfig } from '../../types/im';
+import type { DingTalkInstanceConfig, DiscordInstanceConfig, FeishuInstanceConfig, IMGatewayConfig, QQInstanceConfig, TelegramInstanceConfig, WecomInstanceConfig } from '../../types/im';
 import type { Skill } from '../../types/skill';
 import { getAgentDisplayName, getAgentDisplayNameById, isDefaultAgentId } from '../../utils/agentDisplay';
 import { resolveOpenClawModelRef, toOpenClawModelRef } from '../../utils/openclawModelRef';
@@ -21,6 +21,7 @@ import { getVisibleIMPlatforms } from '../../utils/regionFilter';
 import Modal from '../common/Modal';
 import TrashIcon from '../icons/TrashIcon';
 import ModelSelector from '../ModelSelector';
+import AgentAvatarIcon from './AgentAvatarIcon';
 import AgentAvatarPicker from './AgentAvatarPicker';
 import AgentConfirmDialog from './AgentConfirmDialog';
 import AgentDetailToolbar from './AgentDetailToolbar';
@@ -29,10 +30,10 @@ import AgentSkillSelector from './AgentSkillSelector';
 import AgentWorkingDirectoryField from './AgentWorkingDirectoryField';
 import { AgentConfirmDialogVariant, AgentDetailTab } from './constants';
 
-type MultiInstancePlatform = 'dingtalk' | 'feishu' | 'qq' | 'wecom' | 'telegram' | 'discord' | 'popo';
-type MultiInstanceConfig = DingTalkInstanceConfig | FeishuInstanceConfig | QQInstanceConfig | WecomInstanceConfig | TelegramInstanceConfig | DiscordInstanceConfig | PopoInstanceConfig;
+type MultiInstancePlatform = 'dingtalk' | 'feishu' | 'qq' | 'wecom' | 'telegram' | 'discord';
+type MultiInstanceConfig = DingTalkInstanceConfig | FeishuInstanceConfig | QQInstanceConfig | WecomInstanceConfig | TelegramInstanceConfig | DiscordInstanceConfig;
 
-const MULTI_INSTANCE_PLATFORMS: MultiInstancePlatform[] = ['dingtalk', 'feishu', 'qq', 'wecom', 'telegram', 'discord', 'popo'];
+const MULTI_INSTANCE_PLATFORMS: MultiInstancePlatform[] = ['dingtalk', 'feishu', 'qq', 'wecom', 'telegram', 'discord'];
 
 const isMultiInstancePlatform = (platform: Platform): platform is MultiInstancePlatform =>
   MULTI_INSTANCE_PLATFORMS.includes(platform as MultiInstancePlatform);
@@ -65,6 +66,9 @@ const AgentSettingsPanel: React.FC<AgentSettingsPanelProps> = ({ agentId, onClos
   const [identity, setIdentity] = useState('');
   const [userInfo, setUserInfo] = useState('');
   const [icon, setIcon] = useState('');
+  /** An agent the organization owns: its icon is set in the Enterprise
+   *  console and must not be editable here. */
+  const [isEnterpriseAgent, setIsEnterpriseAgent] = useState(false);
   const [model, setModel] = useState<Model | null>(null);
   const [workingDirectory, setWorkingDirectory] = useState('');
   // Enterprise (server-owned) agents store their working directory in
@@ -237,12 +241,12 @@ const AgentSettingsPanel: React.FC<AgentSettingsPanelProps> = ({ agentId, onClos
 
       let nextSystemPrompt = a.systemPrompt;
       let nextIdentity = a.identity;
-      const nextUserInfo = await genworkService.readBootstrapFile('USER.md', { agentId });
+      const nextUserInfo = await mixcworkService.readBootstrapFile('USER.md', { agentId });
       if (cancelled) return;
       if (isDefaultAgentId(agentId)) {
         const [mainIdentity, mainSoul] = await Promise.all([
-          genworkService.readBootstrapFile('IDENTITY.md', { agentId }),
-          genworkService.readBootstrapFile('SOUL.md', { agentId }),
+          mixcworkService.readBootstrapFile('IDENTITY.md', { agentId }),
+          mixcworkService.readBootstrapFile('SOUL.md', { agentId }),
         ]);
         if (cancelled) return;
         nextSystemPrompt = mainSoul;
@@ -256,6 +260,7 @@ const AgentSettingsPanel: React.FC<AgentSettingsPanelProps> = ({ agentId, onClos
       setIdentity(nextIdentity);
       setUserInfo(nextUserInfo);
       setIcon(a.icon);
+      setIsEnterpriseAgent(a.source === 'enterprise');
       // Model precedence (enterprise): local override → server default → global.
       // Non-enterprise: server row model → global.
       let effectiveRef = a.model || '';
@@ -514,12 +519,12 @@ const AgentSettingsPanel: React.FC<AgentSettingsPanelProps> = ({ agentId, onClos
       }
       const bootstrapWrites = isMainAgent
         ? [
-            genworkService.writeBootstrapFile('IDENTITY.md', identity, { agentId }),
-            genworkService.writeBootstrapFile('SOUL.md', systemPrompt, { agentId }),
-            genworkService.writeBootstrapFile('USER.md', userInfo, { agentId }),
+            mixcworkService.writeBootstrapFile('IDENTITY.md', identity, { agentId }),
+            mixcworkService.writeBootstrapFile('SOUL.md', systemPrompt, { agentId }),
+            mixcworkService.writeBootstrapFile('USER.md', userInfo, { agentId }),
           ]
         : [
-            genworkService.writeBootstrapFile('USER.md', userInfo, { agentId }),
+            mixcworkService.writeBootstrapFile('USER.md', userInfo, { agentId }),
           ];
       if (bootstrapWrites.length > 0) {
         const bootstrapSaved = await Promise.all(bootstrapWrites);
@@ -593,10 +598,6 @@ const AgentSettingsPanel: React.FC<AgentSettingsPanelProps> = ({ agentId, onClos
     if (!imConfig) return false;
     if (isMultiInstancePlatform(platform)) {
       return getEnabledInstances(platform).length > 0;
-    }
-    // email is a multi-instance platform
-    if (platform === 'email') {
-      return imConfig.email.instances.length > 0;
     }
     const cfg = imConfig[platform as keyof typeof imConfig];
     if (!cfg || typeof cfg !== 'object') return false;
@@ -920,7 +921,20 @@ const AgentSettingsPanel: React.FC<AgentSettingsPanelProps> = ({ agentId, onClos
       >
         <div className="flex shrink-0 items-start justify-between gap-4 px-7 py-5">
           <div className="flex min-w-0 flex-1 items-start gap-3">
-            <AgentAvatarPicker value={icon} onChange={setIcon} />
+            {isEnterpriseAgent ? (
+              // The org sets this agent's icon in the Enterprise console; the
+              // main process already refuses the field, so offering a picker
+              // here would only promise an edit that never lands.
+              <span
+                className="shrink-0"
+                title={i18nService.t('agentIconManagedByOrg')}
+                aria-label={i18nService.t('agentIconManagedByOrg')}
+              >
+                <AgentAvatarIcon value={icon} className="h-10 w-10" iconClassName="h-5 w-5" />
+              </span>
+            ) : (
+              <AgentAvatarPicker value={icon} onChange={setIcon} />
+            )}
             <div className="min-w-0 flex-1 pt-0.5">
               <input
                 type="text"

@@ -13,6 +13,9 @@ export interface Agent {
   thinkingLevel: ModelThinkingLevel | '';
   workingDirectory: string;
   icon: string;
+  /** Tint index from the Enterprise console; -1 on agents created here.
+   *  Optional because a record written before the column existed has none. */
+  iconColor?: number;
   skillIds: string[];
   subagentAllowAgentIds: string[];
   serverSkillIds: string[];

@@ -1,7 +1,7 @@
 import { Plus, RefreshCw } from 'lucide-react';
 import type { JSX } from 'react';
 
-import type { ModelView } from '../../api/models';
+import type { ModelTypeValue, ModelView } from '../../api/models';
 import { EmptyState } from '../../components/EmptyState';
 import { t } from '../../i18n';
 import { ModelTableRow } from './ModelTableRow';
@@ -10,6 +10,15 @@ interface Props {
   models: ModelView[];
   canManage: boolean;
   busy: boolean;
+  /** Whether "Fetch models" applies. Only a chat provider has a
+   * `/v1/models` endpoint to list; for an ASR / image / video provider the
+   * button would always fail, so it is disabled (but still shown — a hidden
+   * button leaves the admin wondering whether the section has models at
+   * all). Defaults to true. */
+  canRefresh?: boolean;
+  /** The types each model is the default for, keyed by model id. The "default"
+   * badge rides the matching type chip. */
+  defaultTypesByModel?: Record<string, ModelTypeValue[]>;
   onRefresh: () => void;
   /** Opens the model drawer in add mode. */
   onAdd: () => void;
@@ -28,6 +37,8 @@ export function ModelList({
   models,
   canManage,
   busy,
+  canRefresh = true,
+  defaultTypesByModel = {},
   onRefresh,
   onAdd,
   onEdit,
@@ -45,7 +56,8 @@ export function ModelList({
             <button
               type="button"
               onClick={onRefresh}
-              disabled={busy}
+              disabled={busy || !canRefresh}
+              title={!canRefresh ? t('providersModels.model.refreshUnsupported') : undefined}
               className="inline-flex items-center gap-1.5 rounded-[var(--radius-sm)] border border-[var(--border-default)] bg-[var(--bg-secondary)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-50 transition-colors"
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -89,6 +101,7 @@ export function ModelList({
                 model={m}
                 canManage={canManage}
                 busy={busy}
+                defaultTypes={defaultTypesByModel[m.id] ?? []}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onToggleEnabled={onToggleEnabled}

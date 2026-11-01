@@ -1,22 +1,22 @@
 import type { OpenClawSessionPatch } from '../../../common/openclawSession';
-import type { CoworkBrowserAnnotationMessageBatch } from '../../../shared/genwork/browserAnnotations';
-import type {
-  CoworkBtwAbortResponse,
-  CoworkBtwEntry,
-  CoworkBtwSubmitResponse,
-} from '../../../shared/genwork/btw';
-import type { CoworkGoal } from '../../../shared/genwork/goal';
-import type { CoworkImageAttachmentPayload } from '../../../shared/genwork/imageAttachments';
-import type { CoworkSelectedTextSnippet } from '../../../shared/genwork/selectedText';
-import type { CoworkSteerResponse } from '../../../shared/genwork/steer';
 import type {
   KitReference,
   ResolvedKitCapabilities,
 } from '../../../shared/kit/constants';
+import type { CoworkBrowserAnnotationMessageBatch } from '../../../shared/mixcwork/browserAnnotations';
+import type {
+  CoworkBtwAbortResponse,
+  CoworkBtwEntry,
+  CoworkBtwSubmitResponse,
+} from '../../../shared/mixcwork/btw';
+import type { CoworkGoal } from '../../../shared/mixcwork/goal';
+import type { CoworkImageAttachmentPayload } from '../../../shared/mixcwork/imageAttachments';
+import type { CoworkSelectedTextSnippet } from '../../../shared/mixcwork/selectedText';
+import type { CoworkSteerResponse } from '../../../shared/mixcwork/steer';
 import type { SkinWorkflowKind } from '../../../shared/skin/constants';
-import type { GenWorkMessage, GenWorkSessionStatus } from '../../genworkStore';
+import type { MixCWorkMessage, MixCWorkSessionStatus } from '../../mixcworkStore';
 
-export type GenWorkAgentEngine = 'openclaw';
+export type MixCWorkAgentEngine = 'openclaw';
 
 export type PermissionResult =
   | {
@@ -42,9 +42,9 @@ export interface PermissionRequest {
 }
 
 export interface CoworkRuntimeEvents {
-  message: (sessionId: string, message: GenWorkMessage, beforeMessageId?: string) => void;
+  message: (sessionId: string, message: MixCWorkMessage, beforeMessageId?: string) => void;
   messageUpdate: (sessionId: string, messageId: string, content: string, metadata?: Record<string, unknown>) => void;
-  sessionStatus: (sessionId: string, status: GenWorkSessionStatus) => void;
+  sessionStatus: (sessionId: string, status: MixCWorkSessionStatus) => void;
   btwResult: (sessionId: string, result: CoworkBtwEntry) => void;
   goalUpdate: (sessionId: string, goal: CoworkGoal | null) => void;
   contextUsageUpdate: (sessionId: string, usage: CoworkContextUsage) => void;
@@ -141,7 +141,7 @@ export type CoworkContinueOptions = {
   browserAnnotations?: CoworkBrowserAnnotationMessageBatch[];
 };
 
-export interface GenWorkSessionPatchResult {
+export interface MixCWorkSessionPatchResult {
   modelOverride?: string;
   thinkingLevel?: string;
 }
@@ -161,7 +161,7 @@ export interface CoworkRuntime {
   abortBtw?(sessionId: string, runId: string): Promise<CoworkBtwAbortResponse>;
   submitSteer?(sessionId: string, text: string, clientSteerId: string): Promise<CoworkSteerResponse>;
   runGoalCommand?(sessionId: string, command: string): Promise<CoworkGoal | null>;
-  patchSession?(sessionId: string, patch: OpenClawSessionPatch): Promise<GenWorkSessionPatchResult | void>;
+  patchSession?(sessionId: string, patch: OpenClawSessionPatch): Promise<MixCWorkSessionPatchResult | void>;
   getContextUsage?(sessionId: string): Promise<CoworkContextUsage | null>;
   compactContext?(sessionId: string): Promise<{ compacted: boolean; reason?: string; usage?: CoworkContextUsage | null }>;
   getForkCompactionSummary?(sessionId: string, beforeCreatedAt?: number): Promise<CoworkForkCompactionSummary | null>;

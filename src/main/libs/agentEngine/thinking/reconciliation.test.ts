@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest';
 
-import type { GenWorkMessage } from '../../../genworkStore';
+import type { MixCWorkMessage } from '../../../mixcworkStore';
 import {
   type OpenClawThinkingReconciliationStore,
   reconcileOpenClawThinkingBlocks,
@@ -8,10 +8,10 @@ import {
 
 const createMessage = (
   id: string,
-  type: GenWorkMessage['type'],
+  type: MixCWorkMessage['type'],
   content: string,
-  metadata: GenWorkMessage['metadata'] = {},
-): GenWorkMessage => ({
+  metadata: MixCWorkMessage['metadata'] = {},
+): MixCWorkMessage => ({
   id,
   type,
   content,
@@ -19,13 +19,13 @@ const createMessage = (
   timestamp: Number(id.replace(/\D/g, '')) || 1,
 });
 
-const createStore = (initialMessages: GenWorkMessage[], pageSize = Number.POSITIVE_INFINITY) => {
+const createStore = (initialMessages: MixCWorkMessage[], pageSize = Number.POSITIVE_INFINITY) => {
   const messages = [...initialMessages];
   let nextId = messages.length + 1;
   const insertMessageBeforeId = vi.fn((
     _sessionId: string,
     beforeMessageId: string,
-    payload: Omit<GenWorkMessage, 'id' | 'timestamp'>,
+    payload: Omit<MixCWorkMessage, 'id' | 'timestamp'>,
   ) => {
     const message = createMessage(`msg-${nextId++}`, payload.type, payload.content, payload.metadata);
     const targetIndex = messages.findIndex((candidate) => candidate.id === beforeMessageId);
@@ -34,7 +34,7 @@ const createStore = (initialMessages: GenWorkMessage[], pageSize = Number.POSITI
   });
   const addMessage = vi.fn((
     _sessionId: string,
-    payload: Omit<GenWorkMessage, 'id' | 'timestamp'>,
+    payload: Omit<MixCWorkMessage, 'id' | 'timestamp'>,
   ) => {
     const message = createMessage(`msg-${nextId++}`, payload.type, payload.content, payload.metadata);
     messages.push(message);
@@ -43,7 +43,7 @@ const createStore = (initialMessages: GenWorkMessage[], pageSize = Number.POSITI
   const updateMessage = vi.fn((
     _sessionId: string,
     messageId: string,
-    updates: { content?: string; metadata?: GenWorkMessage['metadata'] },
+    updates: { content?: string; metadata?: MixCWorkMessage['metadata'] },
   ) => {
     const message = messages.find((candidate) => candidate.id === messageId);
     if (message) Object.assign(message, updates);

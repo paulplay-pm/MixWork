@@ -179,10 +179,10 @@ const describeProcessFailure = (result: MigrationProcessResult): string => {
 
 /**
  * Move the deprecated openclaw.json `plugins.installs` records through
- * OpenClaw's public config write path before GenWork overwrites the file.
+ * OpenClaw's public config write path before MixCWork overwrites the file.
  * OpenClaw persists those records in its installed-plugin SQLite index before
  * removing the legacy key. On any failure, the exact original config is put
- * back and GenWork's config sync must stop.
+ * back and MixCWork's config sync must stop.
  */
 export async function migrateLegacyOpenClawPluginInstalls(params: {
   configPath: string;

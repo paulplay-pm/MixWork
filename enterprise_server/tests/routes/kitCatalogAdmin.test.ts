@@ -30,8 +30,11 @@ describe('kitCatalogAdminRoutes', () => {
   beforeEach(async () => {
     await resetSchema();
     await runMigrations();
-    const r = await testPool.query('INSERT INTO orgs(id, name) VALUES ($1,$2) RETURNING id', [`org-${randomUUID().slice(0, 8)}`, 'T']);
-    orgId = r.rows[0].id as string;
+    const r = await testPool.query<{ id: string }>(
+      'INSERT INTO orgs(id, name) VALUES ($1,$2) RETURNING id',
+      [`org-${randomUUID().slice(0, 8)}`, 'T']
+    );
+    orgId = r.rows[0].id;
     superToken = await signToken({ sub: 'admin', orgId, roles: ['super_admin'] });
   });
   const auth = (tok: string) => ({ authorization: `Bearer ${tok}` });

@@ -8,7 +8,12 @@ vi.mock('../../src/db/pool', async () => {
 });
 
 import { resetSchema, runMigrations, testPool } from '../../src/db/testDb';
-import { BUILTIN_PROVIDERS, seedBuiltinProviders, seedBuiltinProvidersForAllOrgs } from '../../src/org/builtinProviders';
+import {
+  BUILTIN_PROVIDERS,
+  legacyTypeFor,
+  seedBuiltinProviders,
+  seedBuiltinProvidersForAllOrgs,
+} from '../../src/org/builtinProviders';
 
 describe('builtin provider seed', () => {
   beforeEach(async () => {
@@ -36,6 +41,13 @@ describe('builtin provider seed', () => {
     expect(bySlug.minimax).toBe('https://api.minimaxi.com/v1');
     expect(bySlug.xiaomi).toBe('https://api.xiaomimimo.com/v1/chat/completions');
     expect(bySlug.volc).toBe('https://ark.cn-beijing.volces.com/api/v3');
+  });
+
+  // The legacy single-value `type` column must not call a video model a chat
+  // model: older desktop contracts read that column, and the console's chat
+  // pickers would then offer a video model.
+  test('video-gen 模型的旧类型列是 image', () => {
+    expect(legacyTypeFor(['video-gen'])).toBe('image');
   });
 
   test('seeds 9 builtins + their models for an org, idempotently', async () => {
@@ -68,6 +80,53 @@ describe('builtin provider seed', () => {
     );
     expect(m.rows[0].types).toEqual(['chat', 'vision']);
     expect(m.rows[0].type).toBe('chat');
+  });
+
+  test('内置 provider 会带上自己的卡片', async () => {
+    await seedBuiltinProviders('o1');
+    const r = await testPool.query<{ card_id: string | null; card_provider: string | null }>(
+      `SELECT k.card_id, c.provider AS card_provider
+         FROM provider_keys k LEFT JOIN provider_cards c ON c.id = k.card_id
+        WHERE k.id = 'builtin:o1:minimax'`,
+    );
+    expect(r.rows[0].card_id).toBe('builtin:card:o1:minimax');
+    expect(r.rows[0].card_provider).toBe('minimax');
+  });
+
+  test('每个内置 provider 都有自己的卡片', async () => {
+    await seedBuiltinProviders('o1');
+    const r = await testPool.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM provider_cards WHERE org_id='o1'`,
+    );
+    expect(r.rows[0].n).toBe(BUILTIN_PROVIDERS.length);
+  });
+
+  test('重复播种不改变卡片的归属', async () => {
+    await seedBuiltinProviders('o1');
+    await seedBuiltinProviders('o1');
+    const r = await testPool.query<{ card_id: string | null }>(
+      `SELECT card_id FROM provider_keys WHERE id = 'builtin:o1:minimax'`,
+    );
+    expect(r.rows[0].card_id).toBe('builtin:card:o1:minimax');
+    const c = await testPool.query<{ n: number }>(
+      `SELECT count(*)::int AS n FROM provider_cards WHERE org_id='o1'`,
+    );
+    expect(c.rows[0].n).toBe(BUILTIN_PROVIDERS.length);
+  });
+
+  test('厂商已有默认卡片时，内置密钥复用它而不是再建一张', async () => {
+    // An org seeded before the card migration already owns a card for the
+    // vendor (the 058 backfill made one). The seed must reuse it — the card
+    // PREFIX is unique per org, so a second card with the same prefix would
+    // be rejected.
+    await testPool.query(
+      `INSERT INTO provider_cards(id, org_id, provider) VALUES ('card:legacy','o1','minimax')`,
+    );
+    await seedBuiltinProviders('o1');
+    const r = await testPool.query<{ card_id: string | null }>(
+      `SELECT card_id FROM provider_keys WHERE id = 'builtin:o1:minimax'`,
+    );
+    expect(r.rows[0].card_id).toBe('card:legacy');
   });
 
   test('backfills all orgs', async () => {

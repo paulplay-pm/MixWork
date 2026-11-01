@@ -17,7 +17,7 @@ import { BrowserWindow, session } from 'electron';
  * retry faults the shared address space and the whole app SIGSEGVs. One
  * stable partition → one network process → deterministic lifecycle.
  */
-export const SSO_OAUTH_PARTITION = 'genwork-sso-oauth';
+export const SSO_OAUTH_PARTITION = 'mixcwork-sso-oauth';
 
 /**
  * Compute the IdP allowlist for the SSO BrowserWindow's request filter.
@@ -84,7 +84,15 @@ export function deriveIdpAllowlist(authorizeUrl: string): {
     'dingtalk.com': {
       etld1: 'dingtalk.com',
       extraHosts: [],
-      resourceEtld1s: ['dingtalkstatic.com'],
+      // DingTalk's login page serves its JS bundle from Alibaba's shared
+      // CDN (`g.alicdn.com` → eTLD+1 `alicdn.com`), not from a
+      // DingTalk-owned host. Without `alicdn.com` here the desktop SSO
+      // BrowserWindow's webRequest filter cancels the bundle request and
+      // the page sticks on "Page Failed to Load" — the web console has
+      // no such filter, which is why only the desktop client breaks.
+      // `dingtalkstatic.com` is DingTalk's own older asset host and is
+      // kept for older authorize pages that still reference it.
+      resourceEtld1s: ['alicdn.com', 'dingtalkstatic.com'],
     },
     'weixin.qq.com': {
       etld1: 'weixin.qq.com',
@@ -139,6 +147,84 @@ export function deriveIdpAllowlist(authorizeUrl: string): {
   return { etld1, allowHosts, resourceEtld1s };
 }
 
+/** Which hosts an OAuth window's requests may reach.
+ *
+ *  `idp` — the strict identity policy. The IdP is known ahead of time (SSO
+ *  providers are vendored in `deriveIdpAllowlist`), so third-party hosts are
+ *  cancelled: no analytics, no ad networks, no captcha vendors the IdP does
+ *  not own.
+ *
+ *  `open` — the connector policy. A connector's authorization server is
+ *  discovered at runtime (RFC 8414 / 9728), and IdP login pages routinely
+ *  serve their own JS and CSS from a CDN on a different eTLD+1 — 纷享销客's
+ *  pages load from `a9.fspage.com`, DingTalk's from `g.alicdn.com`. Those
+ *  hosts cannot be vendored in advance, and cancelling them does not degrade
+ *  gracefully: the login page renders blank and the user has no way forward.
+ *  The window is still sandboxed (`sandbox: true`, no preload, no node), so
+ *  it is no more privileged than a browser tab. Plaintext `http` to a host
+ *  outside the allowlist stays blocked under both policies. */
+export const OAuthNetworkPolicy = {
+  Idp: 'idp',
+  Open: 'open',
+} as const;
+export type OAuthNetworkPolicy =
+  (typeof OAuthNetworkPolicy)[keyof typeof OAuthNetworkPolicy];
+
+/** Mutable allowlist state the request filter consults. `openOauthFlow` grows
+ *  it as the window follows 302s to the IdP's real host. */
+export interface OauthRequestFilterState {
+  etld1: string;
+  extraHosts: ReadonlySet<string>;
+  resourceEtld1s: ReadonlySet<string>;
+}
+
+export type OauthRequestDecision =
+  | { kind: 'allow' }
+  | { kind: 'deny'; reason: 'malformed' | 'insecure-http' | 'third-party' };
+
+/** Decide whether the OAuth window may issue a request. Pure so the policy can
+ *  be tested without constructing a BrowserWindow.
+ *
+ *  Order matters: the allowlist is consulted before the policy, so a
+ *  plaintext IdP the admin configured keeps working under `open`. */
+export function decideOauthRequest(
+  url: string,
+  policy: OAuthNetworkPolicy,
+  state: OauthRequestFilterState
+): OauthRequestDecision {
+  // Pass through non-http(s) schemes (devtools://, chrome-extension://, etc.)
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return { kind: 'allow' };
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return { kind: 'deny', reason: 'malformed' };
+  }
+  const reqHost = parsed.hostname.toLowerCase();
+  // Loopback (any port) carries the OAuth callback.
+  if (reqHost === 'localhost' || reqHost === '127.0.0.1') {
+    return { kind: 'allow' };
+  }
+  const matchesResourceEtld1 = Array.from(state.resourceEtld1s).some(
+    (resourceEtld1) => reqHost === resourceEtld1 || reqHost.endsWith('.' + resourceEtld1)
+  );
+  const isAllowed =
+    (state.etld1 !== '' && (reqHost === state.etld1 || reqHost.endsWith('.' + state.etld1))) ||
+    state.extraHosts.has(reqHost) ||
+    matchesResourceEtld1 ||
+    (state.etld1 !== '' &&
+      reqHost.includes(state.etld1) &&
+      !/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/.test(reqHost));
+  if (isAllowed) return { kind: 'allow' };
+  // Never let the window fetch anything in the clear from a host the IdP
+  // allowlist does not cover — that is where a credential would leak.
+  if (parsed.protocol === 'http:') return { kind: 'deny', reason: 'insecure-http' };
+  if (policy === OAuthNetworkPolicy.Open) return { kind: 'allow' };
+  return { kind: 'deny', reason: 'third-party' };
+}
+
 /** The probe may call this to mark a forthcoming `win.close()` as a
  *  deliberate handoff (not a user/OS cancellation). The two-stage
  *  SSO bind flow uses it when handing the user off to the OS browser
@@ -169,6 +255,9 @@ export interface OAuthFlowOptions {
   /** Window dimensions (defaults 1120x860). */
   width?: number;
   height?: number;
+  /** Which hosts the window may reach. Defaults to `idp` (the strict SSO
+   *  policy). Connector OAuth windows pass `open`; see OAuthNetworkPolicy. */
+  networkPolicy?: OAuthNetworkPolicy;
   /** Deadline for the IdP authorize page to load, in ms.
    *  Settles the flow with `sso_authorize_timeout` if `did-finish-load`
    *  does not fire in time. Cleared on `did-finish-load` so this is the
@@ -190,6 +279,7 @@ export async function openOauthFlow(opts: OAuthFlowOptions): Promise<string> {
     width = 1120,
     height = 860,
     loadTimeoutMs = 20_000,
+    networkPolicy = OAuthNetworkPolicy.Idp,
   } = opts;
 
   let authWindow: BrowserWindow | null = null;
@@ -298,6 +388,7 @@ export async function openOauthFlow(opts: OAuthFlowOptions): Promise<string> {
     let allowedResourceEtld1s: ReadonlySet<string> = new Set(initialResourceEtld1s);
     console.log(
       `[OAuthFlow] filter installed for "${title}" ` +
+      `policy=${networkPolicy} ` +
       `etld1=${JSON.stringify(initialEtld1)} ` +
       `resourceEtld1s=${JSON.stringify(initialResourceEtld1s)} ` +
       `allowHosts=${JSON.stringify(initialAllowHosts)} ` +
@@ -377,59 +468,43 @@ export async function openOauthFlow(opts: OAuthFlowOptions): Promise<string> {
       callback: (response: { cancel: boolean }) => void
     ) => {
       const url = details.url ?? '';
-      // Pass through non-http(s) schemes (devtools://, chrome-extension://, etc.)
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        callback({ cancel: false });
-        return;
-      }
-      try {
-        const reqHost = new URL(url).hostname.toLowerCase();
-        // Allow loopback (any port) for the OAuth callback.
-        if (reqHost === 'localhost' || reqHost === '127.0.0.1') {
+      const decision = decideOauthRequest(url, networkPolicy, {
+        etld1: allowedEtld1,
+        extraHosts: allowedExtraHosts,
+        resourceEtld1s: allowedResourceEtld1s,
+      });
+      switch (decision.kind) {
+        case 'allow':
           callback({ cancel: false });
           return;
-        }
-        // Allow if the host equals the IdP's eTLD+1 or is a subdomain of it,
-        // OR if it's a previously-redirected extra host, OR matches one of
-        // the IdP's documented first-party asset CDNs (e.g.
-        // `feishucdn.com` for Feishu), OR (last-resort for custom OIDC)
-        // contains the etld1 and passes basic hostname validation.
-        //
-        // We compute the resource-host check by suffix (any subdomain of
-        // an allowed resource eTLD+1) so per-asset hosts like
-        // `sf3-scmcdn-cn.feishucdn.com` and
-        // `static-exp.feishucdn.com` are both covered by the single
-        // `feishucdn.com` entry.
-        const matchesResourceEtld1 = Array.from(allowedResourceEtld1s).some(
-          (resourceEtld1) => reqHost === resourceEtld1 || reqHost.endsWith('.' + resourceEtld1)
-        );
-        const isAllowed =
-          reqHost === allowedEtld1 ||
-          reqHost.endsWith('.' + allowedEtld1) ||
-          allowedExtraHosts.has(reqHost) ||
-          matchesResourceEtld1 ||
-          (allowedEtld1 &&
-            reqHost.includes(allowedEtld1) &&
-            !/^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$/.test(reqHost));
-        if (isAllowed) {
-          callback({ cancel: false });
-          return;
-        }
-        console.warn(
-          `[OAuthFlow] blocked non-IdP request to ${reqHost} in ${title} ` +
-          `(etld1=${JSON.stringify(allowedEtld1)})`
-        );
-        callback({ cancel: true });
-      } catch {
-        // Malformed URL: cancel defensively. This is a request to a
-        // junk URL; the user never sees it and there's nothing to do
-        // but deny.
-        console.warn(`[OAuthFlow] blocked malformed request ${url} in ${title}`);
-        callback({ cancel: true });
+        case 'deny':
+          break;
       }
+      switch (decision.reason) {
+        case 'malformed':
+          // Malformed URL: cancel defensively. This is a request to a
+          // junk URL; the user never sees it and there's nothing to do
+          // but deny.
+          console.warn(`[OAuthFlow] blocked malformed request ${url} in ${title}`);
+          break;
+        case 'insecure-http':
+          console.warn(`[OAuthFlow] blocked plaintext http request to ${url} in ${title}`);
+          break;
+        case 'third-party':
+          console.warn(
+            `[OAuthFlow] blocked non-IdP request to ${new URL(url).hostname} in ${title} ` +
+            `(etld1=${JSON.stringify(allowedEtld1)})`
+          );
+          break;
+      }
+      callback({ cancel: true });
     };
     partitionSession.webRequest.onBeforeRequest(webRequestListener);
-    partitionSession.webRequest.onBeforeRedirect(redirectListener);
+    // The redirect-grow logic only matters for the strict policy: under
+    // `open`, no host needs to be learned before its requests pass.
+    if (networkPolicy === OAuthNetworkPolicy.Idp) {
+      partitionSession.webRequest.onBeforeRedirect(redirectListener);
+    }
 
     authWindow.on('closed', () => {
       authWindow = null;

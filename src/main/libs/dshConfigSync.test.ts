@@ -36,19 +36,19 @@ function providerFixture(overrides: Partial<ProviderConfig> = {}): ProviderConfi
 
 describe('sanitizeDshRouteId', () => {
   test('lowercases, collapses separators, and prefixes', () => {
-    expect(sanitizeDshRouteId('OpenAI')).toBe('genwork-openai');
-    expect(sanitizeDshRouteId('My_Provider 1')).toBe('genwork-my-provider-1');
+    expect(sanitizeDshRouteId('OpenAI')).toBe('mixcwork-openai');
+    expect(sanitizeDshRouteId('My_Provider 1')).toBe('mixcwork-my-provider-1');
   });
 
   test('strips leading non-letters and never returns a bare prefix', () => {
-    expect(sanitizeDshRouteId('123abc')).toBe('genwork-abc');
-    expect(sanitizeDshRouteId('自定义')).toBe('genwork-provider');
+    expect(sanitizeDshRouteId('123abc')).toBe('mixcwork-abc');
+    expect(sanitizeDshRouteId('自定义')).toBe('mixcwork-provider');
   });
 });
 
 describe('deriveDshApiKeyEnvRef', () => {
   test('follows the dsh models UI convention', () => {
-    expect(deriveDshApiKeyEnvRef('genwork-my-gateway')).toBe('GENWORK_MY_GATEWAY_API_KEY');
+    expect(deriveDshApiKeyEnvRef('mixcwork-my-gateway')).toBe('MIXCWORK_MY_GATEWAY_API_KEY');
   });
 });
 
@@ -64,34 +64,34 @@ describe('mapApiFormatToDshProtocol', () => {
 describe('renderDshManagedSettings', () => {
   test('renders a full route with env-referenced credentials', () => {
     const managed = renderDshManagedSettings({ 'My GW': providerFixture() });
-    const route = managed.routes['genwork-my-gw'];
+    const route = managed.routes['mixcwork-my-gw'];
     expect(route).toBeDefined();
-    expect(route.apiKeyEnv).toBe('GENWORK_MY_GW_API_KEY');
-    expect(managed.envVars.GENWORK_MY_GW_API_KEY).toBe('sk-test');
+    expect(route.apiKeyEnv).toBe('MIXCWORK_MY_GW_API_KEY');
+    expect(managed.envVars.MIXCWORK_MY_GW_API_KEY).toBe('sk-test');
     expect(route.models[0]).toEqual({ id: 'model-a', name: 'Model A', contextWindow: 8192, maxTokens: 1024 });
     expect(managed.skipped).toHaveLength(0);
   });
 
   test('prefers the canonical provider label over the raw config key, marked as managed', () => {
     const managed = renderDshManagedSettings({ deepseek: providerFixture({ displayName: 'DeepSeek' }) });
-    expect(managed.routes['genwork-deepseek'].displayName).toBe(`${DSH_MANAGED_LABEL_PREFIX}DeepSeek`);
+    expect(managed.routes['mixcwork-deepseek'].displayName).toBe(`${DSH_MANAGED_LABEL_PREFIX}DeepSeek`);
   });
 
   test('an explicit displayName still wins over the canonical label', () => {
     const managed = renderDshManagedSettings({ deepseek: providerFixture({ displayName: 'My DeepSeek' }) });
-    expect(managed.routes['genwork-deepseek'].displayName).toBe(`${DSH_MANAGED_LABEL_PREFIX}My DeepSeek`);
+    expect(managed.routes['mixcwork-deepseek'].displayName).toBe(`${DSH_MANAGED_LABEL_PREFIX}My DeepSeek`);
   });
 
   test('falls back to the config key for unknown providers', () => {
     const managed = renderDshManagedSettings({ 'my-gw': providerFixture({ displayName: undefined }) });
-    expect(managed.routes['genwork-my-gw'].displayName).toBe(`${DSH_MANAGED_LABEL_PREFIX}my-gw`);
+    expect(managed.routes['mixcwork-my-gw'].displayName).toBe(`${DSH_MANAGED_LABEL_PREFIX}my-gw`);
   });
 
   test('declares image input only when the model supports it', () => {
     const managed = renderDshManagedSettings({
       gw: providerFixture({ models: [{ id: 'm', name: 'M', supportsImage: true }] }),
     });
-    expect(managed.routes['genwork-gw'].models[0].input).toEqual(['text', 'image']);
+    expect(managed.routes['mixcwork-gw'].models[0].input).toEqual(['text', 'image']);
   });
 
   test('skips disabled, oauth, keyless, model-less, and gemini providers with reasons', () => {
@@ -114,7 +114,7 @@ describe('renderDshManagedSettings', () => {
         { gw: providerFixture() },
         { preferredDefault: { providerId: 'gw', modelId: 'model-a' } }
       ).defaultModel
-    ).toEqual({ provider: 'genwork-gw', model: 'model-a' });
+    ).toEqual({ provider: 'mixcwork-gw', model: 'model-a' });
   });
 
   test('falls back to a rendered route when the preferred one was skipped', () => {
@@ -122,7 +122,7 @@ describe('renderDshManagedSettings', () => {
       { gemini: providerFixture({ apiFormat: 'gemini' }), gw: providerFixture() },
       { preferredDefault: { providerId: 'gemini', modelId: 'model-a' } }
     );
-    expect(managed.defaultModel).toEqual({ provider: 'genwork-gw', model: 'model-a' });
+    expect(managed.defaultModel).toEqual({ provider: 'mixcwork-gw', model: 'model-a' });
   });
 
   test('has no default to offer when nothing rendered', () => {
@@ -190,7 +190,7 @@ describe('plan provider (enterprise direct, per-provider routes)', () => {
     expect(qwenRoute.models.map((m) => m.id)).toEqual(['uuid-b']);
   });
 
-  test('marks the plan as GenWork-managed in the picker', () => {
+  test('marks the plan as MixCWork-managed in the picker', () => {
     const managed = renderDshManagedSettings({}, { planProvider: plan });
     expect(managed.routes[planOpenAiRouteId('deepseek')].displayName).toBe(`${DSH_MANAGED_LABEL_PREFIX}套餐`);
   });
@@ -257,7 +257,7 @@ describe('plan provider (enterprise direct, per-provider routes)', () => {
       { gw: providerFixture() },
       { planProvider: plan, preferredDefault: { providerId: 'gw', modelId: 'model-a' } }
     );
-    expect(managed.defaultModel).toEqual({ provider: 'genwork-gw', model: 'model-a' });
+    expect(managed.defaultModel).toEqual({ provider: 'mixcwork-gw', model: 'model-a' });
   });
 
   test('skips the plan when the enterprise credential is absent', () => {
@@ -295,8 +295,8 @@ describe('mergeDshSettingsText', () => {
     const { text, warnings } = mergeDshSettingsText(null, managed, { seedDefaultModel: true });
     const doc = yaml.load(text) as Record<string, Record<string, unknown>>;
     expect(warnings).toHaveLength(0);
-    expect((doc['llm-pi-ai'].providers as Record<string, unknown>)['genwork-gw']).toBeDefined();
-    expect(doc['agent-default-model']).toEqual({ provider: 'genwork-gw', model: 'model-a' });
+    expect((doc['llm-pi-ai'].providers as Record<string, unknown>)['mixcwork-gw']).toBeDefined();
+    expect(doc['agent-default-model']).toEqual({ provider: 'mixcwork-gw', model: 'model-a' });
   });
 
   test('preserves user routes and foreign namespaces, replaces stale managed routes', () => {
@@ -305,7 +305,7 @@ describe('mergeDshSettingsText', () => {
       'llm-pi-ai': {
         providers: {
           'user-route': { apiKeyEnv: 'USER_KEY', api: 'openai-completions', baseURL: 'https://u.example', models: [{ id: 'u' }] },
-          'genwork-stale': { apiKeyEnv: 'STALE', api: 'openai-completions', baseURL: 'https://s.example', models: [{ id: 's' }] },
+          'mixcwork-stale': { apiKeyEnv: 'STALE', api: 'openai-completions', baseURL: 'https://s.example', models: [{ id: 's' }] },
         },
       },
       'agent-default-model': { provider: 'user-route', model: 'u' },
@@ -314,8 +314,8 @@ describe('mergeDshSettingsText', () => {
     const doc = yaml.load(text) as Record<string, Record<string, unknown>>;
     const providers = doc['llm-pi-ai'].providers as Record<string, unknown>;
     expect(providers['user-route']).toBeDefined();
-    expect(providers['genwork-stale']).toBeUndefined();
-    expect(providers['genwork-gw']).toBeDefined();
+    expect(providers['mixcwork-stale']).toBeUndefined();
+    expect(providers['mixcwork-gw']).toBeDefined();
     expect(doc['ui-onboarding']).toEqual({ done: true });
     // The user's default model pick must never be clobbered.
     expect(doc['agent-default-model']).toEqual({ provider: 'user-route', model: 'u' });
@@ -336,9 +336,9 @@ describe('mergeDshSettingsText', () => {
   });
 
   test('repairs a default pinned to a managed route that no longer exists', () => {
-    const existing = yaml.dump({ 'agent-default-model': { provider: 'genwork-removed', model: 'gone' } });
+    const existing = yaml.dump({ 'agent-default-model': { provider: 'mixcwork-removed', model: 'gone' } });
     const doc = yaml.load(mergeDshSettingsText(existing, managed).text) as Record<string, unknown>;
-    expect(doc['agent-default-model']).toEqual({ provider: 'genwork-gw', model: 'model-a' });
+    expect(doc['agent-default-model']).toEqual({ provider: 'mixcwork-gw', model: 'model-a' });
   });
 
   test('replaces unparseable content with a warning', () => {
@@ -361,7 +361,7 @@ describe('writeDshManagedSettings', () => {
       (yaml.load(fs.readFileSync(first.settingsPath, 'utf8')) as Record<string, unknown>)['agent-default-model']
     ).toBeDefined();
     const doc = yaml.load(fs.readFileSync(first.settingsPath, 'utf8')) as Record<string, Record<string, unknown>>;
-    expect((doc['llm-pi-ai'].providers as Record<string, unknown>)['genwork-gw']).toBeDefined();
+    expect((doc['llm-pi-ai'].providers as Record<string, unknown>)['mixcwork-gw']).toBeDefined();
     if (process.platform !== 'win32') {
       expect(fs.statSync(first.settingsPath).mode & 0o777).toBe(0o600);
     }

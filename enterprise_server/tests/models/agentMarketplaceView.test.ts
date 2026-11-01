@@ -4,10 +4,12 @@ import { AGENT_COLUMNS, mapAgent } from '../../src/models/agentMarketplaceView';
 
 describe('agentMarketplaceView', () => {
   test('AGENT_COLUMNS covers every wire field', () => {
-    // Lightweight: assert no duplicates and that 'allowed_roles' is included.
+    // Lightweight: assert no duplicates and that the visibility column is
+    // included. The role grant was replaced by the department scope.
     const cols = AGENT_COLUMNS.split(',').map(s => s.trim());
     expect(new Set(cols).size).toBe(cols.length);
-    expect(cols).toContain('allowed_roles');
+    expect(cols).toContain('scope');
+    expect(cols).not.toContain('allowed_roles');
     expect(cols).toContain('agent_id');
   });
 
@@ -23,7 +25,7 @@ describe('agentMarketplaceView', () => {
       icon: '',
       skill_ids: ['web-search'],
       subagent_allow_agent_ids: ['agent_a2'],
-      allowed_roles: ['org_admin', 'user'],
+      scope: { allCompany: false, deptIds: ['d1'], userIds: ['u1'] },
       enabled: true,
       about_you: '',
       icon_color: 0,
@@ -40,7 +42,7 @@ describe('agentMarketplaceView', () => {
       icon: '',
       skillIds: ['web-search'],
       subagentAllowAgentIds: ['agent_a2'],
-      allowedRoles: ['org_admin', 'user'],
+      scope: { allCompany: false, deptIds: ['d1'], userIds: ['u1'] },
       enabled: true,
       aboutYou: '',
       iconColor: 0,
@@ -55,7 +57,7 @@ describe('agentMarketplaceView', () => {
       // null array columns: AgentRow types them as nullable for legacy rows,
       // and mapAgent must default them to [].
       skill_ids: null, subagent_allow_agent_ids: null,
-      allowed_roles: ['org_admin'], enabled: false,
+      scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: false,
       about_you: '', icon_color: 0, im_channels: null,
     });
     expect(v.skillIds).toEqual([]);
@@ -68,12 +70,12 @@ describe('agentMarketplaceView', () => {
       agent_id: 'a', name: 'A', description: '', identity: '', system_prompt: '',
       model: '', thinking_level: '', icon: '',
       skill_ids: null, subagent_allow_agent_ids: null,
-      allowed_roles: ['org_admin'], enabled: true,
-      about_you: '我叫王经理', icon_color: 3, im_channels: ['popo'],
+      scope: { allCompany: false, deptIds: [], userIds: [] }, enabled: true,
+      about_you: '我叫王经理', icon_color: 3, im_channels: ['wecom'],
     });
     expect(v.aboutYou).toBe('我叫王经理');
     expect(v.iconColor).toBe(3);
-    expect(v.imChannels).toEqual(['popo']);
+    expect(v.imChannels).toEqual(['wecom']);
   });
 
   test('AGENT_COLUMNS includes about_you and icon_color', () => {

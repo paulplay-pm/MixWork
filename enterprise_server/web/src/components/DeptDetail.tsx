@@ -4,10 +4,12 @@ import type { JSX } from 'react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { auditApi, type AuditEvent } from '../api/audit';
+import { formatOrgDateTime } from '../analytics/datetime';
+import { rangeOptionLabel, USAGE_RANGE_KEYS, type UsageRangeKey } from '../analytics/range';
+import { auditApi, type AuditListItem,badgeToneFor } from '../api/audit';
 import { type DeptDetail, type DeptMember, type DeptNode } from '../api/departments';
 import { useAuth } from '../auth/useAuth';
-import { t } from '../i18n';
+import { getLang, t } from '../i18n';
 import { Badge } from './Badge';
 import { type Column,DataTable } from './DataTable';
 import { InfoGrid } from './InfoGrid';
@@ -16,6 +18,10 @@ import { StatusPill } from './StatusPill';
 import { Tabs } from './Tabs';
 
 type TabKey = 'members' | 'subs' | 'audit';
+
+/** Rows per page on the audit tab — matches the audit list's own default so
+ * the department view and the audit page page identically. */
+const AUDIT_PAGE_SIZE = 15;
 
 interface Props {
   detail: DeptDetail | undefined;
@@ -59,14 +65,32 @@ export function DeptDetail({
   const { claims } = useAuth();
   const nav = useNavigate();
   const [tab, setTab] = useState<TabKey>('members');
+  const [auditRange, setAuditRange] = useState<UsageRangeKey>('7d');
+  const [auditPage, setAuditPage] = useState(1);
   const orgId = claims?.orgId ?? 'default-org';
 
+  // This tab used to pull 200 rows and filter `target_type === 'dept' &&
+  // target_id === id` in the browser. The audit list is paged now, so that
+  // filter would have silently kept at most 15 rows — and the ones kept would
+  // be the newest 15 of the ORG, most of which belong to other departments.
+  // Ask the server for this department's rows instead; `targetId` exists on
+  // the list endpoint for precisely this caller.
   const auditQuery = useQuery({
-    queryKey: ['dept-audit', orgId, detail?.id],
-    queryFn: () =>
-      auditApi.list({ orgId, limit: 200 }).then((events) =>
-        events.filter((e) => e.target_type === 'dept' && e.target_id === detail?.id)
-      ),
+    queryKey: ['dept-audit', orgId, detail?.id, auditRange, auditPage],
+    queryFn: () => {
+      const id = detail?.id;
+      // Throwing beats asking without it: a targetType-only query is a valid
+      // request that answers "every department", and the user would see a
+      // populated table that has nothing to do with the one they opened.
+      if (!id) throw new Error('dept audit tab requires a department');
+      return auditApi.list({
+        range: auditRange,
+        targetType: 'dept',
+        targetId: id,
+        page: auditPage,
+        pageSize: AUDIT_PAGE_SIZE,
+      });
+    },
     enabled: !!detail && tab === 'audit',
   });
 
@@ -156,27 +180,40 @@ export function DeptDetail({
     },
   ];
 
-  const auditColumns: Column<AuditEvent>[] = [
+  const auditColumns: Column<AuditListItem>[] = [
     {
       key: 'ts',
       header: t('dept.audit.col.time'),
       render: (r) => (
-        <span className="text-xs text-[var(--text-secondary)]">{new Date(r.ts).toLocaleString()}</span>
+        // The org's zone, like every other analytics surface and like the CSV
+        // this table's rows are exported into — `Date.toLocaleString()` would
+        // render the browser's, so the same event would read one time here and
+        // another on `/monitoring/audit`. The response carries `timezone`.
+        <span className="text-xs text-[var(--text-secondary)]">
+          {formatOrgDateTime(r.ts, auditQuery.data?.timezone)}
+        </span>
       ),
     },
     {
-      key: 'user_id',
+      key: 'user_name',
       header: t('dept.audit.col.user'),
       render: (r) => (
-        <span className="font-mono text-xs text-[var(--text-primary)]">{r.user_id ?? '—'}</span>
+        <span className="text-xs text-[var(--text-primary)]">{r.user_name ?? r.user_id ?? '—'}</span>
       ),
     },
     {
       key: 'action',
       header: t('dept.audit.col.action'),
-      render: (r) => <Badge tone="info">{r.action}</Badge>,
+      // Labels and tone are resolved server-side, so an unregistered action
+      // code still reads as itself instead of as a blank cell.
+      render: (r) => (
+        <Badge tone={badgeToneFor(r.tone)}>{getLang() === 'zh' ? r.action_zh : r.action_en}</Badge>
+      ),
     },
   ];
+
+  const auditTotal = auditQuery.data?.total ?? 0;
+  const auditPageCount = Math.max(1, Math.ceil(auditTotal / AUDIT_PAGE_SIZE));
 
   return (
     <div
@@ -290,13 +327,59 @@ export function DeptDetail({
         </div>
       )}
       {tab === 'audit' && (
-        <div className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--border-subtle)]">
-          <DataTable
-            columns={auditColumns}
-            rows={auditQuery.data ?? []}
-            loading={auditQuery.isLoading}
-            emptyMessage={t('dept.auditEmpty')}
-          />
+        <div>
+          {/* The window is part of the answer, so it is visible and editable —
+              a paged list with no stated range reads as "this is everything". */}
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <label className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+              {t('dept.audit.range')}
+              <select
+                aria-label={t('dept.audit.range')}
+                className="rounded-[var(--radius-md)] border border-[var(--border-default)] bg-white px-2 py-1 text-xs text-[var(--text-primary)] focus:border-[var(--accent-primary)] focus:outline-none"
+                value={auditRange}
+                onChange={(e) => {
+                  setAuditRange(e.target.value as UsageRangeKey);
+                  setAuditPage(1);
+                }}
+              >
+                {USAGE_RANGE_KEYS.map((k) => (
+                  <option key={k} value={k}>
+                    {rangeOptionLabel(k)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+              <span>
+                {t('dept.audit.pageInfo')
+                  .replace('{page}', String(auditQuery.data?.page ?? auditPage))
+                  .replace('{count}', String(auditPageCount))}
+              </span>
+              <button
+                onClick={() => setAuditPage(auditPage - 1)}
+                disabled={auditPage <= 1}
+                className="rounded-[var(--radius-md)] border border-[var(--border-default)] px-2 py-1 disabled:opacity-40"
+              >
+                {t('dept.audit.prev')}
+              </button>
+              <button
+                onClick={() => setAuditPage(auditPage + 1)}
+                disabled={auditPage >= auditPageCount}
+                className="rounded-[var(--radius-md)] border border-[var(--border-default)] px-2 py-1 disabled:opacity-40"
+              >
+                {t('dept.audit.next')}
+              </button>
+            </div>
+          </div>
+          <div className="overflow-x-auto rounded-[var(--radius-md)] border border-[var(--border-subtle)]">
+            <DataTable
+              columns={auditColumns}
+              rows={auditQuery.data?.items ?? []}
+              loading={auditQuery.isLoading}
+              emptyMessage={t('dept.auditEmpty')}
+              rowKey={(r) => r.id}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 import { BrowserWindow, ipcMain } from 'electron';
 
-import { type ConnectorSubmitRequest, McpAuthStatus, McpIpcChannel } from '../../../shared/mcp/constants';
+import { type ConnectorSubmitRequest, McpAuthStatus, McpIpcChannel, QICHACHA_REGISTRY_ID } from '../../../shared/mcp/constants';
 import { normalizeMcpServerUrlInput } from '../../../shared/mcp/url';
 import { enterpriseClient } from '../../auth/enterpriseClient';
 import { loginGate } from '../../auth/loginGate';
@@ -8,6 +8,7 @@ import { OpenClawConfigImpact } from '../../libs/openclawConfigImpact';
 import { probeOnly, saveCredential, type SaveCredentialPayload } from '../../mcp/mcpAuthFlows';
 import type { McpRuntime } from '../../mcp/mcpRuntime';
 import type { McpServerFormData, McpServerRecord } from '../../mcp/mcpStore';
+import { listServerTools } from '../../mcp/mcpToolCatalog';
 import { startQichachaMcpApiKeyLogin } from '../../mcp/qichachaMcpAuth';
 
 export interface McpHandlerDeps {
@@ -44,8 +45,6 @@ function normalizeMcpServerInput(data: Partial<McpServerFormData>): Partial<McpS
   }
   return data;
 }
-
-const QICHACHA_REGISTRY_ID = 'qichacha';
 
 const QICHACHA_MCP_SERVERS: Array<{
   name: string;
@@ -129,12 +128,15 @@ export function registerMcpHandlers(deps: McpHandlerDeps): void {
         env?: Record<string, string>;
         url?: string;
         headers?: Record<string, string>;
+        consumption?: McpServerFormData['consumption'];
       },
     ) => {
       try {
         const mcpRuntime = getMcpRuntime();
         const normalizedData = normalizeMcpServerInput(data as McpServerFormData) as McpServerFormData;
-        const server = mcpRuntime.getStore().createServer(normalizedData);
+        // `installServer` exchanges a gateway connector's service token before
+        // it writes the record; for every other connector it is createServer.
+        const server = await mcpRuntime.getStore().installServer(normalizedData);
         if (server.enabled) {
           mcpRuntime.ensureLaunchResolution(server.id, 'mcp-server-created');
         }
@@ -376,6 +378,37 @@ export function registerMcpHandlers(deps: McpHandlerDeps): void {
       return { success: false, error: res.reason };
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'save credential failed' };
+    }
+  });
+
+  // Read-only inspection for the detail dialog: what does this server advertise
+  // right now? Deliberately does not touch auth status or sync OpenClaw — an
+  // inspection must never change the thing it is inspecting. The one write it
+  // does allow is the gateway token it just minted: without it every probe
+  // would mint again, and a refused token would stay on the record.
+  ipcMain.handle(McpIpcChannel.ListTools, async (_event, options: { id: string }) => {
+    try {
+      const store = getMcpRuntime().getStore();
+      const record = store.getServer(options.id);
+      if (!record) return { success: false, error: 'server not found' };
+      const result = await listServerTools(record, {
+        saveGatewayToken: (id, token, owner, expiresAt) => store.saveGatewayToken(id, token, owner, expiresAt),
+      });
+      if (result.ok) {
+        // The server answered, so a stored managed-launch failure is out of
+        // date: the command the runtime falls back to demonstrably works. Drop
+        // it, otherwise the card keeps showing the old failure forever.
+        // Bookkeeping must never turn a successful probe into a failed one.
+        try {
+          store.deleteLaunchResolution(options.id);
+          getMcpRuntime().broadcastServersChanged();
+        } catch (cleanupError) {
+          console.warn('[MCP] failed to clear the stale launch resolution:', cleanupError);
+        }
+      }
+      return { success: true, result };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'list tools failed' };
     }
   });
 

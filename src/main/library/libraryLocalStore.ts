@@ -96,7 +96,7 @@ export type LibraryStoredLocalArtifact = Omit<LocalArtifactItem, 'latestSession'
 const VISIBLE_TASK_RELATION_PREDICATE = `EXISTS (
   SELECT 1
   FROM library_artifact_sessions visible_relation
-  JOIN genwork_sessions visible_session ON visible_session.id = visible_relation.session_id
+  JOIN mixcwork_sessions visible_session ON visible_session.id = visible_relation.session_id
   WHERE visible_relation.artifact_id = a.id
 )`;
 
@@ -266,11 +266,11 @@ export class LibraryLocalStore {
   }
 
   sessionExists(sessionId: string): boolean {
-    return Boolean(this.db.prepare('SELECT 1 FROM genwork_sessions WHERE id = ?').get(sessionId));
+    return Boolean(this.db.prepare('SELECT 1 FROM mixcwork_sessions WHERE id = ?').get(sessionId));
   }
 
   getSessionCwd(sessionId: string): string | null {
-    const row = this.db.prepare('SELECT cwd FROM genwork_sessions WHERE id = ?').get(sessionId) as {
+    const row = this.db.prepare('SELECT cwd FROM mixcwork_sessions WHERE id = ?').get(sessionId) as {
       cwd: string;
     } | undefined;
     return row?.cwd ?? null;
@@ -282,7 +282,7 @@ export class LibraryLocalStore {
   ): LibrarySessionRef | undefined {
     if (sessionId) {
       const session = this.db.prepare(`
-        SELECT id, title, agent_id, updated_at FROM genwork_sessions WHERE id = ?
+        SELECT id, title, agent_id, updated_at FROM mixcwork_sessions WHERE id = ?
       `).get(sessionId) as {
         id: string;
         title: string;
@@ -687,7 +687,7 @@ export class LibraryLocalStore {
     const result = this.db.prepare(`
       DELETE FROM library_artifact_sessions
       WHERE artifact_id NOT IN (SELECT id FROM library_local_artifacts)
-         OR session_id NOT IN (SELECT id FROM genwork_sessions)
+         OR session_id NOT IN (SELECT id FROM mixcwork_sessions)
     `).run();
     return result.changes;
   }
@@ -782,7 +782,7 @@ export class LibraryLocalStore {
         s.agent_id,
         s.updated_at AS session_updated_at
       FROM library_artifact_sessions r
-      JOIN genwork_sessions s ON s.id = r.session_id
+      JOIN mixcwork_sessions s ON s.id = r.session_id
       WHERE r.artifact_id IN (${placeholders})
       ORDER BY r.artifact_id, r.last_related_at DESC, s.updated_at DESC, r.session_id DESC
     `).all(...itemIds) as RelationRow[];

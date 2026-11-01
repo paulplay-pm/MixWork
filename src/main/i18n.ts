@@ -8,7 +8,7 @@
  * Usage:
  *   import { t, setLanguage } from './i18n';
  *   setLanguage('en');
- *   const label = t('trayShowWindow'); // "Open GenWork"
+ *   const label = t('trayShowWindow'); // "Open MixcWork"
  *   const msg = t('imMissingCredentials', { fields: 'appId, appSecret' });
  */
 
@@ -16,15 +16,21 @@ export type LanguageType = 'zh' | 'en';
 
 const translations: Record<LanguageType, Record<string, string>> = {
   zh: {
+    // MCP 网关安装
+    mcpInstallGatewayLoginRequired: '安装失败：请先登录企业账号，再安装此连接器。',
+    mcpInstallGatewayTokenFailed: '安装失败：无法获取企业网关凭据，请稍后重试。',
+    mcpInstallGatewayForbidden: '安装失败：你没有使用此连接器的权限，请联系管理员开通部门或成员范围。',
+    mcpInstallGatewayNotFound: '安装失败：该连接器已被删除或停用，请刷新企业市场后重试。',
+    mcpInstallGatewayUnsupported: '安装失败：该连接器当前不能通过企业网关使用，请联系管理员检查密钥与地址配置。',
     // DeepSeek Harness (experimental)
     dshWorkbenchTitle: 'DeepSeek Harness 工作台（实验）',
     dshPlanProviderName: '套餐',
 
     // Tray menu
-    trayShowWindow: '打开 GenWork',
+    trayShowWindow: '打开 MixcWork',
     trayNewTask: '新建任务',
     trayViewCompletedTask: '查看完成的任务',
-    trayCompletedTaskTooltip: 'GenWork - {count} 个任务已完成',
+    trayCompletedTaskTooltip: 'MixcWork - {count} 个任务已完成',
     traySettings: '设置',
     trayQuit: '退出',
     taskCompletionNotificationTitle: '任务已完成',
@@ -47,7 +53,6 @@ const translations: Record<LanguageType, Record<string, string>> = {
     channelPrefixDingtalk: '钉钉',
     channelPrefixWecom: '企微',
     channelPrefixWeixin: '微信',
-    channelPrefixEmail: '邮件',
 
     // Timeout hint
     taskTimedOut: '[任务超时] 任务因超过最大允许时长而被自动停止。你可以继续对话以从中断处继续。',
@@ -65,8 +70,8 @@ const translations: Record<LanguageType, Record<string, string>> = {
 
     // Cowork error messages (shared with renderer via classifyErrorKey)
     coworkErrorAuthInvalid: 'API 密钥无效或已过期，请检查配置。',
-    coworkErrorGenWorkLoginExpired: '登录状态已过期，请重新登录后继续使用 GenWork 套餐模型。',
-    coworkErrorGenWorkLoginRefreshedRetry: '登录凭证已自动更新，请稍后重试。',
+    coworkErrorMixCWorkLoginExpired: '登录状态已过期，请重新登录后继续使用 MixcWork 套餐模型。',
+    coworkErrorMixCWorkLoginRefreshedRetry: '登录凭证已自动更新，请稍后重试。',
     coworkErrorOAuthInvalid: 'OAuth 授权已失效或权限不足，请重新授权后重试。',
     coworkErrorModelAccessDenied: '当前账号无权访问该模型，请切换模型或检查服务商账号权限。',
     coworkErrorQuotaExhausted: '积分额度已用完，请联系管理员在企业控制台充值或升级套餐。',
@@ -82,7 +87,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
       '本次消息过大，请减少附件、压缩图片或拆分提交。（单次整体需小于 30MB）',
     coworkErrorCouldNotProcessPdf: '无法处理 PDF 文件。',
     coworkErrorModelNotFound: '请求的模型不存在或不可用。',
-    coworkGatewaySessionSyncTimeout: 'OpenClaw 引擎响应缓慢，消息尚未发送。请等待 1~2 分钟后重新发送；若频繁出现，请检查系统内存与磁盘占用，并将 GenWork 加入杀毒软件白名单。',
+    coworkGatewaySessionSyncTimeout: 'OpenClaw 引擎响应缓慢，消息尚未发送。请等待 1~2 分钟后重新发送；若频繁出现，请检查系统内存与磁盘占用，并将 MixcWork 加入杀毒软件白名单。',
     coworkErrorTranscriptOversized: '该任务的历史记录过大。为保护 AI 引擎，本次消息未发送；请新建任务继续，原任务记录仍会保留。',
     coworkErrorGatewayHeapOutOfMemory: '本地 AI 引擎内存不足并已自动重启。当前任务可能过大，请等待恢复后在新任务中继续。',
     coworkErrorGatewayDisconnected: 'AI 引擎连接中断，请重试。',
@@ -140,12 +145,8 @@ const translations: Record<LanguageType, Record<string, string>> = {
     skillErrZipShaMismatch: '技能包校验失败，请重试。',
 
     // Auth quota
-    authPlanFree: '免费',
-    authPlanStandard: '标准',
-    enterpriseAccountContextMismatchTitle: '团队身份已失效',
     enterpriseAccountContextMismatchMessage:
       '当前团队身份与登录凭证不一致。相关图片和视频任务已停止轮询，请重新登录或重新选择团队身份后再试。',
-    enterpriseAccountContextMismatchConfirm: '知道了',
     authAccountChanged: '登录账号上下文已变更，请重试当前请求。',
     authAccountScopeMissing: '当前会话尚未绑定到登录账号，无法生成媒体。请重试或重新发送一次提示。',
     authLoginRequired: '请先登录后再试。',
@@ -153,13 +154,13 @@ const translations: Record<LanguageType, Record<string, string>> = {
     enterpriseMediaQuotaUnavailable: '当前团队的媒体生成额度暂不可用。',
 
     // Data migration dialogs
-    dataMigrationBackupDialogTitle: '备份 GenWork 数据',
-    dataMigrationRestoreDialogTitle: '导入 GenWork 数据备份',
-    dataMigrationBackupArchiveFilter: 'GenWork 备份包',
+    dataMigrationBackupDialogTitle: '备份 MixcWork 数据',
+    dataMigrationRestoreDialogTitle: '导入 MixcWork 数据备份',
+    dataMigrationBackupArchiveFilter: 'MixcWork 备份包',
     dataMigrationAllFilesFilter: '所有文件',
     dataMigrationBackupBlockedByActiveWorkloads:
       '当前有正在运行的 Agent 或定时任务，请停止或等待任务完成后再备份。',
-    dataMigrationRestoreProgressTitle: '正在导入 GenWork 数据',
+    dataMigrationRestoreProgressTitle: '正在导入 MixcWork 数据',
     dataMigrationRestoreProgressDesc: '正在恢复备份并校验数据，完成后应用会自动重启。',
     dataMigrationRestoreProgressWarning: '请不要关闭应用或重启电脑，否则可能中断本次数据迁移。',
 
@@ -193,9 +194,6 @@ const translations: Record<LanguageType, Record<string, string>> = {
     imQqOpenClawHint: 'QQ 通过 OpenClaw 运行时运行，Bot 将在 OpenClaw Gateway 启动后自动连接。',
     imQqMentionHint: '频道中需 @机器人 触发对话，也支持私信和群聊。',
     imQqAuthPassed: 'QQ 鉴权通过（AccessToken 已获取）。',
-    imEmailImapAuthPassed: 'IMAP 邮箱登录验证通过。',
-    imEmailImapAuthFailed: 'IMAP 邮箱登录验证失败',
-    imEmailWsAuthPassed: 'API Key 已配置。',
     imQqAccessTokenFailed: '获取 AccessToken 失败',
     imQqFillAppIdSecret: '请补全 AppID 和 AppSecret 后重新测试连通性。',
     imQqAuthFailed: 'QQ 鉴权失败: {error}',
@@ -261,76 +259,10 @@ const translations: Record<LanguageType, Record<string, string>> = {
       '微信通过 OpenClaw 运行时运行，Bot 将在 OpenClaw Gateway 启动后自动连接。',
     imWeixinConfigReadyOpenClaw: '微信配置已就绪，通过 OpenClaw 运行。',
 
-    // POPO
-    imPopoFillWebhookCredentials: '请补全 appKey、appSecret、token 和 aesKey 后重新测试连通性。',
-    imPopoFillWsCredentials: '请补全 appKey、appSecret 和 aesKey 后重新测试连通性。',
-    imPopoConfigReady: 'POPO 配置已就绪。',
-    imPopoOpenClawHint: 'POPO 通过 OpenClaw 运行时运行，Bot 将在 OpenClaw Gateway 启动后自动连接。',
-    imPopoConfigReadyOpenClaw: 'POPO 配置已就绪，通过 OpenClaw 运行。',
 
-    // Email Channel
-    emailSettings: '邮件设置',
-    emailInstance: '邮箱账号',
-    addEmailInstance: '添加邮箱账号',
-    emailInstanceName: '账号名称',
-    emailInstanceNamePlaceholder: '例如：工作邮箱',
-    emailAddress: '邮箱地址',
-    emailAddressPlaceholder: 'user@example.com',
-    emailPassword: '密码',
-    emailPasswordPlaceholder: '邮箱密码或应用专用密码',
-    emailApiKey: 'API Key',
-    emailApiKeyPlaceholder: 'ck_live_xxxxxxxx',
     getApiKey: '获取 API Key',
     apiKeyHint: '点击「获取 API Key」按钮在浏览器中完成邮箱验证',
-    emailTransportMode: '传输模式',
-    emailTransportImap: 'IMAP/SMTP（传统模式）',
-    emailTransportWs: 'WebSocket（安全模式，无需密码）',
-    emailAgentBinding: '绑定 Agent',
-    emailAgentBindingHint: '该邮箱的所有邮件对话将路由到选定的 Agent',
-    emailAllowFrom: '允许的发件人（白名单）',
-    emailAllowFromPlaceholder: 'user@example.com\n*.trusted-domain.com\n*@company.com',
-    emailAllowFromHint: '支持通配符，每行一个。留空表示接受所有发件人。',
-    emailAdvancedOptions: '高级选项',
-    emailImapSmtpConfig: 'IMAP/SMTP 服务器配置',
-    emailImapHost: 'IMAP Host',
-    emailImapPort: 'IMAP Port',
-    emailSmtpHost: 'SMTP Host',
-    emailSmtpPort: 'SMTP Port',
-    emailServerConfigHint: '留空则自动根据邮箱域名推断',
-    emailReplyStrategy: '回复策略',
-    emailReplyMode: '回复模式',
-    emailReplyModeImmediate: '立即发送（流式，每个块一封邮件）',
-    emailReplyModeAccumulated: '累积发送（流式，缓冲后一封邮件）',
-    emailReplyModeComplete: '完成后发送（等待完整回复）',
-    emailReplyTo: '回复范围',
-    emailReplyToSender: '仅回复发件人',
-    emailReplyToAll: '回复发件人 + 所有收件人',
-    emailA2aConfig: 'Agent-to-Agent 配置',
-    emailA2aEnabled: '启用 A2A',
-    emailA2aAgentDomains: 'Agent 域名',
-    emailA2aAgentDomainsPlaceholder: 'agents.example.com',
-    emailA2aAgentDomainsHint: '允许进行 Agent 协作的域名，每行一个',
-    emailA2aMaxTurns: 'A2A最大往返次数',
-    emailConnectivityFailAlert: '连通性测试失败，请检查配置',
-    emailConnected: '已连接',
-    emailDisconnected: '未连接',
-    emailSaveSuccess: '配置已保存',
-    emailSaveError: '保存失败',
-    emailValidationError: '配置验证失败',
-    emailMaxInstancesExceeded: '最多支持 {count} 个邮箱账号',
-    emailDuplicateEmail: '邮箱地址「{email}」重复',
-    emailDuplicateInstanceId: '实例 ID「{id}」重复',
-    emailInvalidEmail: '邮箱地址格式不正确',
-    emailMissingPassword: '实例「{name}」使用 IMAP 模式但未填写密码',
-    emailMissingApiKey: '实例「{name}」使用 WebSocket 模式但未填写 API Key',
-    emailInvalidApiKey: '实例「{name}」的 API Key 格式不正确（应以 ck_ 开头）',
-    emailGatewayRestarting: '正在重启 OpenClaw Gateway...',
-    emailDeleteConfirm: '确定要删除邮箱账号「{name}」吗？',
-    emailEnterValidEmailFirst: '请先填写有效的邮箱地址',
-    emailVerifyInBrowserAndPaste: '请在浏览器中完成验证，然后将 API Key 粘贴回来',
     testConnection: '测试连接',
-    emailTestSuccess: '连接测试成功！',
-    emailTestFailed: '连接测试失败：{error}',
 
     htmlShareAccessModeUpdateFailed: '访问方式更新失败。',
     htmlShareStatusUpdateFailed: '分享开关更新失败。',
@@ -339,15 +271,21 @@ const translations: Record<LanguageType, Record<string, string>> = {
     'enterprise.updateBlocked': '版本更新由企业统一管理',
   },
   en: {
+    // MCP gateway install
+    mcpInstallGatewayLoginRequired: 'Installation failed: sign in to your enterprise account before installing this connector.',
+    mcpInstallGatewayTokenFailed: 'Installation failed: could not obtain an enterprise gateway credential. Please try again later.',
+    mcpInstallGatewayForbidden: 'Installation failed: you do not have access to this connector. Ask an admin to grant your department or account.',
+    mcpInstallGatewayNotFound: 'Installation failed: this connector was removed or disabled. Refresh the enterprise marketplace and try again.',
+    mcpInstallGatewayUnsupported: 'Installation failed: this connector cannot be used through the enterprise gateway right now. Ask an admin to check its key and address.',
     // DeepSeek Harness (experimental)
     dshWorkbenchTitle: 'DeepSeek Harness Workbench (Experimental)',
     dshPlanProviderName: 'Plan',
 
     // Tray menu
-    trayShowWindow: 'Open GenWork',
+    trayShowWindow: 'Open MixcWork',
     trayNewTask: 'New Task',
     trayViewCompletedTask: 'View Completed Task',
-    trayCompletedTaskTooltip: 'GenWork - {count} completed task(s)',
+    trayCompletedTaskTooltip: 'MixcWork - {count} completed task(s)',
     traySettings: 'Settings',
     trayQuit: 'Quit',
     taskCompletionNotificationTitle: 'Task Complete',
@@ -370,7 +308,6 @@ const translations: Record<LanguageType, Record<string, string>> = {
     channelPrefixDingtalk: 'DingTalk',
     channelPrefixWecom: 'WeCom',
     channelPrefixWeixin: 'WeChat',
-    channelPrefixEmail: 'Email',
 
     // Timeout hint
     taskTimedOut:
@@ -398,9 +335,9 @@ const translations: Record<LanguageType, Record<string, string>> = {
 
     // Cowork error messages
     coworkErrorAuthInvalid: 'Invalid or expired API key. Please check your configuration.',
-    coworkErrorGenWorkLoginExpired:
-      'Your login session has expired. Sign in again to continue using GenWork plan models.',
-    coworkErrorGenWorkLoginRefreshedRetry: 'Your login credential was refreshed automatically. Please try again.',
+    coworkErrorMixCWorkLoginExpired:
+      'Your login session has expired. Sign in again to continue using MixcWork plan models.',
+    coworkErrorMixCWorkLoginRefreshedRetry: 'Your login credential was refreshed automatically. Please try again.',
     coworkErrorOAuthInvalid: 'OAuth authorization is invalid or missing required access. Re-authenticate and try again.',
     coworkErrorModelAccessDenied: 'This account is not allowed to access the selected model. Switch models or check provider account permissions.',
     coworkErrorQuotaExhausted: 'Credits exhausted. Contact your administrator to recharge or upgrade your plan in the admin console.',
@@ -416,7 +353,7 @@ const translations: Record<LanguageType, Record<string, string>> = {
       'This message is too large. Reduce attachments, compress images, or split it up. (Keep each message under about 30 MB.)',
     coworkErrorCouldNotProcessPdf: 'Unable to process the PDF file.',
     coworkErrorModelNotFound: 'The requested model does not exist or is unavailable.',
-    coworkGatewaySessionSyncTimeout: 'The OpenClaw engine is responding slowly and your message has not been sent. Please wait a minute or two and resend. If this happens frequently, check system memory and disk usage, and add GenWork to your antivirus allowlist.',
+    coworkGatewaySessionSyncTimeout: 'The OpenClaw engine is responding slowly and your message has not been sent. Please wait a minute or two and resend. If this happens frequently, check system memory and disk usage, and add MixcWork to your antivirus allowlist.',
     coworkErrorTranscriptOversized: 'This task history is too large. The message was not sent to protect the AI engine. Continue in a new task; the original task will be preserved.',
     coworkErrorGatewayHeapOutOfMemory: 'The local AI engine ran out of memory and is restarting automatically. This task may be too large; wait for recovery and continue in a new task.',
     coworkErrorGatewayDisconnected: 'AI engine connection lost. Please retry.',
@@ -482,12 +419,8 @@ const translations: Record<LanguageType, Record<string, string>> = {
     skillErrZipShaMismatch: 'Skill package verification failed. Please try again.',
 
     // Auth quota
-    authPlanFree: 'Free',
-    authPlanStandard: 'Standard',
-    enterpriseAccountContextMismatchTitle: 'Team identity expired',
     enterpriseAccountContextMismatchMessage:
       'Your team identity no longer matches the login credentials. Related image and video polling has stopped. Sign in again or choose a team identity before retrying.',
-    enterpriseAccountContextMismatchConfirm: 'OK',
     authAccountChanged: 'The signed-in account context changed. Please retry your request.',
     authAccountScopeMissing: 'This session is not yet bound to your signed-in account, so media generation is unavailable. Please retry shortly.',
     authLoginRequired: 'Sign in and try again.',
@@ -495,15 +428,15 @@ const translations: Record<LanguageType, Record<string, string>> = {
     enterpriseMediaQuotaUnavailable: 'Media generation quota is unavailable for this team.',
 
     // Data migration dialogs
-    dataMigrationBackupDialogTitle: 'Back Up GenWork Data',
-    dataMigrationRestoreDialogTitle: 'Import GenWork Data Backup',
-    dataMigrationBackupArchiveFilter: 'GenWork Backup',
+    dataMigrationBackupDialogTitle: 'Back Up MixcWork Data',
+    dataMigrationRestoreDialogTitle: 'Import MixcWork Data Backup',
+    dataMigrationBackupArchiveFilter: 'MixcWork Backup',
     dataMigrationAllFilesFilter: 'All Files',
     dataMigrationBackupBlockedByActiveWorkloads:
       'An agent or scheduled task is still running. Stop it or wait for it to finish before backing up.',
-    dataMigrationRestoreProgressTitle: 'Importing GenWork data',
+    dataMigrationRestoreProgressTitle: 'Importing MixcWork data',
     dataMigrationRestoreProgressDesc:
-      'Restoring the backup and validating data. GenWork will restart automatically when finished.',
+      'Restoring the backup and validating data. MixcWork will restart automatically when finished.',
     dataMigrationRestoreProgressWarning:
       'Do not close the app or restart the computer, or the migration may be interrupted.',
 
@@ -547,9 +480,6 @@ const translations: Record<LanguageType, Record<string, string>> = {
     imQqMentionHint:
       '@mention the bot in channels to start a conversation. Direct messages and group chats are also supported.',
     imQqAuthPassed: 'QQ authentication passed (AccessToken obtained).',
-    imEmailImapAuthPassed: 'IMAP email login verification passed.',
-    imEmailImapAuthFailed: 'IMAP email login verification failed',
-    imEmailWsAuthPassed: 'API Key configured.',
     imQqAccessTokenFailed: 'Failed to obtain AccessToken',
     imQqFillAppIdSecret: 'Please provide the AppID and AppSecret and test connectivity again.',
     imQqAuthFailed: 'QQ authentication failed: {error}',
@@ -626,80 +556,10 @@ const translations: Record<LanguageType, Record<string, string>> = {
       'WeChat runs via OpenClaw runtime. The bot will connect automatically when OpenClaw Gateway starts.',
     imWeixinConfigReadyOpenClaw: 'WeChat configuration is ready, running via OpenClaw.',
 
-    // POPO
-    imPopoFillWebhookCredentials:
-      'Please provide the appKey, appSecret, token, and aesKey and test connectivity again.',
-    imPopoFillWsCredentials:
-      'Please provide the appKey, appSecret, and aesKey and test connectivity again.',
-    imPopoConfigReady: 'POPO configuration is ready.',
-    imPopoOpenClawHint:
-      'POPO runs via OpenClaw runtime. The bot will connect automatically when OpenClaw Gateway starts.',
-    imPopoConfigReadyOpenClaw: 'POPO configuration is ready, running via OpenClaw.',
 
-    // Email Channel
-    emailSettings: 'Email Settings',
-    emailInstance: 'Email Account',
-    addEmailInstance: 'Add Email Account',
-    emailInstanceName: 'Account Name',
-    emailInstanceNamePlaceholder: 'e.g., Work Email',
-    emailAddress: 'Email Address',
-    emailAddressPlaceholder: 'user@example.com',
-    emailPassword: 'Password',
-    emailPasswordPlaceholder: 'Email password or app-specific password',
-    emailApiKey: 'API Key',
-    emailApiKeyPlaceholder: 'ck_live_xxxxxxxx',
     getApiKey: 'Get API Key',
     apiKeyHint: 'Click "Get API Key" to verify your email in browser',
-    emailTransportMode: 'Transport Mode',
-    emailTransportImap: 'IMAP/SMTP (Traditional)',
-    emailTransportWs: 'WebSocket (Secure, no password required)',
-    emailAgentBinding: 'Agent Binding',
-    emailAgentBindingHint: 'All email conversations will be routed to the selected Agent',
-    emailAllowFrom: 'Allowed Senders (Whitelist)',
-    emailAllowFromPlaceholder: 'user@example.com\n*.trusted-domain.com\n*@company.com',
-    emailAllowFromHint: 'Supports wildcards, one per line. Empty = accept all senders.',
-    emailAdvancedOptions: 'Advanced Options',
-    emailImapSmtpConfig: 'IMAP/SMTP Server Configuration',
-    emailImapHost: 'IMAP Host',
-    emailImapPort: 'IMAP Port',
-    emailSmtpHost: 'SMTP Host',
-    emailSmtpPort: 'SMTP Port',
-    emailServerConfigHint: 'Leave empty to auto-detect from email domain',
-    emailReplyStrategy: 'Reply Strategy',
-    emailReplyMode: 'Reply Mode',
-    emailReplyModeImmediate: 'Immediate (streaming, one email per block)',
-    emailReplyModeAccumulated: 'Accumulated (streaming, buffered)',
-    emailReplyModeComplete: 'Complete (wait for full response)',
-    emailReplyTo: 'Reply Recipients',
-    emailReplyToSender: 'Sender only',
-    emailReplyToAll: 'Sender + all recipients',
-    emailA2aConfig: 'Agent-to-Agent Configuration',
-    emailA2aEnabled: 'Enable A2A',
-    emailA2aAgentDomains: 'Agent Domains',
-    emailA2aAgentDomainsPlaceholder: 'agents.example.com',
-    emailA2aAgentDomainsHint: 'Domains allowed for agent collaboration, one per line',
-    emailA2aMaxTurns: 'A2A Max Ping-Pong Turns',
-    emailConnectivityFailAlert: 'Connectivity test failed, please check your configuration',
-    emailConnected: 'Connected',
-    emailDisconnected: 'Disconnected',
-    emailSaveSuccess: 'Configuration saved',
-    emailSaveError: 'Save failed',
-    emailValidationError: 'Configuration validation failed',
-    emailMaxInstancesExceeded: 'Maximum {count} email accounts supported',
-    emailDuplicateEmail: 'Email address "{email}" is duplicated',
-    emailDuplicateInstanceId: 'Instance ID "{id}" is duplicated',
-    emailInvalidEmail: 'Invalid email address format',
-    emailMissingPassword: 'Instance "{name}" uses IMAP mode but password is missing',
-    emailMissingApiKey: 'Instance "{name}" uses WebSocket mode but API Key is missing',
-    emailInvalidApiKey: 'Instance "{name}" has invalid API Key format (should start with ck_)',
-    emailGatewayRestarting: 'Restarting OpenClaw Gateway...',
-    emailDeleteConfirm: 'Delete email account "{name}"?',
-    emailEnterValidEmailFirst: 'Please enter a valid email address first',
-    emailVerifyInBrowserAndPaste:
-      'Please complete verification in browser, then paste API Key here',
     testConnection: 'Test Connection',
-    emailTestSuccess: 'Connection test successful!',
-    emailTestFailed: 'Connection test failed: {error}',
 
     htmlShareAccessModeUpdateFailed: 'Failed to update access mode.',
     htmlShareStatusUpdateFailed: 'Failed to update share access.',

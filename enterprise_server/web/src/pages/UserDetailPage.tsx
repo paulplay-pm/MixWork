@@ -4,6 +4,7 @@ import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { formatOrgDateTime } from '../analytics/datetime';
 import { departmentsApi, type DeptNode, flattenDeptsOptions } from '../api/departments';
 import { type Role, rolesApi } from '../api/roles';
 import { adminDeleteUserSsoBinding, getUserSsoBinding, type SsoBinding } from '../api/sso';
@@ -21,8 +22,17 @@ import { UserFormDrawer, type UserFormValues } from '../components/UserFormDrawe
 import { t } from '../i18n';
 import { dataScopeLabelKey, PermissionPoint } from '../shared/permissions';
 
+/** Renders an instant through the shared analytics formatter, so every
+ *  timestamp in the app has the same shape and the same two guards (absent /
+ *  unparseable → `—` instead of a crash) as the analytics pages.
+ *
+ *  No `timeZone` is passed: this page has no org-zone source. The analytics
+ *  pages get one from their own response payload (`timezone`, the zone the
+ *  server resolved the range in); here the only `/me` field of that name is
+ *  the *viewer's own* personal zone, which is a different thing, so the
+ *  formatter's documented browser-zone fallback applies. */
 function fmtTs(ts: string | null): string {
-  return ts ? new Date(ts).toLocaleString() : '—';
+  return formatOrgDateTime(ts);
 }
 
 function trimExternalId(id: string): string {

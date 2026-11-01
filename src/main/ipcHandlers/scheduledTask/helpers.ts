@@ -16,7 +16,7 @@ export function initScheduledTaskHelpers(d: ScheduledTaskHelperDeps): void {
   deps = d;
 }
 
-const MULTI_INSTANCE_CONFIG_KEYS = new Set(['dingtalk', 'feishu', 'qq', 'wecom', 'telegram', 'discord', 'popo']);
+const MULTI_INSTANCE_CONFIG_KEYS = new Set(['dingtalk', 'feishu', 'qq', 'wecom', 'telegram', 'discord']);
 
 function isConfigKeyEnabled(key: string, value: unknown): boolean {
   if (!value || typeof value !== 'object') return false;
@@ -273,7 +273,7 @@ export function resolveWecomGroupDeliveryTargetFromSessions(params: {
  * Resolves the agent bound to a delivery-target conversation from IM session
  * mappings (sorted by lastActiveAt DESC). IM conversations can be bound to a
  * non-main agent; a scheduled delivery must run under that agent so the
- * gateway mirrors the result into the same conversation session the GenWork
+ * gateway mirrors the result into the same conversation session the MixCWork
  * record maps to, instead of a main-agent shadow session.
  */
 export function resolveConversationAgentIdFromMappings(

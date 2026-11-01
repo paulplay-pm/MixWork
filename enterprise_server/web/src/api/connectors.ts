@@ -26,6 +26,8 @@ export interface ConnectorDraftWire {
   version: string;
   nameEn?: string | null;
   nameZh?: string | null;
+  /** Brand logo URL; null/absent means "no logo". */
+  icon?: string | null;
   categoryId?: string | null;
   description?: string | null;
   transport?: Transport2;
@@ -39,6 +41,9 @@ export interface Connector {
   id: string; serverKey: string; nameEn: string | null; nameZh: string | null;
   version: string; categoryId: string | null; description: string | null;
   connectorType: 'mcp' | 'app'; url: string; transport: Transport2; authMode: AuthMode6;
+  /** Brand logo URL, or null when the admin set none. Absent on a server
+   *  older than the icon column. */
+  icon?: string | null;
   authConfig: Record<string, unknown>;
   secretMeta: { lastUpdatedAt?: string; lastUpdatedBy?: string } | null;
   authStatus: 'configured' | 'pending'; enabled: boolean;
@@ -52,8 +57,13 @@ export interface Connector {
 }
 export interface ConnectorInput {
   serverKey: string; url: string; nameEn?: string; nameZh?: string; version?: string;
+  /** Brand logo URL. */
+  icon?: string | null;
   categoryId?: string | null; description?: string; transport?: Transport2; authMode?: AuthMode6;
   authConfig?: Record<string, unknown>; scope?: ConnectorScope;
+  /** The tool list, when the admin declares it by hand: the server cannot
+   *  list the tools of a connector whose credential belongs to the member. */
+  tools?: ToolEntry[];
 }
 export interface ConnectorPatch extends Partial<ConnectorInput> { enabled?: boolean }
 
@@ -119,10 +129,29 @@ export const connectorApi = {
   create: (input: ConnectorInput) => apiClient.post<{ id: string }>('/admin/mcp-connectors', input),
   patch: (id: string, patch: ConnectorPatch) => apiClient.patch<{ ok: boolean }>(`/admin/mcp-connectors/${id}`, patch),
   del: (id: string) => apiClient.delete<{ ok: true }>(`/admin/mcp-connectors/${id}`),
+  /** `needs-user-auth` is not a failure: the endpoint answered, but the
+   *  server holds no credential for that connector — the member authorizes
+   *  on their own desktop, so the org cannot run the handshake itself. */
   test: (id: string) =>
-    apiClient.post<{ status: string; latencyMs?: number; error?: string; lastTestAt?: string; toolCount?: number }>(
-      `/admin/mcp-connectors/${id}/test`,
-    ),
+    apiClient.post<{
+      status: 'connected' | 'failed' | 'needs-user-auth';
+      latencyMs?: number;
+      error?: string;
+      lastTestAt?: string;
+      toolCount?: number;
+      needsUserAuth?: boolean;
+    }>(`/admin/mcp-connectors/${id}/test`),
+  /** Upload the connector's brand icon (PNG / JPEG / WEBP / SVG, ≤ 1 MB).
+   *  Deliberately outside the create/patch body and the draft/publish flow:
+   *  an icon is presentation, so replacing one must not require publishing a
+   *  version and rolling back must not revert the logo. */
+  uploadIcon: (id: string, file: File): Promise<{ icon: string }> => {
+    const form = new FormData();
+    form.append('icon', file, file.name);
+    return apiClient.postRaw<{ icon: string }>(`/admin/mcp-connectors/${id}/icon`, form);
+  },
+  /** Clear the icon so the connector falls back to the default glyph. */
+  clearIcon: (id: string) => apiClient.delete<{ ok: boolean }>(`/admin/mcp-connectors/${id}/icon`),
   /** Stage the working copy as a draft (no live effect). */
   saveDraft: (id: string, body: ConnectorWorkingCopy) =>
     apiClient.post<{ ok: boolean }>(`/admin/mcp-connectors/${id}/save-draft`, body),
@@ -142,7 +171,9 @@ export const connectorApi = {
   deleteCategory: (orgId: string, id: string) =>
     apiClient.delete<{ ok: true }>(`/admin/mcp-connectors/categories/${id}?orgId=${encodeURIComponent(orgId)}`),
   getSettings: (orgId: string) =>
-    apiClient.get<{ membersCanSubmit: boolean }>(`/admin/mcp-connectors/settings?orgId=${encodeURIComponent(orgId)}`),
+    apiClient.get<{ membersCanSubmit: boolean; oauthRedirectUri: string }>(
+      `/admin/mcp-connectors/settings?orgId=${encodeURIComponent(orgId)}`,
+    ),
   setSettings: (orgId: string, b: { membersCanSubmit: boolean }) =>
     apiClient.patch<{ ok: true }>(`/admin/mcp-connectors/settings?orgId=${encodeURIComponent(orgId)}`, b),
   // Member submissions (the admin review queue). `submit` itself is called

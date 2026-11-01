@@ -1,13 +1,14 @@
 import '../helpers/setupEnv';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('../../src/db/pool', async () => {
   const td = await import('../../src/db/testDb');
   return { pool: td.testPool };
 });
 
-import { resetSchema, testPool, runMigrations } from '../../src/db/testDb';
 import { archiveService } from '../../src/archives/archiveService';
+import { resetSchema, runMigrations,testPool } from '../../src/db/testDb';
 
 describe('archives/archiveService', () => {
   beforeEach(async () => {

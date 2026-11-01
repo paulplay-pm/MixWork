@@ -23,6 +23,7 @@ export const ModelTypes = {
   Rerank: 'rerank',
   Asr: 'asr',
   Tts: 'tts',
+  VideoGen: 'video-gen',
 } as const;
 export type ModelTypeValue = (typeof ModelTypes)[keyof typeof ModelTypes];
 export const MODEL_TYPE_VALUES: ModelTypeValue[] = Object.values(ModelTypes);
@@ -53,7 +54,34 @@ export interface ModelView {
   temperature: number | null;
   top_p: number | null;
   max_output_tokens: number | null;
+  /** Free-form capability parameters (JSONB on the catalog row). Carried by
+   * media / speech models; the agent is told about them. */
+  parameter_spec?: Record<string, unknown> | null;
 }
+
+/** A model can be routed to only when both switches say so: the model's own
+ * `enabled`, and the admin's `disabled_by_admin` override. Every place the
+ * console counts, lists, or offers models uses this one test. */
+export function isModelEnabled(
+  model: Pick<ModelView, 'enabled' | 'disabled_by_admin'>
+): boolean {
+  return model.enabled && !model.disabled_by_admin;
+}
+
+/** The models in a list that can actually be routed to. */
+export function countEnabledModels(models: readonly ModelView[]): number {
+  return models.filter(isModelEnabled).length;
+}
+
+/** The per-type default model pointers: `[{ type, modelId }]`. The console
+ * renders the "default" badge on the model's type chip, so it needs to know
+ * which (model, type) pairs are defaults. */
+export const modelTypeDefaultsApi = {
+  list: (orgId: string) =>
+    apiClient.get<Array<{ type: string; modelId: string }>>(
+      `/admin/model-type-defaults?orgId=${encodeURIComponent(orgId)}`
+    ),
+};
 
 export const modelsApi = {
   list: (orgId: string) =>
@@ -67,6 +95,8 @@ export const modelsApi = {
     type?: ModelType;
     types?: ModelTypeValue[];
     quotaPerDay?: number | null;
+    /** Free-form capability parameters; stored as JSONB. */
+    parameterSpec?: Record<string, unknown>;
     capabilities?: {
       supportsImage?: boolean;
       supportsVideo?: boolean;
@@ -89,6 +119,11 @@ export const modelsApi = {
       type?: ModelType;
       types?: ModelTypeValue[];
       enabled?: boolean;
+      /** Free-form capability parameters; stored as JSONB. */
+      parameterSpec?: Record<string, unknown>;
+      /** Move this type's default-model pointer onto this model (or clear it
+       * with `isDefault: false`). Only valid when `types` includes `type`. */
+      defaultForType?: { type: ModelTypeValue; isDefault: boolean };
       capabilities?: {
         supportsImage?: boolean;
         supportsVideo?: boolean;

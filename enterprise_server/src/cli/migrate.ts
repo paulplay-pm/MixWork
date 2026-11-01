@@ -2,8 +2,8 @@ import { pool } from '../db/pool';
 import { runMigrationsOnce } from './lib/runMigrations';
 
 export async function run(): Promise<void> {
-  if (process.env.GENWORK_MIGRATE_DRY_RUN === '1') {
-    console.log('[migrate] GENWORK_MIGRATE_DRY_RUN=1 — running in dry-run mode');
+  if (process.env.MIXCWORK_MIGRATE_DRY_RUN === '1') {
+    console.log('[migrate] MIXCWORK_MIGRATE_DRY_RUN=1 — running in dry-run mode');
   }
   await runMigrationsOnce();
   await pool.end();

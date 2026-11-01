@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * GenWork WeChat Article Search
+ * MixCWork WeChat Article Search
  * Searches Sogou WeChat index for public account articles.
  *
  * Dependencies: npm install -g cheerio
@@ -327,7 +327,7 @@ async function main() {
 
   if (!query) {
     console.log(`
-GenWork 微信公众号文章搜索
+MixCWork 微信公众号文章搜索
 
 用法:
   node wechat_search.js <关键词> [选项]

@@ -36,13 +36,13 @@ test('resolveSkillServiceNodeRuntime delegates to shared node runtime resolution
 
 test('resolveSkillServiceNodeRuntime preserves Electron-as-node fallback env', () => {
   nodeRuntimeMocks.resolveNodeRuntimeForSpawn.mockReturnValue({
-    command: 'C:\\GenWork\\GenWork.exe',
+    command: 'C:\\MixCWork\\MixCWork.exe',
     args: [],
     env: { ELECTRON_RUN_AS_NODE: '1' },
   });
 
   expect(__skillServicesTestUtils.resolveSkillServiceNodeRuntime({ PATH: 'ignored' })).toEqual({
-    command: 'C:\\GenWork\\GenWork.exe',
+    command: 'C:\\MixCWork\\MixCWork.exe',
     args: [],
     extraEnv: { ELECTRON_RUN_AS_NODE: '1' },
   });

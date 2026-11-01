@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   type CoworkSelectedTextSnippet,
   CoworkSelectedTextSource,
-} from '../../../shared/genwork/selectedText';
+} from '../../../shared/mixcwork/selectedText';
 import { i18nService } from '../../services/i18n';
 import type { Artifact } from '../../types/artifact';
 

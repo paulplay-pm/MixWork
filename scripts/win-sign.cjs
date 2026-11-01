@@ -6,7 +6,7 @@
  * Uploads each binary produced by the build (app exe, uninstaller, installer)
  * to the internal Youdao signing service and replaces the local file with the
  * signed result. This closes the "signed installer shell, unsigned payload"
- * gap: security software freezes the unsigned GenWork.exe on first
+ * gap: security software freezes the unsigned MixCWork.exe on first
  * execution, which is what hung installations in the field.
  *
  * Service API (per the official signing-service doc):

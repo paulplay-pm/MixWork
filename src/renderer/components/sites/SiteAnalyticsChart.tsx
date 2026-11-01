@@ -94,7 +94,7 @@ const SiteAnalyticsChart: React.FC<SiteAnalyticsChartProps> = ({
       <div className="mb-3 flex items-center justify-between gap-4">
         <div>
           <h3 className={`${MANAGEMENT_TITLE_TEXT} font-semibold text-foreground`}>{title}</h3>
-          <p className={`${MANAGEMENT_META_TEXT} mt-0.5 leading-[var(--genwork-leading-xs)] text-secondary`}>
+          <p className={`${MANAGEMENT_META_TEXT} mt-0.5 leading-[var(--mixcwork-leading-xs)] text-secondary`}>
             {subtitle}
           </p>
         </div>

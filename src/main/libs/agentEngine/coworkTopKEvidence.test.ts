@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import type { GenWorkMessage } from '../../genworkStore';
+import type { MixCWorkMessage } from '../../mixcworkStore';
 import { ContinuityCapsuleSource, type CoworkContinuityCapsule } from './coworkContinuityCapsule';
 import {
   buildCoworkTopKEvidenceBridge,
@@ -8,11 +8,11 @@ import {
 } from './coworkTopKEvidence';
 
 const message = (
-  type: GenWorkMessage['type'],
+  type: MixCWorkMessage['type'],
   content: string,
   timestamp: number,
-  metadata?: GenWorkMessage['metadata'],
-): GenWorkMessage => ({
+  metadata?: MixCWorkMessage['metadata'],
+): MixCWorkMessage => ({
   id: `${type}-${timestamp}`,
   type,
   content,
@@ -72,7 +72,7 @@ test('top-k evidence bridge retrieves bounded matching historical evidence', () 
   });
   const bridge = result.bridge;
 
-  expect(bridge).toContain('[GenWork retrieved evidence after context compaction]');
+  expect(bridge).toContain('[MixCWork retrieved evidence after context compaction]');
   expect(bridge).toContain('tool result: shell');
   expect(bridge).toContain('src/pages/Bakery.tsx');
   expect(bridge).toContain('expected ja copy');

@@ -52,28 +52,37 @@ function makeServerView(): AgentView[] {
       name: 'A1',
       description: '',
       identity: '',
+      aboutYou: '',
       systemPrompt: '',
       model: '',
       thinkingLevel: '',
       icon: '',
       skillIds: [],
       subagentAllowAgentIds: [],
-      allowedRoles: [],
+      scope: { allCompany: false, deptIds: [], userIds: [] },
+      imChannels: [],
       enabled: true,
     },
   ];
 }
 
-const genworkStore = { name: 'genworkStore' } as never;
+const mixcworkStore = { name: 'mixcworkStore' } as never;
 const prefsStore = { name: 'prefsStore' } as never;
 const skillManager = { name: 'skillManager' } as never;
+// The loaded desktop server-model list. The runner passes it to the sync so
+// an enterprise agent's org-format model ref can be stored as the desktop
+// ref (`mixcwork-server/<catalog UUID>`).
+const serverModels = [
+  { id: 'uuid-1', provider: 'openai', model: 'gpt-4o', displayName: 'GPT-4o' },
+];
 
 function makeDeps(): EnterpriseAgentSyncRunnerDeps {
   return {
-    getGenWorkStore: () => genworkStore,
+    getMixCWorkStore: () => mixcworkStore,
     getEnterpriseAgentPrefsStore: () => prefsStore,
     getSkillManager: () => skillManager,
     getAvailableModelsRef: () => 'ref-model',
+    getServerModels: () => serverModels,
   };
 }
 
@@ -100,10 +109,11 @@ describe('runEnterpriseAgentSync', () => {
     expect(syncFromServer).toHaveBeenCalledTimes(1);
     expect(syncFromServer).toHaveBeenCalledWith({
       serverView,
-      genworkStore,
+      mixcworkStore,
       prefsStore,
       skillManager,
       defaultModelRef: 'ref-model',
+      serverModels,
     });
   });
 

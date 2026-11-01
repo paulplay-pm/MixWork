@@ -64,6 +64,19 @@ export async function finishSsoCallback(args: FinishArgs): Promise<FinishResult>
       const payload = await verifyIdToken(conn, exchanged.idToken, clientSecret);
       identity = payload as unknown as Record<string, unknown>;
       fromIdToken = true;
+    } else if (conn.provider_type === 'wecom') {
+      // WeCom's code exchange is two-step and the second step
+      // (`cgi-bin/auth/getuserinfo?access_token&code`) returns the user
+      // identity INLINE — there is no separate userinfo endpoint to hit
+      // afterwards. `oauth.ts:exchangeCode`'s wecom branch already
+      // normalized both the `UserId`/`userid` casings onto one object and
+      // stashed it under `exchanged.raw`, so we read it here rather than
+      // calling `fetchUserInfo` with the `'wecom-direct'` placeholder
+      // token (which would 400 with `errcode:40014`).
+      identity = exchanged.raw as Record<string, unknown>;
+      if (!identity.UserId && !identity.userid && !identity.OpenId && !identity.openid) {
+        throw new Error('wecom_identity_missing');
+      }
     } else {
       identity = await fetchUserInfo(conn, exchanged.accessToken);
     }
@@ -318,4 +331,4 @@ async function recordFailedLogin(orgId: string): Promise<void> {
   } catch { /* best-effort */ }
 }
 
-const COLS = `id, org_id, name, provider_type, protocol, authorize_url, token_url, userinfo_url, client_id, client_secret_encrypted, client_secret_masked, scopes, identity_id_field, login_name_field, email_field, email_domain_whitelist, require_prebinding, enabled, sort_order, created_by, created_at, updated_at`;
+const COLS = `id, org_id, name, provider_type, protocol, authorize_url, token_url, userinfo_url, client_id, client_secret_encrypted, client_secret_masked, scopes, identity_id_field, login_name_field, email_field, email_domain_whitelist, require_prebinding, agentid, enabled, sort_order, created_by, created_at, updated_at`;

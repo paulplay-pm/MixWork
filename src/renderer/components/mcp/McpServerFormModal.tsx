@@ -6,7 +6,18 @@ import { i18nService } from '../../services/i18n';
 import { McpJsonImportErrorCode, McpJsonImportResult, parseMcpServersJson } from '../../services/mcpJsonImport';
 import { McpEnterpriseMarketServer, McpRegistryEntry, McpServerConfig, McpServerFormData } from '../../types/mcp';
 import Modal from '../common/Modal';
-import { mapEnterpriseAuthModeToMcpAuthMethod } from './enterpriseAuthMode';
+import {
+  authMethodIsReadOnly,
+  consumptionForEntry,
+  enterpriseAuthMethodForForm,
+  gatewayUrlIsReadOnly,
+} from './connectorCardState';
+import {
+  authMethodLabelKey,
+  enterpriseAuthModeLabelKey,
+  mapEnterpriseAuthModeToMcpAuthMethod,
+} from './enterpriseAuthMode';
+import { enterpriseUpdatePrefill } from './enterpriseUpdatePrefill';
 
 const TRANSPORT_OPTIONS: { value: 'stdio' | 'sse' | 'http'; label: string; descKey: string }[] = [
   { value: 'stdio', label: 'stdio', descKey: 'mcpTransportStdio' },
@@ -63,6 +74,17 @@ const McpServerFormModal: React.FC<McpServerFormModalProps> = ({
 }) => {
   const isEdit = !!server;
   const isRegistry = !!registryEntry && !isEdit;
+  // A gateway connector's URL is the enterprise gateway's address; the member
+  // must not repoint it at the upstream, which would answer 401.
+  const urlReadOnly = gatewayUrlIsReadOnly({ entry: enterpriseServer, record: server });
+  // The authentication method of an enterprise connector is the org's
+  // decision: `shared-key` only works through the gateway, `user-key` fills
+  // the header the admin named. A member who could switch it would install a
+  // connector that dials with the wrong credential.
+  const authMethodReadOnly = authMethodIsReadOnly({ entry: enterpriseServer, record: server });
+  // The org's own vocabulary, so a shared key is not displayed as "none".
+  const enterpriseMode = enterpriseServer?.authMode ?? server?.enterpriseAuthMode ?? null;
+  const enterpriseModeLabelKey = enterpriseAuthModeLabelKey(enterpriseMode);
   // JSON paste mode is only offered when creating from scratch.
   const supportsJsonMode = !isEdit && !isRegistry && !enterpriseServer && !!onImportJson;
 
@@ -87,10 +109,15 @@ const McpServerFormModal: React.FC<McpServerFormModalProps> = ({
   useEffect(() => {
     if (!isOpen) return;
     if (server) {
-      // Edit mode
+      // Edit mode. With a catalog entry this is 更新配置: the org-owned fields
+      // refresh from the catalog, the member's stored credential does not move
+      // (see enterpriseUpdatePrefill).
+      const updatePrefill = enterpriseServer
+        ? enterpriseUpdatePrefill(server, enterpriseServer)
+        : null;
       setName(server.name);
-      setDescription(server.description);
-      setTransportType(server.transportType);
+      setDescription(updatePrefill ? updatePrefill.description : server.description);
+      setTransportType(updatePrefill ? updatePrefill.transportType : server.transportType);
       setCommand(server.command || '');
       setArgsText((server.args || []).join('\n'));
       const requiredKeys = new Set(registryEntry?.requiredEnvKeys ?? []);
@@ -103,16 +130,24 @@ const McpServerFormModal: React.FC<McpServerFormModalProps> = ({
             }))
           : []
       );
-      setUrl(server.url || '');
+      setUrl(updatePrefill ? updatePrefill.url : server.url || '');
       setHeaderRows(
-        server.headers
-          ? Object.entries(server.headers).map(([key, value]) => ({ key, value }))
-          : []
+        Object.entries(updatePrefill ? updatePrefill.headers : server.headers ?? {}).map(
+          ([key, value]) => ({ key, value }),
+        )
       );
-      setAuthMethod(server.authMethod ?? McpAuthMethod.None);
+      // The catalog is the authority on the method: 更新配置 exists to refresh
+      // the org-owned fields. Without an entry the record keeps its own.
+      setAuthMethod(
+        enterpriseAuthMethodForForm({ entry: enterpriseServer, record: server })
+          ?? server.authMethod
+          ?? McpAuthMethod.None,
+      );
       setBearerValue('');
       setApiKeyValue('');
-      setApiKeyName('X-Api-Key');
+      setApiKeyName(
+        updatePrefill ? updatePrefill.apiKeyHeaderName : server.apiKeyHeaderName?.trim() || 'X-Api-Key',
+      );
     } else if (registryEntry) {
       // Registry install mode — pre-fill from template
       setName(registryEntry.name);
@@ -324,8 +359,22 @@ const McpServerFormModal: React.FC<McpServerFormModalProps> = ({
       data.isBuiltIn = true;
       data.registryId = enterpriseServer.id;
       data.serverKey = enterpriseServer.serverKey;
+      // The catalog's brand logo, kept on the record so the connector's rows
+      // show it without another catalog fetch.
+      data.icon = enterpriseServer.icon ?? undefined;
       data.oauthConfig = enterpriseServer.oauth; // undefined for modes other than user-oauth / sso
       data.apiKeyHeaderName = enterpriseServer.apiKeyHeaderName?.trim() || undefined;
+      // Both are the catalog's answer, and `undefined` is meaningful: no
+      // toolFilter means the connector now allows every tool, which the store
+      // uses to clear an older restriction.
+      data.enterpriseAuthMode = enterpriseServer.authMode;
+      data.toolFilter = enterpriseServer.toolFilter;
+      // Same for the timeout: undefined means the connector uses the
+      // runtime's default, and the store uses that to clear a stale value.
+      data.timeoutSeconds = enterpriseServer.timeoutSeconds;
+      // The store exchanges the gateway token before it writes the record, so
+      // this field is what makes an install truly zero-step for the member.
+      data.consumption = consumptionForEntry(enterpriseServer);
     }
 
     onSave(data);
@@ -639,7 +688,15 @@ const McpServerFormModal: React.FC<McpServerFormModalProps> = ({
                   onChange={(e) => setUrl(e.target.value)}
                   placeholder={i18nService.t('mcpUrlPlaceholder')}
                   className={inputClass}
+                  readOnly={urlReadOnly}
+                  aria-readonly={urlReadOnly || undefined}
+                  title={urlReadOnly ? i18nService.t('mcpGatewayUrlReadOnly') : undefined}
                 />
+                {urlReadOnly && (
+                  <p className="text-xs text-secondary">
+                    {i18nService.t('mcpGatewayUrlReadOnly')}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -687,16 +744,37 @@ const McpServerFormModal: React.FC<McpServerFormModalProps> = ({
           {/* Authentication method */}
           <div className="space-y-1.5">
             <label className={labelClass}>{i18nService.t('mcpAuthMethodLabel')}</label>
-            <select
-              value={authMethod}
-              onChange={(e) => setAuthMethod(e.target.value as McpAuthMethod)}
-              className={inputClass}
-            >
-              <option value={McpAuthMethod.None}>{i18nService.t('mcpAuthMethodNone')}</option>
-              <option value={McpAuthMethod.Bearer}>{i18nService.t('mcpAuthMethodBearer')}</option>
-              <option value={McpAuthMethod.ApiKey}>{i18nService.t('mcpAuthMethodApiKey')}</option>
-              <option value={McpAuthMethod.OAuth}>{i18nService.t('mcpAuthMethodOAuth')}</option>
-            </select>
+            {authMethodReadOnly ? (
+              // Not a control: the org's mode, shown as a fact.
+              <input
+                type="text"
+                readOnly
+                aria-readonly="true"
+                value={
+                  enterpriseModeLabelKey
+                    ? i18nService.t(enterpriseModeLabelKey)
+                    : i18nService.t(authMethodLabelKey(authMethod))
+                }
+                className={readOnlyInputClass}
+                title={i18nService.t('mcpAuthMethodEnterpriseManaged')}
+              />
+            ) : (
+              <select
+                value={authMethod}
+                onChange={(e) => setAuthMethod(e.target.value as McpAuthMethod)}
+                className={inputClass}
+              >
+                <option value={McpAuthMethod.None}>{i18nService.t('mcpAuthMethodNone')}</option>
+                <option value={McpAuthMethod.Bearer}>{i18nService.t('mcpAuthMethodBearer')}</option>
+                <option value={McpAuthMethod.ApiKey}>{i18nService.t('mcpAuthMethodApiKey')}</option>
+                <option value={McpAuthMethod.OAuth}>{i18nService.t('mcpAuthMethodOAuth')}</option>
+              </select>
+            )}
+            {authMethodReadOnly && (
+              <p className="text-xs text-secondary">
+                {i18nService.t('mcpAuthMethodEnterpriseManaged')}
+              </p>
+            )}
           </div>
 
           {/* Per-method credential fields */}
@@ -723,6 +801,11 @@ const McpServerFormModal: React.FC<McpServerFormModalProps> = ({
                   onChange={(e) => setApiKeyName(e.target.value)}
                   placeholder="X-Api-Key"
                   className={inputClass}
+                  // The header that carries the key is the org's choice for an
+                  // enterprise connector; the member fills the value only.
+                  readOnly={authMethodReadOnly}
+                  aria-readonly={authMethodReadOnly || undefined}
+                  title={authMethodReadOnly ? i18nService.t('mcpAuthMethodEnterpriseManaged') : undefined}
                 />
               </div>
               <div className="space-y-1.5">

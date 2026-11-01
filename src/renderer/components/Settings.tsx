@@ -18,9 +18,9 @@ import { OpenClawEnginePhase, OpenClawGatewayRepairErrorCode } from '../../share
 import { defaultConfig, FontPreferences, normalizeFontPreference, resolveArtifactAutoPreviewEnabled, ShortcutAction, type ShortcutConfig } from '../config';
 import { useSkin } from '../providers/SkinProvider';
 import { configService } from '../services/config';
-import { genworkService } from '../services/genwork';
 import { i18nService, LanguageType } from '../services/i18n';
 import { imService } from '../services/im';
+import { mixcworkService } from '../services/mixcwork';
 import { clearPendingPublishingConversionAttribution } from '../services/publishingConversionAttribution';
 import { formatShortcutForDisplay, getShortcutConflictSignature, isTextEditingSafeShortcut, matchesShortcut } from '../services/shortcuts';
 import {
@@ -29,30 +29,29 @@ import {
   ThemeServiceEvent,
 } from '../services/theme';
 import { applyTypographyPreferences } from '../services/typography';
-import type { RootState } from '../store';
 import { selectCoworkConfig } from '../store/selectors/coworkSelectors';
 import type {
-  GenWorkAgentEngine,
-  GenWorkMemoryStats,
-  GenWorkTempDirPreview,
-  GenWorkUserMemoryEntry,
+  MixCWorkAgentEngine,
+  MixCWorkMemoryStats,
+  MixCWorkTempDirPreview,
+  MixCWorkUserMemoryEntry,
   OpenClawEngineStatus,
   OpenClawGatewayRepairResult,
   OpenClawSessionKeepAlive,
-} from '../types/genwork';
-import { OpenClawSessionKeepAlive as OpenClawSessionKeepAliveValues } from '../types/genwork';
+} from '../types/mixcwork';
+import { OpenClawSessionKeepAlive as OpenClawSessionKeepAliveValues } from '../types/mixcwork';
 import Modal from './common/Modal';
 import DshExperimentalSettings from './DshExperimentalSettings';
 import { EnterpriseServerSetting } from './EnterpriseServerSetting';
 import ErrorMessage from './ErrorMessage';
-import DreamingSettingsSection from './genwork/DreamingSettingsSection';
-import EmbeddingSettingsSection from './genwork/EmbeddingSettingsSection';
 import BrainIcon from './icons/BrainIcon';
 import EditIcon from './icons/EditIcon';
 import MessageCopyIcon from './icons/MessageCopyIcon';
 import PlugIcon from './icons/PlugIcon';
 import PlusCircleIcon from './icons/PlusCircleIcon';
 import IMSettings from './im/IMSettings';
+import DreamingSettingsSection from './mixcwork/DreamingSettingsSection';
+import EmbeddingSettingsSection from './mixcwork/EmbeddingSettingsSection';
 import PluginsSettings, { type PluginPendingChanges, type PluginsSettingsHandle } from './plugins/PluginsSettings';
 import BrowserWebAccessSettings from './settings/BrowserWebAccessSettings';
 import { resolveSettingsEscapeAction, SettingsEscapeAction } from './settings/settingsEscape';
@@ -585,7 +584,7 @@ interface SettingsProps extends SettingsOpenOptions {
 }
 
 const ABOUT_CONTACT_EMAIL = 'paulplay@126.com';
-const ABOUT_SERVICE_TERMS_URL = ''; // TODO: replace with real GenWork service terms URL
+const ABOUT_SERVICE_TERMS_URL = ''; // TODO: replace with real MixCWork service terms URL
 
 const copyTextFallback = (text: string): boolean => {
   const textarea = document.createElement('textarea');
@@ -1113,13 +1112,11 @@ const Settings: React.FC<SettingsProps> = ({
     }
   }, []);
 
-  const authUser = useSelector((state: RootState) => state.auth.user);
-
   const handleCheckUpdate = useCallback(async () => {
     if (updateCheckStatus === 'checking' || !appVersion) return;
     setUpdateCheckStatus('checking');
     try {
-      const result = await window.electron.appUpdate.checkNow({ manual: true, userId: authUser?.yid });
+      const result = await window.electron.appUpdate.checkNow({ manual: true });
       if (!result.success) {
         throw new Error(result.error || 'Update check failed');
       }
@@ -1162,7 +1159,7 @@ const Settings: React.FC<SettingsProps> = ({
         updateCheckTimerRef.current = null;
       }, 3000);
     }
-  }, [appVersion, authUser, updateCheckStatus, onUpdateFound]);
+  }, [appVersion, updateCheckStatus, onUpdateFound]);
 
   const updateButtonLabel = useMemo(() => {
     if (
@@ -1228,7 +1225,7 @@ const Settings: React.FC<SettingsProps> = ({
 
   const coworkConfig = useSelector(selectCoworkConfig);
 
-  const [coworkAgentEngine, setGenWorkAgentEngine] = useState<GenWorkAgentEngine>(coworkConfig.agentEngine || 'openclaw');
+  const [coworkAgentEngine, setMixCWorkAgentEngine] = useState<MixCWorkAgentEngine>(coworkConfig.agentEngine || 'openclaw');
   const [coworkMemoryEnabled, setCoworkMemoryEnabled] = useState<boolean>(coworkConfig.memoryEnabled ?? true);
   const [coworkMemoryLlmJudgeEnabled, setCoworkMemoryLlmJudgeEnabled] = useState<boolean>(coworkConfig.memoryLlmJudgeEnabled ?? false);
   const [skipMissedJobs, setSkipMissedJobs] = useState<boolean>(coworkConfig.skipMissedJobs ?? true);
@@ -1237,7 +1234,7 @@ const Settings: React.FC<SettingsProps> = ({
   const [isCleaningTempStorage, setIsCleaningTempStorage] = useState<boolean>(false);
   const [tempStorageCleanResult, setTempStorageCleanResult] = useState<string | null>(null);
   const [isLoadingTempCleanPreview, setIsLoadingTempCleanPreview] = useState<boolean>(false);
-  const [tempCleanPreviewDirs, setTempCleanPreviewDirs] = useState<GenWorkTempDirPreview[]>([]);
+  const [tempCleanPreviewDirs, setTempCleanPreviewDirs] = useState<MixCWorkTempDirPreview[]>([]);
   const [tempCleanSelection, setTempCleanSelection] = useState<Record<string, boolean>>({});
   const [showTempCleanConfirm, setShowTempCleanConfirm] = useState<boolean>(false);
   const [openClawHeartbeatEnabled, setOpenClawHeartbeatEnabled] = useState<boolean>(coworkConfig.openClawHeartbeatEnabled ?? true);
@@ -1256,8 +1253,8 @@ const Settings: React.FC<SettingsProps> = ({
   const [openClawSessionKeepAlive, setOpenClawSessionKeepAlive] = useState<OpenClawSessionKeepAlive>(
     coworkConfig.openClawSessionPolicy?.keepAlive || OpenClawSessionKeepAliveValues.ThirtyDays,
   );
-  const [coworkMemoryEntries, setCoworkMemoryEntries] = useState<GenWorkUserMemoryEntry[]>([]);
-  const [coworkMemoryStats, setCoworkMemoryStats] = useState<GenWorkMemoryStats | null>(null);
+  const [coworkMemoryEntries, setCoworkMemoryEntries] = useState<MixCWorkUserMemoryEntry[]>([]);
+  const [coworkMemoryStats, setCoworkMemoryStats] = useState<MixCWorkMemoryStats | null>(null);
   const [coworkMemoryListLoading, setCoworkMemoryListLoading] = useState<boolean>(false);
   const [coworkMemoryQuery, setCoworkMemoryQuery] = useState<string>('');
   const [coworkMemoryEditingId, setCoworkMemoryEditingId] = useState<string | null>(null);
@@ -1278,7 +1275,7 @@ const Settings: React.FC<SettingsProps> = ({
   const [showOpenClawDataRestoreConfirm, setShowOpenClawDataRestoreConfirm] = useState<boolean>(false);
 
   useEffect(() => {
-    setGenWorkAgentEngine(coworkConfig.agentEngine || 'openclaw');
+    setMixCWorkAgentEngine(coworkConfig.agentEngine || 'openclaw');
     setCoworkMemoryEnabled(coworkConfig.memoryEnabled ?? true);
     setCoworkMemoryLlmJudgeEnabled(coworkConfig.memoryLlmJudgeEnabled ?? false);
     setSkipMissedJobs(coworkConfig.skipMissedJobs ?? true);
@@ -1434,11 +1431,11 @@ const Settings: React.FC<SettingsProps> = ({
 
   useEffect(() => {
     let active = true;
-    void genworkService.getOpenClawEngineStatus().then((status) => {
+    void mixcworkService.getOpenClawEngineStatus().then((status) => {
       if (!active || !status) return;
       setOpenClawEngineStatus(status);
     });
-    const unsubscribe = genworkService.onOpenClawEngineStatus((status) => {
+    const unsubscribe = mixcworkService.onOpenClawEngineStatus((status) => {
       if (!active) return;
       setOpenClawEngineStatus(status);
     });
@@ -1752,7 +1749,7 @@ const Settings: React.FC<SettingsProps> = ({
     setError(null);
     setIsRepairingOpenClaw(true);
     try {
-      const result = await genworkService.repairOpenClawGatewayState();
+      const result = await mixcworkService.repairOpenClawGatewayState();
       setOpenClawRepairResult(result);
       reportAgentEngineMaintenanceAction(
         'repair_gateway_state',
@@ -1865,10 +1862,10 @@ const Settings: React.FC<SettingsProps> = ({
     setCoworkMemoryListLoading(true);
     try {
       const [entries, stats] = await Promise.all([
-        genworkService.listMemoryEntries({
+        mixcworkService.listMemoryEntries({
           query: coworkMemoryQuery.trim() || undefined,
         }),
-        genworkService.getMemoryStats(),
+        mixcworkService.getMemoryStats(),
       ]);
       setCoworkMemoryEntries(entries);
       setCoworkMemoryStats(stats);
@@ -1902,12 +1899,12 @@ const Settings: React.FC<SettingsProps> = ({
     try {
       const operation = coworkMemoryEditingId ? 'updated' : 'created';
       if (coworkMemoryEditingId) {
-        await genworkService.updateMemoryEntry({
+        await mixcworkService.updateMemoryEntry({
           id: coworkMemoryEditingId,
           text,
         });
       } else {
-        await genworkService.createMemoryEntry({
+        await mixcworkService.createMemoryEntry({
           text,
         });
       }
@@ -1926,16 +1923,16 @@ const Settings: React.FC<SettingsProps> = ({
     }
   };
 
-  const handleEditCoworkMemoryEntry = (entry: GenWorkUserMemoryEntry) => {
+  const handleEditCoworkMemoryEntry = (entry: MixCWorkUserMemoryEntry) => {
     setCoworkMemoryEditingId(entry.id);
     setCoworkMemoryDraftText(entry.text);
     setShowMemoryModal(true);
   };
 
-  const handleDeleteCoworkMemoryEntry = async (entry: GenWorkUserMemoryEntry) => {
+  const handleDeleteCoworkMemoryEntry = async (entry: MixCWorkUserMemoryEntry) => {
     setCoworkMemoryListLoading(true);
     try {
-      await genworkService.deleteMemoryEntry({ id: entry.id });
+      await mixcworkService.deleteMemoryEntry({ id: entry.id });
       if (coworkMemoryEditingId === entry.id) {
         resetCoworkMemoryEditor();
       }
@@ -1958,7 +1955,7 @@ const Settings: React.FC<SettingsProps> = ({
 
   const handleEnterCoworkMemoryRawMode = async () => {
     setError(null);
-    const content = await genworkService.readMemoryFileRaw();
+    const content = await mixcworkService.readMemoryFileRaw();
     if (content === null) {
       setError(i18nService.t('coworkMemoryRawLoadFailed'));
       return;
@@ -1972,7 +1969,7 @@ const Settings: React.FC<SettingsProps> = ({
     setError(null);
     setCoworkMemoryRawSaving(true);
     try {
-      const result = await genworkService.writeMemoryFileRaw(coworkMemoryRawText);
+      const result = await mixcworkService.writeMemoryFileRaw(coworkMemoryRawText);
       if (!result.success) {
         setError(result.error || i18nService.t('coworkMemoryRawSaveFailed'));
         return;
@@ -2115,7 +2112,7 @@ const Settings: React.FC<SettingsProps> = ({
       i18nService.setLanguage(language, { persist: false });
 
       if (hasCoworkConfigChanges) {
-        const updated = await genworkService.updateConfig({
+        const updated = await mixcworkService.updateConfig({
           agentEngine: coworkAgentEngine,
           memoryEnabled: coworkMemoryEnabled,
           memoryLlmJudgeEnabled: coworkMemoryLlmJudgeEnabled,
@@ -2136,7 +2133,7 @@ const Settings: React.FC<SettingsProps> = ({
         if (!updated) {
           throw new Error(i18nService.t('coworkConfigSaveFailed'));
         }
-        const savedSessionPolicy = await genworkService.updateSessionPolicy({
+        const savedSessionPolicy = await mixcworkService.updateSessionPolicy({
           keepAlive: openClawSessionKeepAlive,
         });
         if (!savedSessionPolicy) {
@@ -2496,7 +2493,7 @@ const Settings: React.FC<SettingsProps> = ({
   const renderAppearanceSettings = () => (
     <div className="space-y-8">
       <div>
-        <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--genwork-text-primary)' }}>
+        <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--mixcwork-text-primary)' }}>
           {i18nService.t('appearance')}
         </h4>
 
@@ -2511,8 +2508,8 @@ const Settings: React.FC<SettingsProps> = ({
                 disabled={isAppearanceChanging}
                 className="flex flex-col items-center rounded-xl border-2 p-3 transition-colors cursor-pointer disabled:cursor-wait disabled:opacity-60"
                 style={{
-                  borderColor: isSelected ? 'var(--genwork-primary)' : 'var(--genwork-border)',
-                  backgroundColor: isSelected ? 'var(--genwork-primary-muted)' : undefined,
+                  borderColor: isSelected ? 'var(--mixcwork-primary)' : 'var(--mixcwork-border)',
+                  backgroundColor: isSelected ? 'var(--mixcwork-primary-muted)' : undefined,
                 }}
               >
                 <svg viewBox="0 0 120 80" className="w-full h-auto rounded-md mb-2 overflow-hidden" xmlns="http://www.w3.org/2000/svg">
@@ -2596,7 +2593,7 @@ const Settings: React.FC<SettingsProps> = ({
                     </>
                   )}
                 </svg>
-                <span className="text-xs font-medium" style={{ color: isSelected ? 'var(--genwork-primary)' : 'var(--genwork-text-primary)' }}>
+                <span className="text-xs font-medium" style={{ color: isSelected ? 'var(--mixcwork-primary)' : 'var(--mixcwork-text-primary)' }}>
                   {i18nService.t(mode)}
                 </span>
               </button>
@@ -2604,7 +2601,7 @@ const Settings: React.FC<SettingsProps> = ({
           })}
         </div>
 
-        <h4 className="text-sm font-medium mb-3 mt-5" style={{ color: 'var(--genwork-text-primary)' }}>
+        <h4 className="text-sm font-medium mb-3 mt-5" style={{ color: 'var(--mixcwork-text-primary)' }}>
           {i18nService.t('themeColor')}
         </h4>
         {(() => {
@@ -2620,8 +2617,8 @@ const Settings: React.FC<SettingsProps> = ({
                 disabled={isAppearanceChanging}
                 className="flex flex-col items-center rounded-xl border-2 p-2 transition-colors cursor-pointer disabled:cursor-wait disabled:opacity-60"
                 style={{
-                  borderColor: isSelected ? 'var(--genwork-primary)' : 'var(--genwork-border)',
-                  backgroundColor: isSelected ? 'var(--genwork-primary-muted)' : undefined,
+                  borderColor: isSelected ? 'var(--mixcwork-primary)' : 'var(--mixcwork-border)',
+                  backgroundColor: isSelected ? 'var(--mixcwork-primary-muted)' : undefined,
                 }}
               >
                 <svg viewBox="0 0 80 48" className="w-full h-auto rounded-md mb-1.5 overflow-hidden" xmlns="http://www.w3.org/2000/svg">
@@ -2631,7 +2628,7 @@ const Settings: React.FC<SettingsProps> = ({
                   <circle cx="52" cy="24" r="8" fill={c3} opacity="0.8" />
                   <rect x="32" y="34" width="40" height="4" rx="2" fill={c1} opacity="0.6" />
                 </svg>
-                <span className="text-[10px] font-medium truncate w-full text-center" style={{ color: isSelected ? 'var(--genwork-primary)' : 'var(--genwork-text-primary)' }}>
+                <span className="text-[10px] font-medium truncate w-full text-center" style={{ color: isSelected ? 'var(--mixcwork-primary)' : 'var(--mixcwork-text-primary)' }}>
                   {i18nService.t('theme-name-' + t.meta.id) || t.meta.name}
                 </span>
               </button>
@@ -3216,7 +3213,7 @@ const Settings: React.FC<SettingsProps> = ({
                       <div className="mt-3">
                         <button
                           type="button"
-                          onClick={() => { void genworkService.restartOpenClawGateway(); }}
+                          onClick={() => { void mixcworkService.restartOpenClawGateway(); }}
                           className="inline-flex items-center justify-center rounded-lg border border-current/30 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-current/10"
                         >
                           {i18nService.t('coworkOpenClawRestartGateway')}
@@ -3235,7 +3232,7 @@ const Settings: React.FC<SettingsProps> = ({
           { key: 'entries' as const, titleKey: 'coworkMemoryTabEntries' },
           { key: 'embedding' as const, titleKey: 'coworkMemoryTabEmbedding' },
         ];
-        const coworkMemoryGroups: Array<{ section?: string; entries: GenWorkUserMemoryEntry[] }> = [];
+        const coworkMemoryGroups: Array<{ section?: string; entries: MixCWorkUserMemoryEntry[] }> = [];
         for (const entry of coworkMemoryEntries) {
           const lastGroup = coworkMemoryGroups[coworkMemoryGroups.length - 1];
           if (lastGroup && (lastGroup.section ?? '') === (entry.section ?? '')) {
@@ -3594,8 +3591,8 @@ const Settings: React.FC<SettingsProps> = ({
           <div className="flex min-h-full flex-col items-center pt-6 pb-3">
             {/* Logo & App Name */}
             <img
-              src="genwork.png"
-              alt="GenWork"
+              src="mixcwork-small.png"
+              alt="MixcWork"
               className="w-16 h-16 mb-3 cursor-pointer select-none"
               onClick={(e) => {
                 if (!e.altKey || !e.shiftKey) return;
@@ -3607,7 +3604,7 @@ const Settings: React.FC<SettingsProps> = ({
                 }
               }}
             />
-            <h3 className="text-lg font-semibold text-foreground">GenWork</h3>
+            <h3 className="text-lg font-semibold text-foreground">MixcWork</h3>
             <span className="text-xs text-secondary mt-1">v{appVersion}</span>
 
             {/* Info Card */}
@@ -3710,7 +3707,7 @@ const Settings: React.FC<SettingsProps> = ({
                 {i18nService.t('copyrightHolder')}
               </p>
               <p className="mt-1 text-center text-xs text-secondary">
-                Copyright &copy; {new Date().getFullYear()} GenWork. All Rights Reserved.
+                Copyright &copy; {new Date().getFullYear()} MixcWork. All Rights Reserved.
               </p>
             </div>
           </div>

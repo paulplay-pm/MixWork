@@ -34,7 +34,7 @@ MCP services they can see and use on the desktop client.
   via `requireCapability(role)` (`src/auth/middleware.ts:34`), and
   `super_admin` short-circuits every gate.
 - **Credential crypto** already exists: `encrypt`/`decrypt` (AES‑256‑GCM,
-  32‑byte base64 master key from `GENWORK_VAULT_MASTER_KEY`) in
+  32‑byte base64 master key from `MIXCWORK_VAULT_MASTER_KEY`) in
   `src/vault/crypto.ts`. `providerKeyVault` is the reference for the
   encrypt-on-write / mask-on-read pattern.
 - **Web SPA** (react-router, `web/src/App.tsx`): admin routes wrapped in
@@ -324,7 +324,7 @@ Web (Vitest + Testing Library, `.test.tsx`):
 
 ## Out of scope / follow-ups
 
-- **Desktop "连接器" integration** — the GenWork desktop client calling
+- **Desktop "连接器" integration** — the MixCWork desktop client calling
   `GET /api/mcp-marketplace` and rendering only the user's MCPs. Separate codebase
   surface; this build ships the endpoint + admin UI.
 - **`mcp_policies` (the old scope-based "MCP 策略")** — left untouched; the new

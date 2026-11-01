@@ -11,6 +11,10 @@ import {
   mapProbeResultToUiState,
   type McpAuthProbeResult,
   type McpAuthUiState,
+  oauthUsesDiscovery,
+  probeLabelKey,
+  showsProbeDetail,
+  usesGenericOAuth,
 } from './mcpAuthModalHelpers';
 
 interface McpAuthModalProps {
@@ -55,7 +59,7 @@ const McpAuthModal: React.FC<McpAuthModalProps> = ({
     // The header NAME defaults from the persisted admin-configured value
     // (or X-Api-Key when absent); the header VALUE is always user-entered.
     setApiKeyName(server.apiKeyHeaderName?.trim() || 'X-Api-Key');
-  }, [server.id]);
+  }, [server.id, server.apiKeyHeaderName]);
 
   const handleSubmit = async () => {
     if (submitting) return;
@@ -63,6 +67,8 @@ const McpAuthModal: React.FC<McpAuthModalProps> = ({
       bearer: bearerValue,
       headerName: apiKeyName,
       value: apiKeyValue,
+      registryId: server.registryId,
+      serverId: server.id,
       serverKey: server.serverKey,
       oauthConfig: server.oauthConfig,
     });
@@ -153,18 +159,6 @@ const McpAuthModal: React.FC<McpAuthModalProps> = ({
       );
     }
     if (authMethod === McpAuthMethod.OAuth) {
-      if (server.serverKey && !server.oauthConfig) {
-        return (
-          <div className="space-y-1.5">
-            <span className="text-xs font-semibold tracking-wide text-secondary">
-              {i18nService.t('mcpAuthFieldOAuthProvider')}
-            </span>
-            <p className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-secondary">
-              {i18nService.t('mcpAuthOAuthNotConfigured')}
-            </p>
-          </div>
-        );
-      }
       return (
         <div className="space-y-1.5">
           <span className="text-xs font-semibold tracking-wide text-secondary">
@@ -173,6 +167,15 @@ const McpAuthModal: React.FC<McpAuthModalProps> = ({
           <p className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground">
             {server.name}
           </p>
+          {/* An enterprise connector whose org left the client profile empty is
+              the normal shape for an MCP-native provider: the main process
+              discovers the endpoints and registers a client. Say so, instead of
+              the old "not configured" dead end. */}
+          {oauthUsesDiscovery(server.oauthConfig, usesGenericOAuth(server)) && (
+            <p className="text-xs leading-relaxed text-secondary">
+              {i18nService.t('mcpAuthOAuthDiscoveryHint')}
+            </p>
+          )}
         </div>
       );
     }
@@ -188,17 +191,12 @@ const McpAuthModal: React.FC<McpAuthModalProps> = ({
         </div>
       );
     }
-    const messageKey =
-      uiState.kind === 'unauthorized'
-        ? 'mcpAuthFailedUnauthorized'
-        : uiState.kind === 'missing-credential' || uiState.kind === 'missing-save'
-          ? 'mcpAuthFailedMissing'
-          : 'mcpAuthFailedConnect';
+    const messageKey = probeLabelKey(uiState);
     return (
       <div className={`${pillBaseClass} bg-red-500/10 text-red-600 dark:text-red-400`}>
         <span className="text-red-500 dark:text-red-400">{i18nService.t('mcpAuthProbeFailed')}:</span>
         <span>{i18nService.t(messageKey)}</span>
-        {uiState.message && uiState.kind !== 'unauthorized' && uiState.kind !== 'missing-credential' && uiState.kind !== 'missing-save' && (
+        {uiState.message && showsProbeDetail(uiState) && (
           <span className="text-secondary">· {uiState.message}</span>
         )}
       </div>
@@ -256,7 +254,9 @@ const McpAuthModal: React.FC<McpAuthModalProps> = ({
           >
             {submitting
               ? i18nService.t('mcpQichachaConnecting')
-              : i18nService.t('mcpAuthSubmit')}
+              : authMethod === McpAuthMethod.OAuth
+                ? i18nService.t('mcpAuthAuthorize')
+                : i18nService.t('mcpAuthSubmit')}
           </button>
         )}
       </div>

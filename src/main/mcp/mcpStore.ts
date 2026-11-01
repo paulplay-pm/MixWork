@@ -1,7 +1,14 @@
 import Database from 'better-sqlite3';
 import crypto from 'crypto';
 
-import { McpAuthMethod, McpAuthStatus } from '../../shared/mcp/constants';
+import {
+  type ConnectorAuthMode,
+  ConnectorConsumption,
+  McpAuthMethod,
+  McpAuthStatus,
+  type McpToolFilter,
+} from '../../shared/mcp/constants';
+import { t } from '../i18n';
 import type { McpLaunchResolution } from './mcpLaunchResolution';
 
 export interface McpServerRecord {
@@ -23,8 +30,26 @@ export interface McpServerRecord {
   authStatus: McpAuthStatus;
   oauth?: McpOAuthCredential;
   serverKey?: string;
+  /** Brand logo URL from the catalog. Rendered on the connector's rows; the
+   *  UI falls back to a generic glyph when it cannot be loaded. */
+  icon?: string;
   oauthConfig?: McpOAuthEndpoint;
   apiKeyHeaderName?: string;
+  /** The enterprise connector's declared auth mode (absent for local servers). */
+  enterpriseAuthMode?: ConnectorAuthMode;
+  /** OpenClaw's per-server tool selection, captured from the org's policy. */
+  toolFilter?: McpToolFilter;
+  /** The org's per-call timeout in seconds. Absent means OpenClaw's default. */
+  timeoutSeconds?: number;
+  /** `gateway` means the org key is injected by the enterprise server and
+   *  this record must never dial `url` directly. Absent means `direct`. */
+  consumption?: ConnectorConsumption;
+  /** The gateway service token this record dials with. Never the org key. */
+  gatewayToken?: string;
+  /** Which signed-in member the token was minted for. A token whose owner is
+   *  not the current user is discarded, not reused. */
+  gatewayTokenOwner?: string;
+  gatewayTokenExpiresAt?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -44,8 +69,13 @@ export interface McpServerFormData {
   authMethod?: McpAuthMethod;
   oauth?: McpOAuthCredential;
   serverKey?: string;
+  icon?: string;
   oauthConfig?: McpOAuthEndpoint;
   apiKeyHeaderName?: string;
+  enterpriseAuthMode?: ConnectorAuthMode;
+  toolFilter?: McpToolFilter;
+  timeoutSeconds?: number;
+  consumption?: ConnectorConsumption;
 }
 
 export interface McpOAuthCredential {
@@ -59,10 +89,14 @@ export interface McpOAuthCredential {
  * (connectorView.ts) — `clientSecret` is deliberately excluded: the store
  * never holds org secrets. Distinct from McpOAuthCredential (fetched token). */
 export interface McpOAuthEndpoint {
-  authorizeUrl: string;
-  tokenUrl: string;
-  clientId: string;
+  authorizeUrl?: string;
+  tokenUrl?: string;
+  clientId?: string;
   scopes?: string[];
+  /** The loopback redirect URI the enterprise server issued for this
+   *  connector. The desktop binds its port and sends it as `redirect_uri`;
+   *  absent means "use the built-in default port". */
+  redirectUri?: string;
 }
 
 interface McpServerRow {
@@ -89,8 +123,72 @@ interface McpConfigJson {
   authMethod?: McpAuthMethod;
   oauth?: McpOAuthCredential;
   serverKey?: string;
+  icon?: string;
   oauthConfig?: McpOAuthEndpoint;
   apiKeyHeaderName?: string;
+  enterpriseAuthMode?: ConnectorAuthMode;
+  toolFilter?: McpToolFilter;
+  timeoutSeconds?: number;
+  consumption?: ConnectorConsumption;
+  gatewayToken?: string;
+  gatewayTokenOwner?: string;
+  gatewayTokenExpiresAt?: string;
+}
+
+/** What the store writes: the form's fields plus the credential fields only
+ *  the store itself sets (`saveGatewayToken`), so a form can never smuggle one
+ *  in. */
+type McpServerWriteInput = McpServerFormData & Pick<
+  McpConfigJson,
+  'gatewayToken' | 'gatewayTokenOwner' | 'gatewayTokenExpiresAt'
+>;
+
+export interface InstallServerDeps {
+  /** Exchanges a gateway connector's service token. The real helper is loaded
+   *  lazily so this DB module does not pull the Electron-bound auth stack into
+   *  every consumer (and into node-only tests); tests inject a stub. */
+  ensureGatewayToken?: (record: {
+    consumption?: ConnectorConsumption;
+    serverKey?: string;
+  }) => Promise<{ token: string; owner: string; expiresAt: string } | null>;
+}
+
+/** `config_json` is free-form and may hold anything a future version wrote. */
+/**
+ * The message for a failed gateway token exchange during install.
+ *
+ * The exchange IS the connector's authorization, so its refusal is the install
+ * error the member reads. Folding every status into one "try again later" gives
+ * them a retry button that cannot work: 403 needs an admin, 404 a marketplace
+ * refresh, 400 a configuration fix, 401 a fresh sign-in, and only a network or
+ * 5xx failure is worth retrying unchanged.
+ *
+ * `status` is read structurally (not via `instanceof EnterpriseApiError`)
+ * because importing that class would pull Electron's `session` and the MCP
+ * OAuth browser flow into this module — and into every test that constructs a
+ * store without Electron.
+ */
+function gatewayInstallErrorMessage(error: unknown): string {
+  switch ((error as { status?: unknown } | null)?.status) {
+    case 403:
+      return t('mcpInstallGatewayForbidden');
+    case 404:
+      return t('mcpInstallGatewayNotFound');
+    case 400:
+      return t('mcpInstallGatewayUnsupported');
+    case 401:
+      return t('mcpInstallGatewayLoginRequired');
+    default:
+      return t('mcpInstallGatewayTokenFailed');
+  }
+}
+
+function parseConfigJson(raw: string): McpConfigJson {
+  try {
+    return JSON.parse(raw) as McpConfigJson;
+  } catch {
+    return {};
+  }
 }
 
 interface McpLaunchResolutionRow {
@@ -235,12 +333,7 @@ export class McpStore {
   }
 
   private deserializeRow(row: McpServerRow): McpServerRecord {
-    let config: McpConfigJson = {};
-    try {
-      config = JSON.parse(row.config_json) as McpConfigJson;
-    } catch {
-      // Invalid JSON, use defaults
-    }
+    const config = parseConfigJson(row.config_json);
 
     return {
       id: row.id,
@@ -265,14 +358,22 @@ export class McpStore {
       }),
       oauth: config.oauth,
       serverKey: config.serverKey,
+      icon: config.icon,
       oauthConfig: config.oauthConfig,
       apiKeyHeaderName: config.apiKeyHeaderName,
+      enterpriseAuthMode: config.enterpriseAuthMode,
+      toolFilter: config.toolFilter,
+      timeoutSeconds: config.timeoutSeconds,
+      consumption: config.consumption,
+      gatewayToken: config.gatewayToken,
+      gatewayTokenOwner: config.gatewayTokenOwner,
+      gatewayTokenExpiresAt: config.gatewayTokenExpiresAt,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
   }
 
-  private serializeConfig(data: Partial<McpServerFormData>): string {
+  private serializeConfig(data: McpConfigJson): string {
     const config: McpConfigJson = {};
     if (data.command !== undefined) config.command = data.command;
     if (data.args !== undefined) config.args = data.args;
@@ -285,12 +386,28 @@ export class McpStore {
     if (data.authMethod !== undefined) config.authMethod = data.authMethod;
     if (data.oauth !== undefined && data.oauth.token) config.oauth = data.oauth;
     if (data.serverKey !== undefined) config.serverKey = data.serverKey;
+    if (data.icon !== undefined) config.icon = data.icon;
     if (data.oauthConfig !== undefined) config.oauthConfig = data.oauthConfig;
     if (data.apiKeyHeaderName !== undefined) config.apiKeyHeaderName = data.apiKeyHeaderName;
+    if (data.enterpriseAuthMode !== undefined) config.enterpriseAuthMode = data.enterpriseAuthMode;
+    // An empty filter means "no restriction", which is the same as absent —
+    // writing `{}` would only make the config blob lie about having a policy.
+    if (data.toolFilter && ((data.toolFilter.include?.length ?? 0) > 0 || (data.toolFilter.exclude?.length ?? 0) > 0)) {
+      config.toolFilter = data.toolFilter;
+    }
+    // Zero/negative is not a valid timeout; treat it as "use the default".
+    if (typeof data.timeoutSeconds === 'number' && Number.isFinite(data.timeoutSeconds)
+      && data.timeoutSeconds > 0) {
+      config.timeoutSeconds = data.timeoutSeconds;
+    }
+    if (data.consumption !== undefined) config.consumption = data.consumption;
+    if (data.gatewayToken !== undefined) config.gatewayToken = data.gatewayToken;
+    if (data.gatewayTokenOwner !== undefined) config.gatewayTokenOwner = data.gatewayTokenOwner;
+    if (data.gatewayTokenExpiresAt !== undefined) config.gatewayTokenExpiresAt = data.gatewayTokenExpiresAt;
     return JSON.stringify(config);
   }
 
-  private normalizeTransportConfig(data: McpServerFormData): McpServerFormData {
+  private normalizeTransportConfig(data: McpServerWriteInput): McpServerWriteInput {
     if (data.transportType === 'stdio') {
       return {
         ...data,
@@ -326,18 +443,61 @@ export class McpStore {
     return this.deserializeRow(row);
   }
 
-  createServer(data: McpServerFormData): McpServerRecord {
+  /**
+   * Install a connector: exchange its service token when it is gateway-scoped,
+   * then write the record.
+   *
+   * The exchange runs before the insert because a gateway record without a
+   * token is a half-installed connector — it would list as installed and then
+   * silently fail every call. The member sees no auth step: the enterprise JWT
+   * they already hold is the whole exchange, and a failure fails the install
+   * with a reason instead of leaving a row behind.
+   */
+  async installServer(
+    data: McpServerFormData,
+    deps: InstallServerDeps = {},
+  ): Promise<McpServerRecord> {
+    if (data.consumption !== ConnectorConsumption.Gateway) return this.createServer(data);
+
+    const ensure = deps.ensureGatewayToken
+      ?? (async (record) => (await import('./mcpGatewayToken')).ensureGatewayToken(record));
+    let credential: { token: string; owner: string; expiresAt: string } | null;
+    try {
+      credential = await ensure({ consumption: data.consumption, serverKey: data.serverKey });
+    } catch (error) {
+      console.error('[Mcp] gateway token exchange failed during install', error);
+      throw new Error(gatewayInstallErrorMessage(error));
+    }
+    if (!credential) throw new Error(t('mcpInstallGatewayLoginRequired'));
+
+    return this.createServer({
+      ...data,
+      gatewayToken: credential.token,
+      gatewayTokenOwner: credential.owner,
+      gatewayTokenExpiresAt: credential.expiresAt,
+    });
+  }
+
+  createServer(data: McpServerWriteInput): McpServerRecord {
     const id = crypto.randomUUID();
     const now = Date.now();
     const normalized = this.normalizeTransportConfig(data);
     const configJson = this.serializeConfig(normalized);
+    // Installing a connector is not authenticating it. The column defaults to
+    // 'authenticated', which made a fresh OAuth install look connected until
+    // the first probe failed; derive it from whether a credential exists.
+    const authStatus = deriveAuthStatus({
+      authMethod: normalized.authMethod ?? McpAuthMethod.None,
+      headers: normalized.headers,
+      oauth: normalized.oauth,
+    });
 
     this.db
       .prepare(
-        `INSERT INTO mcp_servers (id, name, description, enabled, transport_type, config_json, created_at, updated_at)
-       VALUES (?, ?, ?, 1, ?, ?, ?, ?)`,
+        `INSERT INTO mcp_servers (id, name, description, enabled, transport_type, config_json, auth_status, created_at, updated_at)
+       VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?)`,
       )
-      .run(id, normalized.name, normalized.description, normalized.transportType, configJson, now, now);
+      .run(id, normalized.name, normalized.description, normalized.transportType, configJson, authStatus, now, now);
 
     return this.getServer(id)!;
   }
@@ -345,6 +505,14 @@ export class McpStore {
   updateServer(id: string, data: Partial<McpServerFormData>): McpServerRecord | null {
     const existing = this.getServer(id);
     if (!existing) return null;
+
+    const nextConsumption =
+      data.enterpriseAuthMode !== undefined
+        ? data.consumption
+        : data.consumption !== undefined
+          ? data.consumption
+          : existing.consumption;
+    const keepGatewayToken = nextConsumption === ConnectorConsumption.Gateway;
 
     const now = Date.now();
     const merged = this.normalizeTransportConfig({
@@ -364,6 +532,42 @@ export class McpStore {
       serverKey: data.serverKey !== undefined ? data.serverKey : existing.serverKey,
       oauthConfig: data.oauthConfig !== undefined ? data.oauthConfig : existing.oauthConfig,
       apiKeyHeaderName: data.apiKeyHeaderName !== undefined ? data.apiKeyHeaderName : existing.apiKeyHeaderName,
+      enterpriseAuthMode:
+        data.enterpriseAuthMode !== undefined ? data.enterpriseAuthMode : existing.enterpriseAuthMode,
+      // The enterprise catalog owns the tool selection: an enterprise update
+      // always carries the catalog's current answer, and no filter there means
+      // "every tool" — so it clears rather than keeps the old restriction.
+      toolFilter:
+        data.enterpriseAuthMode !== undefined
+          ? data.toolFilter
+          : data.toolFilter !== undefined
+            ? data.toolFilter
+            : existing.toolFilter,
+      // The enterprise catalog owns the timeout too: an enterprise update
+      // always carries the catalog's current answer, and no timeout there
+      // means "use the runtime default" — so it clears rather than keeps the
+      // old value.
+      timeoutSeconds:
+        data.enterpriseAuthMode !== undefined
+          ? data.timeoutSeconds
+          : data.timeoutSeconds !== undefined
+            ? data.timeoutSeconds
+            : existing.timeoutSeconds,
+      // The catalog owns this too: an enterprise update always carries its
+      // current answer, so a connector the admin moved off `shared-key` stops
+      // routing through the gateway.
+      consumption:
+        data.enterpriseAuthMode !== undefined
+          ? data.consumption
+          : data.consumption !== undefined
+            ? data.consumption
+            : existing.consumption,
+      // Tokens are written only by `saveGatewayToken`/`clearGatewayTokens`;
+      // a form update must never drop a live credential. They go away with
+      // the mode that uses them.
+      gatewayToken: keepGatewayToken ? existing.gatewayToken : undefined,
+      gatewayTokenOwner: keepGatewayToken ? existing.gatewayTokenOwner : undefined,
+      gatewayTokenExpiresAt: keepGatewayToken ? existing.gatewayTokenExpiresAt : undefined,
     });
 
     const configJson = this.serializeConfig(merged);
@@ -404,6 +608,46 @@ export class McpStore {
       )
       .all() as McpServerRow[];
     return rows.map((row) => this.deserializeRow(row));
+  }
+
+  /** Store the gateway service token a record dials with, and who it was
+   *  minted for. Written in place: this is not a user edit, so the row's
+   *  updated_at changes but nothing else does. */
+  saveGatewayToken(serverId: string, token: string, owner: string, expiresAt: string): void {
+    const row = this.db
+      .prepare('SELECT config_json FROM mcp_servers WHERE id = ?')
+      .get(serverId) as { config_json: string } | undefined;
+    if (!row) return;
+    const config = parseConfigJson(row.config_json);
+    config.gatewayToken = token;
+    config.gatewayTokenOwner = owner;
+    config.gatewayTokenExpiresAt = expiresAt;
+    this.db
+      .prepare('UPDATE mcp_servers SET config_json = ?, updated_at = ? WHERE id = ?')
+      .run(JSON.stringify(config), Date.now(), serverId);
+  }
+
+  /** Forget every gateway credential (sign-out hygiene). Correctness does not
+   *  depend on this — the owner check discards a foreign token anyway — but a
+   *  credential that can no longer be used should not sit in the DB. */
+  clearGatewayTokens(): number {
+    const rows = this.db
+      .prepare('SELECT id, config_json FROM mcp_servers')
+      .all() as Array<{ id: string; config_json: string }>;
+    const update = this.db.prepare(
+      'UPDATE mcp_servers SET config_json = ?, updated_at = ? WHERE id = ?',
+    );
+    let touched = 0;
+    for (const row of rows) {
+      const config = parseConfigJson(row.config_json);
+      if (config.consumption !== ConnectorConsumption.Gateway) continue;
+      delete config.gatewayToken;
+      delete config.gatewayTokenOwner;
+      delete config.gatewayTokenExpiresAt;
+      update.run(JSON.stringify(config), Date.now(), row.id);
+      touched += 1;
+    }
+    return touched;
   }
 
   updateAuthStatus(id: string, status: McpAuthStatus, lastProbeStatus?: string, lastProbeAt?: number): void {

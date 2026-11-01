@@ -5,16 +5,15 @@
  * local in-process MCP servers (SDK `Server` over StreamableHTTP / legacy SSE
  * on ephemeral 127.0.0.1 ports) — no DB, no mocks of the SDK client.
  */
+import { randomUUID } from 'node:crypto';
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { randomUUID } from 'node:crypto';
-
-import { describe, expect, test } from 'vitest';
 
 import { Server as McpServer } from '@modelcontextprotocol/sdk/server/index.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { describe, expect, test } from 'vitest';
 
 import { probeConnector } from '../../src/mcp/handshake';
 

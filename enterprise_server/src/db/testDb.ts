@@ -1,8 +1,9 @@
-import type { PGlite, Transaction } from '@electric-sql/pglite';
-import { PGlite as PGliteImpl } from '@electric-sql/pglite';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import type { PGlite, Transaction } from '@electric-sql/pglite';
+import { PGlite as PGliteImpl } from '@electric-sql/pglite';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 
@@ -85,9 +86,20 @@ export async function resetSchema(): Promise<void> {
   await db.exec('CREATE SCHEMA public');
 }
 
-export async function runMigrations(): Promise<void> {
+/**
+ * Replay the migration files against pglite.
+ *
+ * `exclude` drops specific files from the replay, which is how a test
+ * reproduces the state of a database that was migrated BEFORE a file existed:
+ * replay everything up to (but not including) the new file, then replay again
+ * with it and assert the schema caught up.
+ */
+export async function runMigrations(options?: { exclude?: string[] }): Promise<void> {
   const dir = join(__dirname, 'migrations');
-  const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
+  const excluded = new Set(options?.exclude ?? []);
+  const files = readdirSync(dir)
+    .filter((f) => f.endsWith('.sql') && !excluded.has(f))
+    .sort();
   const db = getInstance();
   for (const f of files) {
     const sql = readFileSync(join(dir, f), 'utf8');

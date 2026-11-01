@@ -35,11 +35,19 @@ export function brandColor(slug: string): string {
  * `/compatible` variant), and — for the providers that offer a "Coding Plan"
  * (beta) — the coding-specific endpoint the UI swaps to when the Coding Plan
  * toggle is on. A missing key means that provider doesn't offer that variant.
+ *
+ * The non-chat adapters (`realtimeAsr` / `imageGen` / `videoGen`) take the
+ * API ROOT: those adapters append the version path themselves
+ * (`/v1/speech_to_text`, `/v1/image_generation`, `/v2/video_generation`), so a
+ * `/v1` suffix here would double up.
  */
 export interface ProviderEndpointSet {
   openai: string;
   anthropic?: string;
   codingPlan?: string;
+  realtimeAsr?: string;
+  imageGen?: string;
+  videoGen?: string;
 }
 export const PROVIDER_ENDPOINTS: Record<string, ProviderEndpointSet> = {
   deepseek: {
@@ -63,6 +71,11 @@ export const PROVIDER_ENDPOINTS: Record<string, ProviderEndpointSet> = {
   minimax: {
     openai: 'https://api.minimaxi.com/v1',
     anthropic: 'https://api.minimaxi.com/anthropic',
+    // MiniMax is the only vendor with an ASR / image / video adapter
+    // registered on the server, so these three share one API root.
+    realtimeAsr: 'https://api.minimaxi.com',
+    imageGen: 'https://api.minimaxi.com',
+    videoGen: 'https://api.minimaxi.com',
   },
   xiaomi: {
     openai: 'https://api.xiaomimimo.com/v1/chat/completions',

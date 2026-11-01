@@ -8,7 +8,7 @@
 //
 // Two detections, in order of reliability:
 //   1. a writer lock we maintain inside the shared home — authoritative for
-//      GenWork-owned instances, including stale locks from a hard kill;
+//      MixCWork-owned instances, including stale locks from a hard kill;
 //   2. an HTTP probe of the standalone's documented default port — best
 //      effort, since a standalone on a custom port is undetectable.
 // When a foreign writer is found the caller falls back to the isolated home:
@@ -18,7 +18,7 @@ import * as fs from 'fs';
 import * as http from 'http';
 import * as path from 'path';
 
-export const DSH_WRITER_LOCK_FILE = '.genwork-dsh-writer.json';
+export const DSH_WRITER_LOCK_FILE = '.mixcwork-dsh-writer.json';
 export const DSH_STANDALONE_DEFAULT_PORT = 3080;
 const PROBE_TIMEOUT_MS = 1_500;
 
@@ -108,7 +108,7 @@ export function clearWriterLock(sharedHome: string): void {
 // run of `dsh web` with no --port lands on the documented default.
 export function probeStandaloneDsh(port = DSH_STANDALONE_DEFAULT_PORT): Promise<boolean> {
   return new Promise((resolve) => {
-    const body = JSON.stringify({ type: 'client-request', rpcId: 'genwork-probe', method: 'host.describe', payload: {} });
+    const body = JSON.stringify({ type: 'client-request', rpcId: 'mixcwork-probe', method: 'host.describe', payload: {} });
     const request = http.request(
       {
         host: '127.0.0.1',

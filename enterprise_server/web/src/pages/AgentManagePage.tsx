@@ -4,8 +4,10 @@ import type { JSX } from 'react';
 import { useEffect, useState } from 'react';
 
 import { type AgentInput, agentMarketplaceApi, type AgentMarketplaceItem } from '../api/agentMarketplace';
+import { departmentsApi } from '../api/departments';
 import { modelsApi } from '../api/models';
 import { providersApi } from '../api/providers';
+import { usersApi } from '../api/users';
 import { useAuth } from '../auth/useAuth';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { useToast } from '../components/toastStore';
@@ -38,8 +40,10 @@ export function AgentManagePage(): JSX.Element {
   const agentsQuery = useQuery({ queryKey: ADMIN_LIST_KEY, queryFn: () => agentMarketplaceApi.list() });
   const skillsQuery = useQuery({ queryKey: ['agent-marketplace', 'skills-picker'],
     queryFn: () => agentMarketplaceApi.listSkillsForPicker() });
-  const rolesQuery = useQuery({ queryKey: ['agent-marketplace', 'role-options'],
-    queryFn: () => agentMarketplaceApi.listRoleOptions() });
+  // The 可见范围 tab grants an agent to departments (and member exceptions),
+  // so the page needs the org's department tree and member list.
+  const deptsQuery = useQuery({ queryKey: ['org', 'depts', orgId], queryFn: () => departmentsApi.list(orgId) });
+  const membersQuery = useQuery({ queryKey: ['org', 'members', orgId], queryFn: () => usersApi.list(orgId) });
   const modelsQuery = useQuery({ queryKey: ['models', orgId], queryFn: () => modelsApi.list(orgId) });
   // Org providers feed the model picker's vendor group headers (same key the
   // 模型配置 page uses, so the query is shared/cached across both pages).
@@ -85,8 +89,11 @@ export function AgentManagePage(): JSX.Element {
 
   // Create: close the drawer, flash the new card, and toast. (Reopening the
   // new agent in the drawer would hide the flash behind the 680 px overlay.)
-  const createAgent = async (input: AgentInput): Promise<void> => {
+  const createAgent = async (input: AgentInput, newIcon?: File): Promise<void> => {
     const out = await agentMarketplaceApi.createAgent(input);
+    // The icon was picked before the agent existed; it can only be attached
+    // now that there is an id.
+    if (newIcon) await agentMarketplaceApi.uploadIcon(out.agent_id, newIcon);
     refreshAll();
     closeDrawer();
     setFlashId(out.agent_id);
@@ -95,10 +102,10 @@ export function AgentManagePage(): JSX.Element {
 
   // Save the current drawer draft: create a new agent or update the open one.
   // Errors are toasted here so the drawer stays open for the user to retry.
-  const handleSave = async (input: AgentInput): Promise<void> => {
+  const handleSave = async (input: AgentInput, newIcon?: File): Promise<void> => {
     try {
       if (openMode === 'create') {
-        await createAgent(input);
+        await createAgent(input, newIcon);
       } else if (open) {
         await agentMarketplaceApi.update(open.agentId, input);
         refreshAll();
@@ -269,7 +276,8 @@ export function AgentManagePage(): JSX.Element {
           key={openMode === 'edit' && open ? open.agentId : 'create'}
           mode={openMode}
           agent={open ?? undefined}
-          roleOptions={rolesQuery.data?.roles ?? []}
+          depts={deptsQuery.data ?? []}
+          members={membersQuery.data ?? []}
           skills={(skillsQuery.data ?? []).filter(s => s.enabled !== false)}
           agents={agents}
           models={modelsQuery.data ?? []}

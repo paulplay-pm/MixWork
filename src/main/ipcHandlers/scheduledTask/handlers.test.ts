@@ -433,8 +433,8 @@ describe('registerScheduledTaskHandlers', () => {
           getSessionMapping: () => undefined,
           listSessionMappings: () => [
             {
-              imConversationId: 'popo-bot-1:direct:zhangsan@corp.example.com',
-              platform: 'popo',
+              imConversationId: 'tg-bot-1:direct:zhangsan@corp.example.com',
+              platform: 'telegram',
               coworkSessionId: 'cw-1',
               agentId: 'f15e78b0-agent',
               lastActiveAt: '2',
@@ -448,15 +448,15 @@ describe('registerScheduledTaskHandlers', () => {
 
     const handler = registeredHandlers.get(ScheduledTaskIpc.Create);
     await handler?.(undefined, {
-      name: '测试 popo',
+      name: '测试 telegram',
       enabled: true,
       schedule: { kind: 'cron', expr: '0 13 * * *' },
       payload: { kind: PayloadKind.AgentTurn, message: 'hi' },
       delivery: {
         mode: DeliveryMode.Announce,
-        channel: 'moltbot-popo',
-        to: 'popo-bot-1:direct:zhangsan@corp.example.com',
-        accountId: 'popo-bot-1',
+        channel: 'telegram',
+        to: 'tg-bot-1:direct:zhangsan@corp.example.com',
+        accountId: 'tg-bot-1',
       },
     });
 
@@ -468,9 +468,9 @@ describe('registerScheduledTaskHandlers', () => {
     expect(input.agentId).toBe('f15e78b0-agent');
     expect(input.delivery).toEqual({
       mode: DeliveryMode.Announce,
-      channel: 'moltbot-popo',
+      channel: 'telegram',
       to: 'zhangsan@corp.example.com',
-      accountId: 'popo-bot-1',
+      accountId: 'tg-bot-1',
     });
   });
 

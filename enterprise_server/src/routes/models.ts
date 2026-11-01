@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+
 import { requireAuth } from '../auth/middleware';
 import { modelCatalog } from '../models/modelCatalog';
 

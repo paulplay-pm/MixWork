@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest';
 
-describe('genwork-server version', () => {
+describe('mixcwork-server version', () => {
   let prevVersion: string | undefined;
-  let log: ReturnType<typeof vi.spyOn>;
+  let log: MockInstance<[message?: any, ...optionalParams: any[]], void>;
 
   beforeEach(() => {
     vi.resetModules();
@@ -20,6 +20,6 @@ describe('genwork-server version', () => {
   test('prints VERSION env when set', async () => {
     const { run } = await import('../../src/cli/version');
     run();
-    expect(log).toHaveBeenCalledWith('genwork-server v2026.10.15-test');
+    expect(log).toHaveBeenCalledWith('mixcwork-server v2026.10.15-test');
   });
 });

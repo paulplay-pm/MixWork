@@ -1,31 +1,31 @@
 import { expect, test, vi } from 'vitest';
 
-import type { GenWorkMessage } from '../../../genworkStore';
+import type { MixCWorkMessage } from '../../../mixcworkStore';
 import {
   createOpenClawThinkingTurnState,
   OpenClawThinkingController,
   type OpenClawThinkingTurnContext,
 } from './controller';
 
-const createHarness = (initialMessages: GenWorkMessage[]) => {
+const createHarness = (initialMessages: MixCWorkMessage[]) => {
   const messages = [...initialMessages];
   let nextId = messages.length + 1;
   const updateMessage = vi.fn((
     _sessionId: string,
     messageId: string,
-    updates: { content?: string; metadata?: GenWorkMessage['metadata'] },
+    updates: { content?: string; metadata?: MixCWorkMessage['metadata'] },
   ) => {
     const message = messages.find((candidate) => candidate.id === messageId);
     if (message) Object.assign(message, updates);
   });
-  const createMessage = (payload: Omit<GenWorkMessage, 'id' | 'timestamp'>): GenWorkMessage => ({
+  const createMessage = (payload: Omit<MixCWorkMessage, 'id' | 'timestamp'>): MixCWorkMessage => ({
     ...payload,
     id: `msg-${nextId++}`,
     timestamp: nextId,
   });
   const store = {
     getSession: () => ({ messages }),
-    addMessage: (_sessionId: string, payload: Omit<GenWorkMessage, 'id' | 'timestamp'>) => {
+    addMessage: (_sessionId: string, payload: Omit<MixCWorkMessage, 'id' | 'timestamp'>) => {
       const message = createMessage(payload);
       messages.push(message);
       return message;
@@ -33,7 +33,7 @@ const createHarness = (initialMessages: GenWorkMessage[]) => {
     insertMessageBeforeId: (
       _sessionId: string,
       beforeMessageId: string,
-      payload: Omit<GenWorkMessage, 'id' | 'timestamp'>,
+      payload: Omit<MixCWorkMessage, 'id' | 'timestamp'>,
     ) => {
       const message = createMessage(payload);
       const index = messages.findIndex((candidate) => candidate.id === beforeMessageId);
@@ -63,10 +63,10 @@ const createHarness = (initialMessages: GenWorkMessage[]) => {
 
 const message = (
   id: string,
-  type: GenWorkMessage['type'],
+  type: MixCWorkMessage['type'],
   content: string,
-  metadata: GenWorkMessage['metadata'] = {},
-): GenWorkMessage => ({ id, type, content, metadata, timestamp: 1 });
+  metadata: MixCWorkMessage['metadata'] = {},
+): MixCWorkMessage => ({ id, type, content, metadata, timestamp: 1 });
 
 const createTurn = (assistantMessageId?: string): OpenClawThinkingTurnContext => ({
   assistantMessageId,

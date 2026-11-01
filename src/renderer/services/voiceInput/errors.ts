@@ -1,4 +1,5 @@
 import { AsrApiCode } from '../../../shared/asr/constants';
+import { EnterpriseApiErrorCode } from '../../../shared/enterpriseAccount/constants';
 import { i18nService } from '../i18n';
 
 export class AsrClientError extends Error {
@@ -13,8 +14,13 @@ export class AsrClientError extends Error {
 
 export const getFallbackAsrErrorMessage = (code?: number): string => {
   switch (code) {
+    // `EnterpriseApiErrorCode.NotMember` is the enterprise server's numeric
+    // "not a member" code. Without it here the code falls to the default
+    // branch, and a revoked member is told the SERVICE failed when what
+    // actually happened is their membership ended.
     case AsrApiCode.Unauthorized:
     case AsrApiCode.AuthTokenInvalid:
+    case EnterpriseApiErrorCode.NotMember:
       return i18nService.t('voiceInputLoginRequired');
     case AsrApiCode.AudioInvalid:
       return i18nService.t('voiceInputAudioInvalid');

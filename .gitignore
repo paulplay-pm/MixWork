@@ -35,7 +35,11 @@ SKILLs/**/.server.log
 SKILLs/**/.server.pid
 SKILLs/**/.venv/
 
-package-lock.json
+# App lockfiles are tracked for reproducible `npm ci`: the repo root,
+# enterprise_server and enterprise_server/web are each standalone npm projects
+# with their own lockfile. Bundled SKILLs are a separate subsystem and their
+# lockfiles are intentionally not tracked.
+SKILLs/**/package-lock.json
 
 nul
 .work.env

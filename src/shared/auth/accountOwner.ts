@@ -7,7 +7,7 @@ export interface AccountOwnerUser {
   accountMode?: unknown;
 }
 
-export const AccountOwnerKeyPrefix = {
+const AccountOwnerKeyPrefix = {
   Personal: 'personal:',
   Enterprise: 'enterprise:',
 } as const;
@@ -47,6 +47,20 @@ export const createAccountOwnerKey = (input: {
     : `${AccountOwnerKeyPrefix.Personal}${userId}`;
 };
 
-export const isEnterpriseAccountOwnerKey = (
-  ownerAccountKey: string | null | undefined,
-): boolean => ownerAccountKey?.startsWith(AccountOwnerKeyPrefix.Enterprise) === true;
+/**
+ * Owner key for the multi-tenant enterprise bridge (`enterpriseMt`).
+ *
+ * That deployment has no consumer profile at all: the account identity IS the
+ * enterprise session (org + user). The key keeps the `enterprise:` prefix and
+ * the `<userId>:<orgId>` shape of the legacy enterprise key, so a session
+ * scoped to one org never matches another org's session.
+ */
+export const createEnterpriseSessionAccountOwnerKey = (input: {
+  orgId?: unknown;
+  userId?: unknown;
+}): string | null => {
+  const orgId = normalizeAccountOwnerPart(input.orgId);
+  const userId = normalizeAccountOwnerPart(input.userId);
+  if (!orgId || !userId) return null;
+  return `${AccountOwnerKeyPrefix.Enterprise}${userId}:${orgId}`;
+};

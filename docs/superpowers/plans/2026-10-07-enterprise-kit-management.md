@@ -4,7 +4,7 @@
 
 **Goal:** Add a permission-scoped 套件管理 (kit catalog) subsystem to the enterprise server, seed it with 12 vendored expert kits stored locally, and restructure the desktop 专家套件 view so the 市场 tab becomes an enterprise-backed 企业 tab with a new 内置 fallback tab.
 
-**Architecture:** The enterprise server gains a `kit_catalog` subsystem that mirrors the existing `skill_marketplace` subsystem (org-scoped catalog keyed by a natural TEXT `slug`, `scope JSONB` ACL, two-stage zip upload, authed `GET /download/:slug`, per-org idempotent boot seed, and `kit:*` RBAC points). The 12 kits' `.zip` bundles are committed into the repo under `enterprise_server/seeds/kits/`; server init reads them from local disk (no network at startup), validates each with the kit-zip parser, and copies the bytes into the server `stateDir`. The desktop reads `GET /api/kits` (scoped by the caller's department membership) via `enterpriseClient`, installs via an authed `GET /api/kits/download/:slug`, and shows the existing local built-in kits (GenWork 外观定制, computer-use) in a new 内置 tab.
+**Architecture:** The enterprise server gains a `kit_catalog` subsystem that mirrors the existing `skill_marketplace` subsystem (org-scoped catalog keyed by a natural TEXT `slug`, `scope JSONB` ACL, two-stage zip upload, authed `GET /download/:slug`, per-org idempotent boot seed, and `kit:*` RBAC points). The 12 kits' `.zip` bundles are committed into the repo under `enterprise_server/seeds/kits/`; server init reads them from local disk (no network at startup), validates each with the kit-zip parser, and copies the bytes into the server `stateDir`. The desktop reads `GET /api/kits` (scoped by the caller's department membership) via `enterpriseClient`, installs via an authed `GET /api/kits/download/:slug`, and shows the existing local built-in kits (MixCWork 外观定制, computer-use) in a new 内置 tab.
 
 **Tech Stack:** TypeScript, Hono v4, raw `pg` (Postgres), vitest + PGlite (server tests); Electron + React 18 + Redux (desktop); a separate React SPA under `enterprise_server/web/`.
 
@@ -398,7 +398,7 @@ interface BuiltinKitDef {
   name_en: string; name_zh: string;
   description_en: string; description_zh: string;
   icon_url: string;
-  author: string;          // always 'GenWork'
+  author: string;          // always 'MixCWork'
   version: string;         // verbatim from the store (e.g. '1.2.0')
   try_asking: Array<{ en: string; zh: string }>;
   skill_list: Array<Record<string, unknown>>;   // the store's skills.list verbatim
@@ -410,8 +410,8 @@ interface BuiltinKitDef {
 
 Run:
 ```bash
-mkdir -p /Users/paulwang/work/GenWork/enterprise_server/seeds/kits
-cd /Users/paulwang/work/GenWork/enterprise_server/seeds/kits
+mkdir -p /Users/paulwang/work/MixCWork/enterprise_server/seeds/kits
+cd /Users/paulwang/work/MixCWork/enterprise_server/seeds/kits
 # slug -> Youdao CDN zip hash (from the live kit-store; see /tmp/kit-store.json)
 declare -A Z=(
   [engineering]=8201efaf99a7343fbee2e99a9b95b338
@@ -483,7 +483,7 @@ describe('seedBuiltinKits', () => {
     for (const row of kits.rows) {
       expect(row.enabled).toBe(true);
       expect(row.is_builtin).toBe(true);
-      expect(row.author).toBe('GenWork');
+      expect(row.author).toBe('MixCWork');
       expect(row.scope).toEqual({ allCompany: true, deptIds: [], userIds: [] });
     }
     const cats = await testPool.query(`SELECT category_id FROM kit_categories WHERE org_id = $1`, [orgId]);
@@ -517,11 +517,11 @@ describe('seedBuiltinKits', () => {
 Run: `cd enterprise_server && npx vitest run tests/org/builtinKits.test.ts`
 Expected: FAIL — `Cannot find module '../../src/org/builtinKits'`.
 
-- [ ] **Step 4: Generate the `BUILTIN_KITS` manifest (throwaway script — reads the live store, pins `author` to `GenWork`)**
+- [ ] **Step 4: Generate the `BUILTIN_KITS` manifest (throwaway script — reads the live store, pins `author` to `MixCWork`)**
 
 Run from `enterprise_server/`:
 ```bash
-cd /Users/paulwang/work/GenWork/enterprise_server
+cd /Users/paulwang/work/MixCWork/enterprise_server
 curl -sS --max-time 60 -o /tmp/kit-store.json \
   'https://api-overmind.youdao.com/openapi/get/luna/hardware/lobsterai/prod/kit-store'
 node - <<'EOF'
@@ -539,14 +539,14 @@ const rows = kits.map((k) => `  {
     name_en: ${JSON.stringify(k.name.en)}, name_zh: ${JSON.stringify(k.name.zh)},
     description_en: ${JSON.stringify(k.description.en)}, description_zh: ${JSON.stringify(k.description.zh)},
     icon_url: ${JSON.stringify(k.icon)},
-    author: "GenWork",
+    author: "MixCWork",
     version: ${JSON.stringify(k.version)},
     try_asking: ${JSON.stringify(k.tryAsking)},
     skill_list: ${JSON.stringify(k.skills.list)},
     seedZipFile: ${JSON.stringify(`${k.id}.zip`)},
   },`);
 const out = `// Auto-generated from the Youdao kit-store (plan 2026-10-07). Metadata copied
-// verbatim; author is pinned to "GenWork" per product decision. Do not hand-edit.
+// verbatim; author is pinned to "MixCWork" per product decision. Do not hand-edit.
 export interface BuiltinKitDef {
   slug: string; category: string;
   name_en: string; name_zh: string; description_en: string; description_zh: string;
@@ -1545,7 +1545,7 @@ Inside the object (e.g. after `listEnterpriseAgents`):
 
 - [ ] **Step 2: Lint**
 
-Run: `cd /Users/paulwang/work/GenWork && npx eslint --ext ts --max-warnings 0 src/main/auth/enterpriseClient.ts`
+Run: `cd /Users/paulwang/work/MixCWork && npx eslint --ext ts --max-warnings 0 src/main/auth/enterpriseClient.ts`
 Expected: no errors/warnings.
 
 - [ ] **Step 3: Commit**
@@ -1624,7 +1624,7 @@ In `src/renderer/types/electron.d.ts`, inside the `kits` interface (near `fetchS
 
 - [ ] **Step 4: Compile Electron + lint**
 
-Run: `cd /Users/paulwang/work/GenWork && npm run compile:electron && npx eslint --ext ts --max-warnings 0 src/main/ipcHandlers/kits/handlers.ts src/main/preload.ts src/renderer/types/electron.d.ts`
+Run: `cd /Users/paulwang/work/MixCWork && npm run compile:electron && npx eslint --ext ts --max-warnings 0 src/main/ipcHandlers/kits/handlers.ts src/main/preload.ts src/renderer/types/electron.d.ts`
 Expected: compile succeeds, no lint issues.
 
 - [ ] **Step 5: Commit**
@@ -1644,7 +1644,7 @@ git commit -m "feat(desktop): fetch enterprise kits and authed kit download"
 - Modify: `src/renderer/components/kits/KitsManager.tsx`
 
 **Interfaces:**
-- Consumes: `window.electron.kits.fetchEnterpriseStore()` (Task 10), existing `kitService.fetchMarketplaceKits()` (the built-in/local source — the offline `kits:fetchStore` response: GenWork 外观定制 + computer-use), i18n keys.
+- Consumes: `window.electron.kits.fetchEnterpriseStore()` (Task 10), existing `kitService.fetchMarketplaceKits()` (the built-in/local source — the offline `kits:fetchStore` response: MixCWork 外观定制 + computer-use), i18n keys.
 - Produces: `kitService.fetchEnterpriseKits(): Promise<MarketplaceKit[]>` and the 3-tab UI.
 
 - [ ] **Step 1: Add `fetchEnterpriseKits` to the kit service**
@@ -1743,7 +1743,7 @@ const KitTab = {
 
 - [ ] **Step 4: Run kit tests + lint**
 
-Run: `cd /Users/paulwang/work/GenWork && npm test -- kits && npx eslint --ext ts,tsx --max-warnings 0 src/renderer/components/kits/KitsManager.tsx src/renderer/services/kit.ts src/renderer/services/i18n.ts`
+Run: `cd /Users/paulwang/work/MixCWork && npm test -- kits && npx eslint --ext ts,tsx --max-warnings 0 src/renderer/components/kits/KitsManager.tsx src/renderer/services/kit.ts src/renderer/services/i18n.ts`
 Expected: existing kit tests pass (the built-in path is preserved, so `skinPackKitLifecycle.test.ts` is unaffected); no lint issues.
 
 - [ ] **Step 5: Manual verification**
@@ -1751,7 +1751,7 @@ Expected: existing kit tests pass (the built-in path is preserved, so `skinPackK
 Run `npm run electron:dev`. In 专家套件:
 - Tab labels read **企业 | 内置 | 已安装**.
 - 企业 lists the org's authorized kits (the 12 all-company built-ins) from the enterprise server.
-- 内置 still shows GenWork 外观定制 (and computer-use on Windows).
+- 内置 still shows MixCWork 外观定制 (and computer-use on Windows).
 - Installing an 企业 kit downloads via the authed path and appears in 已安装.
 - A non-enterprise (consumer) session shows the 企业 tab empty with `kitEnterpriseEmpty` while 内置 still works.
 

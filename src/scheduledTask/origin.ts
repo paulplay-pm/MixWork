@@ -1,13 +1,13 @@
 import {
   isManagedSessionKey,
-  parseManagedSessionKey,
   parseChannelSessionKey,
+  parseManagedSessionKey,
 } from '../main/libs/openclawChannelSessionSync';
 import {
-  OriginKind,
   BindingKind,
-  DeliveryMode,
   DeliveryChannel,
+  DeliveryMode,
+  OriginKind,
 } from './constants';
 
 // Re-declare origin/binding types here so common/ doesn't depend on renderer/
@@ -45,7 +45,7 @@ export function inferOriginAndBinding(task: InferableTask): {
 } {
   const sk = (task.sessionKey ?? '').trim();
 
-  // 1. Managed session key: "agent:main:genwork:{sessionId}"
+  // 1. Managed session key: "agent:main:mixcwork:{sessionId}"
   if (sk && isManagedSessionKey(sk)) {
     const parsed = parseManagedSessionKey(sk);
     if (parsed) {

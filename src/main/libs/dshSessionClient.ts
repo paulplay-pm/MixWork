@@ -23,7 +23,7 @@ export async function dshRpcCall<T = unknown>(baseUrl: string, method: string, p
   const response = await fetch(`${baseUrl.replace(/\/+$/, '')}/api/${method}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ type: 'client-request', rpcId: `genwork-${Date.now()}-${rpcCounter}`, method, payload }),
+    body: JSON.stringify({ type: 'client-request', rpcId: `mixcwork-${Date.now()}-${rpcCounter}`, method, payload }),
   });
   if (!response.ok) {
     throw new DshRpcError(method, `HTTP ${response.status}`, null);

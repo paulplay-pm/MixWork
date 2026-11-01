@@ -2,7 +2,6 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
-import { GENWORK_TEMP_DIR_NAME } from '../../shared/genwork/constants';
 import {
   HtmlShareSourceType,
   type HtmlShareSourceType as HtmlShareSourceTypeValue,
@@ -26,6 +25,7 @@ import type {
   LibraryRecordCandidatesData,
   LocalArtifactItem,
 } from '../../shared/library/types';
+import { MIXCWORK_TEMP_DIR_NAME } from '../../shared/mixcwork/constants';
 import {
   type LibraryIndexedFile,
   LibraryLocalStore,
@@ -370,7 +370,7 @@ export class LibraryIndexService {
   private isExcludedPath(filePath: string): boolean {
     const normalized = path.normalize(filePath);
     const segments = normalized.split(path.sep);
-    if (segments.includes('node_modules') || segments.includes(GENWORK_TEMP_DIR_NAME)) return true;
+    if (segments.includes('node_modules') || segments.includes(MIXCWORK_TEMP_DIR_NAME)) return true;
     const libraryCachePath = path.join(this.userDataPath, 'library');
     return normalized === libraryCachePath || normalized.startsWith(`${libraryCachePath}${path.sep}`);
   }

@@ -196,6 +196,43 @@ describe('routes/enterpriseModels', () => {
     expect(payload.model_count).toBe(2);
   });
 
+  test('媒体模型和未标类型的模型都不在会话模型清单里', async () => {
+    const k = await providerKeyVault.add({
+      orgId: 'o1',
+      provider: 'minimax',
+      plaintextKey: 'sk-A',
+      createdBy: 'root',
+    });
+    await modelCatalog.add({
+      orgId: 'o1', providerKeyId: k.id, provider: 'minimax', model: 'image-01',
+      types: ['image-gen'],
+    });
+    await modelCatalog.add({
+      orgId: 'o1', providerKeyId: k.id, provider: 'minimax', model: 'video-01',
+      types: ['video-gen'],
+    });
+    await modelCatalog.add({
+      orgId: 'o1', providerKeyId: k.id, provider: 'minimax', model: 'untyped',
+      types: [],
+    });
+    await modelCatalog.add({
+      orgId: 'o1', providerKeyId: k.id, provider: 'minimax', model: 'llama-3',
+      types: ['chat'],
+    });
+    const a = buildApp();
+    const tok = await tokenFor('o1', 'root');
+    const res = await a.request('/enterprise-models', {
+      headers: { authorization: `Bearer ${tok}` },
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { models: Array<{ model: string }> };
+    const names = body.models.map((m) => m.model);
+    expect(names).not.toContain('image-01');
+    expect(names).not.toContain('video-01');
+    expect(names).not.toContain('untyped');
+    expect(names).toContain('llama-3');
+  });
+
   test('response has correct capability fields', async () => {
     const k = await providerKeyVault.add({
       orgId: 'o1',

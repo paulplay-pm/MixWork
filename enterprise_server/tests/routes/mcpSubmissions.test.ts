@@ -55,8 +55,9 @@ function submissionBody(overrides: Record<string, unknown> = {}): Record<string,
     nameEn: 'Jira',
     nameZh: 'Jira 连接器',
     version: '1.0.0',
-    authMode: 'shared-key',
-    authConfig: { apiKey: PLAINTEXT_KEY },
+    // A member-legal mode: `shared-key` / `client-creds` are admin-only.
+    authMode: 'user-key',
+    authConfig: { apiKeyHeaderName: 'X-Api-Key' },
     ...overrides,
   };
 }
@@ -126,7 +127,7 @@ describe('mcp connector submissions', () => {
     expect(row.rows[0].version).toBe('1.0.0');
     expect(row.rows[0].cfg.serverKey).toBe('jira-mcp');
     // The cfg is stored exactly as submitted — no encryption at submit time.
-    expect(row.rows[0].cfg.authConfig).toEqual({ apiKey: PLAINTEXT_KEY });
+    expect(row.rows[0].cfg.authConfig).toEqual({ apiKeyHeaderName: 'X-Api-Key' });
 
     const audit = await testPool.query<{ user_id: string | null; target_id: string | null }>(
       `SELECT user_id, target_id FROM audit_events
@@ -151,9 +152,12 @@ describe('mcp connector submissions', () => {
     expect(sse.status).toBe(400);
     expect(await sse.json()).toEqual({ error: 'sse_oauth_not_supported' });
 
-    const missing = await submit(tok, submissionBody({ authConfig: {} }));
+    const missing = await submit(
+      tok,
+      submissionBody({ authMode: 'sso', authConfig: {} }),
+    );
     expect(missing.status).toBe(400);
-    expect(await missing.json()).toEqual({ error: 'missing_auth_field', field: 'apiKey' });
+    expect(await missing.json()).toEqual({ error: 'missing_auth_field', field: 'ssoClientId' });
 
     const badKey = await submit(tok, submissionBody({ serverKey: 'Bad_Key' }));
     expect(badKey.status).toBe(400);
@@ -170,7 +174,11 @@ describe('mcp connector submissions', () => {
     await enableSubmissions('o1');
     const member = await memberTok();
     const admin = await superAdminTok('o1');
-    const { id } = (await (await submit(member, submissionBody())).json()) as { id: string };
+    // A legacy-shaped payload carrying a plaintext secret: the approval path
+    // must encrypt it and mask it in the admin view, whatever the mode.
+    const { id } = (await (
+      await submit(member, submissionBody({ authConfig: { apiKey: PLAINTEXT_KEY } }))
+    ).json()) as { id: string };
 
     const approve = await post(admin, `/admin/mcp-connectors/submissions/${id}/approve`);
     expect(approve.status).toBe(200);
@@ -461,5 +469,28 @@ describe('mcp connector submissions', () => {
     const anon = await app.request('/admin/mcp-connectors/submissions?orgId=o1');
     expect(anon.status).toBe(401);
     expect(await anon.json()).toEqual({ error: 'unauthorized' });
+  });
+
+  test('a member cannot propose an org-credential mode', async () => {
+    await seedOrgs();
+    await enableSubmissions('o1');
+    const tok = await memberTok();
+
+    for (const mode of ['shared-key', 'client-creds'] as const) {
+      const res = await submit(
+        tok,
+        submissionBody({
+          authMode: mode,
+          authConfig: { apiKey: PLAINTEXT_KEY, clientId: 'cid', clientSecret: 'cs' },
+        }),
+      );
+      expect(res.status).toBe(400);
+      expect(await res.json()).toEqual({ error: 'org_credential_mode_not_submittable' });
+    }
+
+    const r = await testPool.query<{ n: number }>(
+      'SELECT count(*)::int AS n FROM mcp_connector_submissions',
+    );
+    expect(r.rows[0].n).toBe(0);
   });
 });

@@ -4,12 +4,12 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 
-import type { GenWorkStore, PluginSource } from '../genworkStore';
 import { resolveNodePackageCliCommand } from '../libs/nodeRuntime';
 import {
   findThirdPartyExtensionsDir,
   listBundledOpenClawExtensionManifests,
 } from '../libs/openclawLocalExtensions';
+import type { MixCWorkStore, PluginSource } from '../mixcworkStore';
 import {
   cleanupPluginInstallStagingDir,
   createPluginInstallStagingDir,
@@ -215,9 +215,9 @@ function generateHintsFromSchema(
 }
 
 export class PluginManager {
-  private store: GenWorkStore;
+  private store: MixCWorkStore;
 
-  constructor(store: GenWorkStore) {
+  constructor(store: MixCWorkStore) {
     this.store = store;
   }
 
@@ -458,7 +458,7 @@ export class PluginManager {
   }
 
   private async packNpmPlugin(params: PluginInstallParams, onLog?: PluginInstallLogCallback): Promise<string> {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-plugin-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-plugin-'));
     const spec = params.version ? `${params.spec}@${params.version}` : params.spec;
     const npm = resolveNpmCommand();
     const args = [...npm.baseArgs, 'pack', spec, '--pack-destination', tmpDir];
@@ -491,7 +491,7 @@ export class PluginManager {
   }
 
   private async packGitPlugin(params: PluginInstallParams, onLog?: PluginInstallLogCallback): Promise<string> {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-plugin-git-'));
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-plugin-git-'));
     const sourceDir = path.join(tmpDir, 'source');
 
     const gitUrl = params.spec;
@@ -618,7 +618,7 @@ export class PluginManager {
 
   /**
    * Sync plugins from OpenClaw's extensions directories and config into the
-   * local SQLite store. Discovers plugins installed outside of GenWork
+   * local SQLite store. Discovers plugins installed outside of MixCWork
    * (via AI conversation, CLI, or OpenClaw Web UI) and adds them so they
    * appear in the plugin management UI.
    */
@@ -866,10 +866,10 @@ const INTERNAL_PLUGIN_IDS = [
   'openrouter',
   'ollama',
   'lm-studio',
-  'genwork-server',
+  'mixcwork-server',
   'github-copilot',
-  'genwork-copilot',
-  'genwork',
+  'mixcwork-copilot',
+  'mixcwork',
   'kimi',
 
   // Aliases / legacy IDs for preinstalled channel plugins.

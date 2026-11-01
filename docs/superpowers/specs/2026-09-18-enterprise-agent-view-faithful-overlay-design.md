@@ -58,7 +58,7 @@ which enterprise agents never write, so it renders empty.
 
 - **`agents` table:** add `about_you TEXT NOT NULL DEFAULT ''` (SQLite +
   migration + CREATE TABLE), mirroring the `server_im_channels` pattern.
-- **`genworkStore`:** add `aboutYou: string` to `Agent`, `CreateAgentRequest`,
+- **`mixcworkStore`:** add `aboutYou: string` to `Agent`, `CreateAgentRequest`,
   `UpdateAgentRequest`; parse in `mapAgentRow`; write in `createAgent`/
   `updateAgent`. The enterprise scalar guard must **not** block
   `about_you` on the authoritative sync write (the sync uses

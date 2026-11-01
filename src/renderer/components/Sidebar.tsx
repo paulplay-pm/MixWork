@@ -4,14 +4,14 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSelector } from 'react-redux';
 
 import { agentService } from '../services/agent';
-import { genworkService } from '../services/genwork';
 import { i18nService } from '../services/i18n';
+import { mixcworkService } from '../services/mixcwork';
 import { RootState } from '../store';
 import {
   selectCoworkSessions,
   selectCurrentSessionId,
 } from '../store/selectors/coworkSelectors';
-import type { GenWorkSessionSummary } from '../types/genwork';
+import type { MixCWorkSessionSummary } from '../types/mixcwork';
 import { getAgentDisplayNameById } from '../utils/agentDisplay';
 import {
   type AgentSidebarBatchItem,
@@ -23,12 +23,6 @@ import SidebarTaskFilterButton, { SIDEBAR_TASK_FILTER_ENABLED } from './agentSid
 import SidebarTaskSearchButton from './agentSidebar/SidebarTaskSearchButton';
 import Modal from './common/Modal';
 import EnterpriseMtAccountMenu from './EnterpriseMtAccountMenu';
-import {
-  type CoworkTaskSearchRequestEventDetail,
-  CoworkTaskSearchRequestSource,
-  CoworkUiEvent,
-} from './genwork/constants';
-import CoworkSearchModal from './genwork/CoworkSearchModal';
 import Cog6ToothIcon from './icons/Cog6ToothIcon';
 import ComposeIcon from './icons/ComposeIcon';
 import SidebarAutomationIcon from './icons/SidebarAutomationIcon';
@@ -37,6 +31,12 @@ import SidebarLibraryIcon from './icons/SidebarLibraryIcon';
 import SidebarToggleIcon from './icons/SidebarToggleIcon';
 import SkillIcon from './icons/SkillIcon';
 import TrashIcon from './icons/TrashIcon';
+import {
+  type CoworkTaskSearchRequestEventDetail,
+  CoworkTaskSearchRequestSource,
+  CoworkUiEvent,
+} from './mixcwork/constants';
+import CoworkSearchModal from './mixcwork/CoworkSearchModal';
 
 interface SidebarProps {
   onShowSettings: () => void;
@@ -277,17 +277,17 @@ const Sidebar: React.FC<SidebarProps> = ({
     setShowBatchDeleteConfirm(false);
   }, [isCollapsed]);
 
-  const handleSelectSession = async (session: GenWorkSessionSummary) => {
+  const handleSelectSession = async (session: MixCWorkSessionSummary) => {
     const agentId = session.agentId?.trim() || AgentId.Main;
     try {
       if (agentId !== currentAgentId) {
         agentService.switchAgent(agentId, { targetSessionId: session.id });
-        await genworkService.loadSessions(agentId);
+        await mixcworkService.loadSessions(agentId);
       }
       onShowCowork();
-      await genworkService.loadSession(session.id);
+      await mixcworkService.loadSession(session.id);
     } finally {
-      genworkService.finishSessionNavigation(session.id);
+      mixcworkService.finishSessionNavigation(session.id);
     }
   };
 
@@ -432,7 +432,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
     let deletedSessions = false;
     if (sessionIds.length > 0) {
-      deletedSessions = await genworkService.deleteSessions(sessionIds);
+      deletedSessions = await mixcworkService.deleteSessions(sessionIds);
     }
 
     if (!deletedSessions) {
@@ -730,7 +730,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <label className="inline-flex h-7 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-1.5 text-[length:var(--genwork-text-sidebarCompact)] font-normal text-foreground transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
+            <label className="inline-flex h-7 min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-md px-1.5 text-[length:var(--mixcwork-text-sidebarCompact)] font-normal text-foreground transition-colors hover:bg-black/[0.03] dark:hover:bg-white/[0.04]">
               <input
                 type="checkbox"
                 checked={isBatchSelectAllChecked}

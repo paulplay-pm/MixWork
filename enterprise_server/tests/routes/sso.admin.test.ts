@@ -10,7 +10,6 @@
 import '../helpers/setupEnv';
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 vi.mock('../../src/db/pool', async () => {
@@ -22,7 +21,7 @@ import { Hono } from 'hono';
 import { signToken } from '../../src/auth/jwt';
 import { roleResolver } from '../../src/auth/roleResolver';
 import { resetSchema, runMigrations, testPool } from '../../src/db/testDb';
-import { ssoLogoUploadDir } from '../../src/lib/stateDir';
+import { ssoLogoFile, ssoLogoUploadDir } from '../../src/lib/stateDir';
 import { ssoRoutes } from '../../src/routes/sso';
 import { ssoLogoUploadRoutes } from '../../src/routes/ssoLogoUpload';
 
@@ -295,8 +294,8 @@ describe('routes/sso — admin CRUD', () => {
        VALUES ('c1','o1','Feishu','feishu','oidc',true,'/sso-logos/uploads/c1.png')`
     );
     // Seed the on-disk file so the delete actually has something to remove.
-    const dir = ssoLogoUploadDir('c1');
-    const file = join(dir, 'c1.png');
+    const dir = ssoLogoUploadDir();
+    const file = ssoLogoFile('c1', '.png');
     mkdirSync(dir, { recursive: true });
     writeFileSync(file, TINY_PNG);
     const a = buildApp();

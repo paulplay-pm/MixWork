@@ -1,5 +1,6 @@
 import '../helpers/setupEnv';
-import { describe, expect, test, beforeEach, vi } from 'vitest';
+
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 vi.mock('../../src/db/pool', async () => {
   const td = await import('../../src/db/testDb');
@@ -7,9 +8,10 @@ vi.mock('../../src/db/pool', async () => {
 });
 
 import { Hono } from 'hono';
-import { resetSchema, runMigrations } from '../../src/db/testDb';
-import { requireCapability, requireSuperAdmin } from '../../src/auth/middleware';
+
 import { signToken } from '../../src/auth/jwt';
+import { requireCapability, requireSuperAdmin } from '../../src/auth/middleware';
+import { resetSchema, runMigrations } from '../../src/db/testDb';
 
 function buildApp(role: string, isSuperAdmin = false): Hono {
   const app = new Hono();

@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { z, ZodError } from 'zod';
-import { requireAuth } from '../auth/middleware';
-import { pool } from '../db/pool';
-import { verifyPassword, hashPassword } from '../auth/password';
+
 import { auditStore } from '../audit/auditStore';
+import { requireAuth } from '../auth/middleware';
+import { hashPassword,verifyPassword } from '../auth/password';
+import { pool } from '../db/pool';
 import { AuditAction } from '../shared/enterpriseServerConstants';
 
 export const changePasswordRoutes = new Hono();

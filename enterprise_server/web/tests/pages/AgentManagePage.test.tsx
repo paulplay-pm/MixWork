@@ -87,7 +87,8 @@ function reviewerAgent(over: Record<string, unknown> = {}): Record<string, unkno
   return {
     agentId: 'agent_1', name: 'Reviewer', description: 'd', identity: '', systemPrompt: '',
     model: 'gpt-5', thinkingLevel: '', icon: '', skillIds: ['s1', 's2'], subagentAllowAgentIds: ['sub1'],
-    allowedRoles: ['org_admin', 'agent_admin'], enabled: true, aboutYou: '', iconColor: 0, ...over,
+    scope: { allCompany: false, deptIds: ['d1', 'd2'], userIds: [] },
+    enabled: true, aboutYou: '', iconColor: 0, ...over,
   };
 }
 
@@ -141,11 +142,11 @@ describe('AgentManagePage', () => {
     expect(await screen.findByText('myorg/claude-opus')).toBeInTheDocument();
   });
 
-  test('card shows count chips for model / roles / skills / subagents', async () => {
-    seedAgents([reviewerAgent()]); // model gpt-5, 2 roles, 2 skills, 1 subagent
+  test('card shows count chips for model / scope / skills / subagents', async () => {
+    seedAgents([reviewerAgent()]); // model gpt-5, 2 granted depts, 2 skills, 1 subagent
     renderPage();
     expect(await screen.findByText('gpt-5')).toBeInTheDocument();
-    expect(await screen.findByText('角色 2')).toBeInTheDocument();
+    expect(await screen.findByText('2 个部门')).toBeInTheDocument();
     expect(await screen.findByText('技能 2')).toBeInTheDocument();
     expect(await screen.findByText('子代理 1')).toBeInTheDocument();
   });

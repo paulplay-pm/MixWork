@@ -63,7 +63,8 @@ export const BUILTIN_PROVIDERS: BuiltinProviderDef[] = [
 // so the desktop `GET /admin/catalog` contract keeps a valid single value.
 const LEGACY_TYPE: Record<string, string> = {
   'chat': 'chat', 'vision': 'vision', 'reasoning': 'reasoning',
-  'image-gen': 'image', 'embedding': 'embedding', 'rerank': 'embedding',
+  'image-gen': 'image', 'video-gen': 'image',
+  'embedding': 'embedding', 'rerank': 'embedding',
   'asr': 'audio', 'tts': 'audio',
 };
 
@@ -71,20 +72,50 @@ export function legacyTypeFor(types: string[]): string {
   return LEGACY_TYPE[types[0]] ?? 'chat';
 }
 
+/**
+ * The card a built-in provider's key belongs to: the org's DEFAULT card for
+ * that vendor (the one whose PREFIX is the slug itself).
+ *
+ * Created as `builtin:card:<orgId>:<slug>` when the vendor has no card yet.
+ * When it already has one — an org seeded before the card migration owns one
+ * made by the 058 backfill — that card is reused: the prefix is unique per
+ * org, so a second card with the same prefix would be rejected.
+ */
+async function builtinCardId(orgId: string, slug: string): Promise<string> {
+  const id = `builtin:card:${orgId}:${slug}`;
+  // `ON CONFLICT DO NOTHING` without a target covers BOTH unique constraints
+  // (the id and the org+prefix index), so a concurrent insert cannot fail
+  // the seed.
+  await pool.query(
+    `INSERT INTO provider_cards(id, org_id, provider, label, created_by, created_at)
+     VALUES ($1, $2, $3, NULL, NULL, now())
+     ON CONFLICT DO NOTHING`,
+    [id, orgId, slug],
+  );
+  const r = await pool.query<{ id: string }>(
+    `SELECT id FROM provider_cards
+      WHERE org_id = $1 AND provider = $2 AND COALESCE(label, provider) = $2
+      LIMIT 1`,
+    [orgId, slug],
+  );
+  return r.rows[0]?.id ?? id;
+}
+
 /** Idempotently seed the 9 built-in providers + models for one org. */
 export async function seedBuiltinProviders(orgId: string): Promise<void> {
   for (const p of BUILTIN_PROVIDERS) {
     const pkId = `builtin:${orgId}:${p.slug}`;
+    const cardId = await builtinCardId(orgId, p.slug);
     // Built-ins seed without an API Key, so they start DISABLED (未启用): the
     // operator must add a key and enable the provider before its models are
     // offered to users (a keyless provider can't authenticate). Models are
     // still seeded so the catalog is populated and can be fetched/enabled once
     // a key is set.
     await pool.query(
-      `INSERT INTO provider_keys(id, org_id, provider, endpoint, is_builtin, protocol, enabled)
-       VALUES ($1,$2,$3,$4, true, $5, false)
+      `INSERT INTO provider_keys(id, org_id, provider, endpoint, is_builtin, protocol, enabled, card_id)
+       VALUES ($1,$2,$3,$4, true, $5, false, $6)
        ON CONFLICT (org_id, provider) WHERE is_builtin DO NOTHING`,
-      [pkId, orgId, p.slug, p.endpoint, p.protocol],
+      [pkId, orgId, p.slug, p.endpoint, p.protocol, cardId],
     );
     for (const m of p.models) {
       const mid = `builtin:${orgId}:${p.slug}:${m.id}`;

@@ -26,10 +26,14 @@ import {
 } from '../../../shared/enterpriseAccount/proxyWireSignals';
 import { resolveEnterpriseQuotaError } from '../../../shared/enterpriseAccount/quotaError';
 import type { EnterpriseQuotaErrorDetails } from '../../../shared/enterpriseAccount/types';
+import type {
+  KitReference,
+  ResolvedKitCapabilities,
+} from '../../../shared/kit/constants';
 import {
   buildBrowserAnnotationPromptSection,
   type CoworkBrowserAnnotationMessageBatch,
-} from '../../../shared/genwork/browserAnnotations';
+} from '../../../shared/mixcwork/browserAnnotations';
 import {
   COWORK_BTW_IDENTIFIER_MAX_CHARS,
   COWORK_BTW_RESULT_MAX_CHARS,
@@ -38,54 +42,50 @@ import {
   CoworkBtwStatus,
   type CoworkBtwSubmitResponse,
   normalizeCoworkBtwQuestion,
-} from '../../../shared/genwork/btw';
+} from '../../../shared/mixcwork/btw';
 import {
-  GenWorkIpcChannel,
-  type GenWorkSessionsChangedPayload,
-} from '../../../shared/genwork/constants';
+  MixCWorkIpcChannel,
+  type MixCWorkSessionsChangedPayload,
+} from '../../../shared/mixcwork/constants';
 import {
   buildCoworkErrorDetail,
   type CoworkErrorDetail,
-} from '../../../shared/genwork/errorDetail';
+} from '../../../shared/mixcwork/errorDetail';
 import {
   type CoworkGoal,
   normalizeCoworkGoal,
-} from '../../../shared/genwork/goal';
+} from '../../../shared/mixcwork/goal';
 import {
   buildCoworkImageAttachmentPreviews,
   formatCoworkImageAttachmentLimit,
   validateCoworkImageAttachmentSize,
-} from '../../../shared/genwork/imageAttachments';
-import { parseOpenClawCronSessionKey } from '../../../shared/genwork/openclawCronSessionKey';
+} from '../../../shared/mixcwork/imageAttachments';
+import { parseOpenClawCronSessionKey } from '../../../shared/mixcwork/openclawCronSessionKey';
 import {
   containsPlanModePrompt,
   isPlanImplementationApproval,
   PLAN_MODE_EXECUTION_OVERRIDE_MARKER,
-} from '../../../shared/genwork/planMode';
+} from '../../../shared/mixcwork/planMode';
 import {
   buildSelectedTextPromptSection,
   type CoworkSelectedTextSnippet,
-} from '../../../shared/genwork/selectedText';
+} from '../../../shared/mixcwork/selectedText';
 import {
   CoworkSteerRejectReason,
   type CoworkSteerResponse,
   CoworkSteerStatus,
-} from '../../../shared/genwork/steer';
-import { stripNullChars } from '../../../shared/genwork/text';
-import type {
-  KitReference,
-  ResolvedKitCapabilities,
-} from '../../../shared/kit/constants';
+} from '../../../shared/mixcwork/steer';
+import { stripNullChars } from '../../../shared/mixcwork/text';
 import { OpenClawGatewayFailureKind } from '../../../shared/openclawEngine/constants';
 import { OpenClawTranscriptSafetyStatus } from '../../../shared/openclawTranscript/constants';
 import { ProviderName } from '../../../shared/providers';
-import type { Agent, GenWorkExecutionMode, GenWorkMessage, GenWorkMessageMetadata, GenWorkSession, GenWorkSessionStatus, GenWorkStore } from '../../genworkStore';
 import { t } from '../../i18n';
 import { MediaGenerationTool } from '../../mediaGenerationPolicy';
+import type { Agent, MixCWorkExecutionMode, MixCWorkMessage, MixCWorkMessageMetadata, MixCWorkSession, MixCWorkSessionStatus, MixCWorkStore } from '../../mixcworkStore';
 import type { SubagentMessageStore } from '../../subagentMessageStore';
 import type { SubagentRunStore } from '../../subagentRunStore';
 import { consumeRecentEnterpriseQuotaError } from '../enterpriseQuotaSignal';
-import { setCoworkProxySessionId } from '../genworkOpenAICompatProxy';
+import { setCoworkProxySessionId } from '../mixcworkOpenAICompatProxy';
 import { extractOpenClawAssistantStreamParts,extractOpenClawAssistantStreamText } from '../openclawAssistantText';
 import {
   buildManagedSessionKey,
@@ -200,7 +200,7 @@ import type {
   CoworkRuntime,
   CoworkRuntimeEvents,
   CoworkStartOptions,
-  GenWorkSessionPatchResult,
+  MixCWorkSessionPatchResult,
   PermissionResult,
 } from './types';
 
@@ -479,14 +479,14 @@ type OpenClawRuntimeAdapterOptions = {
     platform: string;
   }) => void;
   onGatewayClientReady?: () => void;
-  // Fired when a genwork-server turn fails with an enterprise-JWT auth error
+  // Fired when a mixcwork-server turn fails with an enterprise-JWT auth error
   // (a 401 on the enterprise /proxy path whose stored JWT was rejected). The
   // host owns the decision — it checks whether the session JWT is still
   // refreshable, triggers a single-flight refresh, and returns the localized
   // message to surface (typically "refreshed — please retry"), or null to keep
   // the generic login-expired copy.
   onEnterpriseLoginExpired?: () => string | null;
-  // Fired when a genwork-server turn fails with a membership-revocation signal
+  // Fired when a mixcwork-server turn fails with a membership-revocation signal
   // (the enterprise /proxy 401 { error: 'not_member' } — the member was
   // disabled/removed after a validly-signed JWT was issued). The host clears the
   // self-hosted session and asks the renderer to return to the login gate. The
@@ -861,7 +861,7 @@ function isPlanModeSystemPrompt(systemPrompt: string): boolean {
     && !systemPrompt.includes(PLAN_MODE_EXECUTION_OVERRIDE_MARKER);
 }
 
-function sessionHasProposedPlan(messages: GenWorkMessage[]): boolean {
+function sessionHasProposedPlan(messages: MixCWorkMessage[]): boolean {
   return messages.some((message) => (
     message.type === 'assistant'
     && /<proposed_plan\b[^>]*>[\s\S]*<\/proposed_plan\s*>/i.test(message.content)
@@ -1447,7 +1447,7 @@ const normalizeEntryText = (
 };
 
 const buildLocalReconciledEntries = (
-  messages: ReadonlyArray<GenWorkMessage>,
+  messages: ReadonlyArray<MixCWorkMessage>,
   platformFlags: PlatformFlags,
 ): ReconciledConversationEntry[] => {
   const entries: ReconciledConversationEntry[] = [];
@@ -1642,7 +1642,7 @@ function classifyOpenClawSafeRuntimeErrorMetadata(
   if (!metadata) return null;
 
   if (
-    metadata.provider?.trim() === ProviderName.GenworkServer
+    metadata.provider?.trim() === ProviderName.MixcworkServer
     && metadata.httpCode?.trim() === '403'
   ) {
     return CoworkErrorI18nKey.ModelAccessDenied;
@@ -1652,7 +1652,7 @@ function classifyOpenClawSafeRuntimeErrorMetadata(
   // contains an inner 503 capacity failure. OpenClaw can classify that text as
   // rate_limit because it also says "too many requests" or "throttled". Let
   // the high-confidence capacity signal in the preserved raw preview win after
-  // retaining GenWork's explicit HTTP 403 access-denial rule above.
+  // retaining MixCWork's explicit HTTP 403 access-denial rule above.
   const rawErrorClassifiedKey = metadata.rawErrorPreview
     ? classifyErrorKey(metadata.rawErrorPreview)
     : null;
@@ -1684,10 +1684,10 @@ function classifyOpenClawSafeRuntimeErrorMetadata(
   return null;
 }
 
-function isGenWorkLoginExpiredMetadata(
+function isMixCWorkLoginExpiredMetadata(
   metadata: OpenClawSafeRuntimeErrorMetadata | undefined,
 ): boolean {
-  if (metadata?.provider?.trim() !== ProviderName.GenworkServer) return false;
+  if (metadata?.provider?.trim() !== ProviderName.MixcworkServer) return false;
   if (metadata.httpCode?.trim() === '403') return false;
   if (metadata.providerRuntimeFailureKind?.trim() === 'auth_scope') return false;
   return metadata.httpCode?.trim() === '401'
@@ -1711,7 +1711,7 @@ function extractEnterpriseProxySignal(
   // Only the self-hosted enterprise proxy emits these bodies; a different
   // provider that happens to return a body containing a bare
   // `{"error":"quota_exceeded"}` string must not be mistaken for it.
-  if (metadata.provider?.trim() !== ProviderName.GenworkServer) return null;
+  if (metadata.provider?.trim() !== ProviderName.MixcworkServer) return null;
   const candidates = [
     metadata.rawErrorPreview,
     metadata.providerErrorMessagePreview,
@@ -1782,13 +1782,13 @@ export function resolveOpenClawRuntimeError(
 
   if (classifiedKey) {
     if (
-      isGenWorkLoginExpiredMetadata(metadata)
+      isMixCWorkLoginExpiredMetadata(metadata)
       && (
         classifiedKey === CoworkErrorI18nKey.AuthInvalid
         || classifiedKey === CoworkErrorI18nKey.OAuthInvalid
       )
     ) {
-      return buildResolvedRuntimeError(t(CoworkErrorI18nKey.GenWorkLoginExpired));
+      return buildResolvedRuntimeError(t(CoworkErrorI18nKey.MixCWorkLoginExpired));
     }
     if (classifiedKey === CoworkErrorI18nKey.QuotaExhausted) {
       const recentQuotaError = consumeRecentEnterpriseQuotaError();
@@ -1807,9 +1807,9 @@ export function resolveOpenClawRuntimeError(
   }
 
   if (isOpenClawGenericLlmRequestFailed(normalized)) {
-    if (isGenWorkLoginExpiredMetadata(metadata)) {
+    if (isMixCWorkLoginExpiredMetadata(metadata)) {
       consumeRecentEnterpriseQuotaError();
-      return buildResolvedRuntimeError(t(CoworkErrorI18nKey.GenWorkLoginExpired));
+      return buildResolvedRuntimeError(t(CoworkErrorI18nKey.MixCWorkLoginExpired));
     }
     if (metadataClassifiedKey) {
       const recentQuotaError = consumeRecentEnterpriseQuotaError();
@@ -1849,7 +1849,7 @@ export function resolveOpenClawRuntimeError(
 export type OpenClawRuntimeErrorDetailOptions = {
   /** Turn model reference ("providerId/modelId") used when gateway metadata lacks provider/model. */
   fallbackModelRef?: string;
-  /** Classifies an OpenClaw provider id back to its GenWork Settings entry. */
+  /** Classifies an OpenClaw provider id back to its MixCWork Settings entry. */
   resolveModelSource?: (openclawProviderId: string) => OpenClawProviderModelSource | undefined;
 };
 
@@ -1890,7 +1890,7 @@ export function buildOpenClawRuntimeErrorDetail(
 
 export const buildRuntimeErrorMetadata = (
   resolvedError: ResolvedOpenClawRuntimeError & { errorDetail?: CoworkErrorDetail },
-): GenWorkMessageMetadata => ({
+): MixCWorkMessageMetadata => ({
   error: resolvedError.message,
   ...(resolvedError.errorDetail ? { errorDetail: resolvedError.errorDetail } : {}),
   ...(resolvedError.enterpriseQuotaError
@@ -2356,10 +2356,10 @@ const buildMediaReferencePromptSection = (mediaReferences?: CoworkMediaAttachmen
   if (refs.length === 0) return '';
 
   const lines = [
-    '[GenWork media reference mapping]',
+    '[MixCWork media reference mapping]',
     'The current user request contains explicit @ media tokens. Treat these mappings as authoritative and do not guess which uploaded attachment a token means.',
-    'When calling genwork_image_generate or genwork_video_generate, pass mapped file paths or URLs as tool arguments. Do not pass @ media tokens as image, images, firstFrame, lastFrame, referenceImages, media.url, video, or videos values.',
-    'For genwork_image_generate, prefer image with the mapped path for one referenced image and images for multiple referenced images.',
+    'When calling mixcwork_image_generate or mixcwork_video_generate, pass mapped file paths or URLs as tool arguments. Do not pass @ media tokens as image, images, firstFrame, lastFrame, referenceImages, media.url, video, or videos values.',
+    'For mixcwork_image_generate, prefer image with the mapped path for one referenced image and images for multiple referenced images.',
   ];
 
   for (const ref of refs) {
@@ -2371,7 +2371,7 @@ const buildMediaReferencePromptSection = (mediaReferences?: CoworkMediaAttachmen
     const locations = [
       ref.localPath ? `localPath "${sanitizeMediaReferenceText(ref.localPath)}"` : '',
       ref.remoteUrl ? `remoteUrl "${sanitizeMediaReferenceText(ref.remoteUrl)}"` : '',
-      !ref.localPath && !ref.remoteUrl && ref.dataUrl ? 'dataUrl fallback available through GenWork host' : '',
+      !ref.localPath && !ref.remoteUrl && ref.dataUrl ? 'dataUrl fallback available through MixCWork host' : '',
     ].filter(Boolean);
     const locationText = locations.length > 0 ? `, ${locations.join(', ')}` : '';
     lines.push(`- ${ref.token}: ${mediaType} attachment #${ref.index}, file "${sanitizeMediaReferenceText(ref.fileName)}", MIME ${sanitizeMediaReferenceText(ref.mimeType)}${locationText}.`);
@@ -2460,7 +2460,7 @@ const formatTimingOffset = (baseStartedAtMs: number, endedAtMs?: number): string
 };
 
 export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntime {
-  private readonly store: GenWorkStore;
+  private readonly store: MixCWorkStore;
   private readonly engineManager: OpenClawEngineManager;
   private readonly options: OpenClawRuntimeAdapterOptions;
   private readonly activeTurns = new Map<string, ActiveTurn>();
@@ -2603,7 +2603,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   /**
    * Server-side agent timeout in seconds (mirrors agents.defaults.timeoutSeconds in openclaw config).
    * Used to set a client-side fallback timer that fires slightly after the server timeout,
-   * so GenWork can recover even when the gateway fails to deliver the abort event.
+   * so MixCWork can recover even when the gateway fails to deliver the abort event.
    */
   agentTimeoutSeconds = OPENCLAW_AGENT_TIMEOUT_SECONDS;
   private static readonly CLIENT_TIMEOUT_GRACE_MS = 30_000;
@@ -2634,7 +2634,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   private static readonly SESSION_PATCH_SEND_TIMEOUT_MS = 90_000;
   private static readonly SESSION_PATCH_SLOW_LOG_MS = 5_000;
 
-  private emitSessionStatus(sessionId: string, status: GenWorkSessionStatus): void {
+  private emitSessionStatus(sessionId: string, status: MixCWorkSessionStatus): void {
     this.emit('sessionStatus', sessionId, status);
   }
 
@@ -3658,7 +3658,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   }
 
   constructor(
-    store: GenWorkStore,
+    store: MixCWorkStore,
     engineManager: OpenClawEngineManager,
     options: OpenClawRuntimeAdapterOptions = {},
     subagentRunStore?: SubagentRunStore,
@@ -3762,15 +3762,15 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     ));
     if (normalizedSessionIds.length === 0) return;
 
-    const payload: GenWorkSessionsChangedPayload = { sessionIds: normalizedSessionIds };
+    const payload: MixCWorkSessionsChangedPayload = { sessionIds: normalizedSessionIds };
     for (const win of BrowserWindow.getAllWindows()) {
       if (!win.isDestroyed()) {
-        win.webContents.send(GenWorkIpcChannel.SessionsChanged, payload);
+        win.webContents.send(MixCWorkIpcChannel.SessionsChanged, payload);
       }
     }
   }
 
-  private resolveAgentDefaultModelRef(session: GenWorkSession): string {
+  private resolveAgentDefaultModelRef(session: MixCWorkSession): string {
     const agent = this.store.getAgent(session.agentId || 'main') as Agent | null;
     const rawModel = agent?.model?.trim() ?? '';
     return rawModel ? this.normalizeModelRef(rawModel) : '';
@@ -3779,7 +3779,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   private notifySessionModelOverrideChanged(sessionId: string, modelOverride: string): void {
     for (const win of BrowserWindow.getAllWindows()) {
       if (!win.isDestroyed()) {
-        win.webContents.send(GenWorkIpcChannel.SessionModelOverrideChanged, {
+        win.webContents.send(MixCWorkIpcChannel.SessionModelOverrideChanged, {
           sessionId,
           modelOverride,
         });
@@ -3944,14 +3944,14 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
 
   /**
    * Fetch session history from OpenClaw by sessionKey and return a transient
-   * GenWorkSession object (not persisted to local database).
+   * MixCWorkSession object (not persisted to local database).
    * First checks if a local session already exists via channel sync.
-   * Returns a GenWorkSession if successful, or null.
+   * Returns a MixCWorkSession if successful, or null.
    */
   async fetchSessionByKey(
     sessionKey: string,
     options?: { sessionId?: string | null },
-  ): Promise<GenWorkSession | null> {
+  ): Promise<MixCWorkSession | null> {
     const managedSession = parseManagedSessionKey(sessionKey);
     if (managedSession) {
       return this.store.getSession(managedSession.sessionId) ?? null;
@@ -3990,7 +3990,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       }
 
       const now = Date.now();
-      const messages: GenWorkMessage[] = [];
+      const messages: MixCWorkMessage[] = [];
       let msgIndex = 0;
 
       for (const entry of extractGatewayHistoryEntries(history.messages)) {
@@ -4014,12 +4014,12 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
         title: sessionKey.split(':').pop() || 'Cron Session',
         openclawSessionId: null,
         scheduledTaskId: null,
-        status: 'completed' as GenWorkSessionStatus,
+        status: 'completed' as MixCWorkSessionStatus,
         pinned: false,
         cwd: '',
         systemPrompt: '',
         modelOverride: '',
-        executionMode: 'local' as GenWorkExecutionMode,
+        executionMode: 'local' as MixCWorkExecutionMode,
         activeSkillIds: [],
         messages,
         agentId: 'main',
@@ -4056,11 +4056,11 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   private async readTranscriptFile(
     sessionKey: string,
     filePath: string,
-  ): Promise<GenWorkSession | null> {
+  ): Promise<MixCWorkSession | null> {
     const content = await fs.promises.readFile(filePath, 'utf-8');
     const lines = content.split(/\r?\n/);
 
-    const messages: GenWorkMessage[] = [];
+    const messages: MixCWorkMessage[] = [];
     let msgIndex = 0;
 
     for (const line of lines) {
@@ -4107,12 +4107,12 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       title: sessionKey.split(':').pop() || 'Cron Session',
       openclawSessionId: null,
       scheduledTaskId: null,
-      status: 'completed' as GenWorkSessionStatus,
+      status: 'completed' as MixCWorkSessionStatus,
       pinned: false,
       cwd: '',
       systemPrompt: '',
       modelOverride: '',
-      executionMode: 'local' as GenWorkExecutionMode,
+      executionMode: 'local' as MixCWorkExecutionMode,
       activeSkillIds: [],
       messages,
       messagesOffset: 0,
@@ -4125,7 +4125,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   private async readFromTranscript(
     sessionKey: string,
     sessionId?: string | null,
-  ): Promise<GenWorkSession | null> {
+  ): Promise<MixCWorkSession | null> {
     try {
       const agentMatch = sessionKey.match(/^agent:([^:]+):/);
       const agentId = agentMatch?.[1] ?? 'main';
@@ -4157,7 +4157,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   private async readFromDeletedTranscript(
     sessionKey: string,
     sessionId?: string | null,
-  ): Promise<GenWorkSession | null> {
+  ): Promise<MixCWorkSession | null> {
     try {
       // Extract agentId from "agent:{agentId}:..." pattern
       const agentMatch = sessionKey.match(/^agent:([^:]+):/);
@@ -4189,7 +4189,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
    * Ensure the gateway WebSocket client is connected.
    * Called when IM channels (e.g. Telegram) are enabled in OpenClaw mode
    * so that channel-originated events can be received without waiting
-   * for a GenWork-initiated session.
+   * for a MixCWork-initiated session.
    */
   async connectGatewayIfNeeded(): Promise<void> {
     this.gatewayReconnectSuppressed = false;
@@ -4838,7 +4838,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
         clientSteerId,
         reason,
         error: reason === CoworkSteerRejectReason.RuntimeUnsupported
-          ? 'The current OpenClaw runtime does not expose same-turn steering yet. Rebuild the pinned runtime with GenWork patches.'
+          ? 'The current OpenClaw runtime does not expose same-turn steering yet. Rebuild the pinned runtime with MixCWork patches.'
           : message,
       };
     }
@@ -4941,7 +4941,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     return goal;
   }
 
-  async patchSession(sessionId: string, patch: OpenClawSessionPatch): Promise<GenWorkSessionPatchResult> {
+  async patchSession(sessionId: string, patch: OpenClawSessionPatch): Promise<MixCWorkSessionPatchResult> {
     const session = this.store.getSession(sessionId);
     if (!session) {
       throw new Error(`Session ${sessionId} not found`);
@@ -5778,14 +5778,14 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
 
   private buildSystemPromptPrefix(systemPrompt: string): string {
     return [
-      '[GenWork system instructions]',
+      '[MixCWork system instructions]',
       'Apply the instructions below as the highest-priority guidance for this session.',
-      'If earlier GenWork system instructions exist, replace them with this version.',
+      'If earlier MixCWork system instructions exist, replace them with this version.',
       systemPrompt,
     ].join('\n');
   }
 
-  private buildBridgePrefix(messages: GenWorkMessage[], currentPrompt: string): string {
+  private buildBridgePrefix(messages: MixCWorkMessage[], currentPrompt: string): string {
     const normalizedCurrentPrompt = currentPrompt.trim();
     if (!normalizedCurrentPrompt) return '';
     const compactionSummaries = messages
@@ -5825,7 +5825,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     }
 
     const sections = [
-      '[Context bridge from previous GenWork conversation]',
+      '[Context bridge from previous MixCWork conversation]',
       'Use this prior context for continuity. Focus your final answer on the current request.',
     ];
 
@@ -5937,7 +5937,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     const client = new GatewayClient({
       url: connection.url,
       token: connection.token,
-      clientDisplayName: 'GenWork',
+      clientDisplayName: 'MixcWork',
       clientVersion: app.getVersion(),
       mode: 'backend',
       caps: [OPENCLAW_GATEWAY_TOOL_EVENTS_CAP],
@@ -6514,7 +6514,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     return this.normalizeModelRef(rawCurrentModel);
   }
 
-  /** Builds the persisted error detail, annotated with the failing model's GenWork source. */
+  /** Builds the persisted error detail, annotated with the failing model's MixCWork source. */
   private buildTurnErrorDetail(
     sessionId: string,
     turn: ActiveTurn | undefined,
@@ -6582,12 +6582,12 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
         detailRawErrorMessage: rawErrorMessage,
       };
     }
-    // A genwork-server 401 whose stored JWT was rejected is not necessarily
+    // A mixcwork-server 401 whose stored JWT was rejected is not necessarily
     // a dead login — the JWT may simply be stale and still refreshable. Give
     // the host a single chance to recover it (trigger a refresh, re-deliver
     // config) and surface a "please retry" nudge instead of the generic
     // "sign in again" copy. Only the login-expired classification qualifies.
-    if (resolvedError.message === t(CoworkErrorI18nKey.GenWorkLoginExpired) && this.options.onEnterpriseLoginExpired) {
+    if (resolvedError.message === t(CoworkErrorI18nKey.MixCWorkLoginExpired) && this.options.onEnterpriseLoginExpired) {
       try {
         const recoveredMessage = this.options.onEnterpriseLoginExpired();
         if (recoveredMessage) {
@@ -6624,7 +6624,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     const existingModel = typeof message.metadata?.model === 'string' && message.metadata.model.trim()
       ? message.metadata.model
       : '';
-    const metadata: GenWorkMessageMetadata = {
+    const metadata: MixCWorkMessageMetadata = {
       ...message.metadata,
       isStreaming: false,
       isFinal: true,
@@ -7447,7 +7447,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     const session = this.store.getSession(sessionId);
     if (!session) return;
     const rawStatus = typeof payload.status === 'string' ? payload.status.trim().toLowerCase() : '';
-    const nextStatus: GenWorkSessionStatus = phase === AgentLifecyclePhase.Start
+    const nextStatus: MixCWorkSessionStatus = phase === AgentLifecyclePhase.Start
       ? 'running'
       : phase === AgentLifecyclePhase.Error
         ? 'error'
@@ -7597,7 +7597,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     // Also exclude runIds that have already been terminated (lifecycle phase=error received),
     // which prevents gateway retries from spawning new turns and surfacing duplicate errors.
     if (sessionId && !this.activeTurns.has(sessionId) && sessionKey && stream !== 'error' && !this.terminatedRunIds.has(runId)) {
-      // Desktop sessions (genwork:*) that were manually stopped must not be
+      // Desktop sessions (mixcwork:*) that were manually stopped must not be
       // re-activated by late-arriving gateway events (e.g. MCP tool results that
       // arrive after the user clicked Stop).  Only channel/cron sessions are
       // allowed to re-create turns after the stop cooldown expires.
@@ -7850,7 +7850,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     }
 
     const persistedChannelSession = this.channelSessionSync
-      ?.getOpenClawSessionKeyForGenWorkSession(normalizedSessionId);
+      ?.getOpenClawSessionKeyForMixCWorkSession(normalizedSessionId);
     const persistedChannelSessionKey = persistedChannelSession?.sessionKey?.trim() ?? '';
     if (persistedChannelSessionKey && !isManagedSessionKey(persistedChannelSessionKey)) {
       return persistedChannelSessionKey;
@@ -8095,7 +8095,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     if (!session) {
       return undefined;
     }
-    const isVisibleAssistant = (message: GenWorkMessage): boolean =>
+    const isVisibleAssistant = (message: MixCWorkMessage): boolean =>
       message.type === 'assistant' && !isSilentReplyText(message.content);
     if (
       preferredMessageId
@@ -8267,7 +8267,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     }
   }
 
-  private getSessionMessage(sessionId: string, messageId: string | undefined): GenWorkMessage | null {
+  private getSessionMessage(sessionId: string, messageId: string | undefined): MixCWorkMessage | null {
     if (!messageId) return null;
     const session = this.store.getSession(sessionId);
     return session?.messages.find((message) => message.id === messageId) ?? null;
@@ -8277,7 +8277,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     turn: ActiveTurn,
     status: ContextCompactionStatus,
     timestamp: number,
-  ): GenWorkMessageMetadata {
+  ): MixCWorkMessageMetadata {
     return {
       kind: CoworkSystemMessageKind.ContextCompaction,
       mode: ContextCompactionMode.Auto,
@@ -10196,7 +10196,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
       if (!targetMessageId) return;
 
       this.store.updateMessage(sessionId, targetMessageId, {
-        metadata: usageMetadata as GenWorkMessageMetadata,
+        metadata: usageMetadata as MixCWorkMessageMetadata,
       });
 
       console.debug('[OpenClawRuntime] syncUsageMetadata success:', sessionId, model ?? 'unknown-model', `in=${inputTokens ?? '-'} out=${outputTokens ?? '-'} ctx=${contextPercent ?? '-'}% cacheRead=${cacheReadTokens ?? '-'} agent=${agentName ?? '-'}`);
@@ -10259,7 +10259,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     if (!targetMessageId) return;
 
     this.store.updateMessage(sessionId, targetMessageId, {
-      metadata: usageMetadata as GenWorkMessageMetadata,
+      metadata: usageMetadata as MixCWorkMessageMetadata,
     });
 
     console.debug('[OpenClawRuntime] applyUsageMetadataFromFinal:', sessionId, model ?? 'unknown-model', `in=${inputTokens ?? '-'} out=${outputTokens ?? '-'} ctx=${contextPercent ?? '-'}% cacheRead=${cacheReadTokens ?? '-'} agent=${agentName ?? '-'}`);
@@ -11340,7 +11340,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   /**
    * Sync user messages from gateway chat.history that haven't been added to the local store yet.
    * Used for channel-originated sessions (e.g. Telegram) where user messages arrive via the
-   * gateway rather than the GenWork UI.
+   * gateway rather than the MixCWork UI.
    *
    * Called at the start of a new turn (via prefetchChannelUserMessages) so that user messages
    * appear before the assistant's streaming response. Both chat and agent events are buffered
@@ -11365,7 +11365,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
           // Dedup: skip if this message already exists locally
           const session = this.store.getSession(sessionId);
           const existingUser = session?.messages.find(
-            (m: GenWorkMessage) => m.type === 'user' && m.content.trim() === lastUser.text,
+            (m: MixCWorkMessage) => m.type === 'user' && m.content.trim() === lastUser.text,
           );
           if (existingUser) {
             if (getLocalMediaAttachmentsKey(existingUser.metadata) !== getLocalMediaAttachmentsKey(lastUser.metadata)) {
@@ -11462,7 +11462,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
           // Match by content prefix — local text may be segmented or truncated
           const matchPrefix = assistantText.slice(0, 100);
           const localMatch = currentSession.messages.find(
-            (m: GenWorkMessage) => m.type === 'assistant' && m.content.trim().startsWith(matchPrefix),
+            (m: MixCWorkMessage) => m.type === 'assistant' && m.content.trim().startsWith(matchPrefix),
           );
           if (localMatch) {
             insertBeforeId = localMatch.id;
@@ -11495,12 +11495,12 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
   private getUserMessageCount(sessionId: string): number {
     const session = this.store.getSession(sessionId);
     if (!session) return 0;
-    return session.messages.filter((m: GenWorkMessage) => m.type === 'user').length;
+    return session.messages.filter((m: MixCWorkMessage) => m.type === 'user').length;
   }
 
   /**
    * Sync full conversation history for a newly discovered channel session.
-   * Adds both user and assistant messages to the local GenWorkStore in order.
+   * Adds both user and assistant messages to the local MixCWorkStore in order.
    * Skipped if the session has already been fully synced.
    *
    * Uses position-based matching to avoid false dedup of identical-content messages.
@@ -11828,7 +11828,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
     // `manuallyStoppedSessions` (a permanent Set) would block all future
     // channel events for this session until `runTurn` or `onSessionDeleted`
     // happens to clear it.
-    // Only clear for channel/cron sessions.  Desktop sessions (genwork:*)
+    // Only clear for channel/cron sessions.  Desktop sessions (mixcwork:*)
     // must stay suppressed — the gateway may still push late MCP tool results
     // long after the 10s cooldown expires.
     if (this.manuallyStoppedSessions.has(sessionId)) {
@@ -11998,7 +11998,7 @@ export class OpenClawRuntimeAdapter extends EventEmitter implements CoworkRuntim
         if (newUserMessages > 0) {
           const session = this.store.getSession(sessionId);
           if (session) {
-            const userMessages = session.messages.filter((m: GenWorkMessage) => m.type === 'user');
+            const userMessages = session.messages.filter((m: MixCWorkMessage) => m.type === 'user');
             const newMsgs = userMessages.slice(-newUserMessages);
             for (const msg of newMsgs) {
               this.emit('message', sessionId, msg);

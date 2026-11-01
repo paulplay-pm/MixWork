@@ -2,52 +2,70 @@ import { Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 import { useMemo, useState } from 'react';
 
-import type { ProviderKeyView } from '../../api/providers';
+import type { ProviderCardView } from '../../api/providerCards';
 import { Switch } from '../../components/Switch';
 import { brandColor, providerDisplayName } from '../../data/providerCatalog';
 import { t } from '../../i18n';
 
 interface Props {
-  /** Single source of truth; the rail groups rows by `is_builtin`. */
-  providers: ProviderKeyView[];
-  /** Map of provider KEY id → model count, shown as a badge on the row. Keyed
-   * by id (not slug) so two same-slug keys (built-in + custom) show distinct
-   * counts. */
+  /** The cards, split into the built-in and custom sections by `isBuiltin`. */
+  cards: ProviderCardView[];
+  /** The model count per card, keyed by card id. */
   modelCounts: Record<string, number>;
   selectedId: string | null;
   onSelect: (id: string) => void;
   canManage: boolean;
-  /** Invoked when the "+ 添加服务商" button is clicked (creates a new custom draft). */
   onAddProvider?: () => void;
-  /** Delete-confirm flow (custom rows only). */
-  onDeleteProvider: (provider: ProviderKeyView) => void;
-  /** Toggle a row's enabled state; optional so renders may omit it. */
-  onToggleProvider?: (id: string, enabled: boolean) => void;
+  /** Delete-confirm flow. Only offered for cards whose sections are all
+   * custom — a card with a built-in credential cannot be deleted. */
+  onDeleteCard?: (card: ProviderCardView) => void;
+  onToggleCard?: (id: string, enabled: boolean) => void;
+}
+
+/** A card can be deleted only when none of its sections is a built-in
+ * credential row. A card with no sections at all is custom. */
+function isDeletable(card: ProviderCardView): boolean {
+  return card.sections.every((s) => !s.isBuiltin);
 }
 
 /**
- * Left rail listing every provider in one flat list, grouped into 内置服务商
- * (`is_builtin`) and 自定义服务商 sections. Each row shows the brand square,
- * display name, model-count badge, and an enable switch; custom rows add a
- * delete icon. The search box filters both sections.
+ * Left rail listing every vendor card in one flat list, grouped into 内置服务商
+ * (`isBuiltin`) and 自定义服务商 sections. Each row shows the brand square,
+ * display name, model-count badge, and an enable switch;
+ * a fully custom card adds a delete icon. The search box filters both
+ * sections.
  */
 export function ProviderRail({
-  providers,
+  cards,
   modelCounts,
   selectedId,
   onSelect,
   canManage,
   onAddProvider,
-  onDeleteProvider,
-  onToggleProvider,
+  onDeleteCard,
+  onToggleCard,
 }: Props): JSX.Element {
   const [search, setSearch] = useState('');
 
-  const builtins = useMemo(() => providers.filter((p) => p.is_builtin), [providers]);
-  const customs = useMemo(() => providers.filter((p) => !p.is_builtin), [providers]);
+  const builtins = useMemo(() => cards.filter((c) => c.isBuiltin), [cards]);
+  const customs = useMemo(() => cards.filter((c) => !c.isBuiltin), [cards]);
 
-  const visibleBuiltins = useMemo(() => filterProviders(builtins, search), [builtins, search]);
-  const visibleCustoms = useMemo(() => filterProviders(customs, search), [customs, search]);
+  const visibleBuiltins = useMemo(() => filterCards(builtins, search), [builtins, search]);
+  const visibleCustoms = useMemo(() => filterCards(customs, search), [customs, search]);
+
+  const row = (card: ProviderCardView, deletable: boolean): JSX.Element => (
+    <Row
+      key={card.id}
+      card={card}
+      count={modelCounts[card.id] ?? 0}
+      selected={selectedId === card.id}
+      canManage={canManage}
+      deletable={deletable}
+      onSelect={() => onSelect(card.id)}
+      onToggle={(next) => onToggleCard?.(card.id, next)}
+      onDelete={() => onDeleteCard?.(card)}
+    />
+  );
 
   return (
     <div className="flex h-full w-full flex-col gap-3 border-r border-[var(--border-subtle)] bg-[var(--bg-secondary)] p-3">
@@ -60,35 +78,11 @@ export function ProviderRail({
       />
 
       <Section title={`${t('providersModels.rail.builtin')} (${visibleBuiltins.length})`}>
-        {visibleBuiltins.map((p) => (
-          <Row
-            key={p.id}
-            provider={p}
-            isCustom={false}
-            count={modelCounts[p.id] ?? 0}
-            selected={selectedId === p.id}
-            canManage={canManage}
-            onSelect={() => onSelect(p.id)}
-            onToggle={(next) => onToggleProvider?.(p.id, next)}
-            onDelete={() => {}}
-          />
-        ))}
+        {visibleBuiltins.map((c) => row(c, false))}
       </Section>
 
       <Section title={`${t('providersModels.rail.custom')} (${visibleCustoms.length})`}>
-        {visibleCustoms.map((p) => (
-          <Row
-            key={p.id}
-            provider={p}
-            isCustom
-            count={modelCounts[p.id] ?? 0}
-            selected={selectedId === p.id}
-            canManage={canManage}
-            onSelect={() => onSelect(p.id)}
-            onToggle={(next) => onToggleProvider?.(p.id, next)}
-            onDelete={() => onDeleteProvider(p)}
-          />
-        ))}
+        {visibleCustoms.map((c) => row(c, isDeletable(c)))}
         {canManage && (
           <button
             type="button"
@@ -103,38 +97,38 @@ export function ProviderRail({
   );
 }
 
-function filterProviders(list: ProviderKeyView[], search: string): ProviderKeyView[] {
+function filterCards(list: ProviderCardView[], search: string): ProviderCardView[] {
   const s = search.trim().toLowerCase();
   if (!s) return list;
   return list.filter(
-    (p) =>
-      (p.label ?? providerDisplayName(p.provider)).toLowerCase().includes(s) ||
-      p.provider.toLowerCase().includes(s)
+    (c) =>
+      (c.label ?? providerDisplayName(c.provider)).toLowerCase().includes(s) ||
+      c.provider.toLowerCase().includes(s)
   );
 }
 
 function Row({
-  provider,
-  isCustom,
+  card,
   count,
   selected,
   canManage,
+  deletable,
   onSelect,
   onToggle,
   onDelete,
 }: {
-  provider: ProviderKeyView;
-  isCustom: boolean;
+  card: ProviderCardView;
   count: number;
   selected: boolean;
   canManage: boolean;
+  deletable: boolean;
   onSelect: () => void;
   onToggle: (next: boolean) => void;
   onDelete: () => void;
 }): JSX.Element {
-  // Display name: an explicit label wins; otherwise the provider's display
-  // name (slug, except where the slug is an abbreviation, e.g. volc → Volcengine).
-  const name = provider.label ?? providerDisplayName(provider.provider);
+  // Display name: an explicit label wins; otherwise the vendor's display name
+  // (slug, except where the slug is an abbreviation, e.g. volc → Volcengine).
+  const name = card.label ?? providerDisplayName(card.provider);
   return (
     <div
       role="button"
@@ -159,7 +153,7 @@ function Row({
       <span
         aria-hidden
         className="flex h-5 w-5 shrink-0 items-center justify-center rounded-[4px] text-[10px] font-semibold uppercase text-white"
-        style={{ backgroundColor: brandColor(provider.provider) }}
+        style={{ backgroundColor: brandColor(card.provider) }}
       >
         {name.charAt(0)}
       </span>
@@ -169,17 +163,17 @@ function Row({
       </span>
       <span className="shrink-0" onClick={(e) => e.stopPropagation()}>
         <Switch
-          checked={provider.enabled}
+          checked={card.enabled}
           disabled={!canManage}
           onChange={onToggle}
           label={
-            provider.enabled
+            card.enabled
               ? t('providersModels.header.enabled')
               : t('providersModels.header.disabled')
           }
         />
       </span>
-      {isCustom && canManage && (
+      {deletable && canManage && (
         <span
           className="shrink-0 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100"
           onClick={(e) => e.stopPropagation()}

@@ -7,47 +7,47 @@ describe('collectReferencedEnvVarNames', () => {
     const refs = collectReferencedEnvVarNames({
       models: {
         providers: {
-          openai: { apiKey: '${GENWORK_APIKEY_OPENAI}' },
-          server: { apiKey: '${GENWORK_PROXY_TOKEN}' },
+          openai: { apiKey: '${MIXCWORK_APIKEY_OPENAI}' },
+          server: { apiKey: '${MIXCWORK_PROXY_TOKEN}' },
         },
       },
       ignored: '${not-uppercase}',
     });
 
     expect([...refs].sort()).toEqual([
-      'GENWORK_APIKEY_OPENAI',
-      'GENWORK_PROXY_TOKEN',
+      'MIXCWORK_APIKEY_OPENAI',
+      'MIXCWORK_PROXY_TOKEN',
     ]);
   });
 });
 
 describe('pickReferencedSecretEnvVars', () => {
   test('ignores dynamic secrets that are not referenced by openclaw config', () => {
-    const referenced = new Set(['GENWORK_PROXY_TOKEN']);
+    const referenced = new Set(['MIXCWORK_PROXY_TOKEN']);
 
     const before = pickReferencedSecretEnvVars({
-      GENWORK_APIKEY_SERVER: 'old-access-token',
-      GENWORK_PROXY_TOKEN: 'stable-proxy-token',
+      MIXCWORK_APIKEY_SERVER: 'old-access-token',
+      MIXCWORK_PROXY_TOKEN: 'stable-proxy-token',
     }, referenced);
     const after = pickReferencedSecretEnvVars({
-      GENWORK_APIKEY_SERVER: 'new-access-token',
-      GENWORK_PROXY_TOKEN: 'stable-proxy-token',
+      MIXCWORK_APIKEY_SERVER: 'new-access-token',
+      MIXCWORK_PROXY_TOKEN: 'stable-proxy-token',
     }, referenced);
 
-    expect(before).toEqual({ GENWORK_PROXY_TOKEN: 'stable-proxy-token' });
+    expect(before).toEqual({ MIXCWORK_PROXY_TOKEN: 'stable-proxy-token' });
     expect(JSON.stringify(before)).toBe(JSON.stringify(after));
   });
 
   test('keeps referenced secret changes visible for restart decisions', () => {
-    const referenced = new Set(['GENWORK_APIKEY_OPENAI']);
+    const referenced = new Set(['MIXCWORK_APIKEY_OPENAI']);
 
     const before = pickReferencedSecretEnvVars({
-      GENWORK_APIKEY_OPENAI: 'sk-old',
-      GENWORK_APIKEY_SERVER: 'old-access-token',
+      MIXCWORK_APIKEY_OPENAI: 'sk-old',
+      MIXCWORK_APIKEY_SERVER: 'old-access-token',
     }, referenced);
     const after = pickReferencedSecretEnvVars({
-      GENWORK_APIKEY_OPENAI: 'sk-new',
-      GENWORK_APIKEY_SERVER: 'new-access-token',
+      MIXCWORK_APIKEY_OPENAI: 'sk-new',
+      MIXCWORK_APIKEY_SERVER: 'new-access-token',
     }, referenced);
 
     expect(JSON.stringify(before)).not.toBe(JSON.stringify(after));

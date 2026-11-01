@@ -4,10 +4,10 @@ import { useSelector } from 'react-redux';
 
 import { i18nService } from '@/services/i18n';
 import type { RootState } from '@/store';
-import type { GenWorkMessage, SubagentSessionSummary } from '@/types/genwork';
+import type { MixCWorkMessage, SubagentSessionSummary } from '@/types/mixcwork';
 import { getSubagentDisplayInitial, getSubagentDisplayName } from '@/utils/subagentDisplay';
 
-import ConversationTurnsView from '../genwork/ConversationTurnsView';
+import ConversationTurnsView from '../mixcwork/ConversationTurnsView';
 
 interface SubagentPanelContentProps {
   subagents: SubagentSessionSummary[];
@@ -92,7 +92,7 @@ const SubagentDetailContent: React.FC<{
   agents: RootState['agent']['agents'];
   onBack: () => void;
 }> = ({ subagent, agents, onBack }) => {
-  const [messages, setMessages] = useState<GenWorkMessage[]>([]);
+  const [messages, setMessages] = useState<MixCWorkMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [status, setStatus] = useState<SubagentSessionSummary['status']>(subagent.status);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -110,7 +110,7 @@ const SubagentDetailContent: React.FC<{
         sessionKey: subagent.sessionKey ?? undefined,
       });
       if (result?.success && result.messages) {
-        setMessages(result.messages as GenWorkMessage[]);
+        setMessages(result.messages as MixCWorkMessage[]);
       }
     } finally {
       setLoading(false);
@@ -162,7 +162,7 @@ const SubagentDetailContent: React.FC<{
       type: 'user' as const,
       content: subagent.task,
       timestamp: subagent.createdAt,
-    }] as GenWorkMessage[];
+    }] as MixCWorkMessage[];
   }, [messages, subagent.createdAt, subagent.task]);
 
   const displayName = getSubagentDisplayName(subagent, agents);

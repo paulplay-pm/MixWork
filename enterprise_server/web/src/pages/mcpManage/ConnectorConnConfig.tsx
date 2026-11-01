@@ -2,17 +2,14 @@ import type { JSX } from 'react';
 import type { AuthMode6, Transport2 } from '../../api/connectors';
 import { t } from '../../i18n';
 import { ConnectorAuthFields } from './ConnectorAuthFields';
+import { isSelectableAuthMode, SELECTABLE_AUTH_MODES } from './connectorAuthModeOptions';
 import type { ConnectorFormState } from './ConnectorDrawer';
 
-/** All six auth modes, in display order. */
-export const AUTH_MODES: AuthMode6[] = [
-  'none',
-  'shared-key',
-  'user-key',
-  'user-oauth',
-  'client-creds',
-  'sso',
-];
+/** Suffix for a value that still exists on records but is no longer offered. */
+const LEGACY_MODE_SUFFIX: Partial<Record<AuthMode6, string>> = {
+  'client-creds': 'mcp.authMode.retired',
+  sso: 'mcp.authMode.merged',
+};
 
 /** i18n key for each mode's short label (reused by the select and the
  * destructive auth-mode-switch confirm). */
@@ -34,8 +31,15 @@ const AUTH_HINT_KEY: Record<AuthMode6, string> = {
   'sso': 'mcp.authHint.sso',
 };
 
-/** Modes SSE transport cannot carry (the backend 400s on these combos). */
-export const SSE_INCOMPATIBLE_AUTH_MODES: AuthMode6[] = ['user-oauth', 'client-creds', 'sso'];
+/** Modes SSE transport cannot carry (the backend 400s on these combos).
+ *  `shared-key` is here because the gateway refuses an SSE connector outright
+ *  (`unsupported_transport`) — SSE cannot express the org-key handshake. */
+export const SSE_INCOMPATIBLE_AUTH_MODES: AuthMode6[] = [
+  'user-oauth',
+  'client-creds',
+  'sso',
+  'shared-key',
+];
 
 interface Props {
   mode: 'create' | 'edit';
@@ -45,6 +49,8 @@ interface Props {
   secretMeta: { by: string; time: string } | null;
   /** Which stored secrets exist (drives the masked placeholders). */
   hasSecret: { apiKey: boolean; clientSecret: boolean };
+  /** The server-issued loopback redirect URI for a `user-oauth` connector. */
+  oauthRedirectUri?: string;
 }
 
 /** 连接配置 section: transport + auth mode (with SSE coupling) + the
@@ -86,6 +92,11 @@ export function ConnectorConnConfig(p: Props): JSX.Element {
               ? t('mcpDrawer.transportHint.sse')
               : t('mcpDrawer.transportHint.http')}
           </span>
+          {/* A record stored before this rule can still be on the pair; the
+              picker disables it, but the admin needs to know why it must move. */}
+          {p.state.transport === 'sse' && p.state.authMode === 'shared-key' && (
+            <span className="text-xs text-[#B45309]">{t('mcpDrawer.connConfig.sharedKeySse')}</span>
+          )}
         </label>
 
         <label className={`col-span-2 ${labelCls}`}>
@@ -96,7 +107,7 @@ export function ConnectorConnConfig(p: Props): JSX.Element {
             value={p.state.authMode}
             onChange={(e) => p.onChange({ authMode: e.target.value as AuthMode6 })}
           >
-            {AUTH_MODES.map((m) => (
+            {SELECTABLE_AUTH_MODES.map((m) => (
               <option
                 key={m}
                 value={m}
@@ -105,6 +116,15 @@ export function ConnectorConnConfig(p: Props): JSX.Element {
                 {t(AUTH_MODE_LABEL[m])}
               </option>
             ))}
+            {/* A stored record may still sit on a value the picker no longer
+                offers. It shows as itself, disabled, so the admin sees what
+                they have and can move off it — never re-select it. */}
+            {!isSelectableAuthMode(p.state.authMode) && (
+              <option value={p.state.authMode} disabled>
+                {t(AUTH_MODE_LABEL[p.state.authMode])}
+                {t(LEGACY_MODE_SUFFIX[p.state.authMode] ?? 'mcp.authMode.retired')}
+              </option>
+            )}
           </select>
           <span className="text-xs text-[var(--text-tertiary)]">{t(AUTH_HINT_KEY[p.state.authMode])}</span>
         </label>
@@ -117,6 +137,7 @@ export function ConnectorConnConfig(p: Props): JSX.Element {
             onChange={p.onChange}
             hasSecret={p.hasSecret}
             secretMeta={p.secretMeta}
+            oauthRedirectUri={p.oauthRedirectUri}
           />
         </div>
 
@@ -128,29 +149,14 @@ export function ConnectorConnConfig(p: Props): JSX.Element {
             type="number"
             min={5}
             max={300}
+            placeholder={t('mcpDrawer.timeout.default')}
             value={p.state.timeoutSeconds}
             onChange={(e) => {
-              const n = parseInt(e.target.value, 10);
-              p.onChange({ timeoutSeconds: Number.isFinite(n) ? n : 0 });
+              const raw = e.target.value;
+              p.onChange({ timeoutSeconds: raw === '' ? '' : Number(raw) });
             }}
           />
           <span className="text-xs text-[var(--text-tertiary)]">{t('mcpDrawer.timeout.hint')}</span>
-        </label>
-        <label className={labelCls}>
-          {t('mcpDrawer.retry')}
-          <input
-            className={inputCls}
-            aria-label={t('mcpDrawer.retry')}
-            type="number"
-            min={0}
-            max={5}
-            value={p.state.retryCount}
-            onChange={(e) => {
-              const n = parseInt(e.target.value, 10);
-              p.onChange({ retryCount: Number.isFinite(n) ? n : 0 });
-            }}
-          />
-          <span className="text-xs text-[var(--text-tertiary)]">{t('mcpDrawer.retry.hint')}</span>
         </label>
       </div>
     </section>

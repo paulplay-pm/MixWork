@@ -1,16 +1,18 @@
 import { Edit, Trash2 } from 'lucide-react';
 import type { JSX } from 'react';
 
-import type { ModelView } from '../../api/models';
+import { isModelEnabled, type ModelTypeValue, type ModelView } from '../../api/models';
 import { IconButton } from '../../components/IconButton';
 import { Switch } from '../../components/Switch';
 import { t } from '../../i18n';
-import { ModelTypesBadges, contextLabel } from './modelType';
+import { contextLabel, ModelTypesBadges } from './modelType';
 
 interface Props {
   model: ModelView;
   canManage: boolean;
   busy: boolean;
+  /** The types this model is the default for; those chips carry the badge. */
+  defaultTypes?: ModelTypeValue[];
   onEdit: (model: ModelView) => void;
   onDelete: (id: string) => void;
   onToggleEnabled: (id: string, enabled: boolean) => void;
@@ -25,11 +27,12 @@ export function ModelTableRow({
   model,
   canManage,
   busy,
+  defaultTypes,
   onEdit,
   onDelete,
   onToggleEnabled,
 }: Props): JSX.Element {
-  const enabled = model.enabled && !model.disabled_by_admin;
+  const enabled = isModelEnabled(model);
   return (
     <tr className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-hover)]/40">
       <td className="px-4 py-2.5 text-sm text-[var(--text-primary)]">
@@ -41,7 +44,7 @@ export function ModelTableRow({
         </div>
       </td>
       <td className="px-4 py-2.5">
-        <ModelTypesBadges types={model.types} />
+        <ModelTypesBadges types={model.types} defaultTypes={defaultTypes} />
       </td>
       <td className="px-4 py-2.5 text-sm text-[var(--text-secondary)]">
         {contextLabel(model.context_window)}

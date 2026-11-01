@@ -12,20 +12,20 @@ beforeEach(() => {
 });
 
 describe('agentMarketplaceApi', () => {
-  test('listRoleOptions hits the picker route', async () => {
-    fetchMock.mockResolvedValue(new Response(JSON.stringify({ roles: ['super_admin', 'org_admin', 'agent_admin'] }), { status: 200 }));
-    const res = await agentMarketplaceApi.listRoleOptions();
-    expect(res.roles).toContain('agent_admin');
-    expect(String(fetchMock.mock.calls[0][0])).toBe('http://server/api/agent-marketplace/role-options');
+  test('listPublic hits the scope-filtered catalog route', async () => {
+    fetchMock.mockResolvedValue(new Response(JSON.stringify({ agents: [] }), { status: 200 }));
+    await agentMarketplaceApi.listPublic();
+    expect(String(fetchMock.mock.calls[0][0])).toBe('http://server/api/agent-marketplace');
   });
 
-  test('createAgent posts the body with required allowed_roles', async () => {
+  test('createAgent posts the body with the required scope', async () => {
     fetchMock.mockResolvedValue(new Response(JSON.stringify({ agent_id: 'agent_1' }), { status: 200 }));
-    const out = await agentMarketplaceApi.createAgent({ name: 'X', allowed_roles: ['org_admin'] });
+    const scope = { allCompany: false, deptIds: ['d1'], userIds: [] };
+    const out = await agentMarketplaceApi.createAgent({ name: 'X', scope });
     expect(out.agent_id).toBe('agent_1');
     const init = fetchMock.mock.calls[0][1] as RequestInit;
     const body = JSON.parse(init.body as string);
-    expect(body).toMatchObject({ name: 'X', allowed_roles: ['org_admin'] });
+    expect(body).toMatchObject({ name: 'X', scope });
   });
 
   test('getReferences returns the affected agents', async () => {

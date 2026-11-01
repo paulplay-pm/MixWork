@@ -1,10 +1,16 @@
 import React, { useEffect, useMemo, useState } from 'react';
 
-import { type ConnectorSubmitRequest } from '../../../shared/mcp/constants';
 import { i18nService } from '../../services/i18n';
 import { mcpService } from '../../services/mcp';
 import { McpEnterpriseMarketCategory } from '../../types/mcp';
 import Modal from '../common/Modal';
+import {
+  buildConnectorSubmitRequest,
+  requiredAuthFields,
+  SUBMIT_AUTH_MODES,
+  type SubmitAuthMode,
+  type SubmitConnectorDraft,
+} from './submitConnectorDraft';
 
 /**
  * Member 「申请连接器」 dialog (enterprise market tab).
@@ -13,65 +19,35 @@ import Modal from '../common/Modal';
  * `mcpService.submitConnectorRequest` (POST /admin/mcp-connectors/submissions
  * with the org JWT). The server re-runs the create guards on submit, so the
  * form only pre-validates the cheap client-side bits (server key format, URL
- * presence, per-auth-mode required secret) and lets server errors surface as
- * toasts. Kept out of `McpManager` — that component is already large.
+ * presence, per-mode required endpoints) and lets server errors surface as
+ * toasts.
+ *
+ * A member declares the connector and its auth method, never a secret: the
+ * modes whose credential belongs to the org are not offered, and the member's
+ * own credential is produced on their desktop when they install the connector.
+ * The draft itself lives in `submitConnectorDraft.ts` (pure, tested there).
  */
 
 const SERVER_KEY_RE = /^[a-z0-9-]+$/;
 const DESCRIPTION_MAX = 200;
 
-const AUTH_MODES = ['none', 'shared-key', 'user-key', 'user-oauth', 'client-creds', 'sso'] as const;
-type AuthMode = (typeof AUTH_MODES)[number];
-
-// SSO is org/admin-level config (endpoints set in the admin console), so members
-// cannot propose an SSO connector here; the server still rejects sso submissions
-// via missingAuthField as a safety net.
-const SUBMIT_AUTH_MODES = AUTH_MODES.filter((m) => m !== 'sso');
-
-const AUTH_MODE_LABEL_KEYS: Record<AuthMode, string> = {
+const AUTH_MODE_LABEL_KEYS: Record<SubmitAuthMode, string> = {
   none: 'mcpSubmitAuthNone',
-  'shared-key': 'mcpSubmitAuthSharedKey',
   'user-key': 'mcpSubmitAuthUserKey',
   'user-oauth': 'mcpSubmitAuthUserOAuth',
-  'client-creds': 'mcpSubmitAuthClientCreds',
-  sso: 'mcpSubmitAuthSso',
 };
 
-/** Per-mode required secret fields — mirrors the server's `missingAuthField`
- * (a submit that omits one of these 400s with `missing_auth_field`). */
-const AUTH_REQUIRED_FIELDS: Record<AuthMode, string[]> = {
-  none: [],
-  'shared-key': ['apiKey'],
-  'user-key': [],
-  'user-oauth': ['clientId', 'clientSecret'],
-  'client-creds': ['clientId', 'clientSecret'],
-  sso: [],
+const FIELD_LABEL_KEYS: Record<string, string> = {
+  clientId: 'mcpSubmitClientId',
+  authorizeUrl: 'mcpSubmitAuthorizeUrl',
+  tokenUrl: 'mcpSubmitTokenUrl',
 };
 
 /** The server 400s `sse_oauth_not_supported` for sse + these modes
  * (mirrors the server's `sseOauthCombination`). */
-const SSE_INCOMPATIBLE_AUTH_MODES: readonly AuthMode[] = ['user-oauth', 'client-creds', 'sso'];
+const SSE_INCOMPATIBLE_AUTH_MODES: readonly SubmitAuthMode[] = ['user-oauth'];
 
-const FIELD_LABEL_KEYS: Record<string, string> = {
-  apiKey: 'mcpSubmitApiKey',
-  clientId: 'mcpSubmitClientId',
-  clientSecret: 'mcpSubmitClientSecret',
-};
-
-interface FormState {
-  serverKey: string;
-  url: string;
-  nameEn: string;
-  nameZh: string;
-  version: string;
-  categoryId: string; // '' = no category
-  description: string;
-  transport: 'http' | 'sse';
-  authMode: AuthMode;
-  apiKey: string;
-  clientId: string;
-  clientSecret: string;
-}
+type FormState = SubmitConnectorDraft;
 
 const INITIAL_FORM: FormState = {
   serverKey: '',
@@ -83,9 +59,9 @@ const INITIAL_FORM: FormState = {
   description: '',
   transport: 'http',
   authMode: 'none',
-  apiKey: '',
   clientId: '',
-  clientSecret: '',
+  authorizeUrl: '',
+  tokenUrl: '',
 };
 
 interface SubmitConnectorFormProps {
@@ -134,13 +110,10 @@ const SubmitConnectorForm: React.FC<SubmitConnectorFormProps> = ({
   const set = <K extends keyof FormState>(key: K, value: FormState[K]): void =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
-  const requiredAuthFields = useMemo(
-    () => AUTH_REQUIRED_FIELDS[form.authMode],
-    [form.authMode],
-  );
+  const requiredFields = useMemo(() => requiredAuthFields(form.authMode), [form.authMode]);
   const missingAuthFields = useMemo(
-    () => requiredAuthFields.filter((field) => !(form[field as keyof FormState] as string).trim()),
-    [requiredAuthFields, form],
+    () => requiredFields.filter((field) => !(form[field as keyof FormState] as string).trim()),
+    [requiredFields, form],
   );
 
   const submit = async (): Promise<void> => {
@@ -172,30 +145,10 @@ const SubmitConnectorForm: React.FC<SubmitConnectorFormProps> = ({
     setSubmitting(true);
     setError(null);
 
-    // Build the cfg the server's `connectorCfgSchema` expects (no orgId —
-    // the org comes from the caller's JWT). Secrets are sent as typed: the
-    // server stores the cfg and encrypts them when the connector is built.
-    const authConfig: Record<string, unknown> = {};
-    if (form.authMode === 'shared-key') authConfig.apiKey = form.apiKey.trim();
-    if (form.authMode === 'user-oauth' || form.authMode === 'client-creds') {
-      authConfig.clientId = form.clientId.trim();
-      authConfig.clientSecret = form.clientSecret.trim();
-    }
-    const cfg: ConnectorSubmitRequest = {
-      serverKey: key,
-      url: form.url.trim(),
-      version: form.version.trim() || '1.0.0',
-      categoryId: form.categoryId || null,
-      transport: form.transport,
-      authMode: form.authMode,
-      authConfig,
-      // Minimal scope for P1: available to the whole company; the admin can
-      // narrow it when the connector is published.
-      scope: { allCompany: true },
-    };
-    if (form.nameEn.trim()) cfg.nameEn = form.nameEn.trim();
-    if (form.nameZh.trim()) cfg.nameZh = form.nameZh.trim();
-    if (form.description.trim()) cfg.description = form.description.trim();
+    // The server's `connectorCfgSchema` (no orgId — the org comes from the
+    // caller's JWT). Ends here: a member's own credential is never part of a
+    // submission.
+    const cfg = buildConnectorSubmitRequest(form);
 
     try {
       await mcpService.submitConnectorRequest(cfg);
@@ -327,7 +280,7 @@ const SubmitConnectorForm: React.FC<SubmitConnectorFormProps> = ({
             <select
               id="mcp-submit-auth-mode"
               value={form.authMode}
-              onChange={(e) => set('authMode', e.target.value as AuthMode)}
+              onChange={(e) => set('authMode', e.target.value as SubmitAuthMode)}
               className={FIELD_INPUT_CLASS}
             >
               {SUBMIT_AUTH_MODES.map((mode) => (
@@ -337,18 +290,23 @@ const SubmitConnectorForm: React.FC<SubmitConnectorFormProps> = ({
               ))}
             </select>
           </div>
-          {requiredAuthFields.map((field) => (
-            <div key={field}>
-              <FieldLabel htmlFor={`mcp-submit-${field}`}>{i18nService.t(FIELD_LABEL_KEYS[field])}</FieldLabel>
+          {requiredFields.map((field) => (
+            <div key={field} className="col-span-2">
+              <FieldLabel htmlFor={`mcp-submit-${field}`}>{i18nService.t(FIELD_LABEL_KEYS[field] ?? field)}</FieldLabel>
               <input
                 id={`mcp-submit-${field}`}
-                type={field === 'clientSecret' || field === 'apiKey' ? 'password' : 'text'}
+                type="text"
                 value={form[field as keyof FormState] as string}
                 onChange={(e) => set(field as keyof FormState, e.target.value)}
                 className={`${FIELD_INPUT_CLASS} font-mono`}
               />
             </div>
           ))}
+          {form.authMode === 'user-oauth' && (
+            <p className="col-span-2 text-xs text-secondary">
+              {i18nService.t('mcpSubmitUserOAuthHint')}
+            </p>
+          )}
         </div>
         <p className="text-xs text-secondary">
           {i18nService.t('mcpSubmitScopeHint')}

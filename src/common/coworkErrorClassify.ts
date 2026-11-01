@@ -8,8 +8,8 @@ import { OpenClawTranscriptSafetyErrorCode } from '../shared/openclawTranscript/
 
 export const CoworkErrorI18nKey = {
   AuthInvalid: 'coworkErrorAuthInvalid',
-  GenWorkLoginExpired: 'coworkErrorGenWorkLoginExpired',
-  GenWorkLoginRefreshedRetry: 'coworkErrorGenWorkLoginRefreshedRetry',
+  MixCWorkLoginExpired: 'coworkErrorMixCWorkLoginExpired',
+  MixCWorkLoginRefreshedRetry: 'coworkErrorMixCWorkLoginRefreshedRetry',
   OAuthInvalid: 'coworkErrorOAuthInvalid',
   ModelAccessDenied: 'coworkErrorModelAccessDenied',
   QuotaExhausted: 'coworkErrorQuotaExhausted',
@@ -26,7 +26,7 @@ export const CoworkErrorI18nKey = {
   GatewayHeapOutOfMemory: 'coworkErrorGatewayHeapOutOfMemory',
 } as const;
 
-const GENWORK_QUOTA_EXHAUSTED_PATTERN =
+const MIXCWORK_QUOTA_EXHAUSTED_PATTERN =
   /\b(?:4020[0-2]|4160[678])\b|(?:今日)?免费额度.*(用完|耗尽)|本月积分.*(用完|耗尽)|积分额度.*(用完|耗尽)|free.*quota.*(exhausted|used up|limit)|monthly.*credits?.*(exhausted|used up|limit)/i;
 
 const MODEL_CAPACITY_OVERLOAD_PATTERN =
@@ -42,8 +42,8 @@ const ERROR_RULES: Array<[RegExp, string]> = [
   [/无权访问|没有权限|access denied|access.*forbidden|forbidden|permission denied|\b403\b|auth[_ ]scope/i, CoworkErrorI18nKey.ModelAccessDenied],
   // Auth: Anthropic, DeepSeek, OpenAI, Gemini, HTTP 401
   [new RegExp(`authentication[_ ](error|fails?)|${API_KEY_PATTERN}.*(invalid|expired|deleted|inactive|not[_ ]valid|not\\s+valid)|invalid.*${API_KEY_PATTERN}|incorrect.*${API_KEY_PATTERN}|unauthorized|PERMISSION_DENIED|\\b401\\b`, 'i'), CoworkErrorI18nKey.AuthInvalid],
-  // GenWork plan/free quota. Must precede generic 402/billing handling.
-  [GENWORK_QUOTA_EXHAUSTED_PATTERN, CoworkErrorI18nKey.QuotaExhausted],
+  // MixCWork plan/free quota. Must precede generic 402/billing handling.
+  [MIXCWORK_QUOTA_EXHAUSTED_PATTERN, CoworkErrorI18nKey.QuotaExhausted],
   // Provider/model capacity failures. Must precede rate-limit matching because
   // capacity errors may also contain phrases such as "too many requests".
   [MODEL_CAPACITY_OVERLOAD_PATTERN, CoworkErrorI18nKey.ModelOverloaded],
@@ -90,6 +90,6 @@ export function classifyErrorKey(error: string): string | null {
   return null;
 }
 
-export function isGenWorkQuotaExhaustedError(error: string): boolean {
-  return GENWORK_QUOTA_EXHAUSTED_PATTERN.test(error);
+export function isMixCWorkQuotaExhaustedError(error: string): boolean {
+  return MIXCWORK_QUOTA_EXHAUSTED_PATTERN.test(error);
 }

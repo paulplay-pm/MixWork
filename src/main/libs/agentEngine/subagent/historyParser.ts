@@ -1,12 +1,12 @@
 import crypto from 'node:crypto';
 
-import type { GenWorkMessage } from '../../../genworkStore';
+import type { MixCWorkMessage } from '../../../mixcworkStore';
 import {
   extractGatewayMessageText,
   shouldSuppressHeartbeatText,
 } from '../../openclawHistory';
 
-export type SubagentGenWorkMessage = GenWorkMessage;
+export type SubagentMixCWorkMessage = MixCWorkMessage;
 
 export interface ParseSubagentGatewayHistoryOptions {
   createId?: () => string;
@@ -139,7 +139,7 @@ const createToolUseMessage = (
   block: Record<string, unknown>,
   createId: () => string,
   timestamp: number,
-): SubagentGenWorkMessage => ({
+): SubagentMixCWorkMessage => ({
   id: createId(),
   type: 'tool_use',
   content: '',
@@ -165,11 +165,11 @@ const inferExecCommandFromToolResult = (resultText: string): string | null => {
 };
 
 const synthesizeMissingToolUses = (
-  messages: SubagentGenWorkMessage[],
+  messages: SubagentMixCWorkMessage[],
   createId: () => string,
-): SubagentGenWorkMessage[] => {
+): SubagentMixCWorkMessage[] => {
   const seenToolUseIds = new Set<string>();
-  const output: SubagentGenWorkMessage[] = [];
+  const output: SubagentMixCWorkMessage[] = [];
 
   for (const message of messages) {
     if (message.type === 'tool_use') {
@@ -190,7 +190,7 @@ const synthesizeMissingToolUses = (
         const command = toolName.toLowerCase() === 'exec'
           ? inferExecCommandFromToolResult(message.content)
           : null;
-        const toolUse: SubagentGenWorkMessage = {
+        const toolUse: SubagentMixCWorkMessage = {
           id: createId(),
           type: 'tool_use',
           content: '',
@@ -216,10 +216,10 @@ const synthesizeMissingToolUses = (
 export const parseSubagentGatewayHistoryMessages = (
   historyMessages: unknown[],
   options: ParseSubagentGatewayHistoryOptions = {},
-): SubagentGenWorkMessage[] => {
+): SubagentMixCWorkMessage[] => {
   const createId = options.createId ?? (() => crypto.randomUUID());
   let timestamp = options.startTimestamp ?? Date.now() - historyMessages.length * 1000;
-  const messages: SubagentGenWorkMessage[] = [];
+  const messages: SubagentMixCWorkMessage[] = [];
   const rawTimestampOffsets = new WeakMap<Record<string, unknown>, number>();
   const nextTimestamp = (raw?: Record<string, unknown>): number => {
     const parsed = raw ? getHistoryMessageTimestamp(raw) : undefined;

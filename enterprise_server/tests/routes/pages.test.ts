@@ -31,7 +31,7 @@ app.route('/', pagesRoutes);
 const tokenFor = async (sub: string, orgId: string): Promise<string> =>
   signToken({ sub, orgId, roles: ['user'] });
 const auth = (t: string) => ({ authorization: `Bearer ${t}` });
-const cookieAuth = (t: string) => ({ cookie: `genwork_session=${t}` });
+const cookieAuth = (t: string) => ({ cookie: `mixcwork_session=${t}` });
 const browserNav = { accept: 'text/html,application/xhtml+xml,*/*' };
 
 const buildZip = (files: Record<string, string>): Buffer => {

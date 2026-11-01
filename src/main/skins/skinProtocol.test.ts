@@ -29,7 +29,7 @@ function createManagedAsset(): {
   contentHash: string;
   content: Buffer;
 } {
-  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-skin-protocol-'));
+  const rootDir = fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-skin-protocol-'));
   tempDirs.push(rootDir);
   const relativePath = 'skin-one/assets/workspace-backdrop.png';
   const filePath = path.join(rootDir, ...relativePath.split('/'));
@@ -57,12 +57,12 @@ describe('skin protocol URL', () => {
 
   test('rejects unsupported hosts, slots, traversal, credentials, and query parameters', () => {
     expect(parseSkinProtocolUrl('https://asset/skin-one/workspace.backdrop')).toBeNull();
-    expect(parseSkinProtocolUrl('genwork-skin://other/skin-one/workspace.backdrop')).toBeNull();
-    expect(parseSkinProtocolUrl('genwork-skin://asset/skin-one/unknown.slot')).toBeNull();
-    expect(parseSkinProtocolUrl('genwork-skin://asset/%2e%2e/workspace.backdrop')).toBeNull();
-    expect(parseSkinProtocolUrl('genwork-skin://asset/skin-one/workspace%2fbackdrop')).toBeNull();
-    expect(parseSkinProtocolUrl('genwork-skin://user@asset/skin-one/workspace.backdrop')).toBeNull();
-    expect(parseSkinProtocolUrl('genwork-skin://asset/skin-one/workspace.backdrop?path=local')).toBeNull();
+    expect(parseSkinProtocolUrl('mixcwork-skin://other/skin-one/workspace.backdrop')).toBeNull();
+    expect(parseSkinProtocolUrl('mixcwork-skin://asset/skin-one/unknown.slot')).toBeNull();
+    expect(parseSkinProtocolUrl('mixcwork-skin://asset/%2e%2e/workspace.backdrop')).toBeNull();
+    expect(parseSkinProtocolUrl('mixcwork-skin://asset/skin-one/workspace%2fbackdrop')).toBeNull();
+    expect(parseSkinProtocolUrl('mixcwork-skin://user@asset/skin-one/workspace.backdrop')).toBeNull();
+    expect(parseSkinProtocolUrl('mixcwork-skin://asset/skin-one/workspace.backdrop?path=local')).toBeNull();
   });
 });
 

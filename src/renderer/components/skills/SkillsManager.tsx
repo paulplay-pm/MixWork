@@ -776,8 +776,10 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat,
     });
     try {
       // 1st arg: the installed local id (resolved via localId); 2nd arg stays
-      // the catalog download URL.
-      const result = await skillService.upgradeSkill(resolveLocalId(skill), skill.url);
+      // the catalog download URL. 3rd: the marketplace version — catalog
+      // packages carry no version of their own, so main records it here and
+      // the card can stop offering 更新 once the upgrade lands.
+      const result = await skillService.upgradeSkill(resolveLocalId(skill), skill.url, skill.version);
       if (!result.success) {
         setSkillActionError(result.error || i18nService.t('skillUpgradeFailed'));
         setUpgradeState(null);
@@ -895,7 +897,7 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat,
       });
 
       try {
-        const result = await skillService.upgradeSkill(resolveLocalId(skill), skill.url);
+        const result = await skillService.upgradeSkill(resolveLocalId(skill), skill.url, skill.version);
         if (!result.success) {
           console.warn('[SkillsManager] upgrade all item failed', {
             skillId: skill.id,
@@ -963,7 +965,9 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat,
       ...getMarketplaceSkillAnalyticsParams(skill, installedSkill),
     });
     try {
-      const result = await skillService.downloadSkill(skill.url);
+      // The marketplace version goes with the source so main can record what
+      // this install came from: the unzipped package does not carry one.
+      const result = await skillService.downloadSkill(skill.url, skill.version);
       if (!result.success) {
         setSkillActionError(result.error || i18nService.t('skillInstallFailed'));
         reportSkillAction('marketplace_install_failed', {
@@ -1224,7 +1228,11 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat,
         {/* Single-line title keeps every card the same shape; the raw id is
             reference material and lives in the detail dialog. */}
         <div className="mb-3 flex items-center gap-2.5">
-          <SkillIconTile icon={skillService.getSkillIcon(skill.id)} />
+          <SkillIconTile
+            icon={skillService.getSkillIcon(skill.id)}
+            seed={skill.id}
+            label={skill.name}
+          />
           <div className={`min-w-0 flex-1 truncate ${MANAGEMENT_TITLE_TEXT} font-semibold leading-snug text-foreground`}>
             {displayName}
           </div>
@@ -1680,7 +1688,11 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat,
                 }}
               >
                 <div className="mb-3 flex items-center gap-2.5">
-                  <SkillIconTile icon={skill.icon ?? skillService.getSkillIcon(skill.id)} />
+                  <SkillIconTile
+                    icon={skill.icon ?? skillService.getSkillIcon(skill.id)}
+                    seed={skill.id}
+                    label={skill.name}
+                  />
                   <div className={`min-w-0 flex-1 truncate ${MANAGEMENT_TITLE_TEXT} font-semibold leading-snug text-foreground`}>
                     {skillService.getLocalizedSkillName(skill.id, skill.name)}
                   </div>
@@ -1824,6 +1836,8 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat,
                   icon={selectedMarketplaceSkill.icon ?? skillService.getSkillIcon(selectedMarketplaceSkill.id)}
                   className="h-14 w-14 rounded-2xl"
                   iconClassName="h-7 w-7"
+                  seed={selectedMarketplaceSkill.id}
+                  label={selectedMarketplaceSkill.name}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-base font-semibold leading-tight text-foreground">
@@ -1963,6 +1977,8 @@ const SkillsManager: React.FC<SkillsManagerProps> = ({ readOnly, onCreateByChat,
                   icon={skillService.getSkillIcon(selectedSkill.id)}
                   className="h-14 w-14 rounded-2xl"
                   iconClassName="h-7 w-7"
+                  seed={selectedSkill.id}
+                  label={selectedSkill.name}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-base font-semibold leading-tight text-foreground">

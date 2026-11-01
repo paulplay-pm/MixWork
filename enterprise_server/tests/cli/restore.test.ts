@@ -29,7 +29,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.doUnmock('node:child_process');
   vi.doUnmock('node:fs');
-  for (const k of ['GENWORK_ETC_DIR']) delete process.env[k];
+  for (const k of ['MIXCWORK_ETC_DIR']) delete process.env[k];
 });
 
 describe('restore subcommand', () => {
@@ -52,7 +52,7 @@ describe('restore subcommand', () => {
     serviceUp = true;
     // Pre-create a staged data dir so the swap step finds the file the
     // mocked tar would have produced.
-    const stage = mkdtempSync(join(tmpdir(), 'genwork-restore-stage-'));
+    const stage = mkdtempSync(join(tmpdir(), 'mixcwork-restore-stage-'));
     mkdirSync(join(stage, 'data'), { recursive: true });
     vi.doMock('node:fs', async () => {
       const real = await vi.importActual<typeof import('node:fs')>('node:fs');
@@ -71,14 +71,14 @@ describe('restore subcommand', () => {
 
   test('does not delete live data before tar extraction succeeds', async () => {
     // Set up a real on-disk ETC dir with a sentinel file in `data`.
-    const etc = mkdtempSync(join(tmpdir(), 'genwork-restore-etc-'));
-    process.env.GENWORK_ETC_DIR = etc;
+    const etc = mkdtempSync(join(tmpdir(), 'mixcwork-restore-etc-'));
+    process.env.MIXCWORK_ETC_DIR = etc;
     const liveData = join(etc, 'data');
     mkdirSync(liveData, { recursive: true });
     writeFileSync(join(liveData, 'sentinel.txt'), 'do-not-delete-me');
     // Pre-create a staged data dir so the swap step finds the file the
     // mocked tar would have produced.
-    const stage = mkdtempSync(join(tmpdir(), 'genwork-restore-stage-'));
+    const stage = mkdtempSync(join(tmpdir(), 'mixcwork-restore-stage-'));
     mkdirSync(join(stage, 'data'), { recursive: true });
     vi.doMock('node:fs', async () => {
       const real = await vi.importActual<typeof import('node:fs')>('node:fs');

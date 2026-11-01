@@ -1,5 +1,5 @@
 import { pool } from '../db/pool';
-import { Role } from '../shared/enterpriseServerConstants';
+import { LoginErrorCode, Role } from '../shared/enterpriseServerConstants';
 import { type Claims,signToken } from './jwt';
 import { hashPassword, verifyPassword } from './password';
 
@@ -16,10 +16,20 @@ export interface LoginResult {
   claims: Claims;
 }
 
+/**
+ * A login attempt that could not be authenticated.
+ *
+ * `code` is the wire value the route puts in the response body's `error`
+ * field, so the client can tell the user WHICH part of the credential was
+ * wrong instead of showing a bare 401.
+ */
 export class LoginFailed extends Error {
-  constructor(msg: string) {
-    super(msg);
+  readonly code: LoginErrorCode;
+
+  constructor(code: LoginErrorCode) {
+    super(code);
     this.name = 'LoginFailed';
+    this.code = code;
   }
 }
 
@@ -46,7 +56,7 @@ export const authService = {
       [orgName]
     );
     const orgId = orgRow.rows[0]?.id;
-    if (!orgId) throw new LoginFailed('invalid credentials');
+    if (!orgId) throw new LoginFailed(LoginErrorCode.OrgNotFound);
 
     const r = await pool.query<{
       id: string;
@@ -59,10 +69,10 @@ export const authService = {
       [orgId, username]
     );
     const u = r.rows[0];
-    if (!u) throw new LoginFailed('invalid credentials');
-    if (u.status !== 'active') throw new LoginFailed('user disabled');
+    if (!u) throw new LoginFailed(LoginErrorCode.UserNotFound);
+    if (u.status !== 'active') throw new LoginFailed(LoginErrorCode.UserDisabled);
     const ok = await verifyPassword(password, u.password_hash);
-    if (!ok) throw new LoginFailed('invalid credentials');
+    if (!ok) throw new LoginFailed(LoginErrorCode.InvalidPassword);
     const roles = u.extra_roles ?? [Role.User];
     const claims: Claims = { sub: u.id, orgId, roles };
     return { token: await signToken(claims), claims };

@@ -23,7 +23,7 @@ const ENTERPRISE_BASE_URL = 'https://enterprise.example.test';
 const tempRoots: string[] = [];
 
 async function createArchiveFile(): Promise<string> {
-  const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'genwork-html-share-client-test-'));
+  const root = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'mixcwork-html-share-client-test-'));
   tempRoots.push(root);
   const archivePath = path.join(root, 'share.zip');
   await fs.promises.writeFile(archivePath, Buffer.from('zip-content'));

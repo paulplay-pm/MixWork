@@ -1,15 +1,14 @@
 import { configureStore } from '@reduxjs/toolkit';
 
-import enterpriseAccountReducer from '../features/enterpriseAccount/enterpriseAccountSlice';
 import { libraryArtifactListener } from './libraryArtifactListener';
 import agentReducer from './slices/agentSlice';
 import artifactReducer from './slices/artifactSlice';
 import asrQuotaReducer from './slices/asrQuotaSlice';
-import authReducer from './slices/authSlice';
-import coworkReducer from './slices/genworkSlice';
 import imReducer from './slices/imSlice';
 import kitReducer from './slices/kitSlice';
+import mcpAuthReducer from './slices/mcpAuthSlice';
 import mcpReducer from './slices/mcpSlice';
+import coworkReducer from './slices/mixcworkSlice';
 import modelReducer from './slices/modelSlice';
 import quickActionReducer from './slices/quickActionSlice';
 import scheduledTaskReducer from './slices/scheduledTaskSlice';
@@ -22,13 +21,12 @@ export const store = configureStore({
     cowork: coworkReducer,
     skill: skillReducer,
     mcp: mcpReducer,
+    mcpAuth: mcpAuthReducer,
     im: imReducer,
     quickAction: quickActionReducer,
     scheduledTask: scheduledTaskReducer,
     agent: agentReducer,
     asrQuota: asrQuotaReducer,
-    auth: authReducer,
-    enterpriseAccount: enterpriseAccountReducer,
     artifact: artifactReducer,
     kit: kitReducer,
     ssoBindings: ssoBindingsReducer,

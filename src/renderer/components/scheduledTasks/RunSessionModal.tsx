@@ -5,15 +5,15 @@ import { createPortal } from 'react-dom';
 import { collectSessionArtifacts, loadDetectedFileArtifact } from '../../services/artifactDetection';
 import { i18nService } from '../../services/i18n';
 import { type Artifact, PREVIEWABLE_ARTIFACT_TYPES } from '../../types/artifact';
-import type { GenWorkMessage, GenWorkSession } from '../../types/genwork';
+import type { MixCWorkMessage, MixCWorkSession } from '../../types/mixcwork';
 import { showShellFailureToast } from '../../utils/localFileActions';
-import AssistantTurnBlock from '../genwork/AssistantTurnBlock';
+import AssistantTurnBlock from '../mixcwork/AssistantTurnBlock';
 import {
   buildConversationTurns,
   buildDisplayItems,
   getTurnMessageIds,
-} from '../genwork/messageDisplayUtils';
-import UserMessageItem from '../genwork/UserMessageItem';
+} from '../mixcwork/messageDisplayUtils';
+import UserMessageItem from '../mixcwork/UserMessageItem';
 import { formatDateTime, stripCronMetadataPrefix } from './utils';
 
 interface RunSessionModalProps {
@@ -33,8 +33,8 @@ interface RunSessionModalProps {
  * "[cron:...]" prefix from user prompts and drop back-to-back duplicates of
  * the same prompt (the wake message can be recorded twice by the gateway).
  */
-function cleanRunMessages(messages: GenWorkMessage[]): GenWorkMessage[] {
-  const cleaned: GenWorkMessage[] = [];
+function cleanRunMessages(messages: MixCWorkMessage[]): MixCWorkMessage[] {
+  const cleaned: MixCWorkMessage[] = [];
   let previousUserText: string | null = null;
   for (const message of messages) {
     if (message.type !== 'user') {
@@ -65,7 +65,7 @@ const RunSessionModal: React.FC<RunSessionModalProps> = ({
   runError,
   onClose,
 }) => {
-  const [session, setSession] = useState<GenWorkSession | null>(null);
+  const [session, setSession] = useState<MixCWorkSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
@@ -83,7 +83,7 @@ const RunSessionModal: React.FC<RunSessionModalProps> = ({
     }
 
     try {
-      let loadedSession: GenWorkSession | null = null;
+      let loadedSession: MixCWorkSession | null = null;
 
       // 1. Try loading by local session ID first
       if (sessionId) {

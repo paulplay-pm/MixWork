@@ -2,7 +2,7 @@ import { Check, ChevronDown } from 'lucide-react';
 import type { JSX } from 'react';
 import { useState } from 'react';
 
-import type { ModelView } from '../../../api/models';
+import { isModelEnabled, type ModelView } from '../../../api/models';
 import type { ProviderKeyView } from '../../../api/providers';
 import { modelLabel } from '../modelLabel';
 import { t } from '../types';
@@ -49,7 +49,7 @@ export function ModelSelect({ value, onChange, models, providers, fallbackFree }
   const hasProviders = providerList.length > 0;
   const enabledProviderIds = new Set(providerList.filter(p => p.enabled).map(p => p.id));
   const list = (Array.isArray(models) ? models : [])
-    .filter(m => m.enabled && !m.disabled_by_admin)
+    .filter(isModelEnabled)
     .filter(m => {
       if (!hasProviders) return true;
       // A model is scoped to its provider KEY (provider_key_id), not its slug:

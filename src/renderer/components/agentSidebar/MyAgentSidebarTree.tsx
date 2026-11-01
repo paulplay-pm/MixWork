@@ -19,23 +19,23 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { agentService } from '../../services/agent';
-import { genworkService } from '../../services/genwork';
 import { i18nService } from '../../services/i18n';
+import { mixcworkService } from '../../services/mixcwork';
 import { RootState } from '../../store';
 import { selectCurrentSessionId } from '../../store/selectors/coworkSelectors';
-import { setDraftCollaborationMode } from '../../store/slices/genworkSlice';
-import { GenWorkCollaborationMode } from '../../types/genwork';
+import { setDraftCollaborationMode } from '../../store/slices/mixcworkSlice';
+import { MixCWorkCollaborationMode } from '../../types/mixcwork';
 import { getAgentDisplayName, isDefaultAgentId } from '../../utils/agentDisplay';
 import AgentCreateModal from '../agent/AgentCreateModal';
 import AgentSettingsPanel from '../agent/AgentSettingsPanel';
+import UserGroupIcon from '../icons/UserGroupIcon';
 import {
   type CoworkOpenAgentTaskSlotEventDetail,
   type CoworkOpenShareOptionsEventDetail,
   CoworkShortcutDirection,
   type CoworkSwitchAgentEventDetail,
   CoworkUiEvent,
-} from '../genwork/constants';
-import UserGroupIcon from '../icons/UserGroupIcon';
+} from '../mixcwork/constants';
 import AgentSidebarActivityView from './AgentSidebarActivityView';
 import AgentTaskRow from './AgentTaskRow';
 import AgentTreeNode from './AgentTreeNode';
@@ -241,12 +241,12 @@ const MyAgentSidebarTree: React.FC<MyAgentSidebarTreeProps> = ({
     try {
       if (task.agentId !== currentAgentId) {
         agentService.switchAgent(task.agentId, { targetSessionId: task.id });
-        await genworkService.loadSessions(task.agentId);
+        await mixcworkService.loadSessions(task.agentId);
       }
       onShowCowork();
       // Clear subagent detail view so the main session detail is shown
       window.dispatchEvent(new CustomEvent(CoworkUiEvent.SelectSubagent, { detail: null }));
-      const session = await genworkService.loadSession(task.id);
+      const session = await mixcworkService.loadSession(task.id);
       if (!session) {
         logTaskNavigationIssue(
           'warn',
@@ -268,7 +268,7 @@ const MyAgentSidebarTree: React.FC<MyAgentSidebarTreeProps> = ({
       }));
       return null;
     } finally {
-      genworkService.finishSessionNavigation(task.id);
+      mixcworkService.finishSessionNavigation(task.id);
     }
   }, [currentAgentId, currentSessionId, onShowCowork, onTaskSelected]);
 
@@ -291,7 +291,7 @@ const MyAgentSidebarTree: React.FC<MyAgentSidebarTreeProps> = ({
       void (async () => {
         if (targetAgent.id !== currentAgentId) {
           agentService.switchAgent(targetAgent.id);
-          await genworkService.loadSessions(targetAgent.id);
+          await mixcworkService.loadSessions(targetAgent.id);
         }
         expandAgent(targetAgent.id);
         onShowCowork();
@@ -319,7 +319,7 @@ const MyAgentSidebarTree: React.FC<MyAgentSidebarTreeProps> = ({
       void (async () => {
         expandAgent(currentAgentId);
         void expandTasks(currentAgentId);
-        const result = await genworkService.listSessionsForAgentPreview(currentAgentId, slot, 0);
+        const result = await mixcworkService.listSessionsForAgentPreview(currentAgentId, slot, 0);
         const session = result.sessions?.[slot - 1];
         if (!result.success || !session) {
           window.dispatchEvent(new CustomEvent('app:showToast', {
@@ -332,13 +332,13 @@ const MyAgentSidebarTree: React.FC<MyAgentSidebarTreeProps> = ({
         try {
           if (agentId !== currentAgentId) {
             agentService.switchAgent(agentId, { targetSessionId: session.id });
-            await genworkService.loadSessions(agentId);
+            await mixcworkService.loadSessions(agentId);
           }
           onShowCowork();
           window.dispatchEvent(new CustomEvent(CoworkUiEvent.SelectSubagent, { detail: null }));
-          await genworkService.loadSession(session.id);
+          await mixcworkService.loadSession(session.id);
         } finally {
-          genworkService.finishSessionNavigation(session.id);
+          mixcworkService.finishSessionNavigation(session.id);
         }
       })();
     };
@@ -356,7 +356,7 @@ const MyAgentSidebarTree: React.FC<MyAgentSidebarTreeProps> = ({
   }, [agentNodes, collapseAgent, collapseTasks, currentAgentId, expandAgent, expandTasks, onShowCowork]);
 
   const handleDeleteTask = async (task: AgentSidebarTaskNode) => {
-    const deleted = await genworkService.deleteSession(task.id);
+    const deleted = await mixcworkService.deleteSession(task.id);
     onSidebarAction?.(deleted ? 'task_delete_success' : 'task_delete_failed', {
       ...getTaskActionParams(task),
       result: deleted ? 'success' : 'failed',
@@ -367,7 +367,7 @@ const MyAgentSidebarTree: React.FC<MyAgentSidebarTreeProps> = ({
   };
 
   const handleToggleTaskPin = async (task: AgentSidebarTaskNode, pinned: boolean) => {
-    const result = await genworkService.setSessionPinned(task.id, pinned);
+    const result = await mixcworkService.setSessionPinned(task.id, pinned);
     onSidebarAction?.('task_pin_toggle', {
       ...getTaskActionParams(task),
       result: result.success ? 'success' : 'failed',
@@ -379,7 +379,7 @@ const MyAgentSidebarTree: React.FC<MyAgentSidebarTreeProps> = ({
   };
 
   const handleRenameTask = async (task: AgentSidebarTaskNode, title: string) => {
-    const renamed = await genworkService.renameSession(task.id, title);
+    const renamed = await mixcworkService.renameSession(task.id, title);
     onSidebarAction?.('task_rename_submit', {
       ...getTaskActionParams(task),
       result: renamed ? 'success' : 'failed',
@@ -405,7 +405,7 @@ const MyAgentSidebarTree: React.FC<MyAgentSidebarTreeProps> = ({
   const handleEnterBatchMode = (task: AgentSidebarTaskNode) => {
     if (task.agentId !== currentAgentId) {
       agentService.switchAgent(task.agentId);
-      void genworkService.loadSessions(task.agentId);
+      void mixcworkService.loadSessions(task.agentId);
     }
     onEnterBatchMode(task.id, task.agentId);
   };
@@ -418,12 +418,12 @@ const MyAgentSidebarTree: React.FC<MyAgentSidebarTreeProps> = ({
     });
     if (agent.id !== currentAgentId) {
       agentService.switchAgent(agent.id);
-      await genworkService.loadSessions(agent.id);
+      await mixcworkService.loadSessions(agent.id);
     }
-    genworkService.clearSession({ restoreAgentSkills: true });
+    mixcworkService.clearSession({ restoreAgentSkills: true });
     dispatch(setDraftCollaborationMode({
       draftKey: '__home__',
-      mode: GenWorkCollaborationMode.Default,
+      mode: MixCWorkCollaborationMode.Default,
     }));
     onShowCowork();
     window.setTimeout(() => {

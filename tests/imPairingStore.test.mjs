@@ -34,7 +34,7 @@ const {
 // ── test helpers ─────────────────────────────────────────────────────────────
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-pairing-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-pairing-test-'));
 }
 
 function cleanupDir(dir) {

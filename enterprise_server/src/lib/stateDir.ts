@@ -62,6 +62,52 @@ export function ssoLogoFile(connectionId: string, ext: string): string {
   return join(ssoLogoUploadDir(), `${connectionId}${ext}`);
 }
 
+/** Per-connector icon upload directory. Each connector may store one icon
+ *  file (`<connectorId>.<ext>`); the row's `icon` column points at
+ *  `/connector-icons/uploads/<connectorId>.<ext>` and the Hono static-serve
+ *  route under `server.ts` serves it. */
+export function connectorIconUploadDir(): string {
+  return join(_stateDir, 'connector-icons', 'uploads');
+}
+
+/** On-disk path for a single connector's uploaded icon. */
+export function connectorIconFile(connectorId: string, ext: string): string {
+  return join(connectorIconUploadDir(), `${connectorId}${ext}`);
+}
+
+/** Per-kit icon upload directory, keyed by the kit's slug. Served at
+ *  `/kit-icons/uploads/<slug>.<ext>`. */
+export function kitIconUploadDir(): string {
+  return join(_stateDir, 'kit-icons', 'uploads');
+}
+
+/** On-disk path for a single kit's uploaded icon. */
+export function kitIconFile(slug: string, ext: string): string {
+  return join(kitIconUploadDir(), `${slug}${ext}`);
+}
+
+/** Per-agent icon upload directory, keyed by the agent's id. Served at
+ *  `/agent-icons/uploads/<agentId>.<ext>`. */
+export function agentIconUploadDir(): string {
+  return join(_stateDir, 'agent-icons', 'uploads');
+}
+
+/** On-disk path for a single agent's uploaded icon. */
+export function agentIconFile(agentId: string, ext: string): string {
+  return join(agentIconUploadDir(), `${agentId}${ext}`);
+}
+
+/** Per-skill icon upload directory, keyed by the skill's id. Served at
+ *  `/skill-icons/uploads/<id>.<ext>`. */
+export function skillIconUploadDir(): string {
+  return join(_stateDir, 'skill-icons', 'uploads');
+}
+
+/** On-disk path for a single skill's uploaded icon. */
+export function skillIconFile(skillId: string, ext: string): string {
+  return join(skillIconUploadDir(), `${skillId}${ext}`);
+}
+
 /**
  * Enumerate every staging upload directory under the on-disk release installer
  * root). Missing or freshly-created trees yield an empty list — the caller's

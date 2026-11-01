@@ -1,4 +1,4 @@
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const fetchMock = vi.fn();
 (globalThis as unknown as { fetch: unknown }).fetch = fetchMock;
@@ -94,7 +94,41 @@ describe('api/client', () => {
   test('getRaw returns raw text (CSV)', async () => {
     apiClient.setTokenProvider(() => 'jwt-1');
     fetchMock.mockResolvedValueOnce(new Response('a,b\n1,2', { status: 200 }));
-    const text = await apiClient.getRaw('/admin/audit?format=csv');
+    // The audit CSV lives on its own `/export.csv` route; the old
+    // `?format=csv` spelling on `/admin/audit` was removed. What this case
+    // pins is `getRaw`'s contract — text in, text out, no JSON parse — so the
+    // path only has to be one the client would really send.
+    const text = await apiClient.getRaw('/admin/audit/export.csv?range=7d');
     expect(text).toBe('a,b\n1,2');
+  });
+});
+describe('api/client postRaw', () => {
+  beforeEach(() => {
+    // The outer beforeEach lives inside the other describe, so this block
+    // needs its own reset — otherwise calls[0] is a request from an earlier test.
+    fetchMock.mockReset();
+    apiClient.setBaseUrl('http://test');
+    apiClient.setTokenProvider(() => null);
+    apiClient.setRefresh(null);
+  });
+
+  test('a FormData body keeps the browser-owned content type', async () => {
+    // The regression this guards: forcing `application/octet-stream` dropped
+    // the multipart boundary, the server found no fields, and every icon
+    // upload came back as `missing_file` — reported to the admin as "only
+    // PNG / JPEG / WEBP / SVG".
+    fetchMock.mockResolvedValueOnce(new Response('{"icon":"/x.png"}', { status: 200 }));
+    const form = new FormData();
+    form.append('icon', new File([new Uint8Array([1])], 'a.png', { type: 'image/png' }));
+    await apiClient.postRaw('/admin/x/icon', form);
+    const headers = new Headers((fetchMock.mock.calls[0][1] as RequestInit).headers);
+    expect(headers.get('content-type')).toBeNull();
+  });
+
+  test('a raw body still carries the caller-provided content type', async () => {
+    fetchMock.mockResolvedValueOnce(new Response('{}', { status: 200 }));
+    await apiClient.postRaw('/admin/x/zip', new Uint8Array([1]), { 'content-type': 'application/zip' });
+    const headers = new Headers((fetchMock.mock.calls[0][1] as RequestInit).headers);
+    expect(headers.get('content-type')).toBe('application/zip');
   });
 });

@@ -12,15 +12,15 @@ import {
   type ModelThinkingConfig,
   type ModelThinkingLevel as ModelThinkingLevelType,
   ProviderName,
-  supportsGenWorkRequestOptionsV1,
+  supportsMixCWorkRequestOptionsV1,
 } from '@shared/providers';
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { selectIsEnterpriseAccount } from '../features/enterpriseAccount/selectors';
 import { getProviderIcon, ProviderIconId } from '../providers/uiRegistry';
-import { mapEnterpriseModelsToModels } from '../services/auth';
+import { mapEnterpriseModelsToModels } from '../services/enterpriseModels';
+import { selectIsEnterpriseAccount } from '../services/enterpriseMt';
 import { i18nService } from '../services/i18n';
 import {
   readRememberedModelThinkingLevel,
@@ -170,10 +170,9 @@ export const ModelAccessPromptModal: React.FC<ModelAccessPromptModalProps> = ({
   primaryButtonKey,
   showLearnMore,
 }) => {
-  // Default to the live enterprise-login signal so callers that omit the prop
-  // (e.g. the chat-send gate) don't fall back to the legacy youdao
-  // `state.auth.isLoggedIn`, which is stuck `false` after the desktop-youd
-  // disconnect. See docs/superpowers/specs/2026-08-27-desktop-youdao-disconnect-design.md §4.7.
+  // Default to the live enterprise-login signal for callers that omit the prop
+  // (e.g. the chat-send gate); the legacy youdao `state.auth` consumer profile
+  // has been removed. See docs/superpowers/specs/2026-08-27-desktop-youdao-disconnect-design.md §4.7.
   const enterpriseLoggedIn = useSelector(selectIsEnterpriseAccount);
   const resolved = resolveAccessPromptKeys({
     promptKind,
@@ -384,7 +383,7 @@ export function canConfigureModelThinking(
   > | null | undefined,
 ): boolean {
   return !!model?.thinkingConfig
-    && supportsGenWorkRequestOptionsV1(model.requestCapabilities)
+    && supportsMixCWorkRequestOptionsV1(model.requestCapabilities)
     && model.accessible !== false
     && !isModelAgenticBlocked(model);
 }
@@ -393,7 +392,7 @@ export function supportsConfigurableModelThinkingProtocol(
   model: Pick<Model, 'requestCapabilities' | 'thinkingConfig'> | null | undefined,
 ): boolean {
   return !!model?.thinkingConfig
-    && supportsGenWorkRequestOptionsV1(model.requestCapabilities);
+    && supportsMixCWorkRequestOptionsV1(model.requestCapabilities);
 }
 
 const MODEL_ICON_PROVIDER_HINTS: Array<{ pattern: RegExp; providerName: ProviderName | ProviderIconId }> = [
@@ -821,7 +820,7 @@ const ModelSelector: React.FC<ModelSelectorProps> = ({
   };
   const resolveModelIconProviderKey = (model: Model): string => {
     const providerKey = model.providerKey?.trim();
-    if (providerKey && providerKey !== ProviderName.GenworkServer) return providerKey;
+    if (providerKey && providerKey !== ProviderName.MixcworkServer) return providerKey;
 
     const searchableText = `${model.name} ${model.id}`;
     return MODEL_ICON_PROVIDER_HINTS.find(({ pattern }) => pattern.test(searchableText))?.providerName

@@ -8,6 +8,17 @@ import {
 } from '@heroicons/react/24/outline';
 import { ArtifactBrowserPartition } from '@shared/artifactPreview/constants';
 import {
+  HtmlShareAccessMode,
+  type HtmlShareAccessMode as HtmlShareAccessModeValue,
+  type HtmlShareConfigurableStatus,
+  HtmlShareDisabledSource,
+  type HtmlShareDisabledSource as HtmlShareDisabledSourceValue,
+  HtmlShareStatus,
+  type HtmlShareStatus as HtmlShareStatusValue,
+} from '@shared/htmlShare/constants';
+import { LibraryNavigationEvent } from '@shared/library/constants';
+import type { LocalWebService } from '@shared/localWebServices/constants';
+import {
   BrowserAnnotationGuestChannel,
   BrowserAnnotationGuestCommandType,
   type BrowserAnnotationGuestEnvelope,
@@ -20,19 +31,8 @@ import {
   type CoworkBrowserAnnotation,
   type CoworkBrowserAnnotationBatch,
   hasBrowserAnnotationContent,
-} from '@shared/genwork/browserAnnotations';
-import type { CoworkSelectedTextSnippet } from '@shared/genwork/selectedText';
-import {
-  HtmlShareAccessMode,
-  type HtmlShareAccessMode as HtmlShareAccessModeValue,
-  type HtmlShareConfigurableStatus,
-  HtmlShareDisabledSource,
-  type HtmlShareDisabledSource as HtmlShareDisabledSourceValue,
-  HtmlShareStatus,
-  type HtmlShareStatus as HtmlShareStatusValue,
-} from '@shared/htmlShare/constants';
-import { LibraryNavigationEvent } from '@shared/library/constants';
-import type { LocalWebService } from '@shared/localWebServices/constants';
+} from '@shared/mixcwork/browserAnnotations';
+import type { CoworkSelectedTextSnippet } from '@shared/mixcwork/selectedText';
 import {
   type PublishingQuotaErrorData,
   PublishingResourceKind,
@@ -60,10 +60,9 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { selectIsEnterpriseAccount } from '@/features/enterpriseAccount/selectors';
-import { authService } from '@/services/auth';
 import { copyTextToClipboard } from '@/services/clipboard';
 import { getPortalPricingUrl } from '@/services/endpoints';
+import { selectIsEnterpriseAccount } from '@/services/enterpriseMt';
 import { i18nService } from '@/services/i18n';
 import {
   readLocalServiceProjectDirectory as readNodeDeploymentProjectDirectory,
@@ -89,7 +88,7 @@ import {
 import {
   removeDraftBrowserAnnotationBatch,
   upsertDraftBrowserAnnotationBatch,
-} from '@/store/slices/genworkSlice';
+} from '@/store/slices/mixcworkSlice';
 import {
   type Artifact,
   type ArtifactType,
@@ -784,7 +783,6 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   const activePreviewTab = useSelector((state: RootState) =>
     selectActivePreviewTab(state, sessionId),
   );
-  const authState = useSelector((state: RootState) => state.auth);
   const isEnterpriseAccount = useSelector(selectIsEnterpriseAccount);
   const browserAnnotationBatches = useSelector(
     (state: RootState) => (
@@ -852,8 +850,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   const publishingAnalyticsAttemptRef =
     useRef<PublishingAnalyticsAttemptContext | null>(null);
   const handledLocalServiceDeploymentRequestIdRef = useRef<number | null>(null);
-  const publishingAccountGenerationRef = useRef(authState.accountGeneration);
-  publishingAccountGenerationRef.current = authState.accountGeneration;
+  const publishingAccountGenerationRef = useRef(0);
   nodeDeploymentLookupRef.current = nodeDeploymentLookup;
 
   const previewableArtifacts = artifacts.filter(a => PREVIEWABLE_ARTIFACT_TYPES.has(a.type));
@@ -1295,7 +1292,6 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   }, []);
 
   useEffect(() => {
-    publishingAccountGenerationRef.current = authState.accountGeneration;
     nodeDeploymentActionRunIdRef.current += 1;
     nodeDeploymentAccessRunIdRef.current += 1;
     nodeDeploymentPersistenceOperationRunIdRef.current += 1;
@@ -1320,19 +1316,15 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
     setIsNodeDeploymentBusy(false);
     setIsNodeDeploymentAccessUpdating(false);
     setIsHtmlShareStatusUpdating(false);
-  }, [authState.accountGeneration, authState.ownerAccountKey]);
+  }, []);
 
   useEffect(() => {
     if (
       !browserLocalServiceUrl ||
       !selectedNodeDeploymentLookupKey ||
       !getArtifactSubscriptionDecision({
-        isLoggedIn: authState.isLoggedIn,
+        isLoggedIn: false,
         isEnterpriseAccount,
-        subscriptionStatus: authState.quota?.subscriptionStatus,
-        accountMode: authState.quota?.accountMode ?? authState.user?.accountMode,
-        shareEntitled: authState.quota?.shareEntitled,
-        deploymentEntitled: authState.quota?.deploymentEntitled,
       }, ArtifactSubscriptionFeature.Deployment).allowed
     ) {
       setNodeDeploymentLookup(null);
@@ -1409,10 +1401,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
       isCancelled = true;
     };
   }, [
-    authState.isLoggedIn,
     isEnterpriseAccount,
-    authState.quota,
-    authState.user?.accountMode,
     browserLocalServiceUrl,
     browserLocalServiceProjectDirectory,
     selectedNodeDeploymentLookupKey,
@@ -1726,7 +1715,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
   const handleOpenInBrowser = useCallback(() => {
     if (!selectedArtifact) return;
     reportSelectedArtifactAction('open_in_browser', {
-      openTarget: selectedArtifact.type === ArtifactTypeValue.Html ? 'genwork_browser' : 'external_browser',
+      openTarget: selectedArtifact.type === ArtifactTypeValue.Html ? 'mixcwork_browser' : 'external_browser',
     });
 
     if (
@@ -1814,24 +1803,15 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
     feature: ArtifactSubscriptionFeatureValue,
   ): Promise<boolean> => {
     const requestAccountGeneration = publishingAccountGenerationRef.current;
-    const decision = await resolveArtifactSubscriptionDecision({
-      isLoggedIn: authState.isLoggedIn,
+    const snapshot = {
+      isLoggedIn: false,
       isEnterpriseAccount,
-      subscriptionStatus: authState.quota?.subscriptionStatus,
-      accountMode: authState.quota?.accountMode ?? authState.user?.accountMode,
-      shareEntitled: authState.quota?.shareEntitled,
-      deploymentEntitled: authState.quota?.deploymentEntitled,
-    }, async () => {
-      const refreshed = await authService.refreshAuthState();
-      return {
-        isLoggedIn: refreshed.isLoggedIn,
-        isEnterpriseAccount,
-        subscriptionStatus: refreshed.quota?.subscriptionStatus,
-        accountMode: refreshed.quota?.accountMode ?? refreshed.user?.accountMode,
-        shareEntitled: refreshed.quota?.shareEntitled,
-        deploymentEntitled: refreshed.quota?.deploymentEntitled,
-      };
-    }, feature);
+    };
+    const decision = await resolveArtifactSubscriptionDecision(
+      snapshot,
+      async () => snapshot,
+      feature,
+    );
     if (publishingAccountGenerationRef.current !== requestAccountGeneration) {
       return false;
     }
@@ -1842,7 +1822,7 @@ const ArtifactPanel: React.FC<ArtifactPanelProps> = ({
       return false;
     }
     return true;
-  }, [authState.isLoggedIn, isEnterpriseAccount, authState.quota, authState.user?.accountMode]);
+  }, [isEnterpriseAccount]);
 
   const handleCopyShareLink = useCallback(
     async (url?: string, shareCode?: string) => {
@@ -6139,12 +6119,12 @@ export function buildBrowserAnnotationScript(labels: BrowserAnnotationLabels): s
   return `
 (() => {
   const labels = ${JSON.stringify(labels)};
-  if (window.__genworkAnnotationCleanup) {
-    window.__genworkAnnotationCleanup();
+  if (window.__mixcworkAnnotationCleanup) {
+    window.__mixcworkAnnotationCleanup();
   }
 
   const overlayRoot = document.createElement('div');
-  overlayRoot.setAttribute('data-genwork-annotation-ui', 'true');
+  overlayRoot.setAttribute('data-mixcwork-annotation-ui', 'true');
   overlayRoot.style.cssText = 'position:fixed;inset:0;z-index:2147483647;pointer-events:none;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;';
 
   const highlight = document.createElement('div');
@@ -6154,7 +6134,7 @@ export function buildBrowserAnnotationScript(labels: BrowserAnnotationLabels): s
   tooltip.style.cssText = 'position:fixed;display:none;max-width:260px;border-radius:8px;background:rgba(18,18,22,0.94);color:#fff;padding:8px 10px;font-size:12px;line-height:1.4;box-shadow:0 8px 22px rgba(0,0,0,0.28);pointer-events:none;';
 
   const composer = document.createElement('div');
-  composer.setAttribute('data-genwork-annotation-ui', 'true');
+  composer.setAttribute('data-mixcwork-annotation-ui', 'true');
   composer.style.cssText = 'position:fixed;display:none;min-width:300px;max-width:380px;border-radius:16px;background:rgba(22,22,24,0.96);color:#fff;padding:6px 7px;box-shadow:0 12px 32px rgba(0,0,0,0.28);pointer-events:auto;gap:6px;align-items:center;';
 
   const textarea = document.createElement('textarea');
@@ -6186,7 +6166,7 @@ export function buildBrowserAnnotationScript(labels: BrowserAnnotationLabels): s
     document.removeEventListener('click', handleClick, true);
     document.removeEventListener('keydown', handleKeyDown, true);
     overlayRoot.remove();
-    delete window.__genworkAnnotationCleanup;
+    delete window.__mixcworkAnnotationCleanup;
   };
 
   const finish = (result) => {
@@ -6195,7 +6175,7 @@ export function buildBrowserAnnotationScript(labels: BrowserAnnotationLabels): s
     resolvePromise(result);
   };
 
-  const isAnnotationUi = (target) => target?.closest?.('[data-genwork-annotation-ui="true"]');
+  const isAnnotationUi = (target) => target?.closest?.('[data-mixcwork-annotation-ui="true"]');
   const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
   const cleanText = (value) => (value || '').replace(/\\s+/g, ' ').trim().slice(0, 120);
   const formatFont = (value) => cleanText(value).split(',')[0].replace(/["']/g, '').slice(0, 42);
@@ -6330,7 +6310,7 @@ export function buildBrowserAnnotationScript(labels: BrowserAnnotationLabels): s
   document.addEventListener('mousemove', handleMouseMove, true);
   document.addEventListener('click', handleClick, true);
   document.addEventListener('keydown', handleKeyDown, true);
-  window.__genworkAnnotationCleanup = cleanup;
+  window.__mixcworkAnnotationCleanup = cleanup;
 
   return new Promise((resolve) => {
     resolvePromise = resolve;

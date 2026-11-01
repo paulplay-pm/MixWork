@@ -92,13 +92,16 @@ export function registerSkillHandlers(deps: SkillHandlerDeps): void {
     }
   });
 
-  ipcMain.handle('skills:download', async (_event, source: string) => {
-    return getSkillManager().downloadSkill(source);
+  ipcMain.handle('skills:download', async (_event, source: string, catalogVersion?: string) => {
+    return getSkillManager().downloadSkill(source, catalogVersion);
   });
 
-  ipcMain.handle('skills:upgrade', async (_event, skillId: string, downloadUrl: string) => {
-    return getSkillManager().upgradeSkill(skillId, downloadUrl);
-  });
+  ipcMain.handle(
+    'skills:upgrade',
+    async (_event, skillId: string, downloadUrl: string, catalogVersion?: string) => {
+      return getSkillManager().upgradeSkill(skillId, downloadUrl, catalogVersion);
+    }
+  );
 
   ipcMain.handle('skills:confirmInstall', async (_event, pendingId: string, action: string) => {
     const validActions = ['install', 'installDisabled', 'cancel'];
@@ -171,6 +174,9 @@ export function registerSkillHandlers(deps: SkillHandlerDeps): void {
         skills: skills.map((s) => ({
           ...s,
           url: `${base}/api/skill-marketplace/download/${s.id}`,
+          // An uploaded icon is a path on the enterprise server; the desktop
+          // renders it in an <img>, so it has to be absolute.
+          icon: s.icon?.startsWith('/') ? `${base}${s.icon}` : s.icon,
           localId: mgr.getCatalogLocalId(s.id) ?? null,
         })),
         categories: categories.map((c) => ({ id: c.id, en: c.name_en, zh: c.name_zh })),

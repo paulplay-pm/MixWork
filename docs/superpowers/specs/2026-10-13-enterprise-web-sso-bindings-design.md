@@ -229,7 +229,7 @@ The desktop plan added 23 `ssoBindings.*` keys + 1 `sso.profile.bindMenuItem` in
 | Key | zh | en |
 |---|---|---|
 | `ssoBindings.title` | `SSO 账号绑定` | `SSO account binding` |
-| `ssoBindings.subtitle` | `绑定企业身份源后,你可以使用对应的单点登录方式免密进入 GenWork。可以同时绑定多个身份源,互不影响。` | `After binding an enterprise identity source, you can use the corresponding SSO sign-in to access GenWork without password. You can bind multiple sources simultaneously.` |
+| `ssoBindings.subtitle` | `绑定企业身份源后,你可以使用对应的单点登录方式免密进入 MixCWork。可以同时绑定多个身份源,互不影响。` | `After binding an enterprise identity source, you can use the corresponding SSO sign-in to access MixCWork without password. You can bind multiple sources simultaneously.` |
 | `ssoBindings.statusBadge` | `已绑定 {bound} / {total}` | `Bound {bound} / {total}` |
 | `ssoBindings.searchPlaceholder` | `搜索 SSO 类型或名称` | `Search SSO type or name` |
 | `ssoBindings.tabAll` | `全部 {n}` | `All {n}` |

@@ -1,32 +1,21 @@
 import { create } from 'zustand';
 
 import type { Claims } from '../api/types';
+import { base64UrlDecode } from './jwt';
+
+/** Why the session ended. `session-expired` is not the admin's doing — the
+ *  token lapsed and could not be renewed — and the login page tells them so
+ *  instead of leaving them to wonder why they were signed out. */
+export type LogoutReason = 'manual' | 'session-expired';
 
 interface AuthState {
   token: string | null;
   claims: Claims | null;
+  /** Why the last logout happened; null while signed in. */
+  logoutReason: LogoutReason | null;
   login: (token: string) => void;
-  logout: () => void;
+  logout: (reason?: LogoutReason) => void;
   hasCapability: (role: string) => boolean;
-}
-
-/**
- * Decode the payload of a JWT (base64url-encoded JSON) in a browser-safe way.
- *
- * Must NOT use `Buffer` — it is a Node-only global that is `undefined` in the
- * browser, so `Buffer.from(..., 'base64url')` threw a `ReferenceError` on every
- * login (masked as "Sign-in failed" by LoginPage's try/catch even though the
- * POST returned 200). `atob` + `TextDecoder` work in both the browser and the
- * jsdom test environment.
- */
-function base64UrlDecode(b64url: string): string {
-  // base64url -> base64 (RFC 4648 §5: swap alphabet, re-add padding)
-  let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
-  const pad = b64.length % 4;
-  if (pad) b64 += '='.repeat(4 - pad);
-  const bin = atob(b64);
-  const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
-  return new TextDecoder('utf-8').decode(bytes);
 }
 
 function decode(token: string): Claims {
@@ -41,7 +30,7 @@ function decode(token: string): Claims {
 }
 
 /** localStorage key for the session JWT. */
-const TOKEN_KEY = 'genwork.enterprise.auth.token';
+const TOKEN_KEY = 'mixcwork.enterprise.auth.token';
 
 /**
  * True when the JWT's `exp` claim (seconds, per RFC 7519) is in the past. A
@@ -58,25 +47,35 @@ export function isTokenExpired(token: string): boolean {
   }
 }
 
+interface StoredSession {
+  token: string | null;
+  claims: Claims | null;
+  /** True when a stored token was dropped because it had already expired. */
+  expired: boolean;
+}
+
 /**
  * Restore the session from localStorage on a full page load (a browser refresh
  * wipes in-memory JS state, so without this the app would bounce every reload
  * back to /login). Returns an empty session if nothing is stored or the stored
- * token is expired. An expired token is also removed so it doesn't linger.
+ * token is expired. An expired token is also removed so it doesn't linger, and
+ * reported as such: reloading a tab after the session lapsed is the most
+ * common way an admin comes back to the login form, so the page must be able
+ * to explain why it is empty.
  */
-export function readStoredSession(): { token: string | null; claims: Claims | null } {
+export function readStoredSession(): StoredSession {
   let stored: string | null = null;
   try {
     stored = localStorage.getItem(TOKEN_KEY);
   } catch {
-    return { token: null, claims: null }; // localStorage unavailable
+    return { token: null, claims: null, expired: false }; // localStorage unavailable
   }
-  if (!stored) return { token: null, claims: null };
+  if (!stored) return { token: null, claims: null, expired: false };
   if (isTokenExpired(stored)) {
     try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
-    return { token: null, claims: null };
+    return { token: null, claims: null, expired: true };
   }
-  return { token: stored, claims: decode(stored) };
+  return { token: stored, claims: decode(stored), expired: false };
 }
 
 const initialSession = readStoredSession();
@@ -84,13 +83,16 @@ const initialSession = readStoredSession();
 export const useAuthStore = create<AuthState>((set, get) => ({
   token: initialSession.token,
   claims: initialSession.claims,
+  // A page load that threw an expired token away is a session that ended
+  // without the admin asking, so the login page says so.
+  logoutReason: initialSession.expired ? 'session-expired' : null,
   login: (token) => {
     try { localStorage.setItem(TOKEN_KEY, token); } catch { /* localStorage unavailable */ }
-    set({ token, claims: decode(token) });
+    set({ token, claims: decode(token), logoutReason: null });
   },
-  logout: () => {
+  logout: (reason: LogoutReason = 'manual') => {
     try { localStorage.removeItem(TOKEN_KEY); } catch { /* localStorage unavailable */ }
-    set({ token: null, claims: null });
+    set({ token: null, claims: null, logoutReason: reason });
   },
   hasCapability: (role) => {
     const { claims } = get();

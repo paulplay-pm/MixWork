@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest';
 
 describe('assertDockerOnPath', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn>;
+  let exitSpy: MockInstance<[code?: string | number | null | undefined], never>;
   let execSyncMock: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {

@@ -9,7 +9,7 @@ index 13834104ef0..dfb44d9bdb0 100644
 +  it("passes through explicit context cache params for Claude OpenAI-compatible providers", () => {
 +    const { calls, agent } = createOptionsCaptureAgent();
 +    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
-+    const cfg = buildModelConfig("genwork-server/claude-sonnet-4-6-YoudaoInner", {
++    const cfg = buildModelConfig("mixcwork-server/claude-sonnet-4-6-YoudaoInner", {
 +      cacheRetention: "short",
 +      contextCacheProvider: "anthropic-compatible",
 +      contextCacheMode: "explicit",
@@ -19,13 +19,13 @@ index 13834104ef0..dfb44d9bdb0 100644
 +      applyExtraParamsToAgent(
 +        agent,
 +        cfg,
-+        "genwork-server",
++        "mixcwork-server",
 +        "claude-sonnet-4-6-YoudaoInner",
 +      );
 +
 +      const model = {
 +        api: "openai-completions",
-+        provider: "genwork-server",
++        provider: "mixcwork-server",
 +        id: "claude-sonnet-4-6-YoudaoInner",
 +      } as Model<"openai-completions">;
 +      const context: Context = { messages: [] };
@@ -38,7 +38,7 @@ index 13834104ef0..dfb44d9bdb0 100644
 +      expect(captured?.contextCacheProvider).toBe("anthropic-compatible");
 +      expect(captured?.contextCacheMode).toBe("explicit");
 +      expect(infoSpy).toHaveBeenCalledWith(
-+        "******************** [ExplicitCachePassThrough] provider=genwork-server model=claude-sonnet-4-6-YoudaoInner api=openai-completions cacheRetention=short contextCacheProvider=anthropic-compatible contextCacheMode=explicit",
++        "******************** [ExplicitCachePassThrough] provider=mixcwork-server model=claude-sonnet-4-6-YoudaoInner api=openai-completions cacheRetention=short contextCacheProvider=anthropic-compatible contextCacheMode=explicit",
 +      );
 +    } finally {
 +      infoSpy.mockRestore();
@@ -48,18 +48,18 @@ index 13834104ef0..dfb44d9bdb0 100644
 +  it("passes through explicit context cache params for Qwen OpenAI-compatible providers", () => {
 +    const { calls, agent } = createOptionsCaptureAgent();
 +    const infoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
-+    const cfg = buildModelConfig("genwork-server/qwen3.6-coder", {
++    const cfg = buildModelConfig("mixcwork-server/qwen3.6-coder", {
 +      cacheRetention: "short",
 +      contextCacheProvider: "dashscope",
 +      contextCacheMode: "explicit",
 +    });
 +
 +    try {
-+      applyExtraParamsToAgent(agent, cfg, "genwork-server", "qwen3.6-coder");
++      applyExtraParamsToAgent(agent, cfg, "mixcwork-server", "qwen3.6-coder");
 +
 +      const model = {
 +        api: "openai-completions",
-+        provider: "genwork-server",
++        provider: "mixcwork-server",
 +        id: "qwen3.6-coder",
 +      } as Model<"openai-completions">;
 +      const context: Context = { messages: [] };
@@ -72,7 +72,7 @@ index 13834104ef0..dfb44d9bdb0 100644
 +      expect(captured?.contextCacheProvider).toBe("dashscope");
 +      expect(captured?.contextCacheMode).toBe("explicit");
 +      expect(infoSpy).toHaveBeenCalledWith(
-+        "******************** [ExplicitCachePassThrough] provider=genwork-server model=qwen3.6-coder api=openai-completions cacheRetention=short contextCacheProvider=dashscope contextCacheMode=explicit",
++        "******************** [ExplicitCachePassThrough] provider=mixcwork-server model=qwen3.6-coder api=openai-completions cacheRetention=short contextCacheProvider=dashscope contextCacheMode=explicit",
 +      );
 +    } finally {
 +      infoSpy.mockRestore();
@@ -85,27 +85,27 @@ index 13834104ef0..dfb44d9bdb0 100644
 +
 +    applyExtraParamsToAgent(
 +      missingMode.agent,
-+      buildModelConfig("genwork-server/claude-sonnet-4-6-YoudaoInner", {
++      buildModelConfig("mixcwork-server/claude-sonnet-4-6-YoudaoInner", {
 +        cacheRetention: "short",
 +        contextCacheProvider: "anthropic-compatible",
 +      }),
-+      "genwork-server",
++      "mixcwork-server",
 +      "claude-sonnet-4-6-YoudaoInner",
 +    );
 +    applyExtraParamsToAgent(
 +      invalidProvider.agent,
-+      buildModelConfig("genwork-server/claude-sonnet-4-6-YoudaoInner", {
++      buildModelConfig("mixcwork-server/claude-sonnet-4-6-YoudaoInner", {
 +        cacheRetention: "short",
 +        contextCacheProvider: "other-compatible",
 +        contextCacheMode: "explicit",
 +      }),
-+      "genwork-server",
++      "mixcwork-server",
 +      "claude-sonnet-4-6-YoudaoInner",
 +    );
 +
 +    const model = {
 +      api: "openai-completions",
-+      provider: "genwork-server",
++      provider: "mixcwork-server",
 +      id: "claude-sonnet-4-6-YoudaoInner",
 +    } as Model<"openai-completions">;
 +    const context: Context = { messages: [] };
@@ -243,7 +243,7 @@ index 9f80e39184f..d8a9fd5abdf 100644
 +          contextCacheProvider: "dashscope",
 +          contextCacheMode: "explicit",
 +        },
-+        "genwork-server",
++        "mixcwork-server",
 +        "openai-completions",
 +        "qwen3.6-plus-YoudaoInner",
 +      ),
@@ -256,7 +256,7 @@ index 9f80e39184f..d8a9fd5abdf 100644
 +          contextCacheProvider: "anthropic-compatible",
 +          contextCacheMode: "explicit",
 +        },
-+        "genwork-server",
++        "mixcwork-server",
 +        "openai-completions",
 +        "claude-sonnet-4-6",
 +      ),
@@ -268,7 +268,7 @@ index 9f80e39184f..d8a9fd5abdf 100644
 +          contextCacheProvider: "dashscope",
 +          contextCacheMode: "explicit",
 +        },
-+        "genwork-server",
++        "mixcwork-server",
 +        "openai-completions",
 +        "qwen3.5-plus-YoudaoInner",
 +      ),
@@ -279,7 +279,7 @@ index 9f80e39184f..d8a9fd5abdf 100644
 +    expect(
 +      resolveCacheRetention(
 +        { cacheRetention: "short", contextCacheProvider: "dashscope" },
-+        "genwork-server",
++        "mixcwork-server",
 +        "openai-completions",
 +        "qwen3.6-plus-YoudaoInner",
 +      ),
@@ -349,7 +349,7 @@ index dafce9a199f..8a322282160 100644
 +          id: "claude-sonnet-4-6-YoudaoInner",
 +          name: "Claude Sonnet 4.6",
 +          api: "openai-completions",
-+          provider: "genwork-server",
++          provider: "mixcwork-server",
 +          baseUrl: "http://127.0.0.1:17890/v1",
 +          reasoning: false,
 +          input: ["text"],

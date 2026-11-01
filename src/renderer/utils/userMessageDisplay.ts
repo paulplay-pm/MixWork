@@ -34,7 +34,7 @@ const MEDIA_TAG_RE = /^\s*media:\w+\s*$/gm;
 // --------------- Shared patterns ---------------
 
 // System: [timestamp ...] metadata lines — injected by various openclaw plugins
-// (feishu, nim, popo, etc.) Matches timestamps like [2026-04-28 11:53:25 GMT+8]
+// (feishu, telegram, etc.) Matches timestamps like [2026-04-28 11:53:25 GMT+8]
 const SYSTEM_TIMESTAMP_LINE_RE = /^System:\s*\[\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+[^\]]*\].*$/gm;
 
 // Bare path in the openclaw inbound media directory — highly specific, safe to match
@@ -73,7 +73,7 @@ export function parseUserMessageForDisplay(
 
   // Normalize \r\n to \n so all line-anchored regexes work correctly
   let result = (content || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-  // GenWork sends goal-mode submissions to OpenClaw as local /goal commands.
+  // MixCWork sends goal-mode submissions to OpenClaw as local /goal commands.
   // The command is transport/control syntax, not user-facing message text.
   result = stripGoalCommandPrefixForDisplay(result);
 
@@ -129,7 +129,7 @@ export function parseUserMessageForDisplay(
   }
 
   // --- Always: strip System: [timestamp] metadata lines ---
-  // These are injected by openclaw plugins (feishu, nim, popo, etc.)
+  // These are injected by openclaw plugins (feishu, telegram, etc.)
   // and are never user-typed content. The timestamp format is specific enough
   // to avoid false positives.
   result = result.replace(SYSTEM_TIMESTAMP_LINE_RE, '');

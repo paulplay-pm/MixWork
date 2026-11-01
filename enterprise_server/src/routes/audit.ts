@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { requireAuth } from '../auth/middleware';
+
 import { auditStore } from '../audit/auditStore';
+import { requireAuth } from '../auth/middleware';
 
 export const auditReceiveRoutes = new Hono();
 auditReceiveRoutes.use('/audit', requireAuth);

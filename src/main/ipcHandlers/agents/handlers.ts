@@ -7,11 +7,11 @@ import {
   AgentLegacyIdentityCleanupStatus,
 } from '../../../shared/agent/constants';
 import type { AgentManager } from '../../agentManager';
-import type { Agent, CreateAgentRequest, GenWorkStore, UpdateAgentRequest } from '../../genworkStore';
 import type { IMGatewayManager } from '../../im';
-import type { GenWorkEngineRouter } from '../../libs/agentEngine';
+import type { MixCWorkEngineRouter } from '../../libs/agentEngine';
 import { deriveProvenance } from '../../libs/agentProvenance';
 import { cleanupLegacyAgentsMdIdentityBlockInWorkspace } from '../../libs/openclawAgentsMdIdentityMigration';
+import type { Agent, CreateAgentRequest, MixCWorkStore, UpdateAgentRequest } from '../../mixcworkStore';
 import type { SkillManager } from '../../skills/skillManager';
 
 type SyncOpenClawConfig = (options: {
@@ -25,8 +25,8 @@ type SyncOpenClawConfig = (options: {
 
 export interface AgentHandlerDeps {
   getAgentManager: () => AgentManager;
-  getGenWorkStore: () => GenWorkStore;
-  getGenWorkEngineRouter: () => GenWorkEngineRouter;
+  getMixCWorkStore: () => MixCWorkStore;
+  getMixCWorkEngineRouter: () => MixCWorkEngineRouter;
   getIMGatewayManager: () => IMGatewayManager | null;
   getSkillManager: () => SkillManager;
   refreshImSessionWorkingDirectoriesForAgent: (agentId: string) => number;
@@ -75,8 +75,8 @@ async function cleanupLegacyIdentityBlockForAgent(
 export function registerAgentHandlers(deps: AgentHandlerDeps): void {
   const {
     getAgentManager,
-    getGenWorkStore,
-    getGenWorkEngineRouter,
+    getMixCWorkStore,
+    getMixCWorkEngineRouter,
     getIMGatewayManager,
     getSkillManager,
     refreshImSessionWorkingDirectoriesForAgent,
@@ -87,7 +87,7 @@ export function registerAgentHandlers(deps: AgentHandlerDeps): void {
   // Enterprise server agent id -> local agent id. Used to resolve an
   // enterprise agent's server-owned subagent baselines to local agent ids.
   const buildServerAgentIdToLocal = (): Map<string, string> => new Map(
-    getGenWorkStore()
+    getMixCWorkStore()
       .listAgents()
       .filter((a) => a.source === 'enterprise' && a.enterpriseAgentId)
       .map((a) => [a.enterpriseAgentId!, a.id] as const),
@@ -193,7 +193,7 @@ export function registerAgentHandlers(deps: AgentHandlerDeps): void {
         // they cannot drift locally. The store's enterprise guard stays as
         // belt-and-suspenders.
         let effectiveUpdates: UpdateAgentRequest = updates;
-        const target = getGenWorkStore().getAgent(id);
+        const target = getMixCWorkStore().getAgent(id);
         if (target && target.source === 'enterprise') {
           const skillMgr = getSkillManager();
           const localByServerAgent = buildServerAgentIdToLocal();
@@ -284,8 +284,8 @@ export function registerAgentHandlers(deps: AgentHandlerDeps): void {
   ipcMain.handle(AgentIpcChannel.Delete, async (_event, id: string) => {
     try {
       const agentExists = id !== AgentId.Main && getAgentManager().getAgent(id) !== null;
-      const deletedSessionIds = agentExists ? getGenWorkStore().listSessionIdsByAgent(id) : [];
-      const router = getGenWorkEngineRouter();
+      const deletedSessionIds = agentExists ? getMixCWorkStore().listSessionIdsByAgent(id) : [];
+      const router = getMixCWorkEngineRouter();
       for (const sessionId of deletedSessionIds) {
         router.stopSession(sessionId);
       }

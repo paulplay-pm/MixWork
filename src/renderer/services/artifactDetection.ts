@@ -1,5 +1,5 @@
 import { type Artifact, ArtifactTypeValue } from '../types/artifact';
-import type { GenWorkMessage } from '../types/genwork';
+import type { MixCWorkMessage } from '../types/mixcwork';
 import {
   isIgnoredArtifactPath,
   isPathInsideDirectory,
@@ -33,7 +33,7 @@ import { parseLocalServiceArtifactsFromMessages } from './localServiceContextPar
  * Existence checks happen later in loadDetectedFileArtifact.
  */
 export function collectSessionArtifacts(
-  messages: GenWorkMessage[],
+  messages: MixCWorkMessage[],
   sessionId: string,
   cwd?: string,
 ): Artifact[] {

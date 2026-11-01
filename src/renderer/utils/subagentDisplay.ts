@@ -1,5 +1,5 @@
 import { i18nService } from '../services/i18n';
-import type { SubagentSessionSummary } from '../types/genwork';
+import type { SubagentSessionSummary } from '../types/mixcwork';
 import { getAgentDisplayNameById } from './agentDisplay';
 
 interface SubagentAgentDisplaySource {

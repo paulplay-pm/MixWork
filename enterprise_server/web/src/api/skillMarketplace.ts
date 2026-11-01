@@ -1,3 +1,4 @@
+import type { CatalogScope } from './catalogScope';
 import { apiClient } from './client';
 
 export interface SkillCategory { id: string; name_zh: string; name_en: string; display_order?: number; }
@@ -5,7 +6,8 @@ export interface SkillSource { from?: string; url?: string; author?: string; }
 
 // --- Org-scoped wire shapes (T9) ---
 
-export interface SkillScope { allCompany: boolean; deptIds: string[]; userIds: string[]; }
+/** The skill scope IS the shared catalog scope (see catalogScope.ts). */
+export type SkillScope = CatalogScope;
 
 export interface SkillAdmin {
   id: string; name: string; name_zh: string | null; description: string;
@@ -35,6 +37,15 @@ export const skillMarketplaceApi = {
     apiClient.post<{ skill_id: string }>('/api/admin/skill-marketplace/skills', input),
   updateSkill: (id: string, patch: { nameZh?: string; author?: string; desc?: string; icon?: string; category_id?: string; scope?: SkillScope; enabled?: boolean }) =>
     apiClient.patch<void>(`/api/admin/skill-marketplace/skills/${id}`, patch),
+  /** Upload the skill's icon (PNG / JPEG / WEBP / SVG, ≤ 1 MB). Outside the
+   *  create/patch body: an icon is presentation, and a file has to be
+   *  attached to a skill that already exists. */
+  uploadIcon: (id: string, file: File): Promise<{ icon: string }> => {
+    const form = new FormData();
+    form.append('icon', file, file.name);
+    return apiClient.postRaw<{ icon: string }>(`/api/admin/skill-marketplace/skills/${id}/icon`, form);
+  },
+  clearIcon: (id: string) => apiClient.delete<{ ok: boolean }>(`/api/admin/skill-marketplace/skills/${id}/icon`),
   uploadZip: (id: string, file: File) =>
     apiClient.postRaw<{ status: string }>(`/api/admin/skill-marketplace/skills/${id}/zip`, file, { 'content-type': 'application/zip' }),
   deleteSkill: (id: string) => apiClient.delete(`/api/admin/skill-marketplace/skills/${id}`),

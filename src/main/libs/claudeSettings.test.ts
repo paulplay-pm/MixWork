@@ -4,7 +4,7 @@
  * Desktop LLM access must route uniformly through the multi-tenant proxy
  * (${ENTERPRISE_SERVER_URL}/proxy/<provider> + the user's JWT). It must
  * NEVER emit a raw upstream config (the catalog's getEndpoint() URL) with a
- * ${GENWORK_APIKEY_X} placeholder — doing so bypasses the proxy and the
+ * ${MIXCWORK_APIKEY_X} placeholder — doing so bypasses the proxy and the
  * per-org allowlist, producing 404 "model_not_found" (and, before the fix,
  * could leave a dangling placeholder with no backing env var → gateway
  * SecretRefResolutionError crash loop).
@@ -126,22 +126,22 @@ import { resolveAllProviderApiKeys, resolveRawApiConfig, setStoreGetter, tryEnte
 const enterpriseAppConfig = {
   model: {
     defaultModel: '21e3e29a-a900-4574-b1bd-aaa8fb803ff1',
-    defaultModelProvider: 'genwork-server',
+    defaultModelProvider: 'mixcwork-server',
   },
 } as const;
 
 // The REAL on-disk app_config after an enterprise login + config-sync round
-// trip: a hollow `genwork-server` local provider (empty key, no models)
+// trip: a hollow `mixcwork-server` local provider (empty key, no models)
 // plus the enterprise default model. This is the exact shape that crashed the
 // gateway — the hollow entry makes resolveAllProviderApiKeys take the local
 // branch and skip, while resolveRawApiConfig falls to the enterprise branch.
 const enterpriseAppConfigWithHollowProvider = {
   model: {
     defaultModel: '21e3e29a-a900-4574-b1bd-aaa8fb803ff1',
-    defaultModelProvider: 'genwork-server',
+    defaultModelProvider: 'mixcwork-server',
   },
   providers: {
-    'genwork-server': {
+    'mixcwork-server': {
       enabled: true,
       apiKey: '',
       baseUrl: '',
@@ -222,7 +222,7 @@ describe('resolveRawApiConfig enterprise routing (proxy, never raw upstream)', (
     expect(raw.config?.model).toBe(ACTIVE_ID);
     // Never the raw upstream endpoint, never a dangling placeholder.
     expect(raw.config?.baseURL).not.toContain('api.deepseek.com');
-    expect(raw.config?.apiKey).not.toMatch(/^\$\{GENWORK_APIKEY_/);
+    expect(raw.config?.apiKey).not.toMatch(/^\$\{MIXCWORK_APIKEY_/);
   });
 
   test('returns null (no raw upstream config) when the session JWT is absent', () => {
@@ -245,7 +245,7 @@ describe('resolveRawApiConfig enterprise routing (proxy, never raw upstream)', (
     expect(raw.config?.baseURL ?? '').not.toContain('api.deepseek.com');
   });
 
-  test('routes through the proxy even when a hollow genwork-server local provider exists', () => {
+  test('routes through the proxy even when a hollow mixcwork-server local provider exists', () => {
     setupStore(enterpriseAppConfigWithHollowProvider);
     seedActiveModel();
     const raw = resolveRawApiConfig();
@@ -257,7 +257,7 @@ describe('resolveRawApiConfig enterprise routing (proxy, never raw upstream)', (
   test('still collects the catalog API key for env injection (collector unchanged)', () => {
     seedActiveModel();
     const env = resolveAllProviderApiKeys();
-    // Keyed by the bare env suffix (DEEPSEEK); the GENWORK_APIKEY_ prefix is
+    // Keyed by the bare env suffix (DEEPSEEK); the MIXCWORK_APIKEY_ prefix is
     // applied downstream in collectSecretEnvVars.
     expect(env.DEEPSEEK).toBe('sk-real-deepseek-key');
   });
@@ -319,7 +319,7 @@ describe('tryEnterpriseCatalogFallback', () => {
     const match = tryEnterpriseCatalogFallback('m-b');
     expect(match).not.toBeNull();
     expect(match?.modelId).toBe('m-b');
-    expect(match?.providerName).toBe('genwork-server');
+    expect(match?.providerName).toBe('mixcwork-server');
     expect(match?.runtimeProfile).toBe('enterprise');
   });
 

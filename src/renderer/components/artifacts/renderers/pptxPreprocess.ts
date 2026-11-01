@@ -107,11 +107,11 @@ function detectImageExtension(bytes: Uint8Array, fallbackExtension: string): str
 
 function createPptxPreviewMediaPath(zip: { file(path: string): unknown }, index: number, extension: string): string {
   const normalizedExtension = extension.startsWith('.') ? extension : `.${extension}`;
-  let candidate = `${PPTX_MEDIA_DIR}image_genwork_${index}${normalizedExtension}`;
+  let candidate = `${PPTX_MEDIA_DIR}image_mixcwork_${index}${normalizedExtension}`;
   let suffix = 1;
 
   while (zip.file(candidate)) {
-    candidate = `${PPTX_MEDIA_DIR}image_genwork_${index}_${suffix}${normalizedExtension}`;
+    candidate = `${PPTX_MEDIA_DIR}image_mixcwork_${index}_${suffix}${normalizedExtension}`;
     suffix += 1;
   }
 
@@ -172,7 +172,7 @@ function getNextSlideShapeId(doc: Document): string {
 
 function hasBackgroundFallback(doc: Document, relId: string): boolean {
   return Array.from(doc.getElementsByTagName('p:cNvPr')).some(node => (
-    node.getAttribute('name') === `GenWork Background Fallback ${relId}`
+    node.getAttribute('name') === `MixCWork Background Fallback ${relId}`
   ));
 }
 
@@ -196,7 +196,7 @@ function createBackgroundFallbackPic(doc: Document, relId: string, blipFill: Ele
   const nvPicPr = createElement(doc, PPTX_PRESENTATION_NS, 'p:nvPicPr');
   const cNvPr = createElement(doc, PPTX_PRESENTATION_NS, 'p:cNvPr', {
     id: getNextSlideShapeId(doc),
-    name: `GenWork Background Fallback ${relId}`,
+    name: `MixCWork Background Fallback ${relId}`,
   });
   const cNvPicPr = createElement(doc, PPTX_PRESENTATION_NS, 'p:cNvPicPr');
   const nvPr = createElement(doc, PPTX_PRESENTATION_NS, 'p:nvPr');

@@ -18,8 +18,8 @@
 - **Typecheck baselines (must hold after each task):**
   - server: `cd enterprise_server && npx tsc --noEmit` → 0
   - web: `cd enterprise_server/web && npx tsc --noEmit` → 0
-  - desktop main: `cd /Users/paulwang/work/GenWork && npx tsc -p electron-tsconfig.json --noEmit` → 0 (covers `src/main`, `src/common`, `src/shared`)
-  - desktop renderer: `cd /Users/paulwang/work/GenWork && npx tsc --noEmit` (root `tsconfig.json`, which includes `src/renderer`) → exactly 1 pre-existing error `bakeArtifactSharePage.ts(382,21)`.
+  - desktop main: `cd /Users/paulwang/work/MixCWork && npx tsc -p electron-tsconfig.json --noEmit` → 0 (covers `src/main`, `src/common`, `src/shared`)
+  - desktop renderer: `cd /Users/paulwang/work/MixCWork && npx tsc --noEmit` (root `tsconfig.json`, which includes `src/renderer`) → exactly 1 pre-existing error `bakeArtifactSharePage.ts(382,21)`.
 - **i18n en + zh both, no un-referenced keys.** Desktop `t(key)` does NOT interpolate (manual `.replace` at call sites).
 - **Secrets:** `clientSecret` stays encrypted server-side and never crosses the wire to the desktop. The public view emits ONLY non-secret OAuth fields via an explicit whitelist; do NOT reuse `maskConnectorSecrets` (that's admin-mask-display semantics).
 - **Auto-commit LOCAL ONLY; never push.** commitlint: lowercase-first commit subjects. `git add` every touched file; `git status --porcelain` clean after each commit.
@@ -181,7 +181,7 @@ Expected: all pass (13 existing + 4 new).
 
 ```bash
 cd enterprise_server && npx tsc --noEmit   # 0
-cd /Users/paulwang/work/GenWork && git add enterprise_server/src/models/connectorView.ts enterprise_server/tests/models/connectorView.test.ts && git status --porcelain
+cd /Users/paulwang/work/MixCWork && git add enterprise_server/src/models/connectorView.ts enterprise_server/tests/models/connectorView.test.ts && git status --porcelain
 git commit -m "feat(mcp): expose non-secret oauth endpoints on the public connector view"
 ```
 
@@ -279,7 +279,7 @@ Expected: all pass (existing 19 + new 1). Confirm the pre-existing `missing per-
 
 ```bash
 cd enterprise_server && npx tsc --noEmit   # 0
-cd /Users/paulwang/work/GenWork && git add enterprise_server/src/routes/mcpConnectors.ts enterprise_server/tests/routes/mcpConnectors.test.ts && git status --porcelain
+cd /Users/paulwang/work/MixCWork && git add enterprise_server/src/routes/mcpConnectors.ts enterprise_server/tests/routes/mcpConnectors.test.ts && git status --porcelain
 git commit -m "feat(mcp): allow public-client user-oauth connectors without a client secret"
 ```
 
@@ -385,7 +385,7 @@ In `enterprise_server/web/src/i18n.ts`, next to `mcpDrawer.auth.tokenUrl` (en :6
 
 ```bash
 cd enterprise_server/web && npx tsc --noEmit   # 0
-cd /Users/paulwang/work/GenWork && git add enterprise_server/web/src/pages/mcpManage/ConnectorDrawer.tsx enterprise_server/web/src/pages/mcpManage/ConnectorAuthFields.tsx enterprise_server/web/src/i18n.ts && git status --porcelain
+cd /Users/paulwang/work/MixCWork && git add enterprise_server/web/src/pages/mcpManage/ConnectorDrawer.tsx enterprise_server/web/src/pages/mcpManage/ConnectorAuthFields.tsx enterprise_server/web/src/i18n.ts && git status --porcelain
 git commit -m "feat(web): collect authorize/token endpoints for user-oauth connectors"
 ```
 (No component tests exist for the drawer — this commit is typecheck-verified; say so in the message.)
@@ -490,14 +490,14 @@ In `src/main/auth/enterpriseClient.ts`, add `oauth?: { authorizeUrl: string; tok
 
 ```bash
 npx vitest run src/main/mcp/mcpStore.test.ts            # green in CI; sandbox note per Step 2
-cd /Users/paulwang/work/GenWork && npx tsc -p electron-tsconfig.json --noEmit   # 0
+cd /Users/paulwang/work/MixCWork && npx tsc -p electron-tsconfig.json --noEmit   # 0
 npx tsc --noEmit          # renderer (root tsconfig) — only bakeArtifactSharePage.ts(382,21)
 ```
 
 - [ ] **Step 6: Commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && git add src/main/mcp/mcpStore.ts src/main/mcp/mcpStore.test.ts src/renderer/types/mcp.ts src/main/auth/enterpriseClient.ts && git status --porcelain
+cd /Users/paulwang/work/MixCWork && git add src/main/mcp/mcpStore.ts src/main/mcp/mcpStore.test.ts src/renderer/types/mcp.ts src/main/auth/enterpriseClient.ts && git status --porcelain
 git commit -m "feat(mcp): persist connector oauthConfig and serverKey on the desktop record"
 ```
 
@@ -720,7 +720,7 @@ function startCodeCallback(expectedState: string): Promise<{
         return;
       }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end('<h1>Authorization complete</h1><p>You can return to GenWork.</p>');
+      res.end('<h1>Authorization complete</h1><p>You can return to MixCWork.</p>');
       resolveCode?.(code); // resolve-once; later polls get the same settlement
     });
     server.once('error', reject);
@@ -807,7 +807,7 @@ Expected: all pure-helper tests pass (the file imports `electron` types and `ope
 - [ ] **Step 5: Typecheck + commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && npx tsc -p electron-tsconfig.json --noEmit   # 0
+cd /Users/paulwang/work/MixCWork && npx tsc -p electron-tsconfig.json --noEmit   # 0
 git add src/main/mcp/genericOauthFlow.ts src/main/mcp/genericOauthFlow.test.ts && git status --porcelain
 git commit -m "feat(mcp): add generic per-provider OAuth PKCE flow driver"
 ```
@@ -904,13 +904,13 @@ In `saveCredential`'s `if (payload.kind === 'oauth')` branch, insert the generic
 
 ```bash
 npx vitest run src/main/mcp/mcpAuthFlows.test.ts        # green in CI; sandbox note
-cd /Users/paulwang/work/GenWork && npx tsc -p electron-tsconfig.json --noEmit   # 0
+cd /Users/paulwang/work/MixCWork && npx tsc -p electron-tsconfig.json --noEmit   # 0
 ```
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && git add src/main/mcp/mcpAuthFlows.ts src/main/mcp/mcpAuthFlows.test.ts src/main/preload.ts && git status --porcelain
+cd /Users/paulwang/work/MixCWork && git add src/main/mcp/mcpAuthFlows.ts src/main/mcp/mcpAuthFlows.test.ts src/main/preload.ts && git status --porcelain
 git commit -m "feat(mcp): drive per-provider generic OAuth from saveCredential"
 ```
 
@@ -994,7 +994,7 @@ Expected: all pass — including the existing `:49` test unchanged.
 - [ ] **Step 5: Typecheck + commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && npx tsc --noEmit   # renderer — only bakeArtifactSharePage.ts(382,21)
+cd /Users/paulwang/work/MixCWork && npx tsc --noEmit   # renderer — only bakeArtifactSharePage.ts(382,21)
 git add src/renderer/components/mcp/mcpAuthModalHelpers.ts src/renderer/components/mcp/mcpAuthModalHelpers.test.ts && git status --porcelain
 git commit -m "feat(mcp): map oauth connectors to their own provider with a no-qichacha guardrail"
 ```
@@ -1093,14 +1093,14 @@ In `src/renderer/services/i18n.ts`, next to `mcpAuthFieldOAuthProvider` (en :647
 - [ ] **Step 4: Typecheck + run the helper test**
 
 ```bash
-cd /Users/paulwang/work/GenWork && npx tsc --noEmit   # renderer — only bakeArtifactSharePage.ts(382,21)
+cd /Users/paulwang/work/MixCWork && npx tsc --noEmit   # renderer — only bakeArtifactSharePage.ts(382,21)
 npx vitest run src/renderer/components/mcp/mcpAuthModalHelpers.test.ts   # still green
 ```
 
 - [ ] **Step 5: Commit**
 
 ```bash
-cd /Users/paulwang/work/GenWork && git add src/renderer/components/mcp/McpAuthModal.tsx src/renderer/components/mcp/McpServerFormModal.tsx src/renderer/services/i18n.ts && git status --porcelain
+cd /Users/paulwang/work/MixCWork && git add src/renderer/components/mcp/McpAuthModal.tsx src/renderer/components/mcp/McpServerFormModal.tsx src/renderer/services/i18n.ts && git status --porcelain
 git commit -m "feat(mcp): pass connector oauth endpoints to the auth modal and surface the guardrail"
 ```
 
@@ -1116,7 +1116,7 @@ git commit -m "feat(mcp): pass connector oauth endpoints to the auth modal and s
 cd enterprise_server
 npx vitest run tests/models/connectorView.test.ts
 npx vitest run tests/routes/mcpConnectors.test.ts
-cd /Users/paulwang/work/GenWork
+cd /Users/paulwang/work/MixCWork
 npx vitest run src/main/mcp/genericOauthFlow.test.ts
 npx vitest run src/renderer/components/mcp/mcpAuthModalHelpers.test.ts
 # CI-gated (better-sqlite3 ABI in sandbox — note if they can't run here):
@@ -1128,8 +1128,8 @@ npx vitest run src/main/mcp/mcpAuthFlows.test.ts
 
 ```bash
 cd enterprise_server && npx tsc --noEmit                                   # 0
-cd /Users/paulwang/work/GenWork/enterprise_server/web && npx tsc --noEmit  # 0
-cd /Users/paulwang/work/GenWork && npx tsc -p electron-tsconfig.json --noEmit            # 0
+cd /Users/paulwang/work/MixCWork/enterprise_server/web && npx tsc --noEmit  # 0
+cd /Users/paulwang/work/MixCWork && npx tsc -p electron-tsconfig.json --noEmit            # 0
 npx tsc --noEmit        # renderer — only bakeArtifactSharePage.ts(382,21)
 ```
 

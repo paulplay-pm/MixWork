@@ -24,7 +24,7 @@ import {
   resolveSharedDataHome,
   writeWriterLock,
 } from '../../libs/dshSharedHome';
-import type { ResolvedMcpServer } from '../../libs/openclawConfigSync';
+import { McpServerKind, type ResolvedMcpServer } from '../../libs/openclawConfigSync';
 
 export interface DshStoreLike {
   get<T>(key: string): T | undefined;
@@ -149,7 +149,7 @@ export async function resolveDshCodeMcpServerForConfig(store: DshStoreLike): Pro
     });
   }
   const url = await codeMcpServer.start();
-  return { name: DSH_CODE_MCP_SERVER_NAME, transportType: 'http', url };
+  return { name: DSH_CODE_MCP_SERVER_NAME, kind: McpServerKind.Builtin, transportType: 'http', url };
 }
 
 function closeWorkbenchWindow(): void {

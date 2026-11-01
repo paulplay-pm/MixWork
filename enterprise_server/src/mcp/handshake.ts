@@ -132,7 +132,7 @@ export async function probeConnector(args: ProbeConnectorArgs): Promise<ProbeRes
 
   let client: Client | undefined;
   try {
-    client = new Client({ name: 'genwork-connector-probe', version: '1.0.0' }, { capabilities: {} });
+    client = new Client({ name: 'mixcwork-connector-probe', version: '1.0.0' }, { capabilities: {} });
     // Both transports accept a custom `fetch` plus `requestInit.headers`, so
     // the caller's (possibly auth-bearing) headers are sent on every request.
     const transportOpts = { fetch: fetchWithDeadline, requestInit: { headers: args.headers } };

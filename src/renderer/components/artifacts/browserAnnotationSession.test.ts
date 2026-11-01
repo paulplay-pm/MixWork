@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 
-import type { CoworkBrowserAnnotationBatch } from '../../../shared/genwork/browserAnnotations';
+import type { CoworkBrowserAnnotationBatch } from '../../../shared/mixcwork/browserAnnotations';
 import { resolveRemovedActiveBrowserAnnotationBatch } from './browserAnnotationSession';
 
 const previousBatch = { id: 'batch-1' } as CoworkBrowserAnnotationBatch;

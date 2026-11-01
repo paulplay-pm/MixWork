@@ -24,7 +24,7 @@ import {
 // ---- helpers ----------------------------------------------------------------
 
 function makeTmpDir() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'genwork-memoryfile-test-'));
+  return fs.mkdtempSync(path.join(os.tmpdir(), 'mixcwork-memoryfile-test-'));
 }
 
 function cleanupDir(dir: string) {

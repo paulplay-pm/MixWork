@@ -8,6 +8,7 @@ export const PermissionPoint = {
   ProviderView: 'provider:view', ProviderEdit: 'provider:edit', ProviderRotate: 'provider:rotate',
   SkillView: 'skill:view', SkillCreate: 'skill:create', SkillEdit: 'skill:edit', SkillToggle: 'skill:toggle',
   AuditView: 'audit:view', AuditExport: 'audit:export',
+  UsageView: 'usage:view', UsageExport: 'usage:export',
   VersionView: 'version:view', VersionCreate: 'version:create', VersionEdit: 'version:edit',
   VersionPublish: 'version:publish', VersionRollback: 'version:rollback',
   McpView: 'mcp:view', McpCreate: 'mcp:create', McpEdit: 'mcp:edit', McpDelete: 'mcp:delete',
@@ -40,6 +41,7 @@ const model = [PermissionPoint.ModelView, PermissionPoint.ModelCreate, Permissio
 const provider = [PermissionPoint.ProviderView, PermissionPoint.ProviderEdit, PermissionPoint.ProviderRotate];
 const skill = [PermissionPoint.SkillView, PermissionPoint.SkillCreate, PermissionPoint.SkillEdit, PermissionPoint.SkillToggle];
 const audit = [PermissionPoint.AuditView, PermissionPoint.AuditExport];
+const usage = [PermissionPoint.UsageView, PermissionPoint.UsageExport];
 const version = [PermissionPoint.VersionView, PermissionPoint.VersionCreate, PermissionPoint.VersionEdit, PermissionPoint.VersionPublish, PermissionPoint.VersionRollback];
 const mcp = [PermissionPoint.McpView, PermissionPoint.McpCreate, PermissionPoint.McpEdit, PermissionPoint.McpDelete];
 const agent = [PermissionPoint.AgentView, PermissionPoint.AgentCreate, PermissionPoint.AgentEdit, PermissionPoint.AgentDelete, PermissionPoint.AgentPublish];
@@ -54,6 +56,7 @@ export const PERMISSION_MODULES: ReadonlyArray<{ key: string; name: string; desc
   { key: 'provider', name: '供应商密钥管理', desc: '管理供应商 API 密钥（在「模型配置」中）', points: provider },
   { key: 'skill', name: '技能管理', desc: '管理技能：启用/禁用及作用域设置', points: skill },
   { key: 'audit', name: '查看审计日志', desc: '查看组织审计日志', points: audit },
+  { key: 'usage', name: '用量查看', desc: '查看组织用量明细并导出', points: usage },
   { key: 'version', name: '版本管理', desc: '管理应用版本发布：新增、编辑、设为最新', points: version },
   { key: 'mcp', name: 'MCP 管理', desc: '管理 MCP 服务器市场', points: mcp },
   { key: 'agent', name: '智能体管理', desc: '管理企业智能体模板：新增、编辑、删除及可用角色', points: agent },
@@ -68,13 +71,16 @@ const orgAdmin: PermissionPoint[] = [
 ];
 export const BUILTIN_ROLE_POINTS: Record<string, PermissionPoint[]> = {
   super_admin: PERMISSION_POINTS,
-  org_admin: orgAdmin,
+  org_admin: [...orgAdmin, PermissionPoint.UsageView, PermissionPoint.UsageExport],
   dept_admin: [
     PermissionPoint.DeptView, PermissionPoint.DeptCreate, PermissionPoint.DeptEdit,
     PermissionPoint.DeptAdjustMember, PermissionPoint.UserView, PermissionPoint.UserEdit,
     PermissionPoint.RoleView,
   ],
-  auditor: [PermissionPoint.AuditView, PermissionPoint.AuditExport],
+  auditor: [
+    PermissionPoint.AuditView, PermissionPoint.AuditExport,
+    PermissionPoint.UsageView, PermissionPoint.UsageExport,
+  ],
   dev: [
     PermissionPoint.SkillView, PermissionPoint.SkillCreate, PermissionPoint.SkillEdit,
     PermissionPoint.McpView, PermissionPoint.McpCreate,

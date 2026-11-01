@@ -6,7 +6,7 @@ index 4b0bf4592..788616073 100644
  const GENERIC_RUN_FAILURE_TEXT =
    "⚠️ Something went wrong while processing your request. Please try again, or use /new to start a fresh session.";
  
-+// GenWork patch: raw runner failures now always forward the sanitized detail
++// MixCWork patch: raw runner failures now always forward the sanitized detail
 +// instead of collapsing to GENERIC_RUN_FAILURE_TEXT when verbose is off.
 +const FORWARDED_INCOMPLETE_TERMINAL_FAILURE_TEXT =
 +  "⚠️ Agent failed before reply: openai/gpt-5.5 ended with an incomplete terminal response. Please try again, or use /new to start a fresh session.";
@@ -78,7 +78,7 @@ index 7d13bf369..03698016f 100644
    if (codexAppServerFailure) {
      return { text: codexAppServerFailure, isGenericRunnerFailure: false };
    }
-+  // GenWork patch: always forward the sanitized failure detail (redacted and
++  // MixCWork patch: always forward the sanitized failure detail (redacted and
 +  // truncated by formatForwardedExternalRunFailureText) so non-webchat surfaces
 +  // (cron, IM direct chats) see the real reason instead of the generic copy.
    return {

@@ -9,6 +9,7 @@ import {
   type SkillScope,
 } from '../../api/skillMarketplace';
 import type { UserRow } from '../../api/users';
+import { IconUploadField } from '../../components/IconUploadField';
 import { useToast } from '../../components/toastStore';
 import { t } from '../../i18n';
 import { SkillScopeSelector } from './SkillScopeSelector';
@@ -25,8 +26,10 @@ export interface SkillDrawerSaveInput {
   desc?: string;
   icon?: string;
   scope: SkillScope;
-  /** Edit mode: a new package picked in this session → sent via uploadZip. */
+  /** A package picked in this session → sent via uploadZip after the save. */
   newZip?: File;
+  /** An icon picked before the skill existed → uploaded once it does. */
+  newIcon?: File;
   /** Create mode: the parse result (tempToken references the server tmp file). */
   parsed?: { tempToken: string };
 }
@@ -77,6 +80,10 @@ export function SkillDrawer(p: Props): JSX.Element {
   const [author, setAuthor] = useState('');
   const [desc, setDesc] = useState(isEdit ? (p.skill?.description ?? '') : '');
   const [icon, setIcon] = useState(isEdit ? (p.skill?.icon ?? '') : '');
+  /** Edit mode only: uploads go straight to the existing skill. */
+  const iconTargetId = p.skill?.id;
+  /** Create mode: the file is held and uploaded once the skill exists. */
+  const [pendingIcon, setPendingIcon] = useState<File | null>(null);
   const [category, setCategory] = useState(isEdit ? (p.skill?.category ?? '') : (p.defaultCategory ?? ''));
   const [scope, setScope] = useState<SkillScope>(isEdit ? (p.skill?.scope ?? EMPTY_SCOPE) : EMPTY_SCOPE);
 
@@ -110,6 +117,7 @@ export function SkillDrawer(p: Props): JSX.Element {
       desc: desc.trim() || undefined,
       icon: icon.trim() || undefined,
       scope,
+      newIcon: pendingIcon ?? undefined,
       newZip: isEdit && zip.state === 'parsed' ? zip.file : undefined,
       parsed: !isEdit && zip.state === 'parsed' ? { tempToken: zip.meta.tempToken } : undefined,
     });
@@ -210,8 +218,16 @@ export function SkillDrawer(p: Props): JSX.Element {
               <input className={inputCls} aria-label={t('skillmgmt.desc')} value={desc} onChange={(e) => setDesc(e.target.value)} />
             </label>
             <label className={`col-span-2 ${labelCls}`}>
-              {t('skillmgmt.icon')}
-              <input className={inputCls} aria-label={t('skillmgmt.icon')} value={icon} onChange={(e) => setIcon(e.target.value)} />
+              <IconUploadField
+                label={t('skillmgmt.icon')}
+                icon={icon || null}
+                pendingFile={pendingIcon}
+                onPick={setPendingIcon}
+                onClearPick={() => setPendingIcon(null)}
+                onUpload={iconTargetId ? (file) => skillMarketplaceApi.uploadIcon(iconTargetId, file) : undefined}
+                onClear={iconTargetId ? () => skillMarketplaceApi.clearIcon(iconTargetId) : undefined}
+                onChanged={(next) => setIcon(next ?? '')}
+              />
             </label>
           </div>
         </section>

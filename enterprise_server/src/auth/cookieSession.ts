@@ -1,5 +1,5 @@
-import { getCookie, setCookie } from 'hono/cookie';
 import type { Context } from 'hono';
+import { getCookie, setCookie } from 'hono/cookie';
 
 import { AUTH_SESSION_COOKIE_MAX_AGE_SECONDS, AuthSessionCookie } from '../shared/enterpriseServerConstants';
 

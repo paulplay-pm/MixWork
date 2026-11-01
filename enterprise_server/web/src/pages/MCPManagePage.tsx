@@ -84,6 +84,8 @@ export function MCPManagePage(): JSX.Element {
   const depts = deptsQ.data ?? [];
   const members = membersQ.data ?? [];
   const membersCanSubmit = settingsQ.data?.membersCanSubmit ?? false;
+  // The server-issued loopback redirect URI for `user-oauth` connectors.
+  const oauthRedirectUri = settingsQ.data?.oauthRedirectUri ?? '';
 
   const pendingCount = useMemo(
     () => submissions.filter((s) => s.status === 'pending').length,
@@ -315,6 +317,7 @@ export function MCPManagePage(): JSX.Element {
         <ConnectorDrawer
           mode={drawer.mode}
           orgId={orgId}
+          oauthRedirectUri={oauthRedirectUri}
           connector={drawer.mode === 'edit' ? editConnector : undefined}
           depts={depts}
           members={members}

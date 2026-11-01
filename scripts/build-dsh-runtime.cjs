@@ -250,7 +250,7 @@ if (firstInstall.status !== 0) {
   runOrFail('npm', [...installArgs, '--legacy-peer-deps'], { cwd: outDir, env: installEnv }, 'npm install (legacy peer deps)');
 }
 
-// [5/6] Apply GenWork patches pinned to this dsh version. Patches target the
+// [5/6] Apply MixCWork patches pinned to this dsh version. Patches target the
 // installed tree (published lib/*.js under the root or node_modules), so they
 // run after install. Each patch is a module exporting apply(runtimeRoot) — the
 // published bundles carry content-hashed filenames, and `git apply` resolves

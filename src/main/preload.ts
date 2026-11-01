@@ -10,34 +10,12 @@ import {
   AsrIpcChannel,
   type AsrRealtimeSessionRequest,
 } from '../shared/asr/constants';
-import {
-  AuthIpcChannel,
-  type AuthLifecycleEvent,
-  type AuthSessionChangedEvent,
-} from '../shared/auth/constants';
 import { BrowserIpc, type BrowserRuntimeProfile } from '../shared/browserWebAccess/constants';
 import { ClipboardIpc } from '../shared/clipboard/constants';
 import { DataMigrationIpc } from '../shared/dataMigration/constants';
 import { DialogIpc } from '../shared/dialog/constants';
 import { DshIpcChannel } from '../shared/dshEngine/constants';
 import { EnterpriseIpcChannel, EnterpriseModelIpcChannel } from '../shared/enterprise/constants';
-import {
-  EnterpriseAccountIpcChannel,
-  type EnterpriseQuotaRequestType,
-} from '../shared/enterpriseAccount/constants';
-import type { CoworkBrowserAnnotationMessageBatch } from '../shared/genwork/browserAnnotations';
-import type {
-  CoworkBtwAbortRequest,
-  CoworkBtwAbortResponse,
-  CoworkBtwEntry,
-  CoworkBtwSubmitRequest,
-  CoworkBtwSubmitResponse,
-} from '../shared/genwork/btw';
-import {
-  GenWorkIpcChannel,
-  type GenWorkSessionsChangedPayload,
-} from '../shared/genwork/constants';
-import type { CoworkSearchMessageCursor } from '../shared/genwork/search';
 import {
   HtmlShareIpc,
 } from '../shared/htmlShare/constants';
@@ -62,6 +40,19 @@ import {
   LocalWebServicesIpc,
 } from '../shared/localWebServices/constants';
 import { type ConnectorSubmitRequest, McpIpcChannel } from '../shared/mcp/constants';
+import type { CoworkBrowserAnnotationMessageBatch } from '../shared/mixcwork/browserAnnotations';
+import type {
+  CoworkBtwAbortRequest,
+  CoworkBtwAbortResponse,
+  CoworkBtwEntry,
+  CoworkBtwSubmitRequest,
+  CoworkBtwSubmitResponse,
+} from '../shared/mixcwork/btw';
+import {
+  MixCWorkIpcChannel,
+  type MixCWorkSessionsChangedPayload,
+} from '../shared/mixcwork/constants';
+import type { CoworkSearchMessageCursor } from '../shared/mixcwork/search';
 import { OpenClawEngineIpc } from '../shared/openclawEngine/constants';
 import { PermissionIpcChannel } from '../shared/permissions/constants';
 import type { Platform } from '../shared/platform';
@@ -114,7 +105,13 @@ export type SaveCredentialPayloadLike =
       providerId: string;
       /** Non-secret per-connector endpoint config; mirrors `GenericOauthConfig`
        * from `src/main/mcp/genericOauthFlow.ts` (no `clientSecret`). */
-      oauthConfig?: { authorizeUrl: string; tokenUrl: string; clientId: string; scopes?: string[] };
+      oauthConfig?: {
+        authorizeUrl?: string;
+        tokenUrl?: string;
+        clientId?: string;
+        scopes?: string[];
+        redirectUri?: string;
+      };
     };
 
 // 暴露安全的 API 到渲染进程
@@ -137,9 +134,10 @@ contextBridge.exposeInMainWorld('electron', {
     setEnabled: (options: { id: string; enabled: boolean }) =>
       ipcRenderer.invoke('skills:setEnabled', options),
     delete: (id: string) => ipcRenderer.invoke('skills:delete', id),
-    download: (source: string) => ipcRenderer.invoke('skills:download', source),
-    upgrade: (skillId: string, downloadUrl: string) =>
-      ipcRenderer.invoke('skills:upgrade', skillId, downloadUrl),
+    download: (source: string, catalogVersion?: string) =>
+      ipcRenderer.invoke('skills:download', source, catalogVersion),
+    upgrade: (skillId: string, downloadUrl: string, catalogVersion?: string) =>
+      ipcRenderer.invoke('skills:upgrade', skillId, downloadUrl, catalogVersion),
     confirmInstall: (pendingId: string, action: string) =>
       ipcRenderer.invoke('skills:confirmInstall', pendingId, action),
     getRoot: () => ipcRenderer.invoke('skills:getRoot'),
@@ -193,6 +191,8 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.invoke(McpIpcChannel.SaveCredential, options),
     probeAuthorization: (options: { id: string }) =>
       ipcRenderer.invoke(McpIpcChannel.ProbeAuthorization, options),
+    listTools: (options: { id: string }) =>
+      ipcRenderer.invoke(McpIpcChannel.ListTools, options),
     onChanged: (callback: () => void) => {
       const handler = () => callback();
       ipcRenderer.on(McpIpcChannel.Changed, handler);
@@ -241,18 +241,6 @@ contextBridge.exposeInMainWorld('electron', {
   },
   enterprise: {
     getConfig: () => ipcRenderer.invoke('enterprise:getConfig'),
-  },
-  enterpriseAccount: {
-    getContext: () => ipcRenderer.invoke(EnterpriseAccountIpcChannel.GetContext),
-    getIdentities: () => ipcRenderer.invoke(EnterpriseAccountIpcChannel.GetIdentities),
-    requestQuotaIncrease: (enterpriseId: number, requestType: EnterpriseQuotaRequestType) => (
-      ipcRenderer.invoke(EnterpriseAccountIpcChannel.RequestQuotaIncrease, enterpriseId, requestType)
-    ),
-    onContextInvalidated: (callback: () => void) => {
-      const handler = () => callback();
-      ipcRenderer.on(EnterpriseAccountIpcChannel.ContextInvalidated, handler);
-      return () => ipcRenderer.removeListener(EnterpriseAccountIpcChannel.ContextInvalidated, handler);
-    },
   },
   api: {
     // 普通 API 请求（非流式）
@@ -512,7 +500,7 @@ contextBridge.exposeInMainWorld('electron', {
       thinkingLevel?: string;
       imageAttachments?: Array<{ name: string; mimeType: string; base64Data: string; sizeBytes?: number; localPath?: string; previewMimeType?: string; previewBase64Data?: string }>;
       mediaSelection?: { mode: string; modelId?: string; modelName?: string; imageModelId?: string; videoModelId?: string }; mediaReferences?: Array<{ token: string; mediaType: string; index: number; fileId: string; fileName: string; mimeType: string; localPath?: string; remoteUrl?: string; dataUrl?: string; role?: string }>;
-    }) => ipcRenderer.invoke('genwork:session:start', options),
+    }) => ipcRenderer.invoke('mixcwork:session:start', options),
     continueSession: (options: {
       sessionId: string;
       prompt: string;
@@ -537,42 +525,42 @@ contextBridge.exposeInMainWorld('electron', {
         remoteUrl?: string;
         dataUrl?: string; role?: string;
       }>;
-    }) => ipcRenderer.invoke('genwork:session:continue', options),
+    }) => ipcRenderer.invoke('mixcwork:session:continue', options),
     submitBtw: (options: CoworkBtwSubmitRequest): Promise<CoworkBtwSubmitResponse> =>
-      ipcRenderer.invoke(GenWorkIpcChannel.SubmitBtw, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.SubmitBtw, options),
     abortBtw: (options: CoworkBtwAbortRequest): Promise<CoworkBtwAbortResponse> =>
-      ipcRenderer.invoke(GenWorkIpcChannel.AbortBtw, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.AbortBtw, options),
     submitSteer: (options: { sessionId: string; text: string; clientSteerId: string }) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.SubmitSteer, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.SubmitSteer, options),
     runGoalCommand: (options: { sessionId: string; command: string }) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.GoalCommand, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.GoalCommand, options),
     stopSession: (sessionId: string) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.StopSession, sessionId),
-    deleteSession: (sessionId: string) => ipcRenderer.invoke('genwork:session:delete', sessionId),
+      ipcRenderer.invoke(MixCWorkIpcChannel.StopSession, sessionId),
+    deleteSession: (sessionId: string) => ipcRenderer.invoke('mixcwork:session:delete', sessionId),
     deleteSessions: (sessionIds: string[]) =>
-      ipcRenderer.invoke('genwork:session:deleteBatch', sessionIds),
+      ipcRenderer.invoke('mixcwork:session:deleteBatch', sessionIds),
     setSessionPinned: (options: { sessionId: string; pinned: boolean }) =>
-      ipcRenderer.invoke('genwork:session:pin', options),
+      ipcRenderer.invoke('mixcwork:session:pin', options),
     renameSession: (options: { sessionId: string; title: string }) =>
-      ipcRenderer.invoke('genwork:session:rename', options),
+      ipcRenderer.invoke('mixcwork:session:rename', options),
     forkSession: (options: {
       sessionId: string;
       forkedFromMessageId?: string | null;
       title?: string;
-    }) => ipcRenderer.invoke(GenWorkIpcChannel.ForkSession, options),
-    getSession: (sessionId: string) => ipcRenderer.invoke('genwork:session:get', sessionId),
+    }) => ipcRenderer.invoke(MixCWorkIpcChannel.ForkSession, options),
+    getSession: (sessionId: string) => ipcRenderer.invoke('mixcwork:session:get', sessionId),
     markSessionViewed: (sessionId: string) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.MarkSessionViewed, sessionId),
+      ipcRenderer.invoke(MixCWorkIpcChannel.MarkSessionViewed, sessionId),
     setActiveSession: (sessionId: string | null) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.SetActiveSession, sessionId),
+      ipcRenderer.invoke(MixCWorkIpcChannel.SetActiveSession, sessionId),
     notifyOpenSessionFromNotificationReady: () =>
-      ipcRenderer.invoke(GenWorkIpcChannel.OpenSessionFromNotificationReady),
+      ipcRenderer.invoke(MixCWorkIpcChannel.OpenSessionFromNotificationReady),
     remoteManaged: (sessionId: string) =>
-      ipcRenderer.invoke('genwork:session:remoteManaged', sessionId),
+      ipcRenderer.invoke('mixcwork:session:remoteManaged', sessionId),
     listSessions: (options?: { limit?: number; offset?: number; agentId?: string; searchQuery?: string }) =>
-      ipcRenderer.invoke('genwork:session:list', options),
+      ipcRenderer.invoke('mixcwork:session:list', options),
     getSessionMessages: (options: { sessionId: string; limit?: number; offset?: number }) =>
-      ipcRenderer.invoke('genwork:session:getMessages', options),
+      ipcRenderer.invoke('mixcwork:session:getMessages', options),
     getSessionSearchMessages: (options: {
       sessionId: string;
       limit?: number;
@@ -580,53 +568,53 @@ contextBridge.exposeInMainWorld('electron', {
       cursor?: CoworkSearchMessageCursor;
       knownTotal?: number;
     }) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.GetSessionSearchMessages, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.GetSessionSearchMessages, options),
     getSessionMessageRailIndex: (sessionId: string) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.GetSessionMessageRailIndex, sessionId),
+      ipcRenderer.invoke(MixCWorkIpcChannel.GetSessionMessageRailIndex, sessionId),
     getContextUsage: (sessionId: string) =>
-      ipcRenderer.invoke('genwork:session:contextUsage', sessionId),
+      ipcRenderer.invoke('mixcwork:session:contextUsage', sessionId),
     compactContext: (sessionId: string) =>
-      ipcRenderer.invoke('genwork:session:compactContext', sessionId),
+      ipcRenderer.invoke('mixcwork:session:compactContext', sessionId),
     exportResultImage: (options: {
       rect: { x: number; y: number; width: number; height: number };
       defaultFileName?: string;
-    }) => ipcRenderer.invoke('genwork:session:exportResultImage', options),
+    }) => ipcRenderer.invoke('mixcwork:session:exportResultImage', options),
     captureImageChunk: (options: {
       rect: { x: number; y: number; width: number; height: number };
-    }) => ipcRenderer.invoke('genwork:session:captureImageChunk', options),
+    }) => ipcRenderer.invoke('mixcwork:session:captureImageChunk', options),
     saveResultImage: (options: { pngBase64: string; defaultFileName?: string }) =>
-      ipcRenderer.invoke('genwork:session:saveResultImage', options),
+      ipcRenderer.invoke('mixcwork:session:saveResultImage', options),
     exportSessionText: (options: {
       content: string;
       defaultFileName?: string;
       fileExtension?: string;
-    }) => ipcRenderer.invoke('genwork:session:exportText', options),
+    }) => ipcRenderer.invoke('mixcwork:session:exportText', options),
     exportSessionDiagnostics: (options: { sessionId: string }) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.ExportSessionDiagnostics, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.ExportSessionDiagnostics, options),
 
     // Subagent tracking
     getSubTaskHistory: (options: {
       parentSessionId: string;
       agentId: string;
       sessionKey?: string;
-    }) => ipcRenderer.invoke(GenWorkIpcChannel.SubTaskHistory, options),
+    }) => ipcRenderer.invoke(MixCWorkIpcChannel.SubTaskHistory, options),
     listSubagentSessions: (parentSessionId: string) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.SubagentList, { parentSessionId }),
+      ipcRenderer.invoke(MixCWorkIpcChannel.SubagentList, { parentSessionId }),
     listSubagentSessionsByAgent: (options: { agentId: string; limit?: number; offset?: number }) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.SubagentListByAgent, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.SubagentListByAgent, options),
     deleteSubagentSession: (options: { parentSessionId: string; runId: string }) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.SubagentDelete, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.SubagentDelete, options),
 
     // Media task management
     cancelMediaTask: (taskId: string) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.CancelMediaTask, taskId),
+      ipcRenderer.invoke(MixCWorkIpcChannel.CancelMediaTask, taskId),
 
     // Permission handling
     respondToPermission: (options: { requestId: string; result: any }) =>
-      ipcRenderer.invoke('genwork:permission:respond', options),
+      ipcRenderer.invoke('mixcwork:permission:respond', options),
 
     // Configuration
-    getConfig: () => ipcRenderer.invoke('genwork:config:get'),
+    getConfig: () => ipcRenderer.invoke('mixcwork:config:get'),
     setConfig: (config: {
       workingDirectory?: string;
       executionMode?: 'auto' | 'local' | 'sandbox';
@@ -645,45 +633,45 @@ contextBridge.exposeInMainWorld('electron', {
       embeddingVectorWeight?: number;
       embeddingRemoteBaseUrl?: string;
       embeddingRemoteApiKey?: string;
-    }) => ipcRenderer.invoke('genwork:config:set', config),
+    }) => ipcRenderer.invoke('mixcwork:config:set', config),
 
     // Session temp storage (.cowork-temp) maintenance
-    getTempStorageUsage: () => ipcRenderer.invoke(GenWorkIpcChannel.TempStorageUsage),
+    getTempStorageUsage: () => ipcRenderer.invoke(MixCWorkIpcChannel.TempStorageUsage),
     cleanTempStorage: (options?: { cwds?: string[] }) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.TempStorageClean, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.TempStorageClean, options),
     listMemoryEntries: (input: {
       query?: string;
       status?: 'created' | 'stale' | 'deleted' | 'all';
       includeDeleted?: boolean;
       limit?: number;
       offset?: number;
-    }) => ipcRenderer.invoke('genwork:memory:listEntries', input),
+    }) => ipcRenderer.invoke('mixcwork:memory:listEntries', input),
     createMemoryEntry: (input: { text: string; confidence?: number; isExplicit?: boolean }) =>
-      ipcRenderer.invoke('genwork:memory:createEntry', input),
+      ipcRenderer.invoke('mixcwork:memory:createEntry', input),
     updateMemoryEntry: (input: {
       id: string;
       text?: string;
       confidence?: number;
       status?: 'created' | 'stale' | 'deleted';
       isExplicit?: boolean;
-    }) => ipcRenderer.invoke('genwork:memory:updateEntry', input),
+    }) => ipcRenderer.invoke('mixcwork:memory:updateEntry', input),
     deleteMemoryEntry: (input: { id: string }) =>
-      ipcRenderer.invoke('genwork:memory:deleteEntry', input),
-    getMemoryStats: () => ipcRenderer.invoke('genwork:memory:getStats'),
-    readMemoryFileRaw: () => ipcRenderer.invoke(GenWorkIpcChannel.MemoryReadRaw),
+      ipcRenderer.invoke('mixcwork:memory:deleteEntry', input),
+    getMemoryStats: () => ipcRenderer.invoke('mixcwork:memory:getStats'),
+    readMemoryFileRaw: () => ipcRenderer.invoke(MixCWorkIpcChannel.MemoryReadRaw),
     writeMemoryFileRaw: (input: { content: string }) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.MemoryWriteRaw, input),
-    getDreamingStatus: () => ipcRenderer.invoke('genwork:dreaming:status'),
-    getDreamDiary: () => ipcRenderer.invoke('genwork:dreaming:diary'),
+      ipcRenderer.invoke(MixCWorkIpcChannel.MemoryWriteRaw, input),
+    getDreamingStatus: () => ipcRenderer.invoke('mixcwork:dreaming:status'),
+    getDreamDiary: () => ipcRenderer.invoke('mixcwork:dreaming:diary'),
     readBootstrapFile: (filename: string, options?: { agentId?: string }) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.BootstrapRead, filename, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.BootstrapRead, filename, options),
     writeBootstrapFile: (filename: string, content: string, options?: { agentId?: string }) =>
-      ipcRenderer.invoke(GenWorkIpcChannel.BootstrapWrite, filename, content, options),
+      ipcRenderer.invoke(MixCWorkIpcChannel.BootstrapWrite, filename, content, options),
     // Stream event listeners
     onStreamMessage: (callback: (data: { sessionId: string; message: any; beforeMessageId?: string }) => void) => {
       const handler = (_event: any, data: { sessionId: string; message: any; beforeMessageId?: string }) => callback(data);
-      ipcRenderer.on('genwork:stream:message', handler);
-      return () => ipcRenderer.removeListener('genwork:stream:message', handler);
+      ipcRenderer.on('mixcwork:stream:message', handler);
+      return () => ipcRenderer.removeListener('mixcwork:stream:message', handler);
     },
     onStreamMessageUpdate: (
       callback: (data: {
@@ -702,28 +690,28 @@ contextBridge.exposeInMainWorld('electron', {
           metadata?: Record<string, unknown>;
         },
       ) => callback(data);
-      ipcRenderer.on('genwork:stream:messageUpdate', handler);
-      return () => ipcRenderer.removeListener('genwork:stream:messageUpdate', handler);
+      ipcRenderer.on('mixcwork:stream:messageUpdate', handler);
+      return () => ipcRenderer.removeListener('mixcwork:stream:messageUpdate', handler);
     },
     onMediaStatusPollUpdate: (callback: (data: { sessionId: string; toolCallId: string; details: Record<string, unknown> }) => void) => {
       const handler = (_event: any, data: { sessionId: string; toolCallId: string; details: Record<string, unknown> }) => callback(data);
-      ipcRenderer.on(GenWorkIpcChannel.MediaStatusPollUpdate, handler);
-      return () => ipcRenderer.removeListener(GenWorkIpcChannel.MediaStatusPollUpdate, handler);
+      ipcRenderer.on(MixCWorkIpcChannel.MediaStatusPollUpdate, handler);
+      return () => ipcRenderer.removeListener(MixCWorkIpcChannel.MediaStatusPollUpdate, handler);
     },
     onStreamSessionStatus: (callback: (data: { sessionId: string; status: string }) => void) => {
       const handler = (_event: any, data: { sessionId: string; status: string }) => callback(data);
-      ipcRenderer.on('genwork:stream:sessionStatus', handler);
-      return () => ipcRenderer.removeListener('genwork:stream:sessionStatus', handler);
+      ipcRenderer.on('mixcwork:stream:sessionStatus', handler);
+      return () => ipcRenderer.removeListener('mixcwork:stream:sessionStatus', handler);
     },
     onStreamContextUsage: (callback: (data: { sessionId: string; usage: any }) => void) => {
       const handler = (_event: any, data: { sessionId: string; usage: any }) => callback(data);
-      ipcRenderer.on('genwork:stream:contextUsage', handler);
-      return () => ipcRenderer.removeListener('genwork:stream:contextUsage', handler);
+      ipcRenderer.on('mixcwork:stream:contextUsage', handler);
+      return () => ipcRenderer.removeListener('mixcwork:stream:contextUsage', handler);
     },
     onStreamGoal: (callback: (data: { sessionId: string; goal: any }) => void) => {
       const handler = (_event: any, data: { sessionId: string; goal: any }) => callback(data);
-      ipcRenderer.on(GenWorkIpcChannel.StreamGoal, handler);
-      return () => ipcRenderer.removeListener(GenWorkIpcChannel.StreamGoal, handler);
+      ipcRenderer.on(MixCWorkIpcChannel.StreamGoal, handler);
+      return () => ipcRenderer.removeListener(MixCWorkIpcChannel.StreamGoal, handler);
     },
     onStreamBtwResult: (
       callback: (data: { sessionId: string; result: CoworkBtwEntry }) => void,
@@ -732,55 +720,55 @@ contextBridge.exposeInMainWorld('electron', {
         _event: Electron.IpcRendererEvent,
         data: { sessionId: string; result: CoworkBtwEntry },
       ) => callback(data);
-      ipcRenderer.on(GenWorkIpcChannel.StreamBtwResult, handler);
-      return () => ipcRenderer.removeListener(GenWorkIpcChannel.StreamBtwResult, handler);
+      ipcRenderer.on(MixCWorkIpcChannel.StreamBtwResult, handler);
+      return () => ipcRenderer.removeListener(MixCWorkIpcChannel.StreamBtwResult, handler);
     },
     onStreamContextMaintenance: (
       callback: (data: { sessionId: string; active: boolean }) => void,
     ) => {
       const handler = (_event: any, data: { sessionId: string; active: boolean }) => callback(data);
-      ipcRenderer.on('genwork:stream:contextMaintenance', handler);
-      return () => ipcRenderer.removeListener('genwork:stream:contextMaintenance', handler);
+      ipcRenderer.on('mixcwork:stream:contextMaintenance', handler);
+      return () => ipcRenderer.removeListener('mixcwork:stream:contextMaintenance', handler);
     },
     onStreamPermission: (callback: (data: { sessionId: string; request: any }) => void) => {
       const handler = (_event: any, data: { sessionId: string; request: any }) => callback(data);
-      ipcRenderer.on('genwork:stream:permission', handler);
-      return () => ipcRenderer.removeListener('genwork:stream:permission', handler);
+      ipcRenderer.on('mixcwork:stream:permission', handler);
+      return () => ipcRenderer.removeListener('mixcwork:stream:permission', handler);
     },
     onStreamPermissionDismiss: (callback: (data: { requestId: string }) => void) => {
       const handler = (_event: any, data: { requestId: string }) => callback(data);
-      ipcRenderer.on('genwork:stream:permissionDismiss', handler);
-      return () => ipcRenderer.removeListener('genwork:stream:permissionDismiss', handler);
+      ipcRenderer.on('mixcwork:stream:permissionDismiss', handler);
+      return () => ipcRenderer.removeListener('mixcwork:stream:permissionDismiss', handler);
     },
     onStreamComplete: (
       callback: (data: { sessionId: string; claudeSessionId: string | null }) => void,
     ) => {
       const handler = (_event: any, data: { sessionId: string; claudeSessionId: string | null }) =>
         callback(data);
-      ipcRenderer.on('genwork:stream:complete', handler);
-      return () => ipcRenderer.removeListener('genwork:stream:complete', handler);
+      ipcRenderer.on('mixcwork:stream:complete', handler);
+      return () => ipcRenderer.removeListener('mixcwork:stream:complete', handler);
     },
     onStreamError: (callback: (data: { sessionId: string; error: string }) => void) => {
       const handler = (_event: any, data: { sessionId: string; error: string }) => callback(data);
-      ipcRenderer.on('genwork:stream:error', handler);
-      return () => ipcRenderer.removeListener('genwork:stream:error', handler);
+      ipcRenderer.on('mixcwork:stream:error', handler);
+      return () => ipcRenderer.removeListener('mixcwork:stream:error', handler);
     },
-    onSessionsChanged: (callback: (data?: GenWorkSessionsChangedPayload) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, data?: GenWorkSessionsChangedPayload) => callback(data);
-      ipcRenderer.on(GenWorkIpcChannel.SessionsChanged, handler);
-      return () => ipcRenderer.removeListener(GenWorkIpcChannel.SessionsChanged, handler);
+    onSessionsChanged: (callback: (data?: MixCWorkSessionsChangedPayload) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data?: MixCWorkSessionsChangedPayload) => callback(data);
+      ipcRenderer.on(MixCWorkIpcChannel.SessionsChanged, handler);
+      return () => ipcRenderer.removeListener(MixCWorkIpcChannel.SessionsChanged, handler);
     },
     onSessionModelOverrideChanged: (
       callback: (data: { sessionId: string; modelOverride: string }) => void,
     ) => {
       const handler = (_event: any, data: { sessionId: string; modelOverride: string }) => callback(data);
-      ipcRenderer.on(GenWorkIpcChannel.SessionModelOverrideChanged, handler);
-      return () => ipcRenderer.removeListener(GenWorkIpcChannel.SessionModelOverrideChanged, handler);
+      ipcRenderer.on(MixCWorkIpcChannel.SessionModelOverrideChanged, handler);
+      return () => ipcRenderer.removeListener(MixCWorkIpcChannel.SessionModelOverrideChanged, handler);
     },
     onOpenSessionFromNotification: (callback: (data: { sessionId: string }) => void) => {
       const handler = (_event: any, data: { sessionId: string }) => callback(data);
-      ipcRenderer.on(GenWorkIpcChannel.OpenSessionFromNotification, handler);
-      return () => ipcRenderer.removeListener(GenWorkIpcChannel.OpenSessionFromNotification, handler);
+      ipcRenderer.on(MixCWorkIpcChannel.OpenSessionFromNotification, handler);
+      return () => ipcRenderer.removeListener(MixCWorkIpcChannel.OpenSessionFromNotification, handler);
     },
   },
   dialog: {
@@ -1088,7 +1076,6 @@ contextBridge.exposeInMainWorld('electron', {
 
     // Status
     getStatus: () => ipcRenderer.invoke('im:status:get'),
-    getLocalIp: () => ipcRenderer.invoke('im:getLocalIp') as Promise<string>,
     // OpenClaw config schema
     getOpenClawConfigSchema: () => ipcRenderer.invoke('im:openclaw:config-schema'),
 
@@ -1096,20 +1083,6 @@ contextBridge.exposeInMainWorld('electron', {
     weixinQrLoginStart: () => ipcRenderer.invoke('im:weixin:qr-login-start'),
     weixinQrLoginWait: (sessionKey?: string) =>
       ipcRenderer.invoke('im:weixin:qr-login-wait', sessionKey),
-
-    // POPO QR login
-    popoQrLoginStart: () => ipcRenderer.invoke('im:popo:qr-login-start'),
-    popoQrLoginPoll: (taskToken: string) => ipcRenderer.invoke('im:popo:qr-login-poll', taskToken),
-
-    // POPO Multi-Instance
-    addPopoInstance: (name: string) => ipcRenderer.invoke('im:popo:instance:add', name),
-    deletePopoInstance: (instanceId: string) =>
-      ipcRenderer.invoke('im:popo:instance:delete', instanceId),
-    setPopoInstanceConfig: (
-      instanceId: string,
-      config: Record<string, unknown>,
-      options?: { syncGateway?: boolean; restartGatewayIfRunning?: boolean; markRestartOnSave?: boolean },
-    ) => ipcRenderer.invoke('im:popo:instance:config:set', instanceId, config, options),
 
     // Pairing
     listPairingRequests: (platform: string) => ipcRenderer.invoke('im:pairing:list', platform),
@@ -1144,16 +1117,6 @@ contextBridge.exposeInMainWorld('electron', {
       config: any,
       options?: { syncGateway?: boolean; restartGatewayIfRunning?: boolean; markRestartOnSave?: boolean },
     ) => ipcRenderer.invoke('im:feishu:instance:config:set', instanceId, config, options),
-
-    // Email Multi-Instance
-    addEmailInstance: (name: string) => ipcRenderer.invoke('im:email:instance:add', name),
-    deleteEmailInstance: (instanceId: string) =>
-      ipcRenderer.invoke('im:email:instance:delete', instanceId),
-    setEmailInstanceConfig: (
-      instanceId: string,
-      config: any,
-      options?: { syncGateway?: boolean; restartGatewayIfRunning?: boolean; markRestartOnSave?: boolean },
-    ) => ipcRenderer.invoke('im:email:instance:config:set', instanceId, config, options),
 
     // WeCom Multi-Instance
     addWecomInstance: (name: string) => ipcRenderer.invoke('im:wecom:instance:add', name),
@@ -1250,26 +1213,9 @@ contextBridge.exposeInMainWorld('electron', {
   networkStatus: {
     send: (status: 'online' | 'offline') => ipcRenderer.send('network:status-change', status),
   },
-  auth: {
-    onQuotaChanged: (callback: () => void) => {
-      const handler = () => callback();
-      ipcRenderer.on(AuthIpcChannel.QuotaChanged, handler);
-      return () => ipcRenderer.removeListener(AuthIpcChannel.QuotaChanged, handler);
-    },
-    onSessionChanged: (callback: (event: AuthSessionChangedEvent) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, data: AuthSessionChangedEvent) => callback(data);
-      ipcRenderer.on(AuthIpcChannel.SessionChanged, handler);
-      return () => ipcRenderer.removeListener(AuthIpcChannel.SessionChanged, handler);
-    },
-    onLifecycleEvent: (callback: (event: AuthLifecycleEvent) => void) => {
-      const handler = (_event: Electron.IpcRendererEvent, data: AuthLifecycleEvent) => callback(data);
-      ipcRenderer.on(AuthIpcChannel.LifecycleEvent, handler);
-      return () => ipcRenderer.removeListener(AuthIpcChannel.LifecycleEvent, handler);
-    },
-  },
   media: {
     getModels: (type: 'image' | 'video') =>
-      ipcRenderer.invoke(GenWorkIpcChannel.GetMediaModels, type) as Promise<{ success: boolean; models?: unknown[]; error?: string }>,
+      ipcRenderer.invoke(MixCWorkIpcChannel.GetMediaModels, type) as Promise<{ success: boolean; models?: unknown[]; error?: string }>,
     getTaskStatus: (taskId: number, type: 'image' | 'video') =>
       ipcRenderer.invoke('media:getTaskStatus', taskId, type) as Promise<{ success: boolean; task?: unknown; error?: string }>,
   },
@@ -1411,7 +1357,7 @@ contextBridge.exposeInMainWorld('electron', {
       orgId: string;
       username: string;
       password: string;
-    }): Promise<{ ok: true } | { ok: false; error: string }> =>
+    }): Promise<{ ok: true } | { ok: false; error: string; code: string | null }> =>
       ipcRenderer.invoke(EnterpriseIpcChannel.Login, args),
     logout: (): Promise<void> => ipcRenderer.invoke(EnterpriseIpcChannel.Logout),
     onSessionRevoked: (callback: () => void): (() => void) => {

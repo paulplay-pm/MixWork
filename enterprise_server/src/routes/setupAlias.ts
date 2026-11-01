@@ -3,10 +3,10 @@ import { randomBytes } from 'node:crypto';
 import { Hono } from 'hono';
 
 import { signToken } from '../auth/jwt';
-import { invitationService } from '../setup/invitationService';
-import { Role } from '../shared/enterpriseServerConstants';
 import { pool } from '../db/pool';
 import { seedBuiltinProviders } from '../org/builtinProviders';
+import { invitationService } from '../setup/invitationService';
+import { Role } from '../shared/enterpriseServerConstants';
 
 /**
  * SPA-driven setup surface at /api/setup/*. The whole router is hard-closed

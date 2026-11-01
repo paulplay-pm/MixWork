@@ -75,13 +75,13 @@ export const applyTypographyPreferences = (config: TypographyConfig): void => {
   const root = document.documentElement;
   const scale = uiFontSize / UI_FONT_SCALE_BASELINE;
 
-  root.style.setProperty('--genwork-ui-font-size', `${uiFontSize}px`);
-  root.style.setProperty('--genwork-code-font-size', `${codeFontSize}px`);
+  root.style.setProperty('--mixcwork-ui-font-size', `${uiFontSize}px`);
+  root.style.setProperty('--mixcwork-code-font-size', `${codeFontSize}px`);
 
   Object.entries(TEXT_SIZE_BASE).forEach(([key, value]) => {
-    setPxVariable(root, `--genwork-text-${key}`, value * scale);
+    setPxVariable(root, `--mixcwork-text-${key}`, value * scale);
   });
   Object.entries(LINE_HEIGHT_BASE).forEach(([key, value]) => {
-    setPxVariable(root, `--genwork-leading-${key}`, value * scale);
+    setPxVariable(root, `--mixcwork-leading-${key}`, value * scale);
   });
 };

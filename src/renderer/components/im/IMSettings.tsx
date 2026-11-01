@@ -3,7 +3,6 @@
  * Configuration UI for DingTalk, Feishu and Telegram IM bots
  */
 
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/20/solid';
 import { ArrowLeftIcon, CheckCircleIcon, CheckIcon, ChevronDownIcon, ChevronRightIcon, EllipsisVerticalIcon, ExclamationTriangleIcon, PlusIcon, SignalIcon, XCircleIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { ArrowPathIcon } from '@heroicons/react/24/outline';
 import type { Platform } from '@shared/platform';
@@ -16,9 +15,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { i18nService } from '../../services/i18n';
 import { imService } from '../../services/im';
 import { RootState } from '../../store';
-import { clearError,setDingTalkConfig, setDingTalkInstanceConfig, setDiscordConfig, setDiscordInstanceConfig, setEmailInstanceConfig, setFeishuConfig, setFeishuInstanceConfig, setPopoInstanceConfig, setQQConfig, setQQInstanceConfig, setTelegramInstanceConfig, setTelegramOpenClawConfig, setWecomConfig, setWecomInstanceConfig, setWeixinConfig } from '../../store/slices/imSlice';
-import type { EmailInstanceConfig, IMConnectivityCheck, IMConnectivityTestResult, IMGatewayConfig, WeixinOpenClawConfig } from '../../types/im';
-import { MAX_DINGTALK_INSTANCES, MAX_DISCORD_INSTANCES, MAX_EMAIL_INSTANCES, MAX_FEISHU_INSTANCES, MAX_POPO_INSTANCES, MAX_QQ_INSTANCES, MAX_TELEGRAM_INSTANCES, MAX_WECOM_INSTANCES } from '../../types/im';
+import { clearError,setDingTalkConfig, setDingTalkInstanceConfig, setDiscordConfig, setDiscordInstanceConfig, setFeishuConfig, setFeishuInstanceConfig, setQQConfig, setQQInstanceConfig, setTelegramInstanceConfig, setTelegramOpenClawConfig, setWecomConfig, setWecomInstanceConfig, setWeixinConfig } from '../../store/slices/imSlice';
+import type { IMConnectivityCheck, IMConnectivityTestResult, IMGatewayConfig, WeixinOpenClawConfig } from '../../types/im';
+import { MAX_DINGTALK_INSTANCES, MAX_DISCORD_INSTANCES, MAX_FEISHU_INSTANCES, MAX_QQ_INSTANCES, MAX_TELEGRAM_INSTANCES, MAX_WECOM_INSTANCES } from '../../types/im';
 import { getVisibleIMPlatforms } from '../../utils/regionFilter';
 import Modal from '../common/Modal';
 import ComposeIcon from '../icons/ComposeIcon';
@@ -27,7 +26,6 @@ import TrashIcon from '../icons/TrashIcon';
 import DingTalkInstanceSettings from './DingTalkInstanceSettings';
 import DiscordInstanceSettings from './DiscordInstanceSettings';
 import FeishuInstanceSettings from './FeishuInstanceSettings';
-import PopoInstanceSettings from './PopoInstanceSettings';
 import QQInstanceSettings from './QQInstanceSettings';
 import TelegramInstanceSettings from './TelegramInstanceSettings';
 import WecomInstanceSettings from './WecomInstanceSettings';
@@ -85,11 +83,9 @@ const MULTI_INSTANCE_PLATFORMS = new Set<Platform>([
   'dingtalk',
   'feishu',
   'qq',
-  'email',
   'wecom',
   'telegram',
   'discord',
-  'popo',
 ]);
 
 type IMAnalyticsInstanceOperation = 'added' | 'deleted' | 'enabled' | 'disabled';
@@ -166,7 +162,6 @@ type IMInstanceStatusCard = {
   botOpenId?: string | null;
   botUsername?: string | null;
   botId?: string | null;
-  email?: string | null;
 };
 
 type IMInstanceTarget = {
@@ -200,11 +195,9 @@ const IMSettings: React.FC = () => {
   const [activeQQInstanceId, setActiveQQInstanceId] = useState<string | null>(null);
   const [activeFeishuInstanceId, setActiveFeishuInstanceId] = useState<string | null>(null);
   const [activeDingTalkInstanceId, setActiveDingTalkInstanceId] = useState<string | null>(null);
-  const [activeEmailInstanceId, setActiveEmailInstanceId] = useState<string | null>(null);
   const [activeWecomInstanceId, setActiveWecomInstanceId] = useState<string | null>(null);
   const [activeTelegramInstanceId, setActiveTelegramInstanceId] = useState<string | null>(null);
   const [activeDiscordInstanceId, setActiveDiscordInstanceId] = useState<string | null>(null);
-  const [activePopoInstanceId, setActivePopoInstanceId] = useState<string | null>(null);
   const [testingPlatform, setTestingPlatform] = useState<Platform | null>(null);
   const [connectivityResults, setConnectivityResults] = useState<Partial<Record<Platform, IMConnectivityTestResult>>>({});
   const [connectivityModalPlatform, setConnectivityModalPlatform] = useState<Platform | null>(null);
@@ -212,11 +205,6 @@ const IMSettings: React.FC = () => {
   const [configLoaded, setConfigLoaded] = useState(false);
   // Re-entrancy guard for gateway toggle to prevent rapid ON→OFF→ON
   const [togglingPlatform, setTogglingPlatform] = useState<Platform | null>(null);
-  // Loading state for email instance toggle (stores instanceId being toggled on)
-  const [emailToggleLoading, setEmailToggleLoading] = useState<string | null>(null);
-  const [emailDrafts, setEmailDrafts] = useState<Record<string, { allowFrom?: string; a2aAgentDomains?: string }>>({});
-  // Track visibility of password fields (eye toggle)
-  const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({});
   const [instanceMenuTarget, setInstanceMenuTarget] = useState<IMInstanceTarget | null>(null);
   const [renamingInstance, setRenamingInstance] = useState<IMInstanceRenameTarget | null>(null);
   const [deleteConfirmTarget, setDeleteConfirmTarget] = useState<IMInstanceTarget | null>(null);
@@ -233,7 +221,6 @@ const IMSettings: React.FC = () => {
   const [isWeixinDmPolicyMenuOpen, setIsWeixinDmPolicyMenuOpen] = useState(false);
   const weixinTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const weixinDmPolicyMenuRef = useRef<HTMLDivElement>(null);
-  const [_localIp, setLocalIp] = useState<string>('');
   const isMountedRef = useRef(true);
 
   // OpenClaw config schema for schema-driven forms
@@ -289,13 +276,6 @@ const IMSettings: React.FC = () => {
     setDeleteConfirmTarget(null);
     setIsWeixinDmPolicyMenuOpen(false);
   }, [activePlatform]);
-
-  // Fetch local IP for POPO webhook placeholder
-  useEffect(() => {
-    window.electron?.im?.getLocalIp?.().then((ip: string) => {
-      if (isMountedRef.current) setLocalIp(ip);
-    }).catch(() => {});
-  }, []);
 
   // Cleanup feishu QR timers on unmount
   useEffect(() => {
@@ -398,11 +378,6 @@ const IMSettings: React.FC = () => {
       setWeixinQrUrl('');
       setWeixinQrError('');
     }
-  }, [activePlatform]);
-
-  // Reset password visibility when switching platforms
-  useEffect(() => {
-    setShowSecrets({});
   }, [activePlatform]);
 
   // Initialize IM service and subscribe status updates
@@ -550,20 +525,6 @@ const IMSettings: React.FC = () => {
 
   
 
-  // ==================== Email instance helpers ====================
-
-  const handleEmailGetApiKey = async () => {
-    if (!activeEmailInstanceId) return;
-    const apiKeyUrl = 'https://claw.163.com/projects/dashboard/?channel=GenWork#/api-keys';
-    try {
-      await window.electron.shell.openExternal(apiKeyUrl);
-    } catch {
-      alert('Failed to open browser. Please visit: ' + apiKeyUrl);
-    }
-  };
-
-  // ==================== End email instance helpers ====================
-
   const getCheckTitle = (code: IMConnectivityCheck['code']): string => {
     return i18nService.t(`imConnectivityCheckTitle_${code}`);
   };
@@ -659,7 +620,7 @@ const IMSettings: React.FC = () => {
         return;
       }
 
-      if (platform === 'qq' || platform === 'email' || platform === 'wecom') {
+      if (platform === 'qq' || platform === 'wecom') {
         // Multi-instance platforms toggle per instance from their overview cards or account detail.
         return;
       }
@@ -677,11 +638,6 @@ const IMSettings: React.FC = () => {
         } else {
           reportIMGatewayToggledAction(platform, operation, 'failed', 'config_update_failed');
         }
-        return;
-      }
-
-      if (platform === 'popo') {
-        // POPO multi-instance: toggle is handled from the instance overview cards.
         return;
       }
 
@@ -727,8 +683,6 @@ const IMSettings: React.FC = () => {
   const shouldShowWeixinError = Boolean(
     weixinLastError && weixinLastError.trim().toLowerCase() !== WeixinRuntimeLastError.Disabled
   );
-  const popoConnected = status.popo?.instances?.some(i => i.connected) ?? false;
-  const emailConnected = status.email.instances.some(i => i.connected);
 
   // Compute visible platforms based on language
   const platforms = useMemo<Platform[]>(() => {
@@ -763,9 +717,6 @@ const IMSettings: React.FC = () => {
     if (platform === 'weixin') {
       return true; // No credentials needed, connects via QR code in CLI
     }
-    if (platform === 'popo') {
-      return true; // Credentials provisioned via QR scan or manual input in openclaw.json
-    }
     return config.feishu.instances?.some(i => !!(i.appId && i.appSecret));
   };
 
@@ -780,9 +731,6 @@ const IMSettings: React.FC = () => {
     if (platform === 'feishu') {
       return config.feishu.instances?.some(i => i.enabled);
     }
-    if (platform === 'email') {
-      return config.email.instances.some(i => i.enabled);
-    }
     if (platform === 'wecom') {
       return config.wecom.instances?.some(i => i.enabled);
     }
@@ -791,9 +739,6 @@ const IMSettings: React.FC = () => {
     }
     if (platform === 'discord') {
       return config.discord.instances?.some(i => i.enabled);
-    }
-    if (platform === 'popo') {
-      return config.popo.instances?.some(i => i.enabled);
     }
     return (config[platform] as { enabled: boolean }).enabled;
   };
@@ -806,8 +751,6 @@ const IMSettings: React.FC = () => {
     if (platform === 'qq') return qqConnected;
     if (platform === 'wecom') return wecomConnected;
     if (platform === 'weixin') return weixinConnected;
-    if (platform === 'popo') return popoConnected;
-    if (platform === 'email') return emailConnected;
     return feishuConnected;
   };
 
@@ -1024,19 +967,6 @@ const IMSettings: React.FC = () => {
       return;
     }
 
-    // For Email, persist email config and test (OpenClaw mode)
-    if (platform === 'email') {
-      await imService.persistConfig({ email: config.email });
-      // Pass only the active instance to avoid testing wrong instance
-      const activeInstance = activeEmailInstanceId
-        ? config.email.instances.find(i => i.instanceId === activeEmailInstanceId)
-        : config.email.instances.find(i => i.enabled) || config.email.instances[0];
-      await runConnectivityTest(platform, {
-        email: { instances: activeInstance ? [activeInstance] : [] },
-      } as Partial<IMGatewayConfig>);
-      return;
-    }
-
     // For WeCom, persist wecom config and test (OpenClaw mode)
     if (platform === 'wecom') {
       const wecomMultiConfig = config.wecom;
@@ -1169,8 +1099,6 @@ const IMSettings: React.FC = () => {
       discord: setDiscordConfig,
       wecom: setWecomConfig,
       weixin: setWeixinConfig,
-      popo: null, // POPO is multi-instance; toggle handled per-instance in PopoInstanceSettings
-      email: null, // Email is multi-instance; toggle handled per-instance in EmailSettings
     };
     return actionMap[platform];
   };
@@ -1261,22 +1189,18 @@ const IMSettings: React.FC = () => {
     if (platform === 'dingtalk') setActiveDingTalkInstanceId(instanceId);
     if (platform === 'feishu') setActiveFeishuInstanceId(instanceId);
     if (platform === 'qq') setActiveQQInstanceId(instanceId);
-    if (platform === 'email') setActiveEmailInstanceId(instanceId);
     if (platform === 'wecom') setActiveWecomInstanceId(instanceId);
     if (platform === 'telegram') setActiveTelegramInstanceId(instanceId);
     if (platform === 'discord') setActiveDiscordInstanceId(instanceId);
-    if (platform === 'popo') setActivePopoInstanceId(instanceId);
   };
 
   const getInstancesForPlatform = (platform: Platform): IMInstanceConfigCard[] => {
     if (platform === 'dingtalk') return config.dingtalk.instances as unknown as IMInstanceConfigCard[];
     if (platform === 'feishu') return config.feishu.instances as unknown as IMInstanceConfigCard[];
     if (platform === 'qq') return config.qq.instances as unknown as IMInstanceConfigCard[];
-    if (platform === 'email') return config.email.instances as unknown as IMInstanceConfigCard[];
     if (platform === 'wecom') return config.wecom.instances as unknown as IMInstanceConfigCard[];
     if (platform === 'telegram') return config.telegram.instances as unknown as IMInstanceConfigCard[];
     if (platform === 'discord') return config.discord.instances as unknown as IMInstanceConfigCard[];
-    if (platform === 'popo') return config.popo.instances as unknown as IMInstanceConfigCard[];
     return [];
   };
 
@@ -1284,11 +1208,9 @@ const IMSettings: React.FC = () => {
     if (platform === 'dingtalk') return status.dingtalk?.instances ?? [];
     if (platform === 'feishu') return status.feishu?.instances ?? [];
     if (platform === 'qq') return status.qq?.instances ?? [];
-    if (platform === 'email') return status.email?.instances ?? [];
     if (platform === 'wecom') return status.wecom?.instances ?? [];
     if (platform === 'telegram') return status.telegram?.instances ?? [];
     if (platform === 'discord') return status.discord?.instances ?? [];
-    if (platform === 'popo') return status.popo?.instances ?? [];
     return [];
   };
 
@@ -1296,11 +1218,9 @@ const IMSettings: React.FC = () => {
     if (platform === 'dingtalk') return MAX_DINGTALK_INSTANCES;
     if (platform === 'feishu') return MAX_FEISHU_INSTANCES;
     if (platform === 'qq') return MAX_QQ_INSTANCES;
-    if (platform === 'email') return MAX_EMAIL_INSTANCES;
     if (platform === 'wecom') return MAX_WECOM_INSTANCES;
     if (platform === 'telegram') return MAX_TELEGRAM_INSTANCES;
     if (platform === 'discord') return MAX_DISCORD_INSTANCES;
-    if (platform === 'popo') return MAX_POPO_INSTANCES;
     return 0;
   };
 
@@ -1313,11 +1233,9 @@ const IMSettings: React.FC = () => {
     if (platform === 'dingtalk') return !!(getStringField(instance, 'clientId') && getStringField(instance, 'clientSecret'));
     if (platform === 'feishu') return !!(getStringField(instance, 'appId') && getStringField(instance, 'appSecret'));
     if (platform === 'qq') return !!(getStringField(instance, 'appId') && getStringField(instance, 'appSecret'));
-    if (platform === 'email') return !!(getStringField(instance, 'email') && getStringField(instance, 'apiKey'));
     if (platform === 'wecom') return !!(getStringField(instance, 'botId') && getStringField(instance, 'secret'));
     if (platform === 'telegram') return !!getStringField(instance, 'botToken');
     if (platform === 'discord') return !!getStringField(instance, 'botToken');
-    if (platform === 'popo') return !!(getStringField(instance, 'appKey') && getStringField(instance, 'appSecret') && getStringField(instance, 'aesKey'));
     return false;
   };
 
@@ -1336,11 +1254,9 @@ const IMSettings: React.FC = () => {
     if (platform === 'dingtalk') instance = await imService.addDingTalkInstance(`DingTalk Bot ${count + 1}`) as unknown as IMInstanceConfigCard | null;
     if (platform === 'feishu') instance = await imService.addFeishuInstance(`Feishu Bot ${count + 1}`) as unknown as IMInstanceConfigCard | null;
     if (platform === 'qq') instance = await imService.addQQInstance(`QQ Bot ${count + 1}`) as unknown as IMInstanceConfigCard | null;
-    if (platform === 'email') instance = await imService.addEmailInstance(`Email ${count + 1}`) as unknown as IMInstanceConfigCard | null;
     if (platform === 'wecom') instance = await imService.addWecomInstance(`WeCom Bot ${count + 1}`) as unknown as IMInstanceConfigCard | null;
     if (platform === 'telegram') instance = await imService.addTelegramInstance(`Telegram Bot ${count + 1}`) as unknown as IMInstanceConfigCard | null;
     if (platform === 'discord') instance = await imService.addDiscordInstance(`Discord Bot ${count + 1}`) as unknown as IMInstanceConfigCard | null;
-    if (platform === 'popo') instance = await imService.addPopoInstance(`POPO Bot ${count + 1}`) as unknown as IMInstanceConfigCard | null;
 
     if (instance) {
       setActivePlatform(platform);
@@ -1365,11 +1281,9 @@ const IMSettings: React.FC = () => {
     if (platform === 'dingtalk') success = await imService.persistDingTalkInstanceConfig(instanceId, update);
     if (platform === 'feishu') success = await imService.persistFeishuInstanceConfig(instanceId, update);
     if (platform === 'qq') success = await imService.persistQQInstanceConfig(instanceId, update);
-    if (platform === 'email') success = await imService.persistEmailInstanceConfig(instanceId, update);
     if (platform === 'wecom') success = await imService.persistWecomInstanceConfig(instanceId, update);
     if (platform === 'telegram') success = await imService.persistTelegramInstanceConfig(instanceId, update);
     if (platform === 'discord') success = await imService.persistDiscordInstanceConfig(instanceId, update);
-    if (platform === 'popo') success = await imService.persistPopoInstanceConfig(instanceId, update);
 
     return success;
   };
@@ -1386,11 +1300,9 @@ const IMSettings: React.FC = () => {
     if (platform === 'dingtalk') success = await imService.deleteDingTalkInstance(instanceId);
     if (platform === 'feishu') success = await imService.deleteFeishuInstance(instanceId);
     if (platform === 'qq') success = await imService.deleteQQInstance(instanceId);
-    if (platform === 'email') success = await imService.deleteEmailInstance(instanceId);
     if (platform === 'wecom') success = await imService.deleteWecomInstance(instanceId);
     if (platform === 'telegram') success = await imService.deleteTelegramInstance(instanceId);
     if (platform === 'discord') success = await imService.deleteDiscordInstance(instanceId);
-    if (platform === 'popo') success = await imService.deletePopoInstance(instanceId);
 
     if (success) {
       await imService.loadStatus();
@@ -1439,21 +1351,17 @@ const IMSettings: React.FC = () => {
     if (platform === 'dingtalk') success = await imService.updateDingTalkInstanceConfig(instance.instanceId, { enabled }, reloadStatusOptions);
     if (platform === 'feishu') success = await imService.updateFeishuInstanceConfig(instance.instanceId, { enabled }, reloadStatusOptions);
     if (platform === 'qq') success = await imService.updateQQInstanceConfig(instance.instanceId, { enabled }, reloadStatusOptions);
-    if (platform === 'email') success = await imService.updateEmailInstanceConfig(instance.instanceId, { enabled }, reloadStatusOptions);
     if (platform === 'wecom') success = await imService.updateWecomInstanceConfig(instance.instanceId, { enabled }, reloadStatusOptions);
     if (platform === 'telegram') success = await imService.updateTelegramInstanceConfig(instance.instanceId, { enabled }, reloadStatusOptions);
     if (platform === 'discord') success = await imService.updateDiscordInstanceConfig(instance.instanceId, { enabled }, reloadStatusOptions);
-    if (platform === 'popo') success = await imService.updatePopoInstanceConfig(instance.instanceId, { enabled }, reloadStatusOptions);
 
     if (!success) return;
     if (platform === 'dingtalk') dispatch(setDingTalkInstanceConfig({ instanceId: instance.instanceId, config: { enabled } }));
     if (platform === 'feishu') dispatch(setFeishuInstanceConfig({ instanceId: instance.instanceId, config: { enabled } }));
     if (platform === 'qq') dispatch(setQQInstanceConfig({ instanceId: instance.instanceId, config: { enabled } }));
-    if (platform === 'email') dispatch(setEmailInstanceConfig({ instanceId: instance.instanceId, config: { enabled } }));
     if (platform === 'wecom') dispatch(setWecomInstanceConfig({ instanceId: instance.instanceId, config: { enabled } }));
     if (platform === 'telegram') dispatch(setTelegramInstanceConfig({ instanceId: instance.instanceId, config: { enabled } }));
     if (platform === 'discord') dispatch(setDiscordInstanceConfig({ instanceId: instance.instanceId, config: { enabled } }));
-    if (platform === 'popo') dispatch(setPopoInstanceConfig({ instanceId: instance.instanceId, config: { enabled } }));
     setSaveReminderTarget(platform, instance.instanceId, enabled);
     if (enabled) dispatch(clearError());
     const instancesBefore = getInstancesForPlatform(platform);
@@ -1934,348 +1842,6 @@ const IMSettings: React.FC = () => {
           );
         })()}
 
-        {/* Email Settings (multi-instance, inline form like feishu/qq) */}
-        {activePlatform === 'email' && !activeEmailInstanceId && renderMultiInstanceOverview('email')}
-        {activePlatform === 'email' && activeEmailInstanceId && (() => {
-          const inst = config.email.instances.find(i => i.instanceId === activeEmailInstanceId);
-          if (!inst) return null;
-          const instStatus = status.email.instances.find(s => s.instanceId === inst.instanceId);
-          const inputClass = 'block w-full rounded-lg bg-surface border border-border-subtle focus:border-primary focus:ring-1 focus:ring-primary/30 text-foreground px-3 py-2 text-sm transition-colors';
-          const labelClass = 'block text-xs font-medium text-secondary mb-1';
-          return (
-            <div className="space-y-4">
-              {/* Instance Header: Name, Status, Enable Toggle, Delete */}
-              <div className="flex items-center gap-3 pb-3 border-b border-border-subtle">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  {renderBackToInstanceList('email')}
-                  <h3 className="text-sm font-medium text-foreground truncate">{inst.instanceName}</h3>
-                </div>
-
-                {/* Status badge */}
-                <div className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                  instStatus?.connected
-                    ? 'bg-green-500/15 text-green-600 dark:text-green-400'
-                    : 'bg-gray-500/15 text-gray-500 dark:text-gray-400'
-                }`}>
-                  {instStatus?.connected ? i18nService.t('connected') : i18nService.t('disconnected')}
-                </div>
-
-                {/* Enable toggle */}
-                <button
-                  type="button"
-                  disabled={emailToggleLoading === inst.instanceId}
-                  onClick={async () => {
-                    const newEnabled = !inst.enabled;
-
-                    // Turning OFF — no connectivity check needed
-                    if (!newEnabled) {
-                      const success = await imService.updateEmailInstanceConfig(inst.instanceId, { enabled: false });
-                      if (success) {
-                        dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { enabled: false } }));
-                        setSaveReminderTarget('email', inst.instanceId, false);
-                        reportIMInstanceChanged(
-                          'email',
-                          'disabled',
-                          config.email.instances.length,
-                          Math.max(0, countEnabledIMInstances(config.email.instances as unknown as IMInstanceConfigCard[]) - 1),
-                        );
-                      }
-                      return;
-                    }
-
-                    // Turning ON — run connectivity test first
-                    if (emailToggleLoading) return;
-                    setEmailToggleLoading(inst.instanceId);
-                    try {
-                      const result = await imService.testGateway('email', {
-                        email: { instances: [inst] },
-                      } as Partial<IMGatewayConfig>);
-                      reportIMConnectionTested('email', result);
-                      if (result && result.verdict !== 'fail') {
-                        const success = await imService.updateEmailInstanceConfig(inst.instanceId, { enabled: true });
-                        if (success) {
-                          dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { enabled: true } }));
-                          setSaveReminderTarget('email', inst.instanceId, true);
-                          dispatch(clearError());
-                          reportIMInstanceChanged(
-                            'email',
-                            'enabled',
-                            config.email.instances.length,
-                            countEnabledIMInstances(config.email.instances as unknown as IMInstanceConfigCard[]) + 1,
-                          );
-                        }
-                      } else {
-                        void window.electron.dialog.showMessageBox({
-                          type: 'warning',
-                          message: i18nService.t('emailConnectivityFailAlert'),
-                        });
-                      }
-                    } finally {
-                      setEmailToggleLoading(null);
-                    }
-                  }}
-                  className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                    emailToggleLoading === inst.instanceId
-                      ? 'cursor-wait bg-gray-400 dark:bg-gray-600'
-                      : inst.enabled
-                        ? `cursor-pointer ${instStatus?.connected ? 'bg-green-500' : 'bg-yellow-500'}`
-                        : 'cursor-pointer bg-gray-400 dark:bg-gray-600'
-                  }`}
-                  title={inst.enabled ? i18nService.t('imQQDisableInstance') : i18nService.t('imQQEnableInstance')}
-                >
-                  <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full shadow ring-0 transition duration-200 ease-in-out ${
-                    emailToggleLoading === inst.instanceId
-                      ? 'translate-x-0 bg-gray-300 dark:bg-gray-500 animate-pulse'
-                      : inst.enabled
-                        ? 'translate-x-4 bg-white'
-                        : 'translate-x-0 bg-white'
-                  }`} />
-                </button>
-
-                {/* Delete button */}
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const success = await imService.deleteEmailInstance(inst.instanceId);
-                    if (success) {
-                      const remaining = config.email.instances.filter(i => i.instanceId !== inst.instanceId);
-                      setActiveEmailInstanceId(remaining.length > 0 ? remaining[0].instanceId : null);
-                      reportIMInstanceChanged(
-                        'email',
-                        'deleted',
-                        remaining.length,
-                        countEnabledIMInstances(remaining as unknown as IMInstanceConfigCard[]),
-                      );
-                    }
-                  }}
-                  className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium text-red-500 hover:bg-red-500/10 rounded-lg transition-colors flex-shrink-0"
-                  title={i18nService.t('delete') || 'Delete'}
-                >
-                  <TrashIcon className="h-4 w-4" />
-                  {i18nService.t('delete')}
-                </button>
-              </div>
-
-              {renderInstanceSaveReminder('email', inst as unknown as IMInstanceConfigCard, instStatus)}
-
-              {/* Email Address */}
-              <div>
-                <label className={labelClass}>{i18nService.t('emailAddress')} <span className="text-red-500">*</span></label>
-                <input
-                  type="email"
-                  value={inst.email}
-                  onChange={e => {
-                    const email = e.target.value;
-                    const instanceName = email.split('@')[0] || '';
-                    dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { email, instanceName } }));
-                  }}
-                  onBlur={e => {
-                    const email = e.target.value;
-                    const instanceName = email.split('@')[0] || '';
-                    void imService.persistEmailInstanceConfig(inst.instanceId, { email, instanceName, transport: 'ws' });
-                  }}
-                  placeholder={i18nService.t('emailAddressPlaceholder')}
-                  className={inputClass}
-                />
-              </div>
-
-              {/* API Key (always shown, transport is always ws) */}
-              <div>
-                <label className={labelClass}>{i18nService.t('emailApiKey')} <span className="text-red-500">*</span></label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <input
-                      type={showSecrets[`email.${inst.instanceId}.apiKey`] ? 'text' : 'password'}
-                      value={inst.apiKey || ''}
-                      onChange={e => dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { apiKey: e.target.value } }))}
-                      onBlur={e => void imService.persistEmailInstanceConfig(inst.instanceId, { apiKey: e.target.value })}
-                      placeholder={i18nService.t('emailApiKeyPlaceholder')}
-                      className={`${inputClass} w-full pr-8`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowSecrets(prev => ({ ...prev, [`email.${inst.instanceId}.apiKey`]: !prev[`email.${inst.instanceId}.apiKey`] }))}
-                      className="absolute right-2 inset-y-0 flex items-center p-0.5 rounded text-secondary hover:text-primary transition-colors"
-                      title={showSecrets[`email.${inst.instanceId}.apiKey`] ? (i18nService.t('hide') || 'Hide') : (i18nService.t('show') || 'Show')}
-                    >
-                      {showSecrets[`email.${inst.instanceId}.apiKey`]
-                        ? <EyeIcon className="h-4 w-4" />
-                        : <EyeSlashIcon className="h-4 w-4" />}
-                    </button>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleEmailGetApiKey()}
-                    className="px-3 py-2 rounded-lg text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
-                  >
-                    {i18nService.t('getApiKey')}
-                  </button>
-                </div>
-                <p className="text-xs text-secondary mt-1">{i18nService.t('apiKeyHint')}</p>
-              </div>
-
-              {/* Advanced Options */}
-              <details className="group">
-                <summary className="cursor-pointer text-xs font-medium text-secondary hover:text-primary transition-colors">
-                  {i18nService.t('imAdvancedSettings')}
-                </summary>
-                <div className="mt-2 space-y-3 pl-2 border-l-2 border-border-subtle">
-                  {/* Allow From (whitelist) */}
-                  <div>
-                    <label className={labelClass}>{i18nService.t('emailAllowFrom')}</label>
-                    <input
-                      type="text"
-                      value={emailDrafts[inst.instanceId]?.allowFrom ?? (inst.allowFrom ?? ['*']).join(', ')}
-                      onChange={e => setEmailDrafts(prev => ({ ...prev, [inst.instanceId]: { ...prev[inst.instanceId], allowFrom: e.target.value } }))}
-                      onFocus={() => {
-                        setEmailDrafts(prev => {
-                          if (prev[inst.instanceId]?.allowFrom !== undefined) return prev;
-                          return { ...prev, [inst.instanceId]: { ...prev[inst.instanceId], allowFrom: (inst.allowFrom ?? ['*']).join(', ') } };
-                        });
-                      }}
-                      onBlur={e => {
-                        const parsed = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                        dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { allowFrom: parsed } }));
-                        void imService.persistEmailInstanceConfig(inst.instanceId, { allowFrom: parsed });
-                        setEmailDrafts(prev => ({ ...prev, [inst.instanceId]: { ...prev[inst.instanceId], allowFrom: parsed.join(', ') } }));
-                      }}
-                      placeholder={i18nService.t('emailAllowFromPlaceholder')}
-                      className={inputClass}
-                    />
-                    <p className="text-xs text-secondary mt-1">{i18nService.t('emailAllowFromHint')}</p>
-                  </div>
-
-                  {/* Reply Mode */}
-                  <div>
-                    <label className={labelClass}>{i18nService.t('emailReplyMode')}</label>
-                    <select
-                      value={inst.replyMode ?? 'complete'}
-                      onChange={e => {
-                        const replyMode = e.target.value as EmailInstanceConfig['replyMode'];
-                        dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { replyMode } }));
-                        void imService.persistEmailInstanceConfig(inst.instanceId, { replyMode });
-                      }}
-                      className={inputClass}
-                    >
-                      <option value="immediate">{i18nService.t('emailReplyModeImmediate')}</option>
-                      <option value="accumulated">{i18nService.t('emailReplyModeAccumulated')}</option>
-                      <option value="complete">{i18nService.t('emailReplyModeComplete')}</option>
-                    </select>
-                  </div>
-
-                  {/* Reply To */}
-                  <div>
-                    <label className={labelClass}>{i18nService.t('emailReplyTo')}</label>
-                    <div className="flex gap-4">
-                      <label className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer">
-                        <input
-                          type="radio"
-                          checked={inst.replyTo === 'sender' || !inst.replyTo}
-                          onChange={() => {
-                            dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { replyTo: 'sender' } }));
-                            void imService.persistEmailInstanceConfig(inst.instanceId, { replyTo: 'sender' });
-                          }}
-                          className="accent-primary"
-                        />
-                        {i18nService.t('emailReplyToSender')}
-                      </label>
-                      <label className="flex items-center gap-1.5 text-sm text-foreground cursor-pointer">
-                        <input
-                          type="radio"
-                          checked={inst.replyTo === 'all'}
-                          onChange={() => {
-                            dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { replyTo: 'all' } }));
-                            void imService.persistEmailInstanceConfig(inst.instanceId, { replyTo: 'all' });
-                          }}
-                          className="accent-primary"
-                        />
-                        {i18nService.t('emailReplyToAll')}
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* A2A Config */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium text-secondary">{i18nService.t('emailA2aEnabled')}</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const a2aEnabled = !(inst.a2aEnabled ?? true);
-                          dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { a2aEnabled } }));
-                          void imService.persistEmailInstanceConfig(inst.instanceId, { a2aEnabled });
-                        }}
-                        className={`relative inline-flex h-5 w-9 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out cursor-pointer ${
-                          (inst.a2aEnabled ?? true) ? 'bg-green-500' : 'bg-gray-400 dark:bg-gray-600'
-                        }`}
-                      >
-                        <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          (inst.a2aEnabled ?? true) ? 'translate-x-4' : 'translate-x-0'
-                        }`} />
-                      </button>
-                    </div>
-                    <div>
-                      <label className={labelClass}>{i18nService.t('emailA2aAgentDomains')}</label>
-                      <input
-                        type="text"
-                        value={emailDrafts[inst.instanceId]?.a2aAgentDomains ?? (inst.a2aAgentDomains ?? []).join(', ')}
-                        onChange={e => setEmailDrafts(prev => ({ ...prev, [inst.instanceId]: { ...prev[inst.instanceId], a2aAgentDomains: e.target.value } }))}
-                        onFocus={() => {
-                          setEmailDrafts(prev => {
-                            if (prev[inst.instanceId]?.a2aAgentDomains !== undefined) return prev;
-                            return { ...prev, [inst.instanceId]: { ...prev[inst.instanceId], a2aAgentDomains: (inst.a2aAgentDomains ?? []).join(', ') } };
-                          });
-                        }}
-                        onBlur={e => {
-                          const parsed = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                          dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { a2aAgentDomains: parsed } }));
-                          void imService.persistEmailInstanceConfig(inst.instanceId, { a2aAgentDomains: parsed });
-                          setEmailDrafts(prev => ({ ...prev, [inst.instanceId]: { ...prev[inst.instanceId], a2aAgentDomains: parsed.join(', ') } }));
-                        }}
-                        placeholder={i18nService.t('emailA2aAgentDomainsPlaceholder')}
-                        className={inputClass}
-                      />
-                      <p className="text-xs text-secondary mt-1">{i18nService.t('emailA2aAgentDomainsHint')}</p>
-                    </div>
-                    <div>
-                      <label className={labelClass}>{i18nService.t('emailA2aMaxTurns')}</label>
-                      <input
-                        type="number"
-                        value={inst.a2aMaxPingPongTurns ?? 20}
-                        onChange={e => {
-                          const a2aMaxPingPongTurns = parseInt(e.target.value) || 20;
-                          dispatch(setEmailInstanceConfig({ instanceId: inst.instanceId, config: { a2aMaxPingPongTurns } }));
-                        }}
-                        onBlur={e => void imService.persistEmailInstanceConfig(inst.instanceId, {
-                          a2aMaxPingPongTurns: parseInt(e.target.value) || 20,
-                        })}
-                        className={inputClass}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </details>
-
-              {/* Connectivity test button */}
-              <div className="pt-1">
-                <button
-                  type="button"
-                  onClick={() => void handleConnectivityTest('email')}
-                  disabled={testingPlatform === 'email'}
-                  className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-xl border border-border text-foreground hover:bg-surface-raised disabled:opacity-50 disabled:cursor-not-allowed transition-colors active:scale-[0.98]"
-                >
-                  <SignalIcon className="h-3.5 w-3.5 mr-1.5" />
-                  {testingPlatform === 'email'
-                    ? i18nService.t('imConnectivityTesting')
-                    : connectivityResults['email' as keyof typeof connectivityResults]
-                      ? i18nService.t('imConnectivityRetest')
-                      : i18nService.t('imConnectivityTest')}
-                </button>
-              </div>
-            </div>
-          );
-        })()}
-
         {/* Telegram Settings (multi-instance) */}
         {activePlatform === 'telegram' && !activeTelegramInstanceId && renderMultiInstanceOverview('telegram')}
         {activePlatform === 'telegram' && activeTelegramInstanceId && (() => {
@@ -2630,7 +2196,7 @@ const IMSettings: React.FC = () => {
                     setWecomQuickSetupStatus('pending');
                     setWecomQuickSetupError('');
                     try {
-                      const bot = await WecomAIBotSDK.openBotInfoAuthWindow({ source: 'genwork-ai' });
+                      const bot = await WecomAIBotSDK.openBotInfoAuthWindow({ source: 'mixcwork-ai' });
                       if (!isMountedRef.current) return;
                       dispatch(setWecomInstanceConfig({ instanceId: activeWecomInstanceId!, config: { botId: bot.botid, secret: bot.secret, enabled: true } }));
                       dispatch(clearError());
@@ -2667,55 +2233,6 @@ const IMSettings: React.FC = () => {
           }
 
           return renderMultiInstanceOverview('wecom');
-        })()}
-
-        {activePlatform === 'popo' && !activePopoInstanceId && renderMultiInstanceOverview('popo')}
-        {activePlatform === 'popo' && activePopoInstanceId && (() => {
-          const selectedInstance = config.popo.instances.find(i => i.instanceId === activePopoInstanceId);
-          if (!selectedInstance) return null;
-          const selectedStatus = status.popo?.instances?.find(s => s.instanceId === activePopoInstanceId);
-          return (
-            <div className="space-y-4">
-              <PopoInstanceSettings
-                instance={selectedInstance}
-                instanceStatus={selectedStatus}
-                headerLeading={renderBackToInstanceList('popo')}
-                onConfigChange={(update) => {
-                  dispatch(setPopoInstanceConfig({ instanceId: activePopoInstanceId, config: update }));
-                }}
-                onSave={async (override) => {
-                  const configToSave = override ? { ...selectedInstance, ...override } : selectedInstance;
-                  const restartOnSaveOptions = override?.enabled === true
-                    && !!override.appKey
-                    && !!override.appSecret
-                    && !!override.aesKey
-                    ? IM_AUTH_RESTART_ON_SAVE_OPTIONS
-                    : undefined;
-                  let success = false;
-                  if (selectedInstance.enabled || restartOnSaveOptions) {
-                    success = await imService.updatePopoInstanceConfig(activePopoInstanceId, configToSave, restartOnSaveOptions);
-                  } else {
-                    success = await imService.persistPopoInstanceConfig(activePopoInstanceId, configToSave);
-                  }
-                  if (success) reportIMSettingsSaved('popo', config);
-                  if (typeof override?.enabled === 'boolean') {
-                    setSaveReminderTarget('popo', activePopoInstanceId, override.enabled);
-                  }
-                }}
-                onRename={async (newName) => {
-                  dispatch(setPopoInstanceConfig({ instanceId: activePopoInstanceId, config: { instanceName: newName } as any }));
-                  await imService.persistPopoInstanceConfig(activePopoInstanceId, { instanceName: newName } as any);
-                }}
-                onTestConnectivity={() => {
-                  void handleConnectivityTest('popo');
-                }}
-                testingPlatform={testingPlatform}
-                connectivityResults={connectivityResults}
-                language={language}
-              />
-              {renderInstanceSaveReminder('popo', selectedInstance as unknown as IMInstanceConfigCard, selectedStatus)}
-            </div>
-          );
         })()}
 
         {deleteConfirmTarget && deleteConfirmInstance && (

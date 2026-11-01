@@ -222,8 +222,8 @@ describe('resolveWecomGroupDeliveryTargetFromSessions', () => {
 describe('resolveConversationAgentIdFromMappings', () => {
   const mappings = [
     {
-      imConversationId: 'popo-bot-1:direct:zhangsan@corp.example.com',
-      agentId: 'agent-popo',
+      imConversationId: 'tg-bot-1:direct:zhangsan@corp.example.com',
+      agentId: 'agent-telegram',
     },
     {
       imConversationId: 'other-acc:direct:zhangsan@corp.example.com',
@@ -268,13 +268,13 @@ describe('resolveConversationAgentIdFromMappings', () => {
   test('falls back to the most recent peer match and accepts full conversation ids', () => {
     expect(
       resolveConversationAgentIdFromMappings(mappings, 'zhangsan@corp.example.com'),
-    ).toBe('agent-popo');
+    ).toBe('agent-telegram');
     expect(
       resolveConversationAgentIdFromMappings(
         mappings,
-        'popo-bot-1:direct:zhangsan@corp.example.com',
+        'tg-bot-1:direct:zhangsan@corp.example.com',
       ),
-    ).toBe('agent-popo');
+    ).toBe('agent-telegram');
     // Case-insensitive: delivery targets keep the channel-native casing.
     expect(resolveConversationAgentIdFromMappings(mappings, TRUE_CASE_PEER)).toBe('main');
   });

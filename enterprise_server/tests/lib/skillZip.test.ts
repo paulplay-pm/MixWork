@@ -1,7 +1,7 @@
 import AdmZip from 'adm-zip';
 import { describe, expect, test } from 'vitest';
 
-import { MAX_ZIP_BYTES, SkillZipError, parseSkillZip } from '../../src/lib/skillZip';
+import { MAX_ZIP_BYTES, parseSkillZip,SkillZipError } from '../../src/lib/skillZip';
 
 function zipWith(topDir: string, files: Record<string, string>): Buffer {
   const zip = new AdmZip();

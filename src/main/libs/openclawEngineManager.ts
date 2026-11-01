@@ -20,8 +20,8 @@ import {
   getRecentGatewayLogEntries,
   pruneGatewayLogs,
 } from './gatewayLogRotation';
-import { ensureElectronNodeShim, getElectronNodeRuntimePath, getSkillsRoot } from './genworkUtil';
 import { recoverInstallerResourcesFromTar } from './installerResourceRecovery';
+import { ensureElectronNodeShim, getElectronNodeRuntimePath, getSkillsRoot } from './mixcworkUtil';
 import { mergeNoProxyValue } from './noProxyEnv';
 import { getCodexHomeDir } from './openaiCodexAuth';
 import { migrateLegacyCronStorageWithDoctor } from './openclawCronLegacyMigration';
@@ -50,7 +50,7 @@ const GATEWAY_BOOT_TIMEOUT_MS = 300 * 1000;
 const GATEWAY_MAX_RESTART_ATTEMPTS = 5;
 const GATEWAY_RESTART_DELAYS = [3_000, 5_000, 10_000, 20_000, 30_000];
 // How long a gateway-initiated restart (SIGUSR1 in-process restart after a
-// config change) is trusted to complete before GenWork resumes managing the
+// config change) is trusted to complete before MixCWork resumes managing the
 // process itself.
 const GATEWAY_SELF_RESTART_WINDOW_MS = 30_000;
 const OPENCLAW_GATEWAY_MAX_OLD_SPACE_MB = 4096;
@@ -209,7 +209,7 @@ export function buildOpenClawGatewayExecArgv(existingNodeOptions: string | undef
 export function buildOpenClawCompileCacheEnv(compileCacheDir: string): NodeJS.ProcessEnv {
   return {
     NODE_COMPILE_CACHE: compileCacheDir,
-    // The cache is already configured by GenWork. Prevent the packaged
+    // The cache is already configured by MixCWork. Prevent the packaged
     // launcher from respawning through Electron Helper as if it were Node.
     OPENCLAW_PACKAGED_COMPILE_CACHE_RESPAWNED: '1',
   };
@@ -383,7 +383,7 @@ export class OpenClawEngineManager extends EventEmitter {
   /**
    * Called when the gateway announced it is restarting itself (WS close 1012
    * "service restart" after an OpenClaw config reload). While the window is
-   * active GenWork must not kill/respawn the process: the gateway is between
+   * active MixCWork must not kill/respawn the process: the gateway is between
    * releasing and re-acquiring its single-instance lock, and a TerminateProcess
    * there leaves a poisoned (empty) lock file behind.
    */
@@ -659,7 +659,7 @@ export class OpenClawEngineManager extends EventEmitter {
     const env: NodeJS.ProcessEnv = {
       ...process.env,
       SKILLS_ROOT: skillsRoot,
-      GENWORK_SKILLS_ROOT: skillsRoot,
+      MIXCWORK_SKILLS_ROOT: skillsRoot,
       OPENCLAW_HOME: this.baseDir,
       OPENCLAW_STATE_DIR: this.stateDir,
       OPENCLAW_CONFIG_PATH: this.configPath,
@@ -675,7 +675,7 @@ export class OpenClawEngineManager extends EventEmitter {
       // bundled-channel-entry contract.  Third-party plugins (in extensions/)
       // are discovered separately via plugins.load.paths in openclaw.json.
       OPENCLAW_BUNDLED_PLUGINS_DIR: path.join(runtime.root, 'dist', 'extensions'),
-      // Disable Bonjour/mDNS LAN discovery advertising.  GenWork is a
+      // Disable Bonjour/mDNS LAN discovery advertising.  MixCWork is a
       // desktop app with a loopback-only gateway — LAN service broadcast is
       // unnecessary and its watchdog can flood stderr with re-advertise
       // warnings on Windows.  See openclaw/openclaw#33609, #63153.
@@ -685,8 +685,8 @@ export class OpenClawEngineManager extends EventEmitter {
       // Enable V8 compile cache for both CJS and ESM modules.
       // This env var works for import() (ESM), unlike enableCompileCache() which is CJS-only.
       ...buildOpenClawCompileCacheEnv(compileCacheDir),
-      GENWORK_ELECTRON_PATH: electronNodeRuntimePath.replace(/\\/g, '/'),
-      GENWORK_OPENCLAW_ENTRY: openclawEntry.replace(/\\/g, '/'),
+      MIXCWORK_ELECTRON_PATH: electronNodeRuntimePath.replace(/\\/g, '/'),
+      MIXCWORK_OPENCLAW_ENTRY: openclawEntry.replace(/\\/g, '/'),
       // Inject secret values for ${VAR} placeholders in openclaw.json.
       // This keeps plaintext credentials out of the config file on disk.
       ...this.secretEnvVars,
@@ -711,7 +711,7 @@ export class OpenClawEngineManager extends EventEmitter {
     }
 
     // Prepend bundled/user Python runtime paths so gateway exec commands
-    // find the GenWork-managed Python instead of the Windows Store stub.
+    // find the MixCWork-managed Python instead of the Windows Store stub.
     appendPythonRuntimeToEnv(env as Record<string, string | undefined>);
 
     // Inject node/npm/npx shims so gateway exec commands can use them.
@@ -723,7 +723,7 @@ export class OpenClawEngineManager extends EventEmitter {
     if (nodeShimDir) {
       const curPath = env.PATH || env.Path || '';
       env.PATH = [nodeShimDir, curPath].filter(Boolean).join(path.delimiter);
-      env.GENWORK_NPM_BIN_DIR = npmBinDir || '';
+      env.MIXCWORK_NPM_BIN_DIR = npmBinDir || '';
     }
 
     if (isSystemProxyEnabled()) {
@@ -1093,7 +1093,7 @@ export class OpenClawEngineManager extends EventEmitter {
       }
       if (result.protectedExisting.length > 0) {
         console.warn(
-          `[OpenClaw] Skipped ${result.protectedExisting.length} worker shim(s) because existing files are not GenWork shims.`,
+          `[OpenClaw] Skipped ${result.protectedExisting.length} worker shim(s) because existing files are not MixCWork shims.`,
         );
       }
     } catch (error) {
@@ -1105,32 +1105,32 @@ export class OpenClawEngineManager extends EventEmitter {
     const shimDir = path.join(this.stateDir, 'bin');
     const shellWrapper = [
       '#!/usr/bin/env bash',
-      'if [ -z "${GENWORK_OPENCLAW_ENTRY:-}" ]; then',
-      '  echo "GENWORK_OPENCLAW_ENTRY is not set" >&2',
+      'if [ -z "${MIXCWORK_OPENCLAW_ENTRY:-}" ]; then',
+      '  echo "MIXCWORK_OPENCLAW_ENTRY is not set" >&2',
       '  exit 127',
       'fi',
-      'if [ -n "${GENWORK_ELECTRON_PATH:-}" ]; then',
-      '  exec env ELECTRON_RUN_AS_NODE=1 "${GENWORK_ELECTRON_PATH}" "${GENWORK_OPENCLAW_ENTRY}" "$@"',
+      'if [ -n "${MIXCWORK_ELECTRON_PATH:-}" ]; then',
+      '  exec env ELECTRON_RUN_AS_NODE=1 "${MIXCWORK_ELECTRON_PATH}" "${MIXCWORK_OPENCLAW_ENTRY}" "$@"',
       'fi',
       'if command -v node >/dev/null 2>&1; then',
-      '  exec node "${GENWORK_OPENCLAW_ENTRY}" "$@"',
+      '  exec node "${MIXCWORK_OPENCLAW_ENTRY}" "$@"',
       'fi',
-      'echo "Neither GENWORK_ELECTRON_PATH nor node is available for OpenClaw CLI." >&2',
+      'echo "Neither MIXCWORK_ELECTRON_PATH nor node is available for OpenClaw CLI." >&2',
       'exit 127',
       '',
     ].join('\n');
     const windowsWrapper = [
       '@echo off',
-      'if "%GENWORK_OPENCLAW_ENTRY%"=="" (',
-      '  echo GENWORK_OPENCLAW_ENTRY is not set 1>&2',
+      'if "%MIXCWORK_OPENCLAW_ENTRY%"=="" (',
+      '  echo MIXCWORK_OPENCLAW_ENTRY is not set 1>&2',
       '  exit /b 127',
       ')',
-      'if not "%GENWORK_ELECTRON_PATH%"=="" (',
+      'if not "%MIXCWORK_ELECTRON_PATH%"=="" (',
       '  set ELECTRON_RUN_AS_NODE=1',
-      '  "%GENWORK_ELECTRON_PATH%" "%GENWORK_OPENCLAW_ENTRY%" %*',
+      '  "%MIXCWORK_ELECTRON_PATH%" "%MIXCWORK_OPENCLAW_ENTRY%" %*',
       '  exit /b %ERRORLEVEL%',
       ')',
-      'node "%GENWORK_OPENCLAW_ENTRY%" %*',
+      'node "%MIXCWORK_OPENCLAW_ENTRY%" %*',
       '',
     ].join('\r\n');
 

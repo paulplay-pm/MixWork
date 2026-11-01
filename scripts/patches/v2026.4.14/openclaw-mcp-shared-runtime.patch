@@ -7,10 +7,10 @@ index dcf116f7e4..745bce4643 100644
  }
  
 +/**
-+ * GenWork patch: shared MCP runtime keyed by config fingerprint.
++ * MixCWork patch: shared MCP runtime keyed by config fingerprint.
 + *
 + * PROBLEM: The original manager creates one MCP runtime (= one set of stdio
-+ * child processes) per sessionId.  GenWork desktop creates a unique gateway
++ * child processes) per sessionId.  MixCWork desktop creates a unique gateway
 + * session key per conversation, so every new conversation spawns N new node
 + * processes that are never cleaned up.
 + *
